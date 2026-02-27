@@ -6,27 +6,14 @@ import {
   PieChart, Pie, Cell,
 } from "recharts";
 
-// ─── DESIGN TOKENS ───────────────────────────────────────────────
 const C = {
-  bg: "#F7F3EE",
-  bgCard: "#FFFFFF",
-  bgDeep: "#1C1814",
-  accent: "#C8933A",
-  accentLight: "#F0DDB8",
-  accentDark: "#8A6020",
-  text: "#1C1814",
-  textMid: "#6B5E4E",
-  textLight: "#A8998A",
-  border: "#E8E0D5",
-  green: "#2D7A4F",
-  greenLight: "#D4EDDE",
-  red: "#C0392B",
-  redLight: "#FDECEA",
-  blue: "#2C5F8A",
-  blueLight: "#D6E8F5",
+  bg: "#F7F3EE", bgCard: "#FFFFFF", bgDeep: "#1C1814",
+  accent: "#C8933A", accentLight: "#F0DDB8", accentDark: "#8A6020",
+  text: "#1C1814", textMid: "#6B5E4E", textLight: "#A8998A",
+  border: "#E8E0D5", green: "#2D7A4F", greenLight: "#D4EDDE",
+  red: "#C0392B", redLight: "#FDECEA", blue: "#2C5F8A", blueLight: "#D6E8F5",
 };
 
-// ─── MOCK DATA ────────────────────────────────────────────────────
 const historicData = [
   { mes: "Ene", occ: 52, adr: 118, revpar: 61, trevpar: 88 },
   { mes: "Feb", occ: 58, adr: 124, revpar: 72, trevpar: 102 },
@@ -85,7 +72,6 @@ const mercadoData = [
   { pais: "Otros", reservas: 28, pct: 4, adr: 145, flag: "🌍", trend: "+0.8%", up: true },
 ];
 
-// ─── HELPERS ──────────────────────────────────────────────────────
 const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null;
   return (
@@ -126,7 +112,6 @@ function KpiCard({ label, value, change, sub, up, i }) {
   );
 }
 
-// ─── LOGIN / REGISTER ─────────────────────────────────────────────
 function AuthScreen() {
   const [mode, setMode] = useState("login");
   const [email, setEmail] = useState("");
@@ -139,87 +124,58 @@ function AuthScreen() {
   const [mensaje, setMensaje] = useState("");
 
   const handleLogin = async () => {
-    setLoading(true);
-    setError("");
+    setLoading(true); setError("");
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) setError("Email o contraseña incorrectos");
     setLoading(false);
   };
 
   const handleRegister = async () => {
-    if (!hotelNombre || !email || !password) {
-      setError("Rellena todos los campos obligatorios");
-      return;
-    }
-    setLoading(true);
-    setError("");
+    if (!hotelNombre || !email || !password) { setError("Rellena todos los campos obligatorios"); return; }
+    setLoading(true); setError("");
     const { data, error } = await supabase.auth.signUp({ email, password });
     if (error) { setError(error.message); setLoading(false); return; }
     if (data.user) {
-      await supabase.from("hoteles").insert({
-        nombre: hotelNombre,
-        ciudad: hotelCiudad,
-        habitaciones: parseInt(habitaciones) || null,
-      });
+      await supabase.from("hoteles").insert({ nombre: hotelNombre, ciudad: hotelCiudad, habitaciones: parseInt(habitaciones) || null });
     }
     setMensaje("¡Cuenta creada! Revisa tu email para confirmarla.");
     setLoading(false);
   };
 
-  const inputStyle = {
-    width: "100%", padding: "11px 14px", borderRadius: 8,
-    border: `1.5px solid ${C.border}`, fontSize: 14,
-    fontFamily: "'DM Sans', sans-serif", color: C.text,
-    background: C.bg, outline: "none",
-  };
+  const inp = { width: "100%", padding: "11px 14px", borderRadius: 8, border: `1.5px solid ${C.border}`, fontSize: 14, fontFamily: "'DM Sans', sans-serif", color: C.text, background: C.bg, outline: "none" };
 
   return (
     <div style={{ minHeight: "100vh", background: C.bgDeep, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'DM Sans', sans-serif" }}>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap');
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        @keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
-      `}</style>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap'); * { box-sizing: border-box; margin: 0; padding: 0; } @keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }`}</style>
       <div style={{ width: 420, background: C.bgCard, borderRadius: 20, padding: "40px 36px", boxShadow: "0 32px 80px rgba(0,0,0,0.4)", animation: "fadeUp 0.5s ease both" }}>
         <div style={{ textAlign: "center", marginBottom: 32 }}>
           <div style={{ width: 52, height: 52, background: C.accent, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, margin: "0 auto 14px" }}>🏨</div>
           <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: 24, fontWeight: 800, color: C.text }}>RevManager</h1>
           <p style={{ fontSize: 12, color: C.textLight, marginTop: 4 }}>Revenue Management para hoteles independientes</p>
         </div>
-
         <div style={{ display: "flex", background: C.bg, borderRadius: 10, padding: 4, marginBottom: 24 }}>
           {[["login", "Iniciar sesión"], ["register", "Crear cuenta"]].map(([k, l]) => (
-            <button key={k} onClick={() => { setMode(k); setError(""); setMensaje(""); }} style={{
-              flex: 1, padding: "9px", borderRadius: 8, border: "none", cursor: "pointer",
-              background: mode === k ? C.bgCard : "transparent",
-              color: mode === k ? C.accent : C.textMid,
-              fontWeight: mode === k ? 600 : 400, fontSize: 13,
-              fontFamily: "'DM Sans', sans-serif",
-              boxShadow: mode === k ? "0 1px 4px rgba(0,0,0,0.08)" : "none",
-            }}>{l}</button>
+            <button key={k} onClick={() => { setMode(k); setError(""); setMensaje(""); }} style={{ flex: 1, padding: "9px", borderRadius: 8, border: "none", cursor: "pointer", background: mode === k ? C.bgCard : "transparent", color: mode === k ? C.accent : C.textMid, fontWeight: mode === k ? 600 : 400, fontSize: 13, fontFamily: "'DM Sans', sans-serif", boxShadow: mode === k ? "0 1px 4px rgba(0,0,0,0.08)" : "none" }}>{l}</button>
           ))}
         </div>
-
         {mensaje ? (
-          <div style={{ background: C.greenLight, color: C.green, padding: "14px", borderRadius: 8, fontSize: 13, textAlign: "center", fontWeight: 500 }}>
-            {mensaje}
-          </div>
+          <div style={{ background: C.greenLight, color: C.green, padding: "14px", borderRadius: 8, fontSize: 13, textAlign: "center", fontWeight: 500 }}>{mensaje}</div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             {mode === "register" && (
               <>
                 <div>
                   <p style={{ fontSize: 11, color: C.textLight, marginBottom: 5, textTransform: "uppercase", letterSpacing: "1px" }}>Nombre del hotel *</p>
-                  <input style={inputStyle} placeholder="Hotel San Marcos" value={hotelNombre} onChange={e => setHotelNombre(e.target.value)} />
+                  <input style={inp} placeholder="Hotel San Marcos" value={hotelNombre} onChange={e => setHotelNombre(e.target.value)} />
                 </div>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                   <div>
                     <p style={{ fontSize: 11, color: C.textLight, marginBottom: 5, textTransform: "uppercase", letterSpacing: "1px" }}>Ciudad</p>
-                    <input style={inputStyle} placeholder="Madrid" value={hotelCiudad} onChange={e => setHotelCiudad(e.target.value)} />
+                    <input style={inp} placeholder="Madrid" value={hotelCiudad} onChange={e => setHotelCiudad(e.target.value)} />
                   </div>
                   <div>
                     <p style={{ fontSize: 11, color: C.textLight, marginBottom: 5, textTransform: "uppercase", letterSpacing: "1px" }}>Habitaciones</p>
-                    <input style={inputStyle} placeholder="45" type="number" value={habitaciones} onChange={e => setHabitaciones(e.target.value)} />
+                    <input style={inp} placeholder="45" type="number" value={habitaciones} onChange={e => setHabitaciones(e.target.value)} />
                   </div>
                 </div>
                 <div style={{ height: 1, background: C.border, margin: "4px 0" }} />
@@ -227,23 +183,14 @@ function AuthScreen() {
             )}
             <div>
               <p style={{ fontSize: 11, color: C.textLight, marginBottom: 5, textTransform: "uppercase", letterSpacing: "1px" }}>Email *</p>
-              <input style={inputStyle} type="email" placeholder="gerente@mihotel.com" value={email} onChange={e => setEmail(e.target.value)} />
+              <input style={inp} type="email" placeholder="gerente@mihotel.com" value={email} onChange={e => setEmail(e.target.value)} />
             </div>
             <div>
               <p style={{ fontSize: 11, color: C.textLight, marginBottom: 5, textTransform: "uppercase", letterSpacing: "1px" }}>Contraseña *</p>
-              <input style={inputStyle} type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)}
-                onKeyDown={e => e.key === "Enter" && (mode === "login" ? handleLogin() : handleRegister())} />
+              <input style={inp} type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} onKeyDown={e => e.key === "Enter" && (mode === "login" ? handleLogin() : handleRegister())} />
             </div>
-            {error && (
-              <div style={{ background: C.redLight, color: C.red, padding: "10px 14px", borderRadius: 8, fontSize: 13 }}>{error}</div>
-            )}
-            <button onClick={mode === "login" ? handleLogin : handleRegister} disabled={loading} style={{
-              width: "100%", padding: "13px", borderRadius: 10, border: "none",
-              background: loading ? C.accentLight : C.accent,
-              color: loading ? C.accentDark : "#fff",
-              fontSize: 14, fontWeight: 700, cursor: loading ? "not-allowed" : "pointer",
-              fontFamily: "'DM Sans', sans-serif", marginTop: 4,
-            }}>
+            {error && <div style={{ background: C.redLight, color: C.red, padding: "10px 14px", borderRadius: 8, fontSize: 13 }}>{error}</div>}
+            <button onClick={mode === "login" ? handleLogin : handleRegister} disabled={loading} style={{ width: "100%", padding: "13px", borderRadius: 10, border: "none", background: loading ? C.accentLight : C.accent, color: loading ? C.accentDark : "#fff", fontSize: 14, fontWeight: 700, cursor: loading ? "not-allowed" : "pointer", fontFamily: "'DM Sans', sans-serif", marginTop: 4 }}>
               {loading ? "Cargando..." : mode === "login" ? "Entrar" : "Crear cuenta"}
             </button>
           </div>
@@ -253,7 +200,6 @@ function AuthScreen() {
   );
 }
 
-// ─── DASHBOARD VIEW ───────────────────────────────────────────────
 function DashboardView() {
   const kpis = [
     { label: "Ocupación MTD", value: "74,2%", change: "+3.1pp", sub: "vs año anterior", up: true },
@@ -339,7 +285,6 @@ function DashboardView() {
   );
 }
 
-// ─── FORECAST VIEW ────────────────────────────────────────────────
 function ForecastView() {
   const [metric, setMetric] = useState("revpar");
   const metricOpts = [
@@ -361,12 +306,7 @@ function ForecastView() {
       </div>
       <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
         {metricOpts.map(m => (
-          <button key={m.k} onClick={() => setMetric(m.k)} style={{
-            padding: "8px 20px", borderRadius: 8, border: `1.5px solid ${metric === m.k ? m.color : C.border}`,
-            background: metric === m.k ? `${m.color}15` : "white",
-            color: metric === m.k ? m.color : C.textMid,
-            cursor: "pointer", fontSize: 13, fontWeight: 600, fontFamily: "'DM Sans', sans-serif",
-          }}>{m.label}</button>
+          <button key={m.k} onClick={() => setMetric(m.k)} style={{ padding: "8px 20px", borderRadius: 8, border: `1.5px solid ${metric === m.k ? m.color : C.border}`, background: metric === m.k ? `${m.color}15` : "white", color: metric === m.k ? m.color : C.textMid, cursor: "pointer", fontSize: 13, fontWeight: 600, fontFamily: "'DM Sans', sans-serif" }}>{m.label}</button>
         ))}
       </div>
       <Card style={{ marginBottom: 16 }}>
@@ -404,9 +344,7 @@ function ForecastView() {
                   <td style={{ padding: "10px 12px", textAlign: "right" }}>€{d.forecastAdr}</td>
                   <td style={{ padding: "10px 12px", textAlign: "right", fontWeight: 600, color: C.accent }}>€{d.forecastRevpar}</td>
                   <td style={{ padding: "10px 12px", textAlign: "right", color: C.textMid }}>€{d.budget}</td>
-                  <td style={{ padding: "10px 12px", textAlign: "right" }}>
-                    <span style={{ color: dev >= 0 ? C.green : C.red, fontWeight: 600 }}>{dev >= 0 ? "+" : ""}€{dev}</span>
-                  </td>
+                  <td style={{ padding: "10px 12px", textAlign: "right" }}><span style={{ color: dev >= 0 ? C.green : C.red, fontWeight: 600 }}>{dev >= 0 ? "+" : ""}€{dev}</span></td>
                   <td style={{ padding: "10px 12px", textAlign: "right" }}>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 6 }}>
                       <div style={{ width: 50, height: 4, background: C.border, borderRadius: 2, overflow: "hidden" }}>
@@ -425,7 +363,6 @@ function ForecastView() {
   );
 }
 
-// ─── PICKUP VIEW ──────────────────────────────────────────────────
 function PickupView() {
   return (
     <div>
@@ -461,7 +398,6 @@ function PickupView() {
   );
 }
 
-// ─── SEGMENTACION VIEW ────────────────────────────────────────────
 function SegmentacionView() {
   const [segTab, setSegTab] = useState("canal");
   const totalRes = canalData.reduce((a, b) => a + b.reservas, 0);
@@ -473,16 +409,9 @@ function SegmentacionView() {
       </div>
       <div style={{ display: "flex", gap: 8, marginBottom: 20, background: C.bgCard, padding: 4, borderRadius: 10, border: `1px solid ${C.border}`, width: "fit-content" }}>
         {[["canal", "🌐 Canal"], ["tarifa", "🏷 Tarifa"], ["mercado", "🌍 Mercado"]].map(([k, l]) => (
-          <button key={k} onClick={() => setSegTab(k)} style={{
-            padding: "8px 20px", borderRadius: 8, border: "none",
-            background: segTab === k ? C.accent : "transparent",
-            color: segTab === k ? "#fff" : C.textMid,
-            cursor: "pointer", fontSize: 13, fontWeight: segTab === k ? 600 : 400,
-            fontFamily: "'DM Sans', sans-serif",
-          }}>{l}</button>
+          <button key={k} onClick={() => setSegTab(k)} style={{ padding: "8px 20px", borderRadius: 8, border: "none", background: segTab === k ? C.accent : "transparent", color: segTab === k ? "#fff" : C.textMid, cursor: "pointer", fontSize: 13, fontWeight: segTab === k ? 600 : 400, fontFamily: "'DM Sans', sans-serif" }}>{l}</button>
         ))}
       </div>
-
       {segTab === "canal" && (
         <Card>
           <p style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700, fontSize: 16, color: C.text, marginBottom: 16 }}>Reservas por Canal</p>
@@ -511,7 +440,6 @@ function SegmentacionView() {
           </div>
         </Card>
       )}
-
       {segTab === "tarifa" && (
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
           <Card>
@@ -540,13 +468,7 @@ function SegmentacionView() {
             <p style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700, fontSize: 16, color: C.text, marginBottom: 4 }}>ADR por Tipo de Tarifa</p>
             <p style={{ fontSize: 11, color: C.textLight, marginBottom: 18 }}>Precio medio por noche</p>
             <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={[
-                { tarifa: "BAR Flex.", adr: 168 },
-                { tarifa: "No Reemb.", adr: 142 },
-                { tarifa: "Grupos", adr: 118 },
-                { tarifa: "Oferta", adr: 128 },
-                { tarifa: "Corp.", adr: 155 },
-              ]} barSize={32} layout="vertical">
+              <BarChart data={[{ tarifa: "BAR Flex.", adr: 168 }, { tarifa: "No Reemb.", adr: 142 }, { tarifa: "Grupos", adr: 118 }, { tarifa: "Oferta", adr: 128 }, { tarifa: "Corp.", adr: 155 }]} barSize={32} layout="vertical">
                 <CartesianGrid strokeDasharray="3 3" stroke={C.border} horizontal={false} />
                 <XAxis type="number" tick={{ fill: C.textLight, fontSize: 11 }} axisLine={false} tickLine={false} unit="€" />
                 <YAxis type="category" dataKey="tarifa" tick={{ fill: C.textMid, fontSize: 12 }} axisLine={false} tickLine={false} width={65} />
@@ -557,7 +479,6 @@ function SegmentacionView() {
           </Card>
         </div>
       )}
-
       {segTab === "mercado" && (
         <Card>
           <p style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700, fontSize: 16, color: C.text, marginBottom: 16 }}>Reservas por Mercado de Origen</p>
@@ -600,7 +521,6 @@ function SegmentacionView() {
   );
 }
 
-// ─── APP SHELL ────────────────────────────────────────────────────
 const NAV = [
   { key: "dashboard", icon: "◈", label: "Dashboard" },
   { key: "forecast", icon: "◎", label: "Forecast" },
@@ -624,10 +544,7 @@ export default function App() {
     return () => subscription.unsubscribe();
   }, []);
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-  };
-
+  const handleLogout = async () => { await supabase.auth.signOut(); };
   const views = { dashboard: DashboardView, forecast: ForecastView, pickup: PickupView, segmentacion: SegmentacionView };
   const View = views[view];
 
@@ -640,7 +557,7 @@ export default function App() {
   if (!session) return <AuthScreen />;
 
   return (
-    <div style={{ fontFamily: "'DM Sans', sans-serif", background: C.bg, minHeight: "100vh", display: "flex" }}>
+    <div style={{ fontFamily: "'DM Sans', sans-serif", background: C.bg, minHeight: "100vh", display: "flex", width: "100vw", overflow: "hidden" }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap');
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -652,7 +569,7 @@ export default function App() {
       `}</style>
 
       {/* Sidebar */}
-      <div style={{ width: 220, minHeight: "100vh", background: C.bgDeep, display: "flex", flexDirection: "column", position: "sticky", top: 0, height: "100vh" }}>
+      <div style={{ width: 220, flexShrink: 0, minHeight: "100vh", background: C.bgDeep, display: "flex", flexDirection: "column", position: "sticky", top: 0, height: "100vh" }}>
         <div style={{ padding: "24px 20px 20px", borderBottom: "1px solid #FFFFFF11" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <div style={{ width: 36, height: 36, background: C.accent, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>🏨</div>
@@ -664,35 +581,19 @@ export default function App() {
         </div>
         <nav style={{ flex: 1, padding: "16px 12px" }}>
           {NAV.map(n => (
-            <button key={n.key} className="nav-item" onClick={() => setView(n.key)} style={{
-              width: "100%", display: "flex", alignItems: "center", gap: 10,
-              padding: "10px 12px", borderRadius: 8, border: "none", cursor: "pointer",
-              background: view === n.key ? C.accent : "transparent",
-              color: view === n.key ? "#fff" : "#A8998A",
-              fontSize: 13, fontWeight: view === n.key ? 600 : 400,
-              fontFamily: "'DM Sans', sans-serif", marginBottom: 2, textAlign: "left",
-            }}>
+            <button key={n.key} className="nav-item" onClick={() => setView(n.key)} style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 8, border: "none", cursor: "pointer", background: view === n.key ? C.accent : "transparent", color: view === n.key ? "#fff" : "#A8998A", fontSize: 13, fontWeight: view === n.key ? 600 : 400, fontFamily: "'DM Sans', sans-serif", marginBottom: 2, textAlign: "left" }}>
               <span style={{ fontSize: 14 }}>{n.icon}</span>{n.label}
             </button>
           ))}
         </nav>
         <div style={{ padding: "16px 12px", borderTop: "1px solid #FFFFFF11" }}>
-          <p style={{ fontSize: 11, color: "#FFFFFF44", marginBottom: 8, paddingLeft: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-            {session.user.email}
-          </p>
-          <button onClick={handleLogout} style={{
-            width: "100%", padding: "10px", borderRadius: 8,
-            border: "1px solid #FFFFFF22", background: "transparent",
-            color: "#A8998A", cursor: "pointer", fontSize: 12,
-            fontFamily: "'DM Sans', sans-serif",
-          }}>
-            Cerrar sesión
-          </button>
+          <p style={{ fontSize: 11, color: "#FFFFFF44", marginBottom: 8, paddingLeft: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{session.user.email}</p>
+          <button onClick={handleLogout} style={{ width: "100%", padding: "10px", borderRadius: 8, border: "1px solid #FFFFFF22", background: "transparent", color: "#A8998A", cursor: "pointer", fontSize: 12, fontFamily: "'DM Sans', sans-serif" }}>Cerrar sesión</button>
         </div>
       </div>
 
       {/* Main */}
-      <main style={{ flex: 1, padding: "28px 32px", overflowY: "auto", maxHeight: "100vh" }}>
+      <main style={{ flex: 1, minWidth: 0, padding: "28px 32px", overflowY: "auto", height: "100vh" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 28 }}>
           <div>
             <p style={{ fontSize: 11, color: C.textLight, textTransform: "uppercase", letterSpacing: "1.5px" }}>RevManager · Panel de Revenue</p>
