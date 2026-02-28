@@ -248,11 +248,10 @@ function ImportarExcel({ onClose, session, onImportado }) {
 }
 
 // ─── DASHBOARD VIEW ───────────────────────────────────────────────
-function DashboardView({ datos }) {
+function DashboardView({ datos, mes, anio, onPeriodo }) {
   const { produccion } = datos;
-  const hoy = new Date();
-  const [mes, setMes] = useState(hoy.getMonth());
-  const [anio, setAnio] = useState(hoy.getFullYear());
+  
+  
 
   if (!produccion || produccion.length === 0) return <EmptyState />;
 
@@ -303,8 +302,7 @@ function DashboardView({ datos }) {
     { label: "Revenue Total", value: `€${Math.round(totalRevTotal).toLocaleString("es-ES")}`, change: `€${Math.round(totalRevTotal).toLocaleString("es-ES")}`, sub: "todos los servicios", up: true },
   ];
 
-  const esMesActual = mes === hoy.getMonth() && anio === hoy.getFullYear();
-
+  const esMesActual = mes === new Date().getMonth() && anio === new Date().getFullYear();
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 28 }}>
@@ -314,7 +312,7 @@ function DashboardView({ datos }) {
             {esMesActual ? "Mes en curso" : "Mes cerrado"} · {MESES[mes]} {anio}
           </p>
         </div>
-        <PeriodSelector mes={mes} anio={anio} onChange={(m, a) => { setMes(m); setAnio(a); }} />
+        <PeriodSelector mes={mes} anio={anio} onChange={onPeriodo} />
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 14, marginBottom: 24 }}>
@@ -542,6 +540,9 @@ export default function App() {
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState("dashboard");
+  const hoy = new Date();
+  const [mesSel, setMesSel] = useState(() => { const v = localStorage.getItem("rm_mes"); return v !== null ? parseInt(v) : hoy.getMonth(); });
+  const [anioSel, setAnioSel] = useState(() => { const v = localStorage.getItem("rm_anio"); return v !== null ? parseInt(v) : hoy.getFullYear(); });
   const [importar, setImportar] = useState(false);
   const [datos, setDatos] = useState({ produccion: [], pickup: [] });
   const [cargandoDatos, setCargandoDatos] = useState(false);
@@ -638,7 +639,7 @@ export default function App() {
             </div>
           </div>
         </div>
-        {cargandoDatos ? <LoadingSpinner /> : <View datos={datos} />}
+        {cargandoDatos ? <LoadingSpinner /> : <View datos={datos} mes={mesSel} anio={anioSel} onPeriodo={(m,a) => { setMesSel(m); setAnioSel(a); localStorage.setItem("rm_mes", m); localStorage.setItem("rm_anio", a); }} />}
       </main>
 
       {importar && <ImportarExcel onClose={() => setImportar(false)} session={session} onImportado={cargarDatos} />}
