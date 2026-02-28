@@ -785,8 +785,8 @@ function BudgetView({ datos, anio: anioProp }) {
       {/* Gráficas */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
         <Card>
-          <p style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700, fontSize: 16, color: C.text, marginBottom: 4 }}>RevPAR — Ppto. vs Real</p>
-          <p style={{ fontSize: 11, color: C.textLight, marginBottom: 18 }}>€ por habitación disponible</p>
+          <p style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700, fontSize: 16, color: C.text, marginBottom: 4 }}>ADR — Ppto. vs Real</p>
+          <p style={{ fontSize: 11, color: C.textLight, marginBottom: 18 }}>€ precio medio por habitación</p>
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={chartData} barSize={14} barGap={3}>
               <CartesianGrid strokeDasharray="3 3" stroke={C.border} vertical={false} />
@@ -794,8 +794,8 @@ function BudgetView({ datos, anio: anioProp }) {
               <YAxis tick={{ fill: C.textLight, fontSize: 11 }} axisLine={false} tickLine={false} unit="€" />
               <Tooltip content={<CustomTooltip />} />
               <Legend wrapperStyle={{ fontSize: 11, color: C.textMid, paddingTop: 8 }} />
-              <Bar dataKey="RevPAR Ppto" fill={`${C.accent}55`} radius={[3,3,0,0]} />
-              <Bar dataKey="RevPAR Real" fill={C.accent}        radius={[3,3,0,0]} />
+              <Bar dataKey="ADR Ppto" fill={`${C.accent}55`} radius={[3,3,0,0]} />
+              <Bar dataKey="ADR Real" fill={C.accent}        radius={[3,3,0,0]} />
             </BarChart>
           </ResponsiveContainer>
         </Card>
