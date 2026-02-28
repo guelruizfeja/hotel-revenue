@@ -415,10 +415,14 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle }) {
   const revpar  = totalHabDisponibles > 0 ? (totalRevHab / totalHabDisponibles).toFixed(0) : 0;
   const trevpar = totalHabDisponibles > 0 ? ((totalRevHab + totalRevFnb + totalRevOtros) / totalHabDisponibles).toFixed(0) : 0;
 
-  const porMes = MESES_CORTO.map((m, i) => {
+  // Últimos 12 meses rodantes desde el mes seleccionado
+  const porMes = Array.from({ length: 12 }, (_, i) => {
+    const totalMeses = mes - 11 + i;
+    const mIdx = ((totalMeses % 12) + 12) % 12;
+    const aIdx = anio + Math.floor((mes - 11 + i) / 12);
     const d = produccion.filter(r => {
       const f = new Date(r.fecha + "T00:00:00");
-      return f.getMonth() === i && f.getFullYear() === anio;
+      return f.getMonth() === mIdx && f.getFullYear() === aIdx;
     });
     const habOcu   = d.reduce((a, r) => a + (r.hab_ocupadas || 0), 0);
     const habDis   = d.reduce((a, r) => a + (r.hab_disponibles || 0), 0);
@@ -426,7 +430,9 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle }) {
     const revFnb   = d.reduce((a, r) => a + (r.revenue_fnb || 0), 0);
     const revOtros = d.reduce((a, r) => a + (r.revenue_otros || 0), 0);
     return {
-      mes: m,
+      mes: MESES_CORTO[mIdx],
+      mesIdx: mIdx,
+      anioIdx: aIdx,
       occ:     habDis > 0 ? Math.round(habOcu / habDis * 100) : 0,
       adr:     habOcu > 0 ? Math.round(revH / habOcu) : 0,
       revpar:  habDis > 0 ? Math.round(revH / habDis) : 0,
@@ -528,7 +534,9 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle }) {
       </div>
 
       <Card>
-        <p style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700, fontSize: 16, color: C.text, marginBottom: 16 }}>Resumen por Mes — {anio}</p>
+        <p style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700, fontSize: 16, color: C.text, marginBottom: 16 }}>
+          Últimos 12 meses — {MESES[porMes.length > 0 ? porMes[0].mesIdx : 0]} {porMes.length > 0 ? porMes[0].anioIdx : anio} → {MESES[mes]} {anio}
+        </p>
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
             <thead>
@@ -540,7 +548,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle }) {
             </thead>
             <tbody>
               {porMes.map((d, i) => (
-                <tr key={i} onClick={() => onMesDetalle && onMesDetalle(MESES_CORTO.indexOf(d.mes), anio)} style={{ borderBottom: `1px solid ${C.border}`, background: MESES_CORTO.indexOf(d.mes) === mes ? C.accentLight : (i % 2 === 0 ? C.bg : C.bgCard), cursor: "pointer" }} onMouseEnter={e => e.currentTarget.style.background = C.accentLight} onMouseLeave={e => e.currentTarget.style.background = MESES_CORTO.indexOf(d.mes) === mes ? C.accentLight : (i % 2 === 0 ? C.bg : C.bgCard)}>
+                <tr key={i} onClick={() => onMesDetalle && onMesDetalle(d.mesIdx, d.anioIdx)} style={{ borderBottom: `1px solid ${C.border}`, background: d.mesIdx === mes && d.anioIdx === anio ? C.accentLight : (i % 2 === 0 ? C.bg : C.bgCard), cursor: "pointer" }} onMouseEnter={e => e.currentTarget.style.background = C.accentLight} onMouseLeave={e => e.currentTarget.style.background = MESES_CORTO.indexOf(d.mes) === mes ? C.accentLight : (i % 2 === 0 ? C.bg : C.bgCard)}>
                   <td style={{ padding: "10px 12px", fontWeight: 600, color: C.accent, textDecoration: "underline", cursor: "pointer" }}>{d.mes}</td>
                   <td style={{ padding: "10px 12px", textAlign: "right", color: d.occ > 80 ? C.green : C.textMid }}>{d.occ}%</td>
                   <td style={{ padding: "10px 12px", textAlign: "right", color: C.textMid }}>€{d.adr}</td>
