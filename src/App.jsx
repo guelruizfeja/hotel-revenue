@@ -14,63 +14,7 @@ const C = {
   red: "#C0392B", redLight: "#FDECEA", blue: "#2C5F8A", blueLight: "#D6E8F5",
 };
 
-const historicData = [
-  { mes: "Ene", occ: 52, adr: 118, revpar: 61, trevpar: 88 },
-  { mes: "Feb", occ: 58, adr: 124, revpar: 72, trevpar: 102 },
-  { mes: "Mar", occ: 67, adr: 131, revpar: 88, trevpar: 124 },
-  { mes: "Abr", occ: 74, adr: 142, revpar: 105, trevpar: 148 },
-  { mes: "May", occ: 79, adr: 155, revpar: 122, trevpar: 170 },
-  { mes: "Jun", occ: 85, adr: 168, revpar: 143, trevpar: 198 },
-  { mes: "Jul", occ: 94, adr: 188, revpar: 177, trevpar: 240 },
-  { mes: "Ago", occ: 97, adr: 195, revpar: 189, trevpar: 255 },
-  { mes: "Sep", occ: 82, adr: 162, revpar: 133, trevpar: 184 },
-  { mes: "Oct", occ: 71, adr: 148, revpar: 105, trevpar: 148 },
-  { mes: "Nov", occ: 59, adr: 128, revpar: 76, trevpar: 108 },
-  { mes: "Dic", occ: 63, adr: 138, revpar: 87, trevpar: 122 },
-];
-
-const forecastData = historicData.map((d) => ({
-  ...d,
-  forecastOcc: Math.min(100, Math.round(d.occ * 1.05)),
-  forecastAdr: Math.round(d.adr * 1.06),
-  forecastRevpar: Math.round(d.revpar * 1.09),
-  budget: Math.round(d.revpar * 1.08),
-}));
-
-const pickupData = [
-  { dia: "24/01", hoy: 42, ayer: 39, semAnt: 35, anioAnt: 30 },
-  { dia: "25/01", hoy: 48, ayer: 44, semAnt: 38, anioAnt: 32 },
-  { dia: "26/01", hoy: 55, ayer: 51, semAnt: 44, anioAnt: 38 },
-  { dia: "27/01", hoy: 61, ayer: 58, semAnt: 50, anioAnt: 44 },
-  { dia: "28/01", hoy: 68, ayer: 63, semAnt: 55, anioAnt: 48 },
-  { dia: "29/01", hoy: 74, ayer: 70, semAnt: 61, anioAnt: 52 },
-  { dia: "30/01", hoy: 79, ayer: 75, semAnt: 68, anioAnt: 58 },
-];
-
-const canalData = [
-  { name: "Booking.com", reservas: 284, ingresos: 42800, adr: 151, color: "#003580" },
-  { name: "Directo Web", reservas: 198, ingresos: 36200, adr: 183, color: C.accent },
-  { name: "Expedia", reservas: 142, ingresos: 19800, adr: 139, color: "#FF6B00" },
-  { name: "Teléfono", reservas: 96, ingresos: 18200, adr: 190, color: C.green },
-  { name: "GDS", reservas: 54, ingresos: 10800, adr: 200, color: C.blue },
-];
-
-const tarifaData = [
-  { name: "BAR Flexible", value: 38, color: C.accent },
-  { name: "No Reembolsable", value: 28, color: C.accentDark },
-  { name: "Grupos", value: 16, color: C.blue },
-  { name: "Oferta Especial", value: 11, color: C.green },
-  { name: "Corporativo", value: 7, color: C.textMid },
-];
-
-const mercadoData = [
-  { pais: "España", reservas: 312, pct: 38, adr: 158, flag: "🇪🇸", trend: "+2.1%", up: true },
-  { pais: "Francia", reservas: 178, pct: 22, adr: 172, flag: "🇫🇷", trend: "+4.8%", up: true },
-  { pais: "Alemania", reservas: 124, pct: 15, adr: 168, flag: "🇩🇪", trend: "-1.2%", up: false },
-  { pais: "Reino Unido", reservas: 98, pct: 12, adr: 180, flag: "🇬🇧", trend: "+3.3%", up: true },
-  { pais: "EE.UU.", reservas: 72, pct: 9, adr: 210, flag: "🇺🇸", trend: "+12.4%", up: true },
-  { pais: "Otros", reservas: 28, pct: 4, adr: 145, flag: "🌍", trend: "+0.8%", up: true },
-];
+const MESES = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
 
 const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null;
@@ -112,6 +56,359 @@ function KpiCard({ label, value, change, sub, up, i }) {
   );
 }
 
+function LoadingSpinner() {
+  return (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: 60 }}>
+      <div style={{ color: C.accent, fontFamily: "'Playfair Display', serif", fontSize: 16 }}>Cargando datos...</div>
+    </div>
+  );
+}
+
+function EmptyState({ mensaje }) {
+  return (
+    <div style={{ textAlign: "center", padding: 60 }}>
+      <div style={{ fontSize: 48, marginBottom: 16 }}>📊</div>
+      <p style={{ fontFamily: "'Playfair Display', serif", fontSize: 18, fontWeight: 700, color: C.text, marginBottom: 8 }}>Sin datos todavía</p>
+      <p style={{ fontSize: 13, color: C.textLight }}>{mensaje || "Importa tu plantilla Excel para ver los datos aquí"}</p>
+    </div>
+  );
+}
+
+// ─── IMPORTAR EXCEL ───────────────────────────────────────────────
+function ImportarExcel({ onClose, session, onImportado }) {
+  const [loading, setLoading] = useState(false);
+  const [resultado, setResultado] = useState(null);
+  const [error, setError] = useState("");
+
+  const procesarExcel = async (file) => {
+    setLoading(true); setError(""); setResultado(null);
+    try {
+      const XLSX = await import("xlsx");
+      const data = await file.arrayBuffer();
+      const wb = XLSX.read(data);
+
+      const ws = wb.Sheets["📅 Producción Diaria"];
+      if (!ws) throw new Error("No se encontró la hoja '📅 Producción Diaria'");
+
+      const rows = XLSX.utils.sheet_to_json(ws, { header: 1, range: 4 });
+      const produccionRows = [];
+
+      for (const row of rows) {
+        if (!row[0]) continue;
+        const fecha = row[0];
+        const hab_ocupadas = parseFloat(row[1]) || null;
+        const hab_disponibles = parseFloat(row[2]) || null;
+        const revenue_hab = parseFloat(row[3]) || null;
+        const revenue_total = parseFloat(row[4]) || null;
+        const revenue_fnb = parseFloat(row[5]) || null;
+        const revenue_otros = parseFloat(row[6]) || null;
+        if (!hab_ocupadas && !revenue_hab) continue;
+
+        let fechaISO;
+        if (typeof fecha === "number") {
+          const d = XLSX.SSF.parse_date_code(fecha);
+          fechaISO = `${d.y}-${String(d.m).padStart(2,"0")}-${String(d.d).padStart(2,"0")}`;
+        } else if (typeof fecha === "string") {
+          const parts = fecha.split("/");
+          if (parts.length === 3) fechaISO = `${parts[2]}-${parts[1]}-${parts[0]}`;
+        }
+        if (!fechaISO) continue;
+
+        const adr = hab_ocupadas > 0 ? revenue_hab / hab_ocupadas : null;
+        const revpar = hab_disponibles > 0 ? revenue_hab / hab_disponibles : null;
+        const trevpar = hab_disponibles > 0 ? ((revenue_hab||0)+(revenue_fnb||0)+(revenue_otros||0)) / hab_disponibles : null;
+
+        produccionRows.push({
+          hotel_id: session.user.id, fecha: fechaISO,
+          hab_ocupadas, hab_disponibles, revenue_hab, revenue_total,
+          revenue_fnb, revenue_otros,
+          adr: adr ? Math.round(adr*100)/100 : null,
+          revpar: revpar ? Math.round(revpar*100)/100 : null,
+          trevpar: trevpar ? Math.round(trevpar*100)/100 : null,
+        });
+      }
+
+      const wsPu = wb.Sheets["🎯 Pickup"];
+      const pickupRows = [];
+      if (wsPu) {
+        const rowsPu = XLSX.utils.sheet_to_json(wsPu, { header: 1, range: 4 });
+        for (const row of rowsPu) {
+          if (!row[0]) continue;
+          const fecha = row[0];
+          let fechaISO;
+          if (typeof fecha === "number") {
+            const d = XLSX.SSF.parse_date_code(fecha);
+            fechaISO = `${d.y}-${String(d.m).padStart(2,"0")}-${String(d.d).padStart(2,"0")}`;
+          } else if (typeof fecha === "string") {
+            const parts = fecha.split("/");
+            if (parts.length === 3) fechaISO = `${parts[2]}-${parts[1]}-${parts[0]}`;
+          }
+          if (!fechaISO) continue;
+          const meses = [row[1],row[2],row[3],row[4],row[5],row[6],row[7],row[8],row[9],row[10],row[11],row[12]];
+          if (meses.every(m => !m)) continue;
+          pickupRows.push({
+            hotel_id: session.user.id, fecha_pickup: fechaISO,
+            mes_enero: parseInt(meses[0])||0, mes_febrero: parseInt(meses[1])||0,
+            mes_marzo: parseInt(meses[2])||0, mes_abril: parseInt(meses[3])||0,
+            mes_mayo: parseInt(meses[4])||0, mes_junio: parseInt(meses[5])||0,
+            mes_julio: parseInt(meses[6])||0, mes_agosto: parseInt(meses[7])||0,
+            mes_septiembre: parseInt(meses[8])||0, mes_octubre: parseInt(meses[9])||0,
+            mes_noviembre: parseInt(meses[10])||0, mes_diciembre: parseInt(meses[11])||0,
+            total_dia: meses.reduce((a,b) => a+(parseInt(b)||0), 0),
+            notas: row[14] || "",
+          });
+        }
+      }
+
+      if (produccionRows.length === 0) throw new Error("No se encontraron datos en la hoja de Producción Diaria");
+
+      await supabase.from("produccion_diaria").delete().eq("hotel_id", session.user.id);
+      await supabase.from("pickup_diario").delete().eq("hotel_id", session.user.id);
+
+      const { error: err1 } = await supabase.from("produccion_diaria").insert(produccionRows);
+      if (err1) throw new Error("Error al guardar producción: " + err1.message);
+
+      if (pickupRows.length > 0) {
+        const { error: err2 } = await supabase.from("pickup_diario").insert(pickupRows);
+        if (err2) throw new Error("Error al guardar pickup: " + err2.message);
+      }
+
+      setResultado({ produccion: produccionRows.length, pickup: pickupRows.length });
+      if (onImportado) onImportado();
+    } catch (e) {
+      setError(e.message);
+    }
+    setLoading(false);
+  };
+
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
+      <div style={{ background: "#fff", borderRadius: 16, padding: "36px 40px", width: 480, boxShadow: "0 24px 60px rgba(0,0,0,0.3)", fontFamily: "'DM Sans', sans-serif" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
+          <div>
+            <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, fontWeight: 700, color: "#1C1814" }}>Importar datos</h2>
+            <p style={{ fontSize: 12, color: "#A8998A", marginTop: 4 }}>Sube tu plantilla Excel de RevManager</p>
+          </div>
+          <button onClick={onClose} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: "#A8998A" }}>✕</button>
+        </div>
+        {!resultado ? (
+          <>
+            <div onClick={() => document.getElementById("excel-input").click()} style={{ border: "2px dashed #E8E0D5", borderRadius: 12, padding: "40px 20px", textAlign: "center", cursor: "pointer", background: "#F7F3EE", marginBottom: 16 }}>
+              <div style={{ fontSize: 40, marginBottom: 12 }}>📊</div>
+              <p style={{ fontWeight: 600, color: "#1C1814", marginBottom: 6 }}>{loading ? "Procesando..." : "Haz clic para seleccionar el archivo"}</p>
+              <p style={{ fontSize: 12, color: "#A8998A" }}>Formato .xlsx · Plantilla RevManager</p>
+              <input id="excel-input" type="file" accept=".xlsx" style={{ display: "none" }} onChange={e => e.target.files[0] && procesarExcel(e.target.files[0])} />
+            </div>
+            {error && <div style={{ background: "#FDECEA", color: "#C0392B", padding: "12px 16px", borderRadius: 8, fontSize: 13, marginBottom: 12 }}>⚠️ {error}</div>}
+            <p style={{ fontSize: 11, color: "#A8998A", textAlign: "center" }}>Al importar se reemplazarán los datos anteriores</p>
+          </>
+        ) : (
+          <div style={{ textAlign: "center" }}>
+            <div style={{ fontSize: 50, marginBottom: 16 }}>✅</div>
+            <p style={{ fontWeight: 700, fontSize: 16, color: "#1C1814", marginBottom: 8 }}>¡Datos importados correctamente!</p>
+            <div style={{ background: "#D4EDDE", borderRadius: 10, padding: "16px", marginBottom: 20 }}>
+              <p style={{ color: "#2D7A4F", fontSize: 13 }}>📅 {resultado.produccion} días de producción importados</p>
+              {resultado.pickup > 0 && <p style={{ color: "#2D7A4F", fontSize: 13, marginTop: 6 }}>🎯 {resultado.pickup} días de pickup importados</p>}
+            </div>
+            <button onClick={onClose} style={{ background: "#C8933A", color: "#fff", border: "none", borderRadius: 10, padding: "12px 32px", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>Ver dashboard</button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── DASHBOARD VIEW ───────────────────────────────────────────────
+function DashboardView({ datos }) {
+  const { produccion } = datos;
+
+  if (!produccion || produccion.length === 0) return <EmptyState />;
+
+  // Calcular KPIs del mes actual
+  const ahora = new Date();
+  const mesActual = ahora.getMonth();
+  const anioActual = ahora.getFullYear();
+
+  const datosMes = produccion.filter(d => {
+    const f = new Date(d.fecha);
+    return f.getMonth() === mesActual && f.getFullYear() === anioActual;
+  });
+
+  const totalHabOcupadas = datosMes.reduce((a, d) => a + (d.hab_ocupadas || 0), 0);
+  const totalHabDisponibles = datosMes.reduce((a, d) => a + (d.hab_disponibles || 0), 0);
+  const totalRevHab = datosMes.reduce((a, d) => a + (d.revenue_hab || 0), 0);
+  const totalRevTotal = datosMes.reduce((a, d) => a + (d.revenue_total || 0), 0);
+  const totalRevFnb = datosMes.reduce((a, d) => a + (d.revenue_fnb || 0), 0);
+  const totalRevOtros = datosMes.reduce((a, d) => a + (d.revenue_otros || 0), 0);
+
+  const occ = totalHabDisponibles > 0 ? (totalHabOcupadas / totalHabDisponibles * 100).toFixed(1) : 0;
+  const adr = totalHabOcupadas > 0 ? (totalRevHab / totalHabOcupadas).toFixed(0) : 0;
+  const revpar = totalHabDisponibles > 0 ? (totalRevHab / totalHabDisponibles).toFixed(0) : 0;
+  const trevpar = totalHabDisponibles > 0 ? ((totalRevHab + totalRevFnb + totalRevOtros) / totalHabDisponibles).toFixed(0) : 0;
+
+  // Datos por mes para gráfica
+  const porMes = MESES.map((mes, i) => {
+    const d = produccion.filter(r => new Date(r.fecha).getMonth() === i);
+    const habOcu = d.reduce((a, r) => a + (r.hab_ocupadas || 0), 0);
+    const habDis = d.reduce((a, r) => a + (r.hab_disponibles || 0), 0);
+    const revH = d.reduce((a, r) => a + (r.revenue_hab || 0), 0);
+    const revFnb = d.reduce((a, r) => a + (r.revenue_fnb || 0), 0);
+    const revOtros = d.reduce((a, r) => a + (r.revenue_otros || 0), 0);
+    return {
+      mes,
+      occ: habDis > 0 ? Math.round(habOcu / habDis * 100) : 0,
+      adr: habOcu > 0 ? Math.round(revH / habOcu) : 0,
+      revpar: habDis > 0 ? Math.round(revH / habDis) : 0,
+      trevpar: habDis > 0 ? Math.round((revH + revFnb + revOtros) / habDis) : 0,
+    };
+  }).filter(d => d.occ > 0 || d.adr > 0);
+
+  const kpis = [
+    { label: "Ocupación MTD", value: `${occ}%`, change: `${occ}%`, sub: "mes actual", up: parseFloat(occ) > 60 },
+    { label: "ADR MTD", value: `€${adr}`, change: `€${adr}`, sub: "mes actual", up: true },
+    { label: "RevPAR MTD", value: `€${revpar}`, change: `€${revpar}`, sub: "mes actual", up: true },
+    { label: "TRevPAR MTD", value: `€${trevpar}`, change: `€${trevpar}`, sub: "mes actual", up: true },
+    { label: "Revenue Hab.", value: `€${Math.round(totalRevHab).toLocaleString()}`, change: `€${Math.round(totalRevHab).toLocaleString()}`, sub: "mes actual", up: true },
+    { label: "Revenue Total", value: `€${Math.round(totalRevTotal).toLocaleString()}`, change: `€${Math.round(totalRevTotal).toLocaleString()}`, sub: "mes actual", up: true },
+  ];
+
+  return (
+    <div>
+      <div style={{ marginBottom: 28 }}>
+        <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, fontWeight: 700, color: C.text }}>Panel de Control</h2>
+        <p style={{ fontSize: 12, color: C.textLight, marginTop: 4 }}>Datos reales · {MESES[mesActual]} {anioActual}</p>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 14, marginBottom: 24 }}>
+        {kpis.map((k, i) => <KpiCard key={i} {...k} i={i} />)}
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "minmax(0,3fr) minmax(0,2fr)", gap: 16, marginBottom: 16 }}>
+        <Card>
+          <p style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700, fontSize: 16, color: C.text, marginBottom: 4 }}>RevPAR — Evolución</p>
+          <p style={{ fontSize: 11, color: C.textLight, marginBottom: 18 }}>RevPAR vs TRevPAR (€/hab disponible)</p>
+          <ResponsiveContainer width="100%" height={220}>
+            <AreaChart data={porMes}>
+              <defs>
+                <linearGradient id="gRevpar" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor={C.accent} stopOpacity={0.25} />
+                  <stop offset="95%" stopColor={C.accent} stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke={C.border} />
+              <XAxis dataKey="mes" tick={{ fill: C.textLight, fontSize: 11 }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fill: C.textLight, fontSize: 11 }} axisLine={false} tickLine={false} unit="€" />
+              <Tooltip content={<CustomTooltip />} />
+              <Area type="monotone" dataKey="revpar" name="RevPAR" stroke={C.accent} strokeWidth={2.5} fill="url(#gRevpar)" dot={false} />
+              <Line type="monotone" dataKey="trevpar" name="TRevPAR" stroke={C.blue} strokeWidth={1.5} dot={false} strokeDasharray="5 4" />
+            </AreaChart>
+          </ResponsiveContainer>
+        </Card>
+        <Card>
+          <p style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700, fontSize: 16, color: C.text, marginBottom: 4 }}>Ocupación vs ADR</p>
+          <p style={{ fontSize: 11, color: C.textLight, marginBottom: 18 }}>Correlación mensual</p>
+          <ResponsiveContainer width="100%" height={220}>
+            <BarChart data={porMes} barSize={14}>
+              <CartesianGrid strokeDasharray="3 3" stroke={C.border} vertical={false} />
+              <XAxis dataKey="mes" tick={{ fill: C.textLight, fontSize: 10 }} axisLine={false} tickLine={false} />
+              <YAxis yAxisId="left" tick={{ fill: C.textLight, fontSize: 11 }} axisLine={false} tickLine={false} unit="%" />
+              <YAxis yAxisId="right" orientation="right" tick={{ fill: C.textLight, fontSize: 11 }} axisLine={false} tickLine={false} unit="€" />
+              <Tooltip content={<CustomTooltip />} />
+              <Bar yAxisId="left" dataKey="occ" name="Ocupación" fill={`${C.accent}99`} radius={[3,3,0,0]} />
+              <Bar yAxisId="right" dataKey="adr" name="ADR" fill={C.blue} radius={[3,3,0,0]} fillOpacity={0.7} />
+            </BarChart>
+          </ResponsiveContainer>
+        </Card>
+      </div>
+      <Card>
+        <p style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700, fontSize: 16, color: C.text, marginBottom: 16 }}>Resumen por Mes</p>
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+            <thead>
+              <tr style={{ borderBottom: `2px solid ${C.border}` }}>
+                {["Mes","Ocup.","ADR","RevPAR","TRevPAR","Rev. Hab.","Rev. Total"].map(h => (
+                  <th key={h} style={{ padding: "8px 12px", textAlign: "right", fontSize: 10, color: C.textLight, textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600 }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {porMes.map((d, i) => (
+                <tr key={i} style={{ borderBottom: `1px solid ${C.border}`, background: i % 2 === 0 ? C.bg : C.bgCard }}>
+                  <td style={{ padding: "10px 12px", fontWeight: 600, color: C.text }}>{d.mes}</td>
+                  <td style={{ padding: "10px 12px", textAlign: "right", color: d.occ > 80 ? C.green : C.textMid }}>{d.occ}%</td>
+                  <td style={{ padding: "10px 12px", textAlign: "right", color: C.textMid }}>€{d.adr}</td>
+                  <td style={{ padding: "10px 12px", textAlign: "right", fontWeight: 600, color: C.accent }}>€{d.revpar}</td>
+                  <td style={{ padding: "10px 12px", textAlign: "right", color: C.blue }}>€{d.trevpar}</td>
+                  <td style={{ padding: "10px 12px", textAlign: "right", color: C.textMid }}>
+                    €{produccion.filter(r => new Date(r.fecha).getMonth() === MESES.indexOf(d.mes)).reduce((a,r) => a+(r.revenue_hab||0),0).toLocaleString()}
+                  </td>
+                  <td style={{ padding: "10px 12px", textAlign: "right", color: C.textMid }}>
+                    €{produccion.filter(r => new Date(r.fecha).getMonth() === MESES.indexOf(d.mes)).reduce((a,r) => a+(r.revenue_total||0),0).toLocaleString()}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+    </div>
+  );
+}
+
+// ─── PICKUP VIEW ──────────────────────────────────────────────────
+function PickupView({ datos }) {
+  const { pickup } = datos;
+  if (!pickup || pickup.length === 0) return <EmptyState mensaje="Importa tu plantilla con datos de pickup para ver las curvas aquí" />;
+
+  const totalesPorMes = MESES.map((mes, i) => {
+    const campo = `mes_${["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"][i]}`;
+    return { mes, total: pickup.reduce((a, d) => a + (d[campo] || 0), 0) };
+  }).filter(d => d.total > 0);
+
+  const ultimosDias = [...pickup].sort((a,b) => new Date(b.fecha_pickup) - new Date(a.fecha_pickup)).slice(0, 14).reverse();
+
+  const pickupHoy = pickup.reduce((a,d) => a + (d.total_dia || 0), 0);
+
+  return (
+    <div>
+      <div style={{ marginBottom: 20 }}>
+        <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, fontWeight: 700, color: C.text }}>Seguimiento de Pickup</h2>
+        <p style={{ fontSize: 12, color: C.textLight, marginTop: 4 }}>Ritmo de captación de reservas</p>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 14, marginBottom: 24 }}>
+        <KpiCard label="Total Pickup" value={pickupHoy} change={`${pickupHoy} reservas`} sub="total importado" up={true} i={0} />
+        <KpiCard label="Días registrados" value={pickup.length} change={`${pickup.length} días`} sub="con pickup" up={true} i={1} />
+        <KpiCard label="Media diaria" value={pickup.length > 0 ? Math.round(pickupHoy/pickup.length) : 0} change="reservas/día" sub="media" up={true} i={2} />
+      </div>
+      <Card style={{ marginBottom: 16 }}>
+        <p style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700, fontSize: 16, color: C.text, marginBottom: 4 }}>Pickup acumulado por mes de llegada</p>
+        <p style={{ fontSize: 11, color: C.textLight, marginBottom: 18 }}>Total reservas captadas para cada mes</p>
+        <ResponsiveContainer width="100%" height={260}>
+          <BarChart data={totalesPorMes} barSize={32}>
+            <CartesianGrid strokeDasharray="3 3" stroke={C.border} vertical={false} />
+            <XAxis dataKey="mes" tick={{ fill: C.textLight, fontSize: 11 }} axisLine={false} tickLine={false} />
+            <YAxis tick={{ fill: C.textLight, fontSize: 11 }} axisLine={false} tickLine={false} />
+            <Tooltip content={<CustomTooltip />} />
+            <Bar dataKey="total" name="Reservas" fill={C.accent} radius={[4,4,0,0]} />
+          </BarChart>
+        </ResponsiveContainer>
+      </Card>
+      <Card>
+        <p style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700, fontSize: 16, color: C.text, marginBottom: 4 }}>Pickup diario — últimos días</p>
+        <p style={{ fontSize: 11, color: C.textLight, marginBottom: 18 }}>Reservas totales captadas cada día</p>
+        <ResponsiveContainer width="100%" height={200}>
+          <LineChart data={ultimosDias.map(d => ({ dia: d.fecha_pickup?.slice(5), total: d.total_dia || 0 }))}>
+            <CartesianGrid strokeDasharray="3 3" stroke={C.border} />
+            <XAxis dataKey="dia" tick={{ fill: C.textLight, fontSize: 10 }} axisLine={false} tickLine={false} />
+            <YAxis tick={{ fill: C.textLight, fontSize: 11 }} axisLine={false} tickLine={false} />
+            <Tooltip content={<CustomTooltip />} />
+            <Line type="monotone" dataKey="total" name="Pickup" stroke={C.accent} strokeWidth={2.5} dot={{ fill: C.accent, r: 4 }} />
+          </LineChart>
+        </ResponsiveContainer>
+      </Card>
+    </div>
+  );
+}
+
+// ─── AUTH SCREEN ──────────────────────────────────────────────────
 function AuthScreen() {
   const [mode, setMode] = useState("login");
   const [email, setEmail] = useState("");
@@ -138,7 +435,7 @@ function AuthScreen() {
     if (data.user) {
       await supabase.from("hoteles").insert({ nombre: hotelNombre, ciudad: hotelCiudad, habitaciones: parseInt(habitaciones) || null });
     }
-    setMensaje("¡Cuenta creada! Revisa tu email para confirmarla.");
+    setMensaje("¡Cuenta creada! Ya puedes iniciar sesión.");
     setLoading(false);
   };
 
@@ -154,8 +451,8 @@ function AuthScreen() {
           <p style={{ fontSize: 12, color: C.textLight, marginTop: 4 }}>Revenue Management para hoteles independientes</p>
         </div>
         <div style={{ display: "flex", background: C.bg, borderRadius: 10, padding: 4, marginBottom: 24 }}>
-          {[["login", "Iniciar sesión"], ["register", "Crear cuenta"]].map(([k, l]) => (
-            <button key={k} onClick={() => { setMode(k); setError(""); setMensaje(""); }} style={{ flex: 1, padding: "9px", borderRadius: 8, border: "none", cursor: "pointer", background: mode === k ? C.bgCard : "transparent", color: mode === k ? C.accent : C.textMid, fontWeight: mode === k ? 600 : 400, fontSize: 13, fontFamily: "'DM Sans', sans-serif", boxShadow: mode === k ? "0 1px 4px rgba(0,0,0,0.08)" : "none" }}>{l}</button>
+          {[["login","Iniciar sesión"],["register","Crear cuenta"]].map(([k,l]) => (
+            <button key={k} onClick={() => { setMode(k); setError(""); setMensaje(""); }} style={{ flex: 1, padding: "9px", borderRadius: 8, border: "none", cursor: "pointer", background: mode===k ? C.bgCard : "transparent", color: mode===k ? C.accent : C.textMid, fontWeight: mode===k ? 600 : 400, fontSize: 13, fontFamily: "'DM Sans', sans-serif", boxShadow: mode===k ? "0 1px 4px rgba(0,0,0,0.08)" : "none" }}>{l}</button>
           ))}
         </div>
         {mensaje ? (
@@ -187,11 +484,11 @@ function AuthScreen() {
             </div>
             <div>
               <p style={{ fontSize: 11, color: C.textLight, marginBottom: 5, textTransform: "uppercase", letterSpacing: "1px" }}>Contraseña *</p>
-              <input style={inp} type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} onKeyDown={e => e.key === "Enter" && (mode === "login" ? handleLogin() : handleRegister())} />
+              <input style={inp} type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} onKeyDown={e => e.key==="Enter" && (mode==="login" ? handleLogin() : handleRegister())} />
             </div>
             {error && <div style={{ background: C.redLight, color: C.red, padding: "10px 14px", borderRadius: 8, fontSize: 13 }}>{error}</div>}
-            <button onClick={mode === "login" ? handleLogin : handleRegister} disabled={loading} style={{ width: "100%", padding: "13px", borderRadius: 10, border: "none", background: loading ? C.accentLight : C.accent, color: loading ? C.accentDark : "#fff", fontSize: 14, fontWeight: 700, cursor: loading ? "not-allowed" : "pointer", fontFamily: "'DM Sans', sans-serif", marginTop: 4 }}>
-              {loading ? "Cargando..." : mode === "login" ? "Entrar" : "Crear cuenta"}
+            <button onClick={mode==="login" ? handleLogin : handleRegister} disabled={loading} style={{ width: "100%", padding: "13px", borderRadius: 10, border: "none", background: loading ? C.accentLight : C.accent, color: loading ? C.accentDark : "#fff", fontSize: 14, fontWeight: 700, cursor: loading ? "not-allowed" : "pointer", fontFamily: "'DM Sans', sans-serif", marginTop: 4 }}>
+              {loading ? "Cargando..." : mode==="login" ? "Entrar" : "Crear cuenta"}
             </button>
           </div>
         )}
@@ -200,338 +497,18 @@ function AuthScreen() {
   );
 }
 
-function DashboardView() {
-  const kpis = [
-    { label: "Ocupación MTD", value: "74,2%", change: "+3.1pp", sub: "vs año anterior", up: true },
-    { label: "ADR MTD", value: "€162", change: "+€8", sub: "vs año anterior", up: true },
-    { label: "RevPAR MTD", value: "€120", change: "+12,4%", sub: "vs año anterior", up: true },
-    { label: "TRevPAR MTD", value: "€168", change: "+9,8%", sub: "vs año anterior", up: true },
-    { label: "Pickup 7 días", value: "+142", change: "+18", sub: "reservas netas", up: true },
-    { label: "Cancelaciones", value: "23", change: "+5", sub: "vs semana anterior", up: false },
-  ];
-  return (
-    <div>
-      <div style={{ marginBottom: 28 }}>
-        <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, fontWeight: 700, color: C.text }}>Panel de Control</h2>
-        <p style={{ fontSize: 12, color: C.textLight, marginTop: 4 }}>Resumen de rendimiento · Febrero 2026</p>
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14, marginBottom: 24 }}>
-        {kpis.map((k, i) => <KpiCard key={i} {...k} i={i} />)}
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: "3fr 2fr", gap: 16, marginBottom: 16 }}>
-        <Card>
-          <p style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700, fontSize: 16, color: C.text, marginBottom: 4 }}>RevPAR — Evolución Anual</p>
-          <p style={{ fontSize: 11, color: C.textLight, marginBottom: 18 }}>Real vs TRevPAR (€/hab disponible)</p>
-          <ResponsiveContainer width="100%" height={220}>
-            <AreaChart data={historicData}>
-              <defs>
-                <linearGradient id="gRevpar" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={C.accent} stopOpacity={0.25} />
-                  <stop offset="95%" stopColor={C.accent} stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke={C.border} />
-              <XAxis dataKey="mes" tick={{ fill: C.textLight, fontSize: 11 }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fill: C.textLight, fontSize: 11 }} axisLine={false} tickLine={false} unit="€" />
-              <Tooltip content={<CustomTooltip />} />
-              <Area type="monotone" dataKey="revpar" name="RevPAR" stroke={C.accent} strokeWidth={2.5} fill="url(#gRevpar)" dot={false} />
-              <Line type="monotone" dataKey="trevpar" name="TRevPAR" stroke={C.blue} strokeWidth={1.5} dot={false} strokeDasharray="5 4" />
-            </AreaChart>
-          </ResponsiveContainer>
-        </Card>
-        <Card>
-          <p style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700, fontSize: 16, color: C.text, marginBottom: 4 }}>Ocupación vs ADR</p>
-          <p style={{ fontSize: 11, color: C.textLight, marginBottom: 18 }}>Correlación mensual</p>
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={historicData} barSize={14}>
-              <CartesianGrid strokeDasharray="3 3" stroke={C.border} vertical={false} />
-              <XAxis dataKey="mes" tick={{ fill: C.textLight, fontSize: 10 }} axisLine={false} tickLine={false} />
-              <YAxis yAxisId="left" tick={{ fill: C.textLight, fontSize: 11 }} axisLine={false} tickLine={false} unit="%" />
-              <YAxis yAxisId="right" orientation="right" tick={{ fill: C.textLight, fontSize: 11 }} axisLine={false} tickLine={false} unit="€" />
-              <Tooltip content={<CustomTooltip />} />
-              <Bar yAxisId="left" dataKey="occ" name="Ocupación" fill={`${C.accent}99`} radius={[3, 3, 0, 0]} />
-              <Bar yAxisId="right" dataKey="adr" name="ADR" fill={C.blue} radius={[3, 3, 0, 0]} fillOpacity={0.7} />
-            </BarChart>
-          </ResponsiveContainer>
-        </Card>
-      </div>
-      <Card>
-        <p style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700, fontSize: 16, color: C.text, marginBottom: 16 }}>Resumen Mensual</p>
-        <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-            <thead>
-              <tr style={{ borderBottom: `2px solid ${C.border}` }}>
-                {["Mes", "Ocup.", "ADR", "RevPAR", "TRevPAR", "vs AÑO ANT"].map(h => (
-                  <th key={h} style={{ padding: "8px 12px", textAlign: "right", fontSize: 10, color: C.textLight, textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600 }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {historicData.map((d, i) => (
-                <tr key={i} style={{ borderBottom: `1px solid ${C.border}`, background: i % 2 === 0 ? C.bg : C.bgCard }}>
-                  <td style={{ padding: "10px 12px", fontWeight: 600, color: C.text }}>{d.mes}</td>
-                  <td style={{ padding: "10px 12px", textAlign: "right", color: d.occ > 80 ? C.green : C.textMid }}>{d.occ}%</td>
-                  <td style={{ padding: "10px 12px", textAlign: "right", color: C.textMid }}>€{d.adr}</td>
-                  <td style={{ padding: "10px 12px", textAlign: "right", fontWeight: 600, color: C.accent }}>€{d.revpar}</td>
-                  <td style={{ padding: "10px 12px", textAlign: "right", color: C.blue }}>€{d.trevpar}</td>
-                  <td style={{ padding: "10px 12px", textAlign: "right" }}><span style={{ color: C.green, fontSize: 12, fontWeight: 600 }}>+9.2%</span></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </Card>
-    </div>
-  );
-}
-
-function ForecastView() {
-  const [metric, setMetric] = useState("revpar");
-  const metricOpts = [
-    { k: "revpar", label: "RevPAR", color: C.accent },
-    { k: "occ", label: "Ocupación", color: C.blue },
-    { k: "adr", label: "ADR", color: C.green },
-  ];
-  const sel = metricOpts.find(m => m.k === metric);
-  const chartData = forecastData.map(d => ({
-    mes: d.mes,
-    Forecast: d[`forecast${metric.charAt(0).toUpperCase() + metric.slice(1)}`] || Math.round(d[metric] * 1.05),
-    Budget: d.budget || Math.round(d[metric] * 1.08),
-  }));
-  return (
-    <div>
-      <div style={{ marginBottom: 20 }}>
-        <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, fontWeight: 700, color: C.text }}>Forecast & Proyecciones</h2>
-        <p style={{ fontSize: 12, color: C.textLight, marginTop: 4 }}>Basado en histórico con ajuste estacional</p>
-      </div>
-      <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
-        {metricOpts.map(m => (
-          <button key={m.k} onClick={() => setMetric(m.k)} style={{ padding: "8px 20px", borderRadius: 8, border: `1.5px solid ${metric === m.k ? m.color : C.border}`, background: metric === m.k ? `${m.color}15` : "white", color: metric === m.k ? m.color : C.textMid, cursor: "pointer", fontSize: 13, fontWeight: 600, fontFamily: "'DM Sans', sans-serif" }}>{m.label}</button>
-        ))}
-      </div>
-      <Card style={{ marginBottom: 16 }}>
-        <p style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700, fontSize: 16, color: C.text, marginBottom: 4 }}>{sel.label} — Forecast vs Budget</p>
-        <p style={{ fontSize: 11, color: C.textLight, marginBottom: 18 }}>Proyección anual</p>
-        <ResponsiveContainer width="100%" height={280}>
-          <LineChart data={chartData}>
-            <CartesianGrid strokeDasharray="3 3" stroke={C.border} />
-            <XAxis dataKey="mes" tick={{ fill: C.textLight, fontSize: 11 }} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fill: C.textLight, fontSize: 11 }} axisLine={false} tickLine={false} />
-            <Tooltip content={<CustomTooltip />} />
-            <Line type="monotone" dataKey="Forecast" stroke={sel.color} strokeWidth={2.5} dot={{ fill: sel.color, r: 4 }} />
-            <Line type="monotone" dataKey="Budget" stroke={C.textLight} strokeWidth={1.5} strokeDasharray="6 4" dot={false} />
-          </LineChart>
-        </ResponsiveContainer>
-      </Card>
-      <Card>
-        <p style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700, fontSize: 16, color: C.text, marginBottom: 16 }}>Tabla Forecast Detallada</p>
-        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-          <thead>
-            <tr style={{ borderBottom: `2px solid ${C.border}` }}>
-              {["Mes", "Ocup. Forecast", "ADR Forecast", "RevPAR Forecast", "Budget", "Desviación", "Confianza"].map(h => (
-                <th key={h} style={{ padding: "8px 12px", textAlign: "right", fontSize: 10, color: C.textLight, textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600 }}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {forecastData.map((d, i) => {
-              const dev = d.forecastRevpar - d.budget;
-              const conf = i < 3 ? 95 : i < 6 ? 88 : i < 9 ? 78 : 65;
-              return (
-                <tr key={i} style={{ borderBottom: `1px solid ${C.border}`, background: i % 2 === 0 ? C.bg : C.bgCard }}>
-                  <td style={{ padding: "10px 12px", fontWeight: 600, color: C.text }}>{d.mes}</td>
-                  <td style={{ padding: "10px 12px", textAlign: "right" }}>{d.forecastOcc}%</td>
-                  <td style={{ padding: "10px 12px", textAlign: "right" }}>€{d.forecastAdr}</td>
-                  <td style={{ padding: "10px 12px", textAlign: "right", fontWeight: 600, color: C.accent }}>€{d.forecastRevpar}</td>
-                  <td style={{ padding: "10px 12px", textAlign: "right", color: C.textMid }}>€{d.budget}</td>
-                  <td style={{ padding: "10px 12px", textAlign: "right" }}><span style={{ color: dev >= 0 ? C.green : C.red, fontWeight: 600 }}>{dev >= 0 ? "+" : ""}€{dev}</span></td>
-                  <td style={{ padding: "10px 12px", textAlign: "right" }}>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 6 }}>
-                      <div style={{ width: 50, height: 4, background: C.border, borderRadius: 2, overflow: "hidden" }}>
-                        <div style={{ width: `${conf}%`, height: "100%", background: conf > 85 ? C.green : conf > 70 ? C.accent : C.red, borderRadius: 2 }} />
-                      </div>
-                      <span style={{ fontSize: 11, color: C.textMid }}>{conf}%</span>
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </Card>
-    </div>
-  );
-}
-
-function PickupView() {
-  return (
-    <div>
-      <div style={{ marginBottom: 20 }}>
-        <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, fontWeight: 700, color: C.text }}>Seguimiento de Pickup</h2>
-        <p style={{ fontSize: 12, color: C.textLight, marginTop: 4 }}>Ritmo de captación de reservas</p>
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, marginBottom: 24 }}>
-        {[
-          { label: "Pickup Hoy", value: "+23", change: "+5", sub: "vs sem. anterior", up: true },
-          { label: "Pickup 7 días", value: "+142", change: "+18", sub: "vs semana anterior", up: true },
-          { label: "Pace vs AÑO ANT", value: "+8,4%", change: "on pace", sub: "Febrero 2026", up: true },
-          { label: "Cancelaciones 7d", value: "12", change: "+3", sub: "vs semana anterior", up: false },
-        ].map((k, i) => <KpiCard key={i} {...k} i={i} />)}
-      </div>
-      <Card>
-        <p style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700, fontSize: 16, color: C.text, marginBottom: 4 }}>Curva de Pickup Acumulado</p>
-        <p style={{ fontSize: 11, color: C.textLight, marginBottom: 18 }}>Comparativa vs períodos anteriores</p>
-        <ResponsiveContainer width="100%" height={280}>
-          <LineChart data={pickupData}>
-            <CartesianGrid strokeDasharray="3 3" stroke={C.border} />
-            <XAxis dataKey="dia" tick={{ fill: C.textLight, fontSize: 10 }} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fill: C.textLight, fontSize: 11 }} axisLine={false} tickLine={false} unit="%" />
-            <Tooltip content={<CustomTooltip />} />
-            <Line type="monotone" dataKey="hoy" name="Hoy" stroke={C.accent} strokeWidth={3} dot={false} />
-            <Line type="monotone" dataKey="ayer" name="Ayer" stroke={C.blue} strokeWidth={1.5} dot={false} strokeDasharray="4 3" />
-            <Line type="monotone" dataKey="semAnt" name="Sem. anterior" stroke={C.textLight} strokeWidth={1.5} dot={false} strokeDasharray="6 4" />
-            <Line type="monotone" dataKey="anioAnt" name="Año anterior" stroke={`${C.red}99`} strokeWidth={1.5} dot={false} strokeDasharray="2 3" />
-          </LineChart>
-        </ResponsiveContainer>
-      </Card>
-    </div>
-  );
-}
-
-function SegmentacionView() {
-  const [segTab, setSegTab] = useState("canal");
-  const totalRes = canalData.reduce((a, b) => a + b.reservas, 0);
-  return (
-    <div>
-      <div style={{ marginBottom: 20 }}>
-        <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, fontWeight: 700, color: C.text }}>Segmentación de Reservas</h2>
-        <p style={{ fontSize: 12, color: C.textLight, marginTop: 4 }}>Análisis por canal, tarifa y mercado</p>
-      </div>
-      <div style={{ display: "flex", gap: 8, marginBottom: 20, background: C.bgCard, padding: 4, borderRadius: 10, border: `1px solid ${C.border}`, width: "fit-content" }}>
-        {[["canal", "🌐 Canal"], ["tarifa", "🏷 Tarifa"], ["mercado", "🌍 Mercado"]].map(([k, l]) => (
-          <button key={k} onClick={() => setSegTab(k)} style={{ padding: "8px 20px", borderRadius: 8, border: "none", background: segTab === k ? C.accent : "transparent", color: segTab === k ? "#fff" : C.textMid, cursor: "pointer", fontSize: 13, fontWeight: segTab === k ? 600 : 400, fontFamily: "'DM Sans', sans-serif" }}>{l}</button>
-        ))}
-      </div>
-      {segTab === "canal" && (
-        <Card>
-          <p style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700, fontSize: 16, color: C.text, marginBottom: 16 }}>Reservas por Canal</p>
-          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            {canalData.map((c, i) => {
-              const pct = Math.round((c.reservas / totalRes) * 100);
-              return (
-                <div key={i}>
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5, alignItems: "center" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <span style={{ width: 10, height: 10, borderRadius: 2, background: c.color, display: "inline-block" }} />
-                      <span style={{ fontSize: 13, color: C.text, fontWeight: 500 }}>{c.name}</span>
-                    </div>
-                    <div style={{ display: "flex", gap: 16 }}>
-                      <span style={{ fontSize: 12, color: C.textLight }}>{c.reservas} res.</span>
-                      <span style={{ fontSize: 12, color: C.accent, fontWeight: 600 }}>ADR €{c.adr}</span>
-                      <span style={{ fontSize: 12, color: C.textMid, fontWeight: 600 }}>{pct}%</span>
-                    </div>
-                  </div>
-                  <div style={{ height: 5, background: C.border, borderRadius: 3, overflow: "hidden" }}>
-                    <div style={{ width: `${pct}%`, height: "100%", background: c.color, borderRadius: 3 }} />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </Card>
-      )}
-      {segTab === "tarifa" && (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-          <Card>
-            <p style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700, fontSize: 16, color: C.text, marginBottom: 16 }}>Mix de Tarifas</p>
-            <ResponsiveContainer width="100%" height={220}>
-              <PieChart>
-                <Pie data={tarifaData} cx="50%" cy="50%" innerRadius={55} outerRadius={85} dataKey="value" strokeWidth={2} stroke={C.bgCard} paddingAngle={3}>
-                  {tarifaData.map((t, i) => <Cell key={i} fill={t.color} />)}
-                </Pie>
-                <Tooltip formatter={(v) => `${v}%`} contentStyle={{ background: C.bgDeep, border: "none", borderRadius: 8, fontSize: 12 }} />
-              </PieChart>
-            </ResponsiveContainer>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 10 }}>
-              {tarifaData.map((t, i) => (
-                <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                  <span style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: C.textMid }}>
-                    <span style={{ width: 10, height: 10, background: t.color, borderRadius: 2, display: "inline-block" }} />
-                    {t.name}
-                  </span>
-                  <span style={{ fontWeight: 700, color: C.text, fontSize: 13 }}>{t.value}%</span>
-                </div>
-              ))}
-            </div>
-          </Card>
-          <Card>
-            <p style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700, fontSize: 16, color: C.text, marginBottom: 4 }}>ADR por Tipo de Tarifa</p>
-            <p style={{ fontSize: 11, color: C.textLight, marginBottom: 18 }}>Precio medio por noche</p>
-            <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={[{ tarifa: "BAR Flex.", adr: 168 }, { tarifa: "No Reemb.", adr: 142 }, { tarifa: "Grupos", adr: 118 }, { tarifa: "Oferta", adr: 128 }, { tarifa: "Corp.", adr: 155 }]} barSize={32} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" stroke={C.border} horizontal={false} />
-                <XAxis type="number" tick={{ fill: C.textLight, fontSize: 11 }} axisLine={false} tickLine={false} unit="€" />
-                <YAxis type="category" dataKey="tarifa" tick={{ fill: C.textMid, fontSize: 12 }} axisLine={false} tickLine={false} width={65} />
-                <Tooltip content={<CustomTooltip />} />
-                <Bar dataKey="adr" name="ADR" fill={C.accent} radius={[0, 4, 4, 0]} fillOpacity={0.85} />
-              </BarChart>
-            </ResponsiveContainer>
-          </Card>
-        </div>
-      )}
-      {segTab === "mercado" && (
-        <Card>
-          <p style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700, fontSize: 16, color: C.text, marginBottom: 16 }}>Reservas por Mercado de Origen</p>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-            <thead>
-              <tr style={{ borderBottom: `2px solid ${C.border}` }}>
-                {["País / Mercado", "Reservas", "% del total", "ADR medio", "Tendencia"].map(h => (
-                  <th key={h} style={{ padding: "8px 12px", textAlign: "right", fontSize: 10, color: C.textLight, textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600 }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {mercadoData.map((m, i) => (
-                <tr key={i} style={{ borderBottom: `1px solid ${C.border}`, background: i % 2 === 0 ? C.bg : C.bgCard }}>
-                  <td style={{ padding: "12px 12px" }}>
-                    <span style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 600, color: C.text }}>
-                      <span style={{ fontSize: 18 }}>{m.flag}</span>{m.pais}
-                    </span>
-                  </td>
-                  <td style={{ padding: "12px 12px", textAlign: "right", color: C.textMid }}>{m.reservas}</td>
-                  <td style={{ padding: "12px 12px", textAlign: "right" }}>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 8 }}>
-                      <div style={{ width: 50, height: 4, background: C.border, borderRadius: 2, overflow: "hidden" }}>
-                        <div style={{ width: `${m.pct}%`, height: "100%", background: C.accent, borderRadius: 2 }} />
-                      </div>
-                      <span style={{ fontWeight: 600, color: C.accent }}>{m.pct}%</span>
-                    </div>
-                  </td>
-                  <td style={{ padding: "12px 12px", textAlign: "right", fontWeight: 600, color: C.text }}>€{m.adr}</td>
-                  <td style={{ padding: "12px 12px", textAlign: "right" }}>
-                    <span style={{ color: m.up ? C.green : C.red, fontWeight: 600 }}>{m.trend}</span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </Card>
-      )}
-    </div>
-  );
-}
-
 const NAV = [
   { key: "dashboard", icon: "◈", label: "Dashboard" },
-  { key: "forecast", icon: "◎", label: "Forecast" },
   { key: "pickup", icon: "⟳", label: "Pickup" },
-  { key: "segmentacion", icon: "⊞", label: "Segmentación" },
 ];
 
 export default function App() {
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState("dashboard");
+  const [importar, setImportar] = useState(false);
+  const [datos, setDatos] = useState({ produccion: [], pickup: [] });
+  const [cargandoDatos, setCargandoDatos] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -544,8 +521,23 @@ export default function App() {
     return () => subscription.unsubscribe();
   }, []);
 
+  useEffect(() => {
+    if (session) cargarDatos();
+  }, [session]);
+
+  const cargarDatos = async () => {
+    setCargandoDatos(true);
+    const [{ data: produccion }, { data: pickup }] = await Promise.all([
+      supabase.from("produccion_diaria").select("*").eq("hotel_id", session.user.id).order("fecha"),
+      supabase.from("pickup_diario").select("*").eq("hotel_id", session.user.id).order("fecha_pickup"),
+    ]);
+    setDatos({ produccion: produccion || [], pickup: pickup || [] });
+    setCargandoDatos(false);
+  };
+
   const handleLogout = async () => { await supabase.auth.signOut(); };
-  const views = { dashboard: DashboardView, forecast: ForecastView, pickup: PickupView, segmentacion: SegmentacionView };
+
+  const views = { dashboard: DashboardView, pickup: PickupView };
   const View = views[view];
 
   if (loading) return (
@@ -581,7 +573,7 @@ export default function App() {
         </div>
         <nav style={{ flex: 1, padding: "16px 12px" }}>
           {NAV.map(n => (
-            <button key={n.key} className="nav-item" onClick={() => setView(n.key)} style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 8, border: "none", cursor: "pointer", background: view === n.key ? C.accent : "transparent", color: view === n.key ? "#fff" : "#A8998A", fontSize: 13, fontWeight: view === n.key ? 600 : 400, fontFamily: "'DM Sans', sans-serif", marginBottom: 2, textAlign: "left" }}>
+            <button key={n.key} className="nav-item" onClick={() => setView(n.key)} style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 8, border: "none", cursor: "pointer", background: view===n.key ? C.accent : "transparent", color: view===n.key ? "#fff" : "#A8998A", fontSize: 13, fontWeight: view===n.key ? 600 : 400, fontFamily: "'DM Sans', sans-serif", marginBottom: 2, textAlign: "left" }}>
               <span style={{ fontSize: 14 }}>{n.icon}</span>{n.label}
             </button>
           ))}
@@ -597,15 +589,24 @@ export default function App() {
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 28 }}>
           <div>
             <p style={{ fontSize: 11, color: C.textLight, textTransform: "uppercase", letterSpacing: "1.5px" }}>RevManager · Panel de Revenue</p>
-            <p style={{ fontSize: 12, color: C.textLight, marginTop: 2 }}>Datos actualizados: Feb 2026</p>
+            <p style={{ fontSize: 12, color: C.textLight, marginTop: 2 }}>
+              {datos.produccion.length > 0 ? `${datos.produccion.length} días importados` : "Sin datos — importa tu plantilla"}
+            </p>
           </div>
-          <div style={{ padding: "6px 14px", borderRadius: 20, background: C.greenLight, color: C.green, fontSize: 11, fontWeight: 600, display: "flex", alignItems: "center", gap: 5 }}>
-            <span style={{ width: 6, height: 6, background: C.green, borderRadius: "50%", display: "inline-block" }} />
-            En directo
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <button onClick={() => setImportar(true)} style={{ background: C.accent, color: "#fff", border: "none", borderRadius: 20, padding: "6px 16px", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>
+              📊 Importar datos
+            </button>
+            <div style={{ padding: "6px 14px", borderRadius: 20, background: C.greenLight, color: C.green, fontSize: 11, fontWeight: 600, display: "flex", alignItems: "center", gap: 5 }}>
+              <span style={{ width: 6, height: 6, background: C.green, borderRadius: "50%", display: "inline-block" }} />
+              {cargandoDatos ? "Cargando..." : "En directo"}
+            </div>
           </div>
         </div>
-        <View />
+        {cargandoDatos ? <LoadingSpinner /> : <View datos={datos} />}
       </main>
+
+      {importar && <ImportarExcel onClose={() => setImportar(false)} session={session} onImportado={cargarDatos} />}
     </div>
   );
 }
