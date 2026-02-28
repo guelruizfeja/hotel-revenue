@@ -977,6 +977,7 @@ export default function App() {
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState("dashboard");
+
   const hoy = new Date();
   const [mesSel,  setMesSel]  = useState(() => { const v = localStorage.getItem("rm_mes");  return v !== null ? parseInt(v) : hoy.getMonth(); });
   const [anioSel, setAnioSel] = useState(() => { const v = localStorage.getItem("rm_anio"); return v !== null ? parseInt(v) : hoy.getFullYear(); });
@@ -1062,7 +1063,7 @@ export default function App() {
         </nav>
         <div style={{ padding: "16px 12px", borderTop: "1px solid #FFFFFF11" }}>
           <p style={{ fontSize: 11, color: "#FFFFFF44", marginBottom: 8, paddingLeft: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{session.user.email}</p>
-          <button onClick={handleLogout} style={{ width: "100%", padding: "10px", borderRadius: 8, border: "1px solid #FFFFFF22", background: "transparent", color: "#A8998A", cursor: "pointer", fontSize: 12, fontFamily: "'DM Sans', sans-serif" }}>Cerrar sesión</button>
+<button onClick={handleLogout} style={{ width: "100%", padding: "10px", borderRadius: 8, border: "1px solid #FFFFFF22", background: "transparent", color: "#A8998A", cursor: "pointer", fontSize: 12, fontFamily: "'DM Sans', sans-serif" }}>Cerrar sesión</button>
         </div>
       </div>
 
