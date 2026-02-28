@@ -59,38 +59,29 @@ function KpiCard({ label, value, change, sub, up, i }) {
 
 function PeriodSelector({ mes, anio, onChange }) {
   const hoy = new Date();
-  const esHoy = mes === hoy.getMonth() && anio === hoy.getFullYear();
   const anioMin = hoy.getFullYear() - 3;
   const anioMax = hoy.getFullYear();
   const anios = Array.from({ length: anioMax - anioMin + 1 }, (_, i) => anioMin + i);
-
-  const anterior = () => {
-    if (mes === 0) onChange(11, anio - 1);
-    else onChange(mes - 1, anio);
-  };
-  const siguiente = () => {
-    if (esHoy) return;
-    if (mes === 11) onChange(0, anio + 1);
-    else onChange(mes + 1, anio);
-  };
-
-  const btn = (onClick, label, disabled) => (
-    <button onClick={onClick} disabled={disabled} style={{ background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: 8, width: 32, height: 34, cursor: disabled ? "not-allowed" : "pointer", color: disabled ? C.border : C.textMid, fontSize: 16, lineHeight: 1, fontFamily: "'DM Sans', sans-serif" }}>{label}</button>
-  );
-  const sel = { padding: "7px 10px", borderRadius: 8, border: `1.5px solid ${C.border}`, fontSize: 13, fontWeight: 600, color: C.text, background: C.bgCard, cursor: "pointer", fontFamily: "'DM Sans', sans-serif", outline: "none" };
+  const MESES_CORTOS = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
 
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-      {btn(anterior, "‹", false)}
-      <select value={mes} onChange={e => onChange(parseInt(e.target.value), anio)} style={sel}>
-        {MESES.map((m, i) => (
-          <option key={i} value={i} disabled={anio === anioMax && i > hoy.getMonth()}>{m}</option>
+    <div style={{ background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: 14, padding: "14px 16px", display: "inline-block" }}>
+      {/* Selector de año */}
+      <div style={{ display: "flex", justifyContent: "center", gap: 6, marginBottom: 10 }}>
+        {anios.map(a => (
+          <button key={a} onClick={() => onChange(mes, a)} style={{ padding: "4px 12px", borderRadius: 8, border: `1.5px solid ${a === anio ? C.accent : C.border}`, background: a === anio ? C.accent : "transparent", color: a === anio ? "#fff" : C.textMid, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>{a}</button>
         ))}
-      </select>
-      <select value={anio} onChange={e => onChange(mes, parseInt(e.target.value))} style={sel}>
-        {anios.map(a => <option key={a} value={a}>{a}</option>)}
-      </select>
-      {btn(siguiente, "›", esHoy)}
+      </div>
+      {/* Grid de meses */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 5 }}>
+        {MESES_CORTOS.map((m, i) => {
+          const futuro = anio === anioMax && i > hoy.getMonth();
+          const activo = i === mes && anio === anio;
+          return (
+            <button key={i} onClick={() => !futuro && onChange(i, anio)} style={{ padding: "6px 4px", borderRadius: 8, border: `1.5px solid ${activo ? C.accent : "transparent"}`, background: activo ? C.accentLight : "transparent", color: futuro ? C.border : activo ? C.accent : C.textMid, fontSize: 12, fontWeight: activo ? 700 : 400, cursor: futuro ? "not-allowed" : "pointer", fontFamily: "'DM Sans', sans-serif", textAlign: "center" }}>{m}</button>
+          );
+        })}
+      </div>
     </div>
   );
 }
