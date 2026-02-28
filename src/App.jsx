@@ -59,25 +59,22 @@ function KpiCard({ label, value, change, sub, up, i }) {
 
 function PeriodSelector({ mes, anio, onChange }) {
   const hoy = new Date();
-  const esHoy = mes === hoy.getMonth() && anio === hoy.getFullYear();
+  const anioMin = hoy.getFullYear() - 3;
+  const anioMax = hoy.getFullYear();
+  const anios = Array.from({ length: anioMax - anioMin + 1 }, (_, i) => anioMin + i);
 
-  const anterior = () => {
-    if (mes === 0) onChange(11, anio - 1);
-    else onChange(mes - 1, anio);
-  };
-  const siguiente = () => {
-    if (esHoy) return;
-    if (mes === 11) onChange(0, anio + 1);
-    else onChange(mes + 1, anio);
-  };
+  const sel = { padding: "7px 10px", borderRadius: 8, border: `1.5px solid ${C.border}`, fontSize: 13, fontWeight: 600, color: C.text, background: C.bgCard, cursor: "pointer", fontFamily: "'DM Sans', sans-serif", outline: "none" };
 
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 8, background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: 10, padding: "6px 12px" }}>
-      <button onClick={anterior} style={{ background: "none", border: "none", cursor: "pointer", color: C.textMid, fontSize: 16, padding: "0 4px", lineHeight: 1 }}>‹</button>
-      <span style={{ fontSize: 13, fontWeight: 600, color: C.text, minWidth: 110, textAlign: "center" }}>
-        {MESES[mes]} {anio}
-      </span>
-      <button onClick={siguiente} style={{ background: "none", border: "none", cursor: esHoy ? "not-allowed" : "pointer", color: esHoy ? C.border : C.textMid, fontSize: 16, padding: "0 4px", lineHeight: 1 }}>›</button>
+    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+      <select value={mes} onChange={e => onChange(parseInt(e.target.value), anio)} style={sel}>
+        {MESES.map((m, i) => (
+          <option key={i} value={i} disabled={anio === anioMax && i > hoy.getMonth()}>{m}</option>
+        ))}
+      </select>
+      <select value={anio} onChange={e => onChange(mes, parseInt(e.target.value))} style={sel}>
+        {anios.map(a => <option key={a} value={a}>{a}</option>)}
+      </select>
     </div>
   );
 }
