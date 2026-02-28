@@ -332,13 +332,40 @@ function DashboardView({ datos, mes, anio, onPeriodo }) {
     };
   }).filter(d => d.occ > 0 || d.adr > 0);
 
+  // Mes anterior para comparativa
+  const mesPrevIdx = mes === 0 ? 11 : mes - 1;
+  const anioPrev   = mes === 0 ? anio - 1 : anio;
+  const datosPrev  = produccion.filter(d => {
+    const f = new Date(d.fecha + "T00:00:00");
+    return f.getMonth() === mesPrevIdx && f.getFullYear() === anioPrev;
+  });
+  const prevHabOcu  = datosPrev.reduce((a, d) => a + (d.hab_ocupadas || 0), 0);
+  const prevHabDis  = datosPrev.reduce((a, d) => a + (d.hab_disponibles || 0), 0);
+  const prevRevHab  = datosPrev.reduce((a, d) => a + (d.revenue_hab || 0), 0);
+  const prevRevTot  = datosPrev.reduce((a, d) => a + (d.revenue_total || 0), 0);
+  const prevRevFnb  = datosPrev.reduce((a, d) => a + (d.revenue_fnb || 0), 0);
+  const prevRevOtros= datosPrev.reduce((a, d) => a + (d.revenue_otros || 0), 0);
+  const prevOcc     = prevHabDis > 0 ? (prevHabOcu / prevHabDis * 100) : null;
+  const prevAdr     = prevHabOcu > 0 ? (prevRevHab / prevHabOcu) : null;
+  const prevRevpar  = prevHabDis > 0 ? (prevRevHab / prevHabDis) : null;
+  const prevTrevpar = prevHabDis > 0 ? ((prevRevHab + prevRevFnb + prevRevOtros) / prevHabDis) : null;
+
+  const diff = (curr, prev, isEur = false, decimals = 1) => {
+    if (prev == null || prev === 0) return { change: "Sin datos prev.", up: true };
+    const d = curr - prev;
+    const pct = ((d / prev) * 100).toFixed(1);
+    const sign = d >= 0 ? "+" : "";
+    const val = isEur ? `${sign}€${Math.round(Math.abs(d)).toLocaleString("es-ES")}` : `${sign}${Math.abs(parseFloat(pct))}%`;
+    return { change: `${sign}${pct}% vs mes ant.`, up: d >= 0 };
+  };
+
   const kpis = [
-    { label: "Ocupación",     value: `${occ}%`,   change: `${occ}%`,   sub: "del mes",           up: parseFloat(occ) > 60 },
-    { label: "ADR",           value: `€${adr}`,   change: `€${adr}`,   sub: "precio medio",      up: true },
-    { label: "RevPAR",        value: `€${revpar}`, change: `€${revpar}`, sub: "por hab disponible", up: true },
-    { label: "TRevPAR",       value: `€${trevpar}`, change: `€${trevpar}`, sub: "revenue total/hab", up: true },
-    { label: "Revenue Hab.",  value: `€${Math.round(totalRevHab).toLocaleString("es-ES")}`,   change: `€${Math.round(totalRevHab).toLocaleString("es-ES")}`,   sub: "habitaciones",      up: true },
-    { label: "Revenue Total", value: `€${Math.round(totalRevTotal).toLocaleString("es-ES")}`, change: `€${Math.round(totalRevTotal).toLocaleString("es-ES")}`, sub: "todos los servicios", up: true },
+    { label: "Ocupación",     value: `${occ}%`,    ...diff(parseFloat(occ), prevOcc),          sub: "vs mes anterior" },
+    { label: "ADR",           value: `€${adr}`,    ...diff(parseFloat(adr), prevAdr),           sub: "vs mes anterior" },
+    { label: "RevPAR",        value: `€${revpar}`,  ...diff(parseFloat(revpar), prevRevpar),     sub: "vs mes anterior" },
+    { label: "TRevPAR",       value: `€${trevpar}`, ...diff(parseFloat(trevpar), prevTrevpar),   sub: "vs mes anterior" },
+    { label: "Revenue Hab.",  value: `€${Math.round(totalRevHab).toLocaleString("es-ES")}`,   ...diff(totalRevHab, prevRevHab, true),  sub: "vs mes anterior" },
+    { label: "Revenue Total", value: `€${Math.round(totalRevTotal).toLocaleString("es-ES")}`, ...diff(totalRevTotal, prevRevTot, true), sub: "vs mes anterior" },
   ];
 
   const esMesActual = mes === new Date().getMonth() && anio === new Date().getFullYear();
