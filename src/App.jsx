@@ -634,8 +634,12 @@ function PickupView({ datos }) {
 }
 
 // ─── BUDGET VIEW ──────────────────────────────────────────────────
-function BudgetView({ datos, anio }) {
+function BudgetView({ datos, anio: anioProp }) {
   const { produccion, presupuesto } = datos;
+
+  // Detectar años disponibles en el presupuesto
+  const aniosDisponibles = [...new Set((presupuesto || []).map(p => p.anio))].sort();
+  const [anio, setAnio] = useState(() => aniosDisponibles.includes(anioProp) ? anioProp : (aniosDisponibles[aniosDisponibles.length - 1] || anioProp));
 
   if (!presupuesto || presupuesto.length === 0) {
     return <EmptyState mensaje="Importa tu plantilla Excel con los datos de la hoja 💰 Presupuesto para ver el análisis aquí" />;
@@ -734,9 +738,16 @@ function BudgetView({ datos, anio }) {
 
   return (
     <div>
-      <div style={{ marginBottom: 28 }}>
-        <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, fontWeight: 700, color: C.text }}>Presupuesto vs Real</h2>
-        <p style={{ fontSize: 12, color: C.textLight, marginTop: 4 }}>Seguimiento del cumplimiento presupuestario · {anio}</p>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 28 }}>
+        <div>
+          <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, fontWeight: 700, color: C.text }}>Presupuesto vs Real</h2>
+          <p style={{ fontSize: 12, color: C.textLight, marginTop: 4 }}>Seguimiento del cumplimiento presupuestario · {anio}</p>
+        </div>
+        {aniosDisponibles.length > 1 && (
+          <select value={anio} onChange={e => setAnio(parseInt(e.target.value))} style={{ padding: "7px 10px", borderRadius: 8, border: `1.5px solid ${C.border}`, fontSize: 13, fontWeight: 600, color: C.text, background: C.bgCard, cursor: "pointer", fontFamily: "'DM Sans', sans-serif", outline: "none" }}>
+            {aniosDisponibles.map(a => <option key={a} value={a}>{a}</option>)}
+          </select>
+        )}
       </div>
 
       {/* KPIs resumen */}
