@@ -288,8 +288,112 @@ function ImportarExcel({ onClose, session, onImportado }) {
   );
 }
 
+
+// ─── MONTH DETAIL VIEW ───────────────────────────────────────────
+function MonthDetailView({ datos, mes, anio, onBack }) {
+  const { produccion } = datos;
+
+  const datosMes = (produccion || []).filter(d => {
+    const f = new Date(d.fecha + "T00:00:00");
+    return f.getMonth() === mes && f.getFullYear() === anio;
+  }).sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+
+  const totalHabOcu = datosMes.reduce((a, d) => a + (d.hab_ocupadas || 0), 0);
+  const totalHabDis = datosMes.reduce((a, d) => a + (d.hab_disponibles || 0), 0);
+  const totalRevHab = datosMes.reduce((a, d) => a + (d.revenue_hab || 0), 0);
+  const totalRevTot = datosMes.reduce((a, d) => a + (d.revenue_total || 0), 0);
+  const mediaOcc    = totalHabDis > 0 ? (totalHabOcu / totalHabDis * 100).toFixed(1) : 0;
+  const mediaAdr    = totalHabOcu > 0 ? Math.round(totalRevHab / totalHabOcu) : 0;
+  const mediaRevpar = totalHabDis > 0 ? Math.round(totalRevHab / totalHabDis) : 0;
+
+  return (
+    <div>
+      <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 28 }}>
+        <button onClick={onBack} style={{ background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 16px", cursor: "pointer", fontSize: 13, color: C.textMid, fontFamily: "'DM Sans', sans-serif", display: "flex", alignItems: "center", gap: 6 }}>
+          ← Volver
+        </button>
+        <div>
+          <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, fontWeight: 700, color: C.text }}>
+            Detalle diario — {MESES[mes]} {anio}
+          </h2>
+          <p style={{ fontSize: 12, color: C.textLight, marginTop: 4 }}>{datosMes.length} días con datos</p>
+        </div>
+      </div>
+
+      {/* KPIs resumen del mes */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 14, marginBottom: 24 }}>
+        {[
+          { label: "Ocupación media", value: `${mediaOcc}%` },
+          { label: "ADR medio",       value: `€${mediaAdr}` },
+          { label: "RevPAR medio",    value: `€${mediaRevpar}` },
+          { label: "Rev. Hab. total", value: `€${Math.round(totalRevHab).toLocaleString("es-ES")}` },
+          { label: "Rev. Total",      value: `€${Math.round(totalRevTot).toLocaleString("es-ES")}` },
+        ].map((k, i) => (
+          <div key={i} style={{ background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: 12, padding: "16px 18px", borderTop: `3px solid ${C.accent}` }}>
+            <p style={{ fontSize: 11, color: C.textLight, textTransform: "uppercase", letterSpacing: "1.5px" }}>{k.label}</p>
+            <p style={{ fontSize: 24, fontWeight: 700, fontFamily: "'Playfair Display', serif", color: C.text, marginTop: 6 }}>{k.value}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Tabla diaria */}
+      <Card>
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+            <thead>
+              <tr style={{ borderBottom: `2px solid ${C.border}` }}>
+                {["Fecha", "Hab. Ocup.", "Ocupación", "ADR", "RevPAR", "Rev. Hab.", "Rev. Total"].map(h => (
+                  <th key={h} style={{ padding: "10px 14px", textAlign: h === "Fecha" ? "left" : "right", fontSize: 10, color: C.textLight, textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600 }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {datosMes.map((d, i) => {
+                const fecha   = new Date(d.fecha + "T00:00:00");
+                const dia     = fecha.getDate();
+                const semana  = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"][fecha.getDay()];
+                const habDis  = d.hab_disponibles || 30;
+                const occ     = habDis > 0 ? (d.hab_ocupadas / habDis * 100).toFixed(1) : 0;
+                const adr     = d.hab_ocupadas > 0 ? Math.round(d.revenue_hab / d.hab_ocupadas) : 0;
+                const revpar  = habDis > 0 ? Math.round(d.revenue_hab / habDis) : 0;
+                const esFinSemana = fecha.getDay() === 0 || fecha.getDay() === 6;
+                return (
+                  <tr key={i} style={{ borderBottom: `1px solid ${C.border}`, background: esFinSemana ? C.accentLight : (i % 2 === 0 ? C.bg : C.bgCard) }}>
+                    <td style={{ padding: "9px 14px", color: C.text, fontWeight: esFinSemana ? 600 : 400 }}>
+                      <span style={{ color: C.textLight, fontSize: 11, marginRight: 6 }}>{semana}</span>
+                      {String(dia).padStart(2, "0")}/{String(mes + 1).padStart(2, "0")}
+                    </td>
+                    <td style={{ padding: "9px 14px", textAlign: "right", color: C.textMid }}>{d.hab_ocupadas}</td>
+                    <td style={{ padding: "9px 14px", textAlign: "right", color: parseFloat(occ) >= 80 ? C.green : parseFloat(occ) < 50 ? C.red : C.textMid, fontWeight: 600 }}>{occ}%</td>
+                    <td style={{ padding: "9px 14px", textAlign: "right", color: C.textMid }}>€{adr}</td>
+                    <td style={{ padding: "9px 14px", textAlign: "right", color: C.accent, fontWeight: 600 }}>€{revpar}</td>
+                    <td style={{ padding: "9px 14px", textAlign: "right", color: C.textMid }}>€{Math.round(d.revenue_hab).toLocaleString("es-ES")}</td>
+                    <td style={{ padding: "9px 14px", textAlign: "right", color: C.textMid }}>€{Math.round(d.revenue_total || 0).toLocaleString("es-ES")}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+            {/* Totales */}
+            <tfoot>
+              <tr style={{ borderTop: `2px solid ${C.border}`, background: C.accentLight, fontWeight: 700 }}>
+                <td style={{ padding: "10px 14px", color: C.text, fontWeight: 700 }}>TOTAL MES</td>
+                <td style={{ padding: "10px 14px", textAlign: "right", color: C.text }}>{totalHabOcu}</td>
+                <td style={{ padding: "10px 14px", textAlign: "right", color: C.text }}>{mediaOcc}%</td>
+                <td style={{ padding: "10px 14px", textAlign: "right", color: C.text }}>€{mediaAdr}</td>
+                <td style={{ padding: "10px 14px", textAlign: "right", color: C.accent }}>€{mediaRevpar}</td>
+                <td style={{ padding: "10px 14px", textAlign: "right", color: C.text }}>€{Math.round(totalRevHab).toLocaleString("es-ES")}</td>
+                <td style={{ padding: "10px 14px", textAlign: "right", color: C.text }}>€{Math.round(totalRevTot).toLocaleString("es-ES")}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </Card>
+    </div>
+  );
+}
+
 // ─── DASHBOARD VIEW ───────────────────────────────────────────────
-function DashboardView({ datos, mes, anio, onPeriodo }) {
+function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle }) {
   const { produccion } = datos;
 
   if (!produccion || produccion.length === 0) return <EmptyState />;
@@ -436,8 +540,8 @@ function DashboardView({ datos, mes, anio, onPeriodo }) {
             </thead>
             <tbody>
               {porMes.map((d, i) => (
-                <tr key={i} style={{ borderBottom: `1px solid ${C.border}`, background: MESES_CORTO.indexOf(d.mes) === mes ? C.accentLight : (i % 2 === 0 ? C.bg : C.bgCard) }}>
-                  <td style={{ padding: "10px 12px", fontWeight: 600, color: C.text }}>{d.mes}</td>
+                <tr key={i} onClick={() => onMesDetalle && onMesDetalle(MESES_CORTO.indexOf(d.mes), anio)} style={{ borderBottom: `1px solid ${C.border}`, background: MESES_CORTO.indexOf(d.mes) === mes ? C.accentLight : (i % 2 === 0 ? C.bg : C.bgCard), cursor: "pointer" }} onMouseEnter={e => e.currentTarget.style.background = C.accentLight} onMouseLeave={e => e.currentTarget.style.background = MESES_CORTO.indexOf(d.mes) === mes ? C.accentLight : (i % 2 === 0 ? C.bg : C.bgCard)}>
+                  <td style={{ padding: "10px 12px", fontWeight: 600, color: C.accent, textDecoration: "underline", cursor: "pointer" }}>{d.mes}</td>
                   <td style={{ padding: "10px 12px", textAlign: "right", color: d.occ > 80 ? C.green : C.textMid }}>{d.occ}%</td>
                   <td style={{ padding: "10px 12px", textAlign: "right", color: C.textMid }}>€{d.adr}</td>
                   <td style={{ padding: "10px 12px", textAlign: "right", fontWeight: 600, color: C.accent }}>€{d.revpar}</td>
@@ -876,8 +980,10 @@ export default function App() {
 
   const handleLogout = async () => { await supabase.auth.signOut(); };
 
+  const [mesDetalle, setMesDetalle] = useState(null); // { mes, anio }
+
   const views = {
-    dashboard: (props) => <DashboardView {...props} />,
+    dashboard: (props) => <DashboardView {...props} onMesDetalle={(m, a) => setMesDetalle({ mes: m, anio: a })} />,
     pickup:    (props) => <PickupView    {...props} />,
     budget:    (props) => <BudgetView    {...props} />,
   };
@@ -916,7 +1022,7 @@ export default function App() {
         </div>
         <nav style={{ flex: 1, padding: "16px 12px" }}>
           {NAV.map(n => (
-            <button key={n.key} className="nav-item" onClick={() => setView(n.key)} style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 8, border: "none", cursor: "pointer", background: view===n.key ? C.accent : "transparent", color: view===n.key ? "#fff" : "#A8998A", fontSize: 13, fontWeight: view===n.key ? 600 : 400, fontFamily: "'DM Sans', sans-serif", marginBottom: 2, textAlign: "left" }}>
+            <button key={n.key} className="nav-item" onClick={() => { setView(n.key); setMesDetalle(null); }} style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 8, border: "none", cursor: "pointer", background: view===n.key ? C.accent : "transparent", color: view===n.key ? "#fff" : "#A8998A", fontSize: 13, fontWeight: view===n.key ? 600 : 400, fontFamily: "'DM Sans', sans-serif", marginBottom: 2, textAlign: "left" }}>
               <span style={{ fontSize: 14 }}>{n.icon}</span>{n.label}
             </button>
           ))}
@@ -946,7 +1052,11 @@ export default function App() {
             </div>
           </div>
         </div>
-        {cargandoDatos ? <LoadingSpinner /> : <View datos={datos} mes={mesSel} anio={anioSel} onPeriodo={(m,a) => { setMesSel(m); setAnioSel(a); localStorage.setItem("rm_mes", m); localStorage.setItem("rm_anio", a); }} />}
+        {cargandoDatos ? <LoadingSpinner /> : mesDetalle ? (
+          <MonthDetailView datos={datos} mes={mesDetalle.mes} anio={mesDetalle.anio} onBack={() => setMesDetalle(null)} />
+        ) : (
+          <View datos={datos} mes={mesSel} anio={anioSel} onPeriodo={(m,a) => { setMesSel(m); setAnioSel(a); localStorage.setItem("rm_mes", m); localStorage.setItem("rm_anio", a); }} />
+        )}
       </main>
 
       {importar && <ImportarExcel onClose={() => setImportar(false)} session={session} onImportado={cargarDatos} />}
