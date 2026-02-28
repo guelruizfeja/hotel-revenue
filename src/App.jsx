@@ -969,12 +969,13 @@ export default function App() {
 
   const cargarDatos = async () => {
     setCargandoDatos(true);
-    const [{ data: produccion }, { data: pickup }, { data: presupuesto }] = await Promise.all([
+    const [{ data: produccion }, { data: pickup }, { data: presupuesto }, { data: hotelData }] = await Promise.all([
       supabase.from("produccion_diaria").select("*").eq("hotel_id", session.user.id).order("fecha"),
       supabase.from("pickup_diario").select("*").eq("hotel_id", session.user.id).order("fecha_pickup"),
       supabase.from("presupuesto").select("*").eq("hotel_id", session.user.id).order("mes"),
+      supabase.from("hoteles").select("nombre, ciudad").eq("id", session.user.id).maybeSingle(),
     ]);
-    setDatos({ produccion: produccion || [], pickup: pickup || [], presupuesto: presupuesto || [] });
+    setDatos({ produccion: produccion || [], pickup: pickup || [], presupuesto: presupuesto || [], hotel: hotelData });
     setCargandoDatos(false);
   };
 
@@ -1037,9 +1038,11 @@ export default function App() {
       <main style={{ flex: 1, minWidth: 0, padding: "28px 32px", overflowY: "auto", height: "100vh" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 28 }}>
           <div>
-            <p style={{ fontSize: 11, color: C.textLight, textTransform: "uppercase", letterSpacing: "1.5px" }}>RevManager · Panel de Revenue</p>
+            <p style={{ fontSize: 18, fontFamily: "'Playfair Display', serif", fontWeight: 700, color: C.text }}>
+              {datos.hotel?.nombre || "Mi Hotel"}
+            </p>
             <p style={{ fontSize: 12, color: C.textLight, marginTop: 2 }}>
-              {datos.produccion.length > 0 ? `${datos.produccion.length} días importados` : "Sin datos — importa tu plantilla"}
+              {datos.hotel?.ciudad ? `${datos.hotel.ciudad} · ` : ""}{datos.produccion.length > 0 ? `${datos.produccion.length} días importados` : "Sin datos — importa tu plantilla"}
             </p>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
