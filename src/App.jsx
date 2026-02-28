@@ -3,7 +3,6 @@ import { supabase } from "./supabase";
 import {
   AreaChart, Area, BarChart, Bar, LineChart, Line,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell,
 } from "recharts";
 
 const C = {
@@ -11,15 +10,16 @@ const C = {
   accent: "#C8933A", accentLight: "#F0DDB8", accentDark: "#8A6020",
   text: "#1C1814", textMid: "#6B5E4E", textLight: "#A8998A",
   border: "#E8E0D5", green: "#2D7A4F", greenLight: "#D4EDDE",
-  red: "#C0392B", redLight: "#FDECEA", blue: "#2C5F8A", blueLight: "#D6E8F5",
+  red: "#C0392B", redLight: "#FDECEA", blue: "#2C5F8A",
 };
 
-const MESES = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+const MESES = ["Enero","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+const MESES_CORTO = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
 
 const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null;
   return (
-    <div style={{ background: C.bgDeep, borderRadius: 8, padding: "10px 14px", border: `1px solid ${C.accent}22`, fontSize: 12, color: "#E8DDD0" }}>
+    <div style={{ background: C.bgDeep, borderRadius: 8, padding: "10px 14px", fontSize: 12, color: "#E8DDD0" }}>
       <p style={{ color: C.accent, fontWeight: 600, marginBottom: 6 }}>{label}</p>
       {payload.map((p, i) => (
         <p key={i} style={{ color: p.color || "#E8DDD0", margin: "2px 0" }}>
@@ -52,6 +52,31 @@ function KpiCard({ label, value, change, sub, up, i }) {
         <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 4, background: up ? C.greenLight : C.redLight, color: up ? C.green : C.red }}>{change}</span>
         <span style={{ fontSize: 11, color: C.textLight }}>{sub}</span>
       </div>
+    </div>
+  );
+}
+
+function PeriodSelector({ mes, anio, onChange }) {
+  const hoy = new Date();
+  const esHoy = mes === hoy.getMonth() && anio === hoy.getFullYear();
+
+  const anterior = () => {
+    if (mes === 0) onChange(11, anio - 1);
+    else onChange(mes - 1, anio);
+  };
+  const siguiente = () => {
+    if (esHoy) return;
+    if (mes === 11) onChange(0, anio + 1);
+    else onChange(mes + 1, anio);
+  };
+
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 8, background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: 10, padding: "6px 12px" }}>
+      <button onClick={anterior} style={{ background: "none", border: "none", cursor: "pointer", color: C.textMid, fontSize: 16, padding: "0 4px", lineHeight: 1 }}>‹</button>
+      <span style={{ fontSize: 13, fontWeight: 600, color: C.text, minWidth: 110, textAlign: "center" }}>
+        {MESES[mes]} {anio}
+      </span>
+      <button onClick={siguiente} style={{ background: "none", border: "none", cursor: esHoy ? "not-allowed" : "pointer", color: esHoy ? C.border : C.textMid, fontSize: 16, padding: "0 4px", lineHeight: 1 }}>›</button>
     </div>
   );
 }
@@ -93,11 +118,15 @@ function ImportarExcel({ onClose, session, onImportado }) {
       const rows = XLSX.utils.sheet_to_json(ws, { header: 1, range: 4 });
       const produccionRows = [];
 
+      const wsHotel = wb.Sheets["🏨 Mi Hotel"];
+      const hotelRows = wsHotel ? XLSX.utils.sheet_to_json(wsHotel, { header: 1 }) : [];
+      const totalHab = parseFloat(hotelRows?.[8]?.[4]) || null;
+
       for (const row of rows) {
         if (!row[0]) continue;
         const fecha = row[0];
         const hab_ocupadas = parseFloat(row[1]) || null;
-        const hab_disponibles = parseFloat(row[2]) || null;
+        const hab_disponibles = parseFloat(row[2]) || totalHab;
         const revenue_hab = parseFloat(row[3]) || null;
         const revenue_total = parseFloat(row[4]) || null;
         const revenue_fnb = parseFloat(row[5]) || null;
@@ -221,69 +250,80 @@ function ImportarExcel({ onClose, session, onImportado }) {
 // ─── DASHBOARD VIEW ───────────────────────────────────────────────
 function DashboardView({ datos }) {
   const { produccion } = datos;
+  const hoy = new Date();
+  const [mes, setMes] = useState(hoy.getMonth());
+  const [anio, setAnio] = useState(hoy.getFullYear());
 
   if (!produccion || produccion.length === 0) return <EmptyState />;
 
-  // Calcular KPIs del mes actual
-  const ahora = new Date();
-  const mesActual = ahora.getMonth();
-  const anioActual = ahora.getFullYear();
-
   const datosMes = produccion.filter(d => {
-    const f = new Date(d.fecha);
-    return f.getMonth() === mesActual && f.getFullYear() === anioActual;
+    const f = new Date(d.fecha + "T00:00:00");
+    return f.getMonth() === mes && f.getFullYear() === anio;
   });
 
-  const totalHabOcupadas = datosMes.reduce((a, d) => a + (d.hab_ocupadas || 0), 0);
+  const totalHabOcupadas   = datosMes.reduce((a, d) => a + (d.hab_ocupadas || 0), 0);
   const totalHabDisponibles = datosMes.reduce((a, d) => a + (d.hab_disponibles || 0), 0);
-  const totalRevHab = datosMes.reduce((a, d) => a + (d.revenue_hab || 0), 0);
+  const totalRevHab  = datosMes.reduce((a, d) => a + (d.revenue_hab || 0), 0);
   const totalRevTotal = datosMes.reduce((a, d) => a + (d.revenue_total || 0), 0);
-  const totalRevFnb = datosMes.reduce((a, d) => a + (d.revenue_fnb || 0), 0);
+  const totalRevFnb  = datosMes.reduce((a, d) => a + (d.revenue_fnb || 0), 0);
   const totalRevOtros = datosMes.reduce((a, d) => a + (d.revenue_otros || 0), 0);
 
-  const occ = totalHabDisponibles > 0 ? (totalHabOcupadas / totalHabDisponibles * 100).toFixed(1) : 0;
-  const adr = totalHabOcupadas > 0 ? (totalRevHab / totalHabOcupadas).toFixed(0) : 0;
+  const occ    = totalHabDisponibles > 0 ? (totalHabOcupadas / totalHabDisponibles * 100).toFixed(1) : 0;
+  const adr    = totalHabOcupadas > 0 ? (totalRevHab / totalHabOcupadas).toFixed(0) : 0;
   const revpar = totalHabDisponibles > 0 ? (totalRevHab / totalHabDisponibles).toFixed(0) : 0;
   const trevpar = totalHabDisponibles > 0 ? ((totalRevHab + totalRevFnb + totalRevOtros) / totalHabDisponibles).toFixed(0) : 0;
 
-  // Datos por mes para gráfica
-  const porMes = MESES.map((mes, i) => {
-    const d = produccion.filter(r => new Date(r.fecha).getMonth() === i);
+  const porMes = MESES_CORTO.map((m, i) => {
+    const d = produccion.filter(r => {
+      const f = new Date(r.fecha + "T00:00:00");
+      return f.getMonth() === i && f.getFullYear() === anio;
+    });
     const habOcu = d.reduce((a, r) => a + (r.hab_ocupadas || 0), 0);
     const habDis = d.reduce((a, r) => a + (r.hab_disponibles || 0), 0);
-    const revH = d.reduce((a, r) => a + (r.revenue_hab || 0), 0);
+    const revH   = d.reduce((a, r) => a + (r.revenue_hab || 0), 0);
     const revFnb = d.reduce((a, r) => a + (r.revenue_fnb || 0), 0);
     const revOtros = d.reduce((a, r) => a + (r.revenue_otros || 0), 0);
     return {
-      mes,
-      occ: habDis > 0 ? Math.round(habOcu / habDis * 100) : 0,
-      adr: habOcu > 0 ? Math.round(revH / habOcu) : 0,
+      mes: m,
+      occ:    habDis > 0 ? Math.round(habOcu / habDis * 100) : 0,
+      adr:    habOcu > 0 ? Math.round(revH / habOcu) : 0,
       revpar: habDis > 0 ? Math.round(revH / habDis) : 0,
       trevpar: habDis > 0 ? Math.round((revH + revFnb + revOtros) / habDis) : 0,
+      revHab: Math.round(revH),
+      revTotal: d.reduce((a,r) => a+(r.revenue_total||0), 0),
     };
   }).filter(d => d.occ > 0 || d.adr > 0);
 
   const kpis = [
-    { label: "Ocupación MTD", value: `${occ}%`, change: `${occ}%`, sub: "mes actual", up: parseFloat(occ) > 60 },
-    { label: "ADR MTD", value: `€${adr}`, change: `€${adr}`, sub: "mes actual", up: true },
-    { label: "RevPAR MTD", value: `€${revpar}`, change: `€${revpar}`, sub: "mes actual", up: true },
-    { label: "TRevPAR MTD", value: `€${trevpar}`, change: `€${trevpar}`, sub: "mes actual", up: true },
-    { label: "Revenue Hab.", value: `€${Math.round(totalRevHab).toLocaleString()}`, change: `€${Math.round(totalRevHab).toLocaleString()}`, sub: "mes actual", up: true },
-    { label: "Revenue Total", value: `€${Math.round(totalRevTotal).toLocaleString()}`, change: `€${Math.round(totalRevTotal).toLocaleString()}`, sub: "mes actual", up: true },
+    { label: "Ocupación", value: `${occ}%`, change: `${occ}%`, sub: "del mes", up: parseFloat(occ) > 60 },
+    { label: "ADR", value: `€${adr}`, change: `€${adr}`, sub: "precio medio", up: true },
+    { label: "RevPAR", value: `€${revpar}`, change: `€${revpar}`, sub: "por hab disponible", up: true },
+    { label: "TRevPAR", value: `€${trevpar}`, change: `€${trevpar}`, sub: "revenue total/hab", up: true },
+    { label: "Revenue Hab.", value: `€${Math.round(totalRevHab).toLocaleString("es-ES")}`, change: `€${Math.round(totalRevHab).toLocaleString("es-ES")}`, sub: "habitaciones", up: true },
+    { label: "Revenue Total", value: `€${Math.round(totalRevTotal).toLocaleString("es-ES")}`, change: `€${Math.round(totalRevTotal).toLocaleString("es-ES")}`, sub: "todos los servicios", up: true },
   ];
+
+  const esMesActual = mes === hoy.getMonth() && anio === hoy.getFullYear();
 
   return (
     <div>
-      <div style={{ marginBottom: 28 }}>
-        <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, fontWeight: 700, color: C.text }}>Panel de Control</h2>
-        <p style={{ fontSize: 12, color: C.textLight, marginTop: 4 }}>Datos reales · {MESES[mesActual]} {anioActual}</p>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 28 }}>
+        <div>
+          <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, fontWeight: 700, color: C.text }}>Panel de Control</h2>
+          <p style={{ fontSize: 12, color: C.textLight, marginTop: 4 }}>
+            {esMesActual ? "Mes en curso" : "Mes cerrado"} · {MESES[mes]} {anio}
+          </p>
+        </div>
+        <PeriodSelector mes={mes} anio={anio} onChange={(m, a) => { setMes(m); setAnio(a); }} />
       </div>
+
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 14, marginBottom: 24 }}>
         {kpis.map((k, i) => <KpiCard key={i} {...k} i={i} />)}
       </div>
+
       <div style={{ display: "grid", gridTemplateColumns: "minmax(0,3fr) minmax(0,2fr)", gap: 16, marginBottom: 16 }}>
         <Card>
-          <p style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700, fontSize: 16, color: C.text, marginBottom: 4 }}>RevPAR — Evolución</p>
+          <p style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700, fontSize: 16, color: C.text, marginBottom: 4 }}>RevPAR — Evolución {anio}</p>
           <p style={{ fontSize: 11, color: C.textLight, marginBottom: 18 }}>RevPAR vs TRevPAR (€/hab disponible)</p>
           <ResponsiveContainer width="100%" height={220}>
             <AreaChart data={porMes}>
@@ -297,14 +337,14 @@ function DashboardView({ datos }) {
               <XAxis dataKey="mes" tick={{ fill: C.textLight, fontSize: 11 }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fill: C.textLight, fontSize: 11 }} axisLine={false} tickLine={false} unit="€" />
               <Tooltip content={<CustomTooltip />} />
-              <Area type="monotone" dataKey="revpar" name="RevPAR" stroke={C.accent} strokeWidth={2.5} fill="url(#gRevpar)" dot={false} />
+              <Area type="monotone" dataKey="revpar" name="RevPAR" stroke={C.accent} strokeWidth={2.5} fill="url(#gRevpar)" dot={{ fill: C.accent, r: 3 }} activeDot={{ r: 5 }} />
               <Line type="monotone" dataKey="trevpar" name="TRevPAR" stroke={C.blue} strokeWidth={1.5} dot={false} strokeDasharray="5 4" />
             </AreaChart>
           </ResponsiveContainer>
         </Card>
         <Card>
           <p style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700, fontSize: 16, color: C.text, marginBottom: 4 }}>Ocupación vs ADR</p>
-          <p style={{ fontSize: 11, color: C.textLight, marginBottom: 18 }}>Correlación mensual</p>
+          <p style={{ fontSize: 11, color: C.textLight, marginBottom: 18 }}>Correlación mensual {anio}</p>
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={porMes} barSize={14}>
               <CartesianGrid strokeDasharray="3 3" stroke={C.border} vertical={false} />
@@ -318,8 +358,9 @@ function DashboardView({ datos }) {
           </ResponsiveContainer>
         </Card>
       </div>
+
       <Card>
-        <p style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700, fontSize: 16, color: C.text, marginBottom: 16 }}>Resumen por Mes</p>
+        <p style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700, fontSize: 16, color: C.text, marginBottom: 16 }}>Resumen por Mes — {anio}</p>
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
             <thead>
@@ -331,18 +372,14 @@ function DashboardView({ datos }) {
             </thead>
             <tbody>
               {porMes.map((d, i) => (
-                <tr key={i} style={{ borderBottom: `1px solid ${C.border}`, background: i % 2 === 0 ? C.bg : C.bgCard }}>
+                <tr key={i} style={{ borderBottom: `1px solid ${C.border}`, background: MESES_CORTO.indexOf(d.mes) === mes ? C.accentLight : (i % 2 === 0 ? C.bg : C.bgCard) }}>
                   <td style={{ padding: "10px 12px", fontWeight: 600, color: C.text }}>{d.mes}</td>
                   <td style={{ padding: "10px 12px", textAlign: "right", color: d.occ > 80 ? C.green : C.textMid }}>{d.occ}%</td>
                   <td style={{ padding: "10px 12px", textAlign: "right", color: C.textMid }}>€{d.adr}</td>
                   <td style={{ padding: "10px 12px", textAlign: "right", fontWeight: 600, color: C.accent }}>€{d.revpar}</td>
                   <td style={{ padding: "10px 12px", textAlign: "right", color: C.blue }}>€{d.trevpar}</td>
-                  <td style={{ padding: "10px 12px", textAlign: "right", color: C.textMid }}>
-                    €{produccion.filter(r => new Date(r.fecha).getMonth() === MESES.indexOf(d.mes)).reduce((a,r) => a+(r.revenue_hab||0),0).toLocaleString()}
-                  </td>
-                  <td style={{ padding: "10px 12px", textAlign: "right", color: C.textMid }}>
-                    €{produccion.filter(r => new Date(r.fecha).getMonth() === MESES.indexOf(d.mes)).reduce((a,r) => a+(r.revenue_total||0),0).toLocaleString()}
-                  </td>
+                  <td style={{ padding: "10px 12px", textAlign: "right", color: C.textMid }}>€{Math.round(d.revHab).toLocaleString("es-ES")}</td>
+                  <td style={{ padding: "10px 12px", textAlign: "right", color: C.textMid }}>€{Math.round(d.revTotal).toLocaleString("es-ES")}</td>
                 </tr>
               ))}
             </tbody>
@@ -358,14 +395,13 @@ function PickupView({ datos }) {
   const { pickup } = datos;
   if (!pickup || pickup.length === 0) return <EmptyState mensaje="Importa tu plantilla con datos de pickup para ver las curvas aquí" />;
 
-  const totalesPorMes = MESES.map((mes, i) => {
+  const totalesPorMes = MESES_CORTO.map((mes, i) => {
     const campo = `mes_${["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"][i]}`;
     return { mes, total: pickup.reduce((a, d) => a + (d[campo] || 0), 0) };
   }).filter(d => d.total > 0);
 
   const ultimosDias = [...pickup].sort((a,b) => new Date(b.fecha_pickup) - new Date(a.fecha_pickup)).slice(0, 14).reverse();
-
-  const pickupHoy = pickup.reduce((a,d) => a + (d.total_dia || 0), 0);
+  const pickupTotal = pickup.reduce((a,d) => a + (d.total_dia || 0), 0);
 
   return (
     <div>
@@ -374,12 +410,12 @@ function PickupView({ datos }) {
         <p style={{ fontSize: 12, color: C.textLight, marginTop: 4 }}>Ritmo de captación de reservas</p>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 14, marginBottom: 24 }}>
-        <KpiCard label="Total Pickup" value={pickupHoy} change={`${pickupHoy} reservas`} sub="total importado" up={true} i={0} />
-        <KpiCard label="Días registrados" value={pickup.length} change={`${pickup.length} días`} sub="con pickup" up={true} i={1} />
-        <KpiCard label="Media diaria" value={pickup.length > 0 ? Math.round(pickupHoy/pickup.length) : 0} change="reservas/día" sub="media" up={true} i={2} />
+        <KpiCard label="Total Pickup" value={pickupTotal} change={`${pickupTotal}`} sub="reservas totales" up={true} i={0} />
+        <KpiCard label="Días registrados" value={pickup.length} change={`${pickup.length}`} sub="días con pickup" up={true} i={1} />
+        <KpiCard label="Media diaria" value={pickup.length > 0 ? Math.round(pickupTotal/pickup.length) : 0} change="res/día" sub="media" up={true} i={2} />
       </div>
       <Card style={{ marginBottom: 16 }}>
-        <p style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700, fontSize: 16, color: C.text, marginBottom: 4 }}>Pickup acumulado por mes de llegada</p>
+        <p style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700, fontSize: 16, color: C.text, marginBottom: 4 }}>Pickup por mes de llegada</p>
         <p style={{ fontSize: 11, color: C.textLight, marginBottom: 18 }}>Total reservas captadas para cada mes</p>
         <ResponsiveContainer width="100%" height={260}>
           <BarChart data={totalesPorMes} barSize={32}>
@@ -392,8 +428,8 @@ function PickupView({ datos }) {
         </ResponsiveContainer>
       </Card>
       <Card>
-        <p style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700, fontSize: 16, color: C.text, marginBottom: 4 }}>Pickup diario — últimos días</p>
-        <p style={{ fontSize: 11, color: C.textLight, marginBottom: 18 }}>Reservas totales captadas cada día</p>
+        <p style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700, fontSize: 16, color: C.text, marginBottom: 4 }}>Pickup diario</p>
+        <p style={{ fontSize: 11, color: C.textLight, marginBottom: 18 }}>Reservas captadas cada día</p>
         <ResponsiveContainer width="100%" height={200}>
           <LineChart data={ultimosDias.map(d => ({ dia: d.fecha_pickup?.slice(5), total: d.total_dia || 0 }))}>
             <CartesianGrid strokeDasharray="3 3" stroke={C.border} />
@@ -536,7 +572,6 @@ export default function App() {
   };
 
   const handleLogout = async () => { await supabase.auth.signOut(); };
-
   const views = { dashboard: DashboardView, pickup: PickupView };
   const View = views[view];
 
