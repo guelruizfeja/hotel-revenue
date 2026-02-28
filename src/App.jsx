@@ -193,30 +193,32 @@ function ImportarExcel({ onClose, session, onImportado }) {
       }
 
       // ── Presupuesto ──
+      // Lee dos bloques: filas 5-16 (2025) y filas 22-33 (2026)
       const wsBu = wb.Sheets["💰 Presupuesto"];
       const presupuestoRows = [];
       if (wsBu) {
-        // Filas 5-16 (índice 4-15), columnas: A=mes, B=ADR_ppto, E=RevPAR_ppto, H=RevTotal_ppto
-        const rowsBu = XLSX.utils.sheet_to_json(wsBu, { header: 1, range: 4 });
-        for (let i = 0; i < 12; i++) {
-          const row = rowsBu[i];
-          if (!row || !row[0]) continue;
-          const adr_ppto = parseFloat(row[1]) || null;
-          const revpar_ppto = parseFloat(row[4]) || null;
-          const rev_total_ppto = parseFloat(row[7]) || null;
-          if (!adr_ppto && !revpar_ppto && !rev_total_ppto) continue;
-          // Inferir el año desde los datos de producción ya procesados
-          const anioPresupuesto = produccionRows.length > 0
-            ? parseInt(produccionRows[0].fecha.slice(0, 4))
-            : new Date().getFullYear();
-          presupuestoRows.push({
-            hotel_id: session.user.id,
-            anio: anioPresupuesto,
-            mes: i + 1, // 1=Enero ... 12=Diciembre
-            adr_ppto: adr_ppto ? Math.round(adr_ppto * 100) / 100 : null,
-            revpar_ppto: revpar_ppto ? Math.round(revpar_ppto * 100) / 100 : null,
-            rev_total_ppto: rev_total_ppto ? Math.round(rev_total_ppto) : null,
-          });
+        const rowsBu = XLSX.utils.sheet_to_json(wsBu, { header: 1 });
+        const bloques = [
+          { startRow: 4, anio: 2025 },
+          { startRow: 21, anio: 2026 },
+        ];
+        for (const { startRow, anio } of bloques) {
+          for (let i = 0; i < 12; i++) {
+            const row = rowsBu[startRow + i];
+            if (!row || !row[0] || typeof row[0] !== "string") continue;
+            const adr_ppto = parseFloat(row[1]) || null;
+            const revpar_ppto = parseFloat(row[4]) || null;
+            const rev_total_ppto = parseFloat(row[7]) || null;
+            if (!adr_ppto && !revpar_ppto && !rev_total_ppto) continue;
+            presupuestoRows.push({
+              hotel_id: session.user.id,
+              anio,
+              mes: i + 1,
+              adr_ppto: adr_ppto ? Math.round(adr_ppto * 100) / 100 : null,
+              revpar_ppto: revpar_ppto ? Math.round(revpar_ppto * 100) / 100 : null,
+              rev_total_ppto: rev_total_ppto ? Math.round(rev_total_ppto) : null,
+            });
+          }
         }
       }
 
@@ -358,6 +360,21 @@ function DashboardView({ datos, mes, anio, onPeriodo }) {
 
       <div style={{ display: "grid", gridTemplateColumns: "minmax(0,3fr) minmax(0,2fr)", gap: 16, marginBottom: 16 }}>
         <Card>
+          <p style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700, fontSize: 16, color: C.text, marginBottom: 4 }}>Ocupación vs ADR</p>
+          <p style={{ fontSize: 11, color: C.textLight, marginBottom: 18 }}>Correlación mensual {anio}</p>
+          <ResponsiveContainer width="100%" height={220}>
+            <BarChart data={porMes} barSize={18}>
+              <CartesianGrid strokeDasharray="3 3" stroke={C.border} vertical={false} />
+              <XAxis dataKey="mes" tick={{ fill: C.textLight, fontSize: 11 }} axisLine={false} tickLine={false} />
+              <YAxis yAxisId="left"  tick={{ fill: C.textLight, fontSize: 11 }} axisLine={false} tickLine={false} unit="%" />
+              <YAxis yAxisId="right" orientation="right" tick={{ fill: C.textLight, fontSize: 11 }} axisLine={false} tickLine={false} unit="€" />
+              <Tooltip content={<CustomTooltip />} />
+              <Bar yAxisId="left"  dataKey="occ" name="Ocupación" fill={`${C.accent}99`} radius={[3,3,0,0]} />
+              <Bar yAxisId="right" dataKey="adr" name="ADR"       fill={C.blue}           radius={[3,3,0,0]} fillOpacity={0.7} />
+            </BarChart>
+          </ResponsiveContainer>
+        </Card>
+        <Card>
           <p style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700, fontSize: 16, color: C.text, marginBottom: 4 }}>RevPAR — Evolución {anio}</p>
           <p style={{ fontSize: 11, color: C.textLight, marginBottom: 18 }}>RevPAR vs TRevPAR (€/hab disponible)</p>
           <ResponsiveContainer width="100%" height={220}>
@@ -375,21 +392,6 @@ function DashboardView({ datos, mes, anio, onPeriodo }) {
               <Area type="monotone" dataKey="revpar" name="RevPAR" stroke={C.accent} strokeWidth={2.5} fill="url(#gRevpar)" dot={{ fill: C.accent, r: 3 }} activeDot={{ r: 5 }} />
               <Line type="monotone" dataKey="trevpar" name="TRevPAR" stroke={C.blue} strokeWidth={1.5} dot={false} strokeDasharray="5 4" />
             </AreaChart>
-          </ResponsiveContainer>
-        </Card>
-        <Card>
-          <p style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700, fontSize: 16, color: C.text, marginBottom: 4 }}>Ocupación vs ADR</p>
-          <p style={{ fontSize: 11, color: C.textLight, marginBottom: 18 }}>Correlación mensual {anio}</p>
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={porMes} barSize={14}>
-              <CartesianGrid strokeDasharray="3 3" stroke={C.border} vertical={false} />
-              <XAxis dataKey="mes" tick={{ fill: C.textLight, fontSize: 10 }} axisLine={false} tickLine={false} />
-              <YAxis yAxisId="left"  tick={{ fill: C.textLight, fontSize: 11 }} axisLine={false} tickLine={false} unit="%" />
-              <YAxis yAxisId="right" orientation="right" tick={{ fill: C.textLight, fontSize: 11 }} axisLine={false} tickLine={false} unit="€" />
-              <Tooltip content={<CustomTooltip />} />
-              <Bar yAxisId="left"  dataKey="occ" name="Ocupación" fill={`${C.accent}99`} radius={[3,3,0,0]} />
-              <Bar yAxisId="right" dataKey="adr" name="ADR"       fill={C.blue}           radius={[3,3,0,0]} fillOpacity={0.7} />
-            </BarChart>
           </ResponsiveContainer>
         </Card>
       </div>
