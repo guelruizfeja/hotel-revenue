@@ -351,21 +351,21 @@ function DashboardView({ datos, mes, anio, onPeriodo }) {
   const prevTrevpar = prevHabDis > 0 ? ((prevRevHab + prevRevFnb + prevRevOtros) / prevHabDis) : null;
 
   const diff = (curr, prev, isEur = false, decimals = 1) => {
-    if (prev == null || prev === 0) return { change: "Sin datos prev.", up: true };
+    if (prev == null || prev === 0) return { change: "Sin datos prev.", up: true, sub: "" };
     const d = curr - prev;
     const pct = ((d / prev) * 100).toFixed(1);
     const sign = d >= 0 ? "+" : "";
     const val = isEur ? `${sign}€${Math.round(Math.abs(d)).toLocaleString("es-ES")}` : `${sign}${Math.abs(parseFloat(pct))}%`;
-    return { change: `${sign}${pct}% vs mes ant.`, up: d >= 0 };
+    return { change: `${sign}${pct}% vs mes ant.`, up: d >= 0, sub: "" };
   };
 
   const kpis = [
-    { label: "Ocupación",     value: `${occ}%`,    ...diff(parseFloat(occ), prevOcc),          sub: "vs mes anterior" },
-    { label: "ADR",           value: `€${adr}`,    ...diff(parseFloat(adr), prevAdr),           sub: "vs mes anterior" },
-    { label: "RevPAR",        value: `€${revpar}`,  ...diff(parseFloat(revpar), prevRevpar),     sub: "vs mes anterior" },
-    { label: "TRevPAR",       value: `€${trevpar}`, ...diff(parseFloat(trevpar), prevTrevpar),   sub: "vs mes anterior" },
-    { label: "Revenue Hab.",  value: `€${Math.round(totalRevHab).toLocaleString("es-ES")}`,   ...diff(totalRevHab, prevRevHab, true),  sub: "vs mes anterior" },
-    { label: "Revenue Total", value: `€${Math.round(totalRevTotal).toLocaleString("es-ES")}`, ...diff(totalRevTotal, prevRevTot, true), sub: "vs mes anterior" },
+    { label: "Ocupación",     value: `${occ}%`,    ...diff(parseFloat(occ), prevOcc) },
+    { label: "ADR",           value: `€${adr}`,    ...diff(parseFloat(adr), prevAdr) },
+    { label: "RevPAR",        value: `€${revpar}`,  ...diff(parseFloat(revpar), prevRevpar) },
+    { label: "TRevPAR",       value: `€${trevpar}`, ...diff(parseFloat(trevpar), prevTrevpar) },
+    { label: "Revenue Hab.",  value: `€${Math.round(totalRevHab).toLocaleString("es-ES")}`,   ...diff(totalRevHab, prevRevHab, true) },
+    { label: "Revenue Total", value: `€${Math.round(totalRevTotal).toLocaleString("es-ES")}`, ...diff(totalRevTotal, prevRevTot, true) },
   ];
 
   const esMesActual = mes === new Date().getMonth() && anio === new Date().getFullYear();
