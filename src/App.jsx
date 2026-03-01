@@ -1066,7 +1066,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
 
       <Card>
         <p style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700, fontSize: 16, color: C.text, marginBottom: 16 }}>
-          Últimos 12 meses — {MESES[porMes.length > 0 ? porMes[0].mesIdx : 0]} {porMes.length > 0 ? porMes[0].anioIdx : anio} → {MESES[mes]} {anio}
+          Últimos 12 meses
         </p>
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
