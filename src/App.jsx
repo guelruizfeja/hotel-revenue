@@ -39,14 +39,161 @@ function Card({ children, style = {} }) {
   );
 }
 
-function KpiCard({ label, value, change, sub, up, i }) {
+
+// ─── KPI MODAL ───────────────────────────────────────────────────
+function KpiModal({ kpi, datos, mes, anio, onClose }) {
+  const { produccion, presupuesto } = datos;
+  const MESES_FULL = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+
+  // Datos diarios del mes
+  const diasMes = (produccion||[])
+    .filter(d => { const f=new Date(d.fecha+"T00:00:00"); return f.getMonth()===mes && f.getFullYear()===anio; })
+    .sort((a,b)=>new Date(a.fecha)-new Date(b.fecha))
+    .map(d => {
+      const f = new Date(d.fecha+"T00:00:00");
+      const habDis = d.hab_disponibles||30;
+      return {
+        dia: f.getDate(),
+        fecha: f.toLocaleDateString("es-ES",{weekday:"short",day:"numeric",month:"short"}),
+        occ:    habDis>0 ? Math.round(d.hab_ocupadas/habDis*100) : 0,
+        adr:    d.hab_ocupadas>0 ? Math.round(d.revenue_hab/d.hab_ocupadas) : 0,
+        revpar: habDis>0 ? Math.round(d.revenue_hab/habDis) : 0,
+        trevpar:habDis>0 ? Math.round((d.revenue_hab+(d.revenue_fnb||0)+(d.revenue_otros||0))/habDis) : 0,
+        revHab: Math.round(d.revenue_hab||0),
+        revFnb: Math.round(d.revenue_fnb||0),
+        revOtros: Math.round(d.revenue_otros||0),
+        revTotal: Math.round(d.revenue_total||0),
+      };
+    });
+
+  // Mismo mes año anterior
+  const diasLY = (produccion||[])
+    .filter(d => { const f=new Date(d.fecha+"T00:00:00"); return f.getMonth()===mes && f.getFullYear()===anio-1; })
+    .sort((a,b)=>new Date(a.fecha)-new Date(b.fecha))
+    .map(d => {
+      const habDis=d.hab_disponibles||30;
+      return {
+        dia: new Date(d.fecha+"T00:00:00").getDate(),
+        occ: habDis>0?Math.round(d.hab_ocupadas/habDis*100):0,
+        adr: d.hab_ocupadas>0?Math.round(d.revenue_hab/d.hab_ocupadas):0,
+        revpar: habDis>0?Math.round(d.revenue_hab/habDis):0,
+        revTotal: Math.round(d.revenue_total||0),
+      };
+    });
+
+  // Presupuesto mes
+  const ppto = (presupuesto||[]).find(p=>p.mes===mes+1&&p.anio===anio);
+
+  // Métricas según KPI
+  const getChartData = () => {
+    if (kpi==="Ocupación") return diasMes.map((d,i)=>({...d, ly: diasLY[i]?.occ}));
+    if (kpi==="ADR")       return diasMes.map((d,i)=>({...d, ly: diasLY[i]?.adr}));
+    if (kpi==="RevPAR")    return diasMes.map((d,i)=>({...d, ly: diasLY[i]?.revpar}));
+    if (kpi==="TRevPAR")   return diasMes.map(d=>d);
+    if (kpi==="Revenue Total") return diasMes.map(d=>d);
+    return diasMes;
+  };
+  const chartData = getChartData();
+
+  const mediaActual = diasMes.length>0 ? diasMes.reduce((a,d)=>a+(d[kpi==="Ocupación"?"occ":kpi==="ADR"?"adr":kpi==="RevPAR"?"revpar":kpi==="TRevPAR"?"trevpar":"revTotal"]||0),0)/diasMes.length : 0;
+  const mediaLY = diasLY.length>0 ? diasLY.reduce((a,d)=>a+(d[kpi==="Ocupación"?"occ":kpi==="ADR"?"adr":kpi==="RevPAR"?"revpar":"revTotal"]||0),0)/diasLY.length : 0;
+  const varLY = mediaLY>0?((mediaActual-mediaLY)/mediaLY*100).toFixed(1):null;
+  const fieldKey = kpi==="Ocupación"?"occ":kpi==="ADR"?"adr":kpi==="RevPAR"?"revpar":kpi==="TRevPAR"?"trevpar":"revTotal";
+  const mejorDia = diasMes.length>0?diasMes.reduce((a,b)=>a[fieldKey]>b[fieldKey]?a:b):null;
+  const peorDia  = diasMes.length>0?diasMes.reduce((a,b)=>a[fieldKey]<b[fieldKey]?a:b):null;
+
+  const pptoVal = kpi==="ADR"?ppto?.adr_ppto:kpi==="RevPAR"?ppto?.revpar_ppto:kpi==="Revenue Total"?ppto?.rev_total_ppto:null;
+  const varPpto = pptoVal&&mediaActual?((mediaActual-pptoVal)/pptoVal*100).toFixed(1):null;
+
+  const unit = kpi==="Ocupación"?"%":"€";
+
   return (
-    <div style={{
+    <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", zIndex:1000, display:"flex", alignItems:"center", justifyContent:"center", padding:20 }} onClick={onClose}>
+      <div style={{ background:C.bgCard, borderRadius:14, width:"100%", maxWidth:820, maxHeight:"90vh", overflow:"auto", padding:28, boxShadow:"0 20px 60px rgba(0,0,0,0.2)" }} onClick={e=>e.stopPropagation()}>
+
+        {/* Header modal */}
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20 }}>
+          <div>
+            <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:2 }}>{MESES_FULL[mes]} {anio}</p>
+            <h3 style={{ fontSize:22, fontWeight:800, color:C.text, fontFamily:"'DM Sans',sans-serif", letterSpacing:-0.5 }}>{kpi}</h3>
+          </div>
+          <button onClick={onClose} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:8, width:32, height:32, cursor:"pointer", fontSize:16, color:C.textMid }}>✕</button>
+        </div>
+
+        {/* 3 KPIs rápidos */}
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:12, marginBottom:20 }}>
+          {[
+            { label:"Media del mes", value:`${kpi==="Ocupación"?mediaActual.toFixed(1):Math.round(mediaActual).toLocaleString("es-ES")}${unit}` },
+            { label:`Vs ${anio-1}`, value: varLY!==null ? `${parseFloat(varLY)>=0?"+":""}${varLY}%` : "Sin datos", up: varLY!==null?parseFloat(varLY)>=0:true },
+            { label:"Vs Presupuesto", value: varPpto!==null ? `${parseFloat(varPpto)>=0?"+":""}${varPpto}%` : "Sin datos ppto", up: varPpto!==null?parseFloat(varPpto)>=0:true },
+          ].map((k,i)=>(
+            <div key={i} style={{ background:C.bg, borderRadius:8, padding:"14px 16px", borderLeft:`3px solid ${C.accent}` }}>
+              <p style={{ fontSize:10, color:C.textLight, textTransform:"uppercase", letterSpacing:1.5, marginBottom:6 }}>{k.label}</p>
+              <p style={{ fontSize:20, fontWeight:700, color:k.up===false?C.red:k.up===true?C.green:C.text, fontFamily:"'DM Sans',sans-serif" }}>{k.value}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Gráfica */}
+        <div style={{ marginBottom:16 }}>
+          <p style={{ fontSize:12, fontWeight:600, color:C.textMid, marginBottom:10, textTransform:"uppercase", letterSpacing:1 }}>Evolución diaria{diasLY.length>0?" vs año anterior":""}</p>
+          {kpi==="Revenue Total" ? (
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={diasMes} barSize={8}>
+                <CartesianGrid strokeDasharray="3 3" stroke={C.border} vertical={false}/>
+                <XAxis dataKey="dia" tick={{fill:C.textLight,fontSize:10}} axisLine={false} tickLine={false}/>
+                <YAxis tick={{fill:C.textLight,fontSize:10}} axisLine={false} tickLine={false} unit="€"/>
+                <Tooltip content={<CustomTooltip/>}/>
+                <Bar dataKey="revHab"   name="Hab."   stackId="a" fill={C.accent} radius={[0,0,0,0]}/>
+                <Bar dataKey="revFnb"   name="F&B"    stackId="a" fill="#E85D04" radius={[0,0,0,0]}/>
+                <Bar dataKey="revOtros" name="Otros"  stackId="a" fill={C.green} radius={[2,2,0,0]}/>
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <ResponsiveContainer width="100%" height={220}>
+              <ComposedChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" stroke={C.border} vertical={false}/>
+                <XAxis dataKey="dia" tick={{fill:C.textLight,fontSize:10}} axisLine={false} tickLine={false}/>
+                <YAxis tick={{fill:C.textLight,fontSize:10}} axisLine={false} tickLine={false} unit={unit}/>
+                <Tooltip content={<CustomTooltip/>}/>
+                <Area type="monotone" dataKey={fieldKey} name={kpi} stroke={C.accent} strokeWidth={2} fill={`${C.accent}15`} dot={false}/>
+                {diasLY.length>0 && <Line type="monotone" dataKey="ly" name={`${anio-1}`} stroke="#E85D04" strokeWidth={1.5} dot={false} strokeDasharray="4 3"/>}
+              </ComposedChart>
+            </ResponsiveContainer>
+          )}
+        </div>
+
+        {/* Mejor y peor día */}
+        {mejorDia && peorDia && (
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
+            <div style={{ background:C.greenLight, borderRadius:8, padding:"12px 16px" }}>
+              <p style={{ fontSize:10, color:C.green, textTransform:"uppercase", letterSpacing:1.5, fontWeight:700 }}>Mejor día</p>
+              <p style={{ fontSize:16, fontWeight:700, color:C.text, marginTop:4 }}>Día {mejorDia.dia} — {mejorDia[fieldKey]}{unit}</p>
+              <p style={{ fontSize:11, color:C.textLight, marginTop:2 }}>{mejorDia.fecha}</p>
+            </div>
+            <div style={{ background:C.redLight, borderRadius:8, padding:"12px 16px" }}>
+              <p style={{ fontSize:10, color:C.red, textTransform:"uppercase", letterSpacing:1.5, fontWeight:700 }}>Peor día</p>
+              <p style={{ fontSize:16, fontWeight:700, color:C.text, marginTop:4 }}>Día {peorDia.dia} — {peorDia[fieldKey]}{unit}</p>
+              <p style={{ fontSize:11, color:C.textLight, marginTop:2 }}>{peorDia.fecha}</p>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function KpiCard({ label, value, change, sub, up, i, onClick }) {
+  return (
+    <div onClick={onClick} style={{
       background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: 10,
       padding: "20px 22px", animation: `fadeUp 0.5s ease ${i * 0.08}s both`,
       borderLeft: `3px solid ${C.accent}`, position: "relative", overflow: "hidden",
-      boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
-    }}>
+      boxShadow: "0 1px 4px rgba(0,0,0,0.06)", cursor: "pointer",
+      transition: "box-shadow 0.15s, transform 0.15s",
+    }}
+    onMouseEnter={e=>{ e.currentTarget.style.boxShadow="0 4px 16px rgba(0,75,135,0.12)"; e.currentTarget.style.transform="translateY(-2px)"; }}
+    onMouseLeave={e=>{ e.currentTarget.style.boxShadow="0 1px 4px rgba(0,0,0,0.06)"; e.currentTarget.style.transform="translateY(0)"; }}>
       <div style={{ display: "none" }} />
       <p style={{ fontSize: 12, color: C.textMid, textTransform: "uppercase", letterSpacing: "1.5px", fontWeight: 700 }}>{label}</p>
       <p style={{ fontSize: 30, fontWeight: 700, fontFamily: "'DM Sans', sans-serif", color: C.text, margin: "10px 0 6px", letterSpacing: "-1px", lineHeight: 1 }}>{value}</p>
@@ -695,6 +842,7 @@ async function generarReportePDF(datos, mes, anio, hotelNombre) {
 
 // ─── DASHBOARD VIEW ───────────────────────────────────────────────
 function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle }) {
+  const [kpiModal, setKpiModal] = useState(null);
   const { produccion } = datos;
 
   if (!produccion || produccion.length === 0) return <EmptyState />;
@@ -798,7 +946,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle }) {
 
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 14, marginBottom: 24 }}>
-        {kpis.map((k, i) => <KpiCard key={i} {...k} i={i} />)}
+        {kpis.map((k, i) => <KpiCard key={i} {...k} i={i} onClick={()=>setKpiModal(k.label)} />)}
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "minmax(0,3fr) minmax(0,2fr)", gap: 16, marginBottom: 16 }}>
@@ -868,6 +1016,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle }) {
           </table>
         </div>
       </Card>
+      {kpiModal && <KpiModal kpi={kpiModal} datos={datos} mes={mes} anio={anio} onClose={()=>setKpiModal(null)} />}
     </div>
   );
 }
