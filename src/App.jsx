@@ -58,11 +58,10 @@ function KpiCard({ label, value, change, sub, up, i }) {
   );
 }
 
-function PeriodSelectorInline({ mes, anio, onChange }) {
+function PeriodSelectorInline({ mes, anio, onChange, aniosDisponibles }) {
   const hoy = new Date();
-  const anioMin = hoy.getFullYear() - 3;
   const anioMax = hoy.getFullYear();
-  const anios = Array.from({ length: anioMax - anioMin + 1 }, (_, i) => anioMin + i);
+  const anios = aniosDisponibles && aniosDisponibles.length > 0 ? aniosDisponibles : [anioMax];
   const MESES_C = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
 
   const anterior = () => {
@@ -1516,7 +1515,7 @@ export default function App() {
           {/* CENTRO: Selector */}
           <div style={{ display: "flex", justifyContent: "center" }}>
             {view === "dashboard"
-              ? <PeriodSelectorInline mes={mesSel} anio={anioSel} onChange={(m,a)=>{ setMesSel(m); setAnioSel(a); localStorage.setItem("rm_mes",m); localStorage.setItem("rm_anio",a); }} />
+              ? <PeriodSelectorInline mes={mesSel} anio={anioSel} onChange={(m,a)=>{ setMesSel(m); setAnioSel(a); localStorage.setItem("rm_mes",m); localStorage.setItem("rm_anio",a); }} aniosDisponibles={[...new Set((datos.produccion||[]).map(d=>new Date(d.fecha+"T00:00:00").getFullYear()))].sort()} />
               : null
             }
           </div>
