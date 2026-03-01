@@ -1140,12 +1140,35 @@ function PickupView({ datos }) {
     return pickup.filter(d => d.fecha_pickup <= hastaFecha).reduce((a,d)=>a+(d[campo]||0),0);
   };
 
-  // Ocupación OTB para una fecha concreta (hab reservadas / hab disponibles)
+  // Habitaciones disponibles por día (media de producción histórica)
+  const habDisponibles = (produccion||[]).length > 0
+    ? Math.round((produccion||[]).reduce((a,d)=>a+(d.hab_disponibles||30),0)/(produccion||[]).length)
+    : 30;
+
+  // OTB acumulado por mes (total reservas captadas hasta hoy para ese mes)
+  const otbPorMes = {};
+  MESES_CAMPOS.forEach((campo, i) => {
+    otbPorMes[i] = pickup
+      .filter(d => d.fecha_pickup <= hoyStr)
+      .reduce((a,d) => a+(d[`mes_${campo}`]||0), 0);
+  });
+
+  // Ocupación OTB para una fecha concreta
+  // - Si hay producción real (pasado): usa hab_ocupadas / hab_disponibles
+  // - Si es futuro: distribuye el OTB del mes entre los días del mes
   const getOccOTB = (fechaStr) => {
     const prod = prodPorFecha[fechaStr];
-    const habDis = prod?.hab_disponibles || 30;
-    const habOcu = prod?.hab_ocupadas || 0;
-    return habDis > 0 ? Math.round(habOcu / habDis * 100) : 0;
+    if (prod) {
+      const habDis = prod.hab_disponibles || 30;
+      return habDis > 0 ? Math.round(prod.hab_ocupadas / habDis * 100) : 0;
+    }
+    // Fecha futura: estimar OTB del mes distribuido en días
+    const f = new Date(fechaStr + "T00:00:00");
+    const mesIdx = f.getMonth();
+    const diasDelMes = new Date(f.getFullYear(), mesIdx+1, 0).getDate();
+    const otbMes = otbPorMes[mesIdx] || 0;
+    const occEstimada = diasDelMes > 0 ? Math.round((otbMes / diasDelMes) / habDisponibles * 100) : 0;
+    return Math.min(occEstimada, 100);
   };
 
   // Pickup de una fecha para un mes concreto (hab reservadas ese día para ese mes)
@@ -1155,16 +1178,15 @@ function PickupView({ datos }) {
     return d[`mes_${MESES_CAMPOS[mesIdx]}`] || 0;
   };
 
-  // Color ocupación degradado blanco → verde esmeralda
+  // Color ocupación degradado rojo → amarillo → verde oscuro
   const getOccBg = (occ) => {
-    if (occ === 0) return { bg: C.bg, text: C.textLight };
-    const ratio = Math.min(occ / 100, 1);
-    if (ratio >= 0.85) return { bg: "#004D26", text: "#fff" };
-    if (ratio >= 0.70) return { bg: "#007A3D", text: "#fff" };
-    if (ratio >= 0.55) return { bg: "#2E9E5B", text: "#fff" };
-    if (ratio >= 0.40) return { bg: "#70C490", text: "#1A1A1A" };
-    if (ratio >= 0.20) return { bg: "#B8E6C8", text: "#1A1A1A" };
-    return { bg: "#E8F7EE", text: "#555" };
+    if (!occ || occ === 0) return { bg: C.bg, text: C.textLight };
+    if (occ >= 85) return { bg: "#004D26", text: "#fff" };
+    if (occ >= 70) return { bg: "#1A7A3C", text: "#fff" };
+    if (occ >= 55) return { bg: "#4CAF50", text: "#fff" };
+    if (occ >= 40) return { bg: "#FFC107", text: "#1A1A1A" };
+    if (occ >= 25) return { bg: "#FF7043", text: "#fff" };
+    return { bg: "#D32F2F", text: "#fff" };
   };
 
   // ── BLOQUE 1: Calendario 3 meses ──────────────────────────────
@@ -1246,7 +1268,7 @@ function PickupView({ datos }) {
                     <button onClick={()=>setCalOffset(o=>o+1)} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, width:26, height:26, cursor:"pointer", color:C.textMid, fontSize:14, display:"flex", alignItems:"center", justifyContent:"center" }}>›</button>
                   </div>
                   <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                    {[["<40%","#E8F7EE"],["40-70%","#70C490"],["70-85%","#2E9E5B"],["≥85%","#004D26"]].map(([l,c])=>(
+                    {[["<25%","#D32F2F"],["25-40%","#FF7043"],["40-55%","#FFC107"],["55-70%","#4CAF50"],["70-85%","#1A7A3C"],["≥85%","#004D26"]].map(([l,c])=>(
                       <div key={l} style={{ display:"flex", alignItems:"center", gap:3 }}>
                         <div style={{ width:10, height:10, borderRadius:2, background:c, border:`1px solid ${C.border}` }}/>
                         <span style={{ fontSize:9, color:C.textLight }}>{l}</span>
@@ -1277,22 +1299,25 @@ function PickupView({ datos }) {
                     const hayActividad = pickupAyer > 0 && !esPasado;
                     return (
                       <div key={dia} style={{
-                        background: esPasado ? C.bg : bg,
-                        borderRadius: 6,
-                        padding: "5px 2px",
+                        background: esPasado ? "#F5F5F5" : occ > 0 ? bg : C.bg,
+                        borderRadius: 8,
+                        padding: "6px 2px",
                         textAlign: "center",
-                        border: esHoy2 ? `2px solid ${C.accent}` : hayActividad ? `1.5px solid #004D26` : `1px solid ${esFinde?"#004D2633":C.border}`,
-                        minHeight: 46,
-                        display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center",
-                        opacity: esPasado ? 0.4 : 1,
+                        border: esHoy2 ? `2px solid ${C.accent}` : hayActividad ? `1.5px solid #1A7A3C` : `1px solid ${esFinde ? C.accent+"33" : C.border}`,
+                        minHeight: 52,
+                        display: "flex", flexDirection: "column", justifyContent: "space-between", alignItems: "center",
+                        opacity: esPasado ? 0.45 : 1,
+                        boxShadow: !esPasado && occ > 0 ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
+                        transition: "transform 0.1s",
+                        cursor: "default",
                       }}>
-                        <span style={{ fontSize:10, color: esPasado?C.textLight:text, fontWeight: esFinde||esHoy2?700:400 }}>{dia}</span>
-                        {!esPasado && occ > 0 && (
-                          <span style={{ fontSize:11, fontWeight:700, color:text, lineHeight:1.2 }}>{occ}%</span>
-                        )}
-                        {hayActividad && !esPasado && (
-                          <span style={{ fontSize:8, color:"#004D26", fontWeight:700 }}>↑</span>
-                        )}
+                        <span style={{ fontSize:10, color: esPasado ? C.textLight : occ>0 ? text : C.textLight, fontWeight: esFinde||esHoy2 ? 700 : 400, lineHeight:1.4 }}>{dia}</span>
+                        {!esPasado && occ > 0 ? (
+                          <span style={{ fontSize:12, fontWeight:800, color:text, lineHeight:1, fontFamily:"'DM Sans',sans-serif" }}>{occ}%</span>
+                        ) : !esPasado ? (
+                          <span style={{ fontSize:10, color:C.border }}>—</span>
+                        ) : null}
+                        <span style={{ fontSize:8, color: hayActividad?"#1A7A3C":esFinde&&!esPasado?C.accent+"88":"transparent", fontWeight:700 }}>{hayActividad?"↑":esFinde&&!esPasado?"★":""}</span>
                       </div>
                     );
                   })}
