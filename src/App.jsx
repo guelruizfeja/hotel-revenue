@@ -6,11 +6,11 @@ import {
 } from "recharts";
 
 const C = {
-  bg: "#F7F3EE", bgCard: "#FFFFFF", bgDeep: "#1C1814",
-  accent: "#C8933A", accentLight: "#F0DDB8", accentDark: "#8A6020",
-  text: "#1C1814", textMid: "#6B5E4E", textLight: "#A8998A",
-  border: "#E8E0D5", green: "#2D7A4F", greenLight: "#D4EDDE",
-  red: "#C0392B", redLight: "#FDECEA", blue: "#2C5F8A",
+  bg: "#FDFDFD", bgCard: "#FFFFFF", bgDeep: "#111111",
+  accent: "#004B87", accentLight: "#E8F0F9", accentDark: "#003366",
+  text: "#1A1A1A", textMid: "#555555", textLight: "#888888",
+  border: "#E0E0E0", green: "#009F4D", greenLight: "#E6F7EE",
+  red: "#D32F2F", redLight: "#FDECEA", blue: "#004B87",
 };
 
 const MESES = ["Enero","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
@@ -33,7 +33,7 @@ const CustomTooltip = ({ active, payload, label }) => {
 
 function Card({ children, style = {} }) {
   return (
-    <div style={{ background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: 14, padding: "22px 24px", ...style }}>
+    <div style={{ background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: 10, padding: "22px 24px", ...style }}>
       {children}
     </div>
   );
@@ -42,13 +42,14 @@ function Card({ children, style = {} }) {
 function KpiCard({ label, value, change, sub, up, i }) {
   return (
     <div style={{
-      background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: 14,
+      background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: 10,
       padding: "20px 22px", animation: `fadeUp 0.5s ease ${i * 0.08}s both`,
-      borderTop: `3px solid ${C.accent}`, position: "relative", overflow: "hidden",
+      borderLeft: `3px solid ${C.accent}`, position: "relative", overflow: "hidden",
+      boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
     }}>
-      <div style={{ position: "absolute", bottom: -20, right: -20, width: 80, height: 80, background: `${C.accent}0A`, borderRadius: "50%" }} />
-      <p style={{ fontSize: 11, color: C.textLight, textTransform: "uppercase", letterSpacing: "1.5px" }}>{label}</p>
-      <p style={{ fontSize: 30, fontWeight: 700, fontFamily: "'Playfair Display', serif", color: C.text, margin: "8px 0 6px", letterSpacing: "-1px" }}>{value}</p>
+      <div style={{ display: "none" }} />
+      <p style={{ fontSize: 12, color: C.textMid, textTransform: "uppercase", letterSpacing: "1.5px", fontWeight: 700 }}>{label}</p>
+      <p style={{ fontSize: 30, fontWeight: 700, fontFamily: "'DM Sans', sans-serif", color: C.text, margin: "10px 0 6px", letterSpacing: "-1px", lineHeight: 1 }}>{value}</p>
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
         <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 4, background: up ? C.greenLight : C.redLight, color: up ? C.green : C.red }}>{change}</span>
         <span style={{ fontSize: 11, color: C.textLight }}>{sub}</span>
@@ -65,7 +66,7 @@ function PeriodSelector({ mes, anio, onChange }) {
   const MESES_CORTOS = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
 
   return (
-    <div style={{ background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: 14, padding: "14px 16px", display: "inline-block" }}>
+    <div style={{ background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: 10, padding: "14px 16px", display: "inline-block" }}>
       {/* Selector de año */}
       <div style={{ display: "flex", justifyContent: "center", gap: 6, marginBottom: 10 }}>
         {anios.map(a => (
@@ -267,7 +268,7 @@ function ImportarExcel({ onClose, session, onImportado }) {
 
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
-      <div style={{ background: "#fff", borderRadius: 16, padding: "36px 40px", width: 480, boxShadow: "0 24px 60px rgba(0,0,0,0.3)", fontFamily: "'DM Sans', sans-serif" }}>
+      <div style={{ background: "#fff", borderRadius: 10, padding: "36px 40px", width: 480, boxShadow: "0 24px 60px rgba(0,0,0,0.3)", fontFamily: "'DM Sans', sans-serif" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
           <div>
             <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, fontWeight: 700, color: "#1C1814" }}>Importar datos</h2>
@@ -277,7 +278,7 @@ function ImportarExcel({ onClose, session, onImportado }) {
         </div>
         {!resultado ? (
           <>
-            <div onClick={() => document.getElementById("excel-input").click()} style={{ border: "2px dashed #E8E0D5", borderRadius: 12, padding: "40px 20px", textAlign: "center", cursor: "pointer", background: "#F7F3EE", marginBottom: 16 }}>
+            <div onClick={() => document.getElementById("excel-input").click()} style={{ border: "2px dashed #E8E0D5", borderRadius: 8, padding: "40px 20px", textAlign: "center", cursor: "pointer", background: "#F7F3EE", marginBottom: 16 }}>
               <div style={{ fontSize: 40, marginBottom: 12 }}>📊</div>
               <p style={{ fontWeight: 600, color: "#1C1814", marginBottom: 6 }}>{loading ? "Procesando..." : "Haz clic para seleccionar el archivo"}</p>
               <p style={{ fontSize: 12, color: "#A8998A" }}>Formato .xlsx · Plantilla RevManager</p>
@@ -328,7 +329,7 @@ function MonthDetailView({ datos, mes, anio, onBack }) {
           ← Volver
         </button>
         <div>
-          <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, fontWeight: 700, color: C.text }}>
+          <h2 style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 20, fontWeight: 700, color: C.text, letterSpacing: -0.3 }}>
             Detalle diario — {MESES[mes]} {anio}
           </h2>
           <p style={{ fontSize: 12, color: C.textLight, marginTop: 4 }}>{datosMes.length} días con datos</p>
@@ -344,7 +345,7 @@ function MonthDetailView({ datos, mes, anio, onBack }) {
           { label: "Rev. Hab. total", value: `€${Math.round(totalRevHab).toLocaleString("es-ES")}` },
           { label: "Rev. Total",      value: `€${Math.round(totalRevTot).toLocaleString("es-ES")}` },
         ].map((k, i) => (
-          <div key={i} style={{ background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: 12, padding: "16px 18px", borderTop: `3px solid ${C.accent}` }}>
+          <div key={i} style={{ background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: 8, padding: "16px 18px", borderTop: `3px solid ${C.accent}` }}>
             <p style={{ fontSize: 11, color: C.textLight, textTransform: "uppercase", letterSpacing: "1.5px" }}>{k.label}</p>
             <p style={{ fontSize: 24, fontWeight: 700, fontFamily: "'Playfair Display', serif", color: C.text, marginTop: 6 }}>{k.value}</p>
           </div>
@@ -510,7 +511,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle }) {
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 28 }}>
         <div>
-          <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, fontWeight: 700, color: C.text }}>Panel de Control</h2>
+          <h2 style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 20, fontWeight: 700, color: C.text, letterSpacing: -0.3 }}>Panel de Control</h2>
           <p style={{ fontSize: 12, color: C.textLight, marginTop: 4 }}>
             {esMesActual ? "Mes en curso" : "Mes cerrado"} · {MESES[mes]} {anio}
           </p>
@@ -545,7 +546,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle }) {
             <AreaChart data={porMes}>
               <defs>
                 <linearGradient id="gRevpar" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={C.accent} stopOpacity={0.25} />
+                  <stop offset="5%" stopColor={C.accent} stopOpacity={0.15} />
                   <stop offset="95%" stopColor={C.accent} stopOpacity={0} />
                 </linearGradient>
               </defs>
@@ -553,7 +554,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle }) {
               <XAxis dataKey="mes" tick={{ fill: C.textLight, fontSize: 11 }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fill: C.textLight, fontSize: 11 }} axisLine={false} tickLine={false} unit="€" />
               <Tooltip content={<CustomTooltip />} />
-              <Area type="monotone" dataKey="revpar" name="RevPAR" stroke={C.accent} strokeWidth={2.5} fill="url(#gRevpar)" dot={{ fill: C.accent, r: 3 }} activeDot={{ r: 5 }} />
+              <Area type="monotone" dataKey="revpar" name="RevPAR" stroke={C.accent} strokeWidth={2} fill="url(#gRevpar)" dot={{ fill: C.accent, r: 2.5 }} activeDot={{ r: 4 }} />
               <Line type="monotone" dataKey="trevpar" name="TRevPAR" stroke={C.blue} strokeWidth={1.5} dot={false} strokeDasharray="5 4" />
             </AreaChart>
           </ResponsiveContainer>
@@ -647,9 +648,9 @@ function PickupView({ datos }) {
 
   const getOccColor = (occ) => {
     if (occ === null || occ === undefined) return { bg: C.bg, text: C.textLight };
-    if (occ >= 90) return { bg: "#1a5c2e", text: "#fff" };
-    if (occ >= 75) return { bg: "#2d7a4f", text: "#fff" };
-    if (occ >= 60) return { bg: "#52a870", text: "#fff" };
+    if (occ >= 90) return { bg: "#004B87", text: "#fff" };
+    if (occ >= 75) return { bg: "#009F4D", text: "#fff" };
+    if (occ >= 60) return { bg: "#4CAF82", text: "#fff" };
     if (occ >= 45) return { bg: "#f0a500", text: "#fff" };
     if (occ >= 30) return { bg: "#e07020", text: "#fff" };
     return { bg: "#c0392b", text: "#fff" };
@@ -660,7 +661,7 @@ function PickupView({ datos }) {
   return (
     <div>
       <div style={{ marginBottom: 20 }}>
-        <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, fontWeight: 700, color: C.text }}>Seguimiento de Pickup</h2>
+        <h2 style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 20, fontWeight: 700, color: C.text, letterSpacing: -0.3 }}>Seguimiento de Pickup</h2>
         <p style={{ fontSize: 12, color: C.textLight, marginTop: 4 }}>Ritmo de captación de reservas</p>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 14, marginBottom: 24 }}>
@@ -876,11 +877,11 @@ function BudgetView({ datos, anio: anioProp }) {
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 28 }}>
         <div>
-          <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, fontWeight: 700, color: C.text }}>Presupuesto vs Real</h2>
+          <h2 style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 20, fontWeight: 700, color: C.text, letterSpacing: -0.3 }}>Presupuesto vs Real</h2>
           <p style={{ fontSize: 12, color: C.textLight, marginTop: 4 }}>Seguimiento del cumplimiento presupuestario · {anio}</p>
         </div>
         {aniosDisponibles.length > 1 && (
-          <select value={anio} onChange={e => setAnio(parseInt(e.target.value))} style={{ padding: "7px 10px", borderRadius: 8, border: `1.5px solid ${C.border}`, fontSize: 13, fontWeight: 600, color: C.text, background: C.bgCard, cursor: "pointer", fontFamily: "'DM Sans', sans-serif", outline: "none" }}>
+          <select value={anio} onChange={e => setAnio(parseInt(e.target.value))} style={{ padding: "6px 10px", borderRadius: 6, border: `1px solid ${C.border}`, fontSize: 12, fontWeight: 600, color: C.text, background: C.bgCard, cursor: "pointer", fontFamily: "'DM Sans', sans-serif", outline: "none", letterSpacing: 0.2 }}>
             {aniosDisponibles.map(a => <option key={a} value={a}>{a}</option>)}
           </select>
         )}
@@ -977,7 +978,7 @@ function BudgetView({ datos, anio: anioProp }) {
             </thead>
             <tbody>
               {filas.map((f, i) => (
-                <tr key={i} style={{ borderBottom: `1px solid ${C.border}`, background: i % 2 === 0 ? C.bg : C.bgCard }}>
+                <tr key={i} style={{ borderBottom: `1px solid ${C.border}`, background: i % 2 === 0 ? "#FAFAFA" : C.bgCard }}>
                   <td style={{ padding: "10px 12px", fontWeight: 600, color: C.text }}>{f.mes}</td>
                   {/* ADR */}
                   <td style={{ padding: "10px 8px", textAlign: "right", color: C.textMid }}>€{f.adr_ppto}</td>
@@ -1052,7 +1053,7 @@ function AuthScreen() {
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap'); * { box-sizing: border-box; margin: 0; padding: 0; } @keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }`}</style>
       <div style={{ width: 420, background: C.bgCard, borderRadius: 20, padding: "40px 36px", boxShadow: "0 32px 80px rgba(0,0,0,0.4)", animation: "fadeUp 0.5s ease both" }}>
         <div style={{ textAlign: "center", marginBottom: 32 }}>
-          <div style={{ width: 52, height: 52, background: C.accent, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, margin: "0 auto 14px" }}>🏨</div>
+          <div style={{ width: 52, height: 52, background: C.accent, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, margin: "0 auto 14px" }}>🏨</div>
           <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: 24, fontWeight: 800, color: C.text }}>RevManager</h1>
           <p style={{ fontSize: 12, color: C.textLight, marginTop: 4 }}>Revenue Management para hoteles independientes</p>
         </div>
@@ -1176,17 +1177,17 @@ export default function App() {
         ::-webkit-scrollbar-track { background: ${C.bg}; }
         ::-webkit-scrollbar-thumb { background: ${C.accentLight}; border-radius: 3px; }
         @keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
-        .nav-item:hover { background: ${C.accentLight} !important; color: ${C.accentDark} !important; }
+        .nav-item:hover { background: rgba(255,255,255,0.12) !important; color: #FFFFFF !important; }
       `}</style>
 
       {/* Sidebar */}
       <div style={{ width: 220, flexShrink: 0, minHeight: "100vh", background: C.bgDeep, display: "flex", flexDirection: "column", position: "sticky", top: 0, height: "100vh" }}>
         <div style={{ padding: "24px 20px 20px", borderBottom: "1px solid #FFFFFF11" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <div style={{ width: 36, height: 36, background: C.accent, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>🏨</div>
+            <div style={{ width: 36, height: 36, background: "rgba(255,255,255,0.15)", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 700, color: "#FFFFFF", fontFamily: "'DM Sans', sans-serif", letterSpacing: 1 }}>RM</div>
             <div>
-              <p style={{ fontFamily: "'Playfair Display', serif", color: "#F7F3EE", fontWeight: 700, fontSize: 15 }}>RevManager</p>
-              <p style={{ fontSize: 10, color: C.accentLight, opacity: 0.6 }}>Hotel Independiente</p>
+              <p style={{ fontFamily: "'DM Sans', sans-serif", color: "#FFFFFF", fontWeight: 700, fontSize: 15, letterSpacing: 0.3 }}>RevManager</p>
+              <p style={{ fontSize: 10, color: "rgba(255,255,255,0.5)" }}>Hotel Intelligence</p>
             </div>
           </div>
         </div>
@@ -1207,7 +1208,7 @@ export default function App() {
       <main style={{ flex: 1, minWidth: 0, padding: "28px 32px", overflowY: "auto", height: "100vh" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 28 }}>
           <div>
-            <p style={{ fontSize: 18, fontFamily: "'Playfair Display', serif", fontWeight: 700, color: C.text }}>
+            <p style={{ fontSize: 16, fontFamily: "'DM Sans', sans-serif", fontWeight: 700, color: C.text, letterSpacing: -0.2 }}>
               {datos.hotel?.nombre || "Mi Hotel"}
             </p>
             <p style={{ fontSize: 12, color: C.textLight, marginTop: 2 }}>
