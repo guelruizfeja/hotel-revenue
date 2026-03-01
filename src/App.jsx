@@ -465,11 +465,15 @@ function ImportarExcel({ onClose, session, onImportado }) {
       const presupuestoRows = [];
       if (wsBu) {
         const rowsBu = XLSX.utils.sheet_to_json(wsBu, { header: 1 });
-        const bloques = [
-          { startRow: 4, anio: 2025 },
-          { startRow: 21, anio: 2026 },
-        ];
+        // Detectar bloques dinámicamente: buscar filas con nombre de mes en col 0
+        const MESES_PPTO = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+        const anioImportPpto = parseInt(produccionRows[0]?.fecha?.slice(0,4)) || new Date().getFullYear();
+        const bloques = [{ startRow: null, anio: anioImportPpto }];
+        for (let r = 0; r < rowsBu.length; r++) {
+          if (rowsBu[r]?.[0] === "Enero") { bloques[0].startRow = r; break; }
+        }
         for (const { startRow, anio } of bloques) {
+          if (startRow === null) continue;
           for (let i = 0; i < 12; i++) {
             const row = rowsBu[startRow + i];
             if (!row || !row[0] || typeof row[0] !== "string") continue;
@@ -477,7 +481,7 @@ function ImportarExcel({ onClose, session, onImportado }) {
             const adr_ppto = parseFloat(row[4]) || null;
             const revpar_ppto = parseFloat(row[7]) || null;
             const rev_total_ppto = parseFloat(row[10]) || null;
-            if (!adr_ppto && !revpar_ppto && !rev_total_ppto) continue;
+            if (!occ_ppto && !adr_ppto && !revpar_ppto && !rev_total_ppto) continue;
             presupuestoRows.push({
               hotel_id: session.user.id,
               anio,
