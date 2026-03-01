@@ -42,6 +42,11 @@ function Card({ children, style = {} }) {
 
 // ─── KPI MODAL ───────────────────────────────────────────────────
 function KpiModal({ kpi, datos, mes, anio, onClose }) {
+  useEffect(() => {
+    const handler = (e) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
   const { produccion, presupuesto } = datos;
   const MESES_FULL = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 
@@ -108,7 +113,7 @@ function KpiModal({ kpi, datos, mes, anio, onClose }) {
   const unit = kpi==="Ocupación"?"%":"€";
 
   return (
-    <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", zIndex:1000, display:"flex", alignItems:"center", justifyContent:"center", padding:20 }} onClick={onClose}>
+    <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", zIndex:1000, display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}>
       <div style={{ background:C.bgCard, borderRadius:14, width:"100%", maxWidth:820, maxHeight:"90vh", overflow:"auto", padding:28, boxShadow:"0 20px 60px rgba(0,0,0,0.2)" }} onClick={e=>e.stopPropagation()}>
 
         {/* Header modal */}
@@ -117,7 +122,11 @@ function KpiModal({ kpi, datos, mes, anio, onClose }) {
             <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:2 }}>{MESES_FULL[mes]} {anio}</p>
             <h3 style={{ fontSize:22, fontWeight:800, color:C.text, fontFamily:"'DM Sans',sans-serif", letterSpacing:-0.5 }}>{kpi}</h3>
           </div>
-          <button onClick={onClose} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:8, width:32, height:32, cursor:"pointer", fontSize:16, color:C.textMid }}>✕</button>
+          <button onClick={onClose} style={{ background:"none", border:`1.5px solid ${C.border}`, borderRadius:8, width:34, height:34, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", fontSize:16, color:C.textMid, fontWeight:300, transition:"all 0.15s" }}
+            onMouseEnter={e=>{ e.currentTarget.style.background=C.accent; e.currentTarget.style.borderColor=C.accent; e.currentTarget.style.color="#fff"; }}
+            onMouseLeave={e=>{ e.currentTarget.style.background="none"; e.currentTarget.style.borderColor=C.border; e.currentTarget.style.color=C.textMid; }}>
+            ×
+          </button>
         </div>
 
         {/* 3 KPIs rápidos */}
@@ -841,8 +850,7 @@ async function generarReportePDF(datos, mes, anio, hotelNombre) {
 }
 
 // ─── DASHBOARD VIEW ───────────────────────────────────────────────
-function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle }) {
-  const [kpiModal, setKpiModal] = useState(null);
+function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, setKpiModal }) {
   const { produccion } = datos;
 
   if (!produccion || produccion.length === 0) return <EmptyState />;
@@ -1579,10 +1587,11 @@ export default function App() {
   const handleLogout = async () => { await supabase.auth.signOut(); };
 
   const [mesDetalle, setMesDetalle] = useState(null);
-  const [generandoPDF, setGenerandoPDF] = useState(false); // { mes, anio }
+  const [generandoPDF, setGenerandoPDF] = useState(false);
+  const [kpiModal, setKpiModal] = useState(null);
 
   const views = {
-    dashboard: (props) => <DashboardView {...props} onMesDetalle={(m, a) => setMesDetalle({ mes: m, anio: a })} />,
+    dashboard: (props) => <DashboardView {...props} onMesDetalle={(m, a) => setMesDetalle({ mes: m, anio: a })} kpiModal={kpiModal} setKpiModal={setKpiModal} />,
     pickup:    (props) => <PickupView    {...props} />,
     budget:    (props) => <BudgetView    {...props} />,
   };
