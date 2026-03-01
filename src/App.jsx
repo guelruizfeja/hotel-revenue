@@ -20,11 +20,11 @@ const MESES_FULL = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Ag
 const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null;
   return (
-    <div style={{ background: C.bgDeep, borderRadius: 8, padding: "10px 14px", fontSize: 12, color: "#E8DDD0" }}>
-      <p style={{ color: C.accent, fontWeight: 600, marginBottom: 6 }}>{label}</p>
+    <div style={{ background: "#fff", borderRadius: 8, padding: "10px 14px", fontSize: 12, color: C.text, border: `1px solid ${C.border}`, boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}>
+      <p style={{ color: C.accent, fontWeight: 700, marginBottom: 6 }}>{label}</p>
       {payload.map((p, i) => (
-        <p key={i} style={{ color: p.color || "#E8DDD0", margin: "2px 0" }}>
-          {p.name}: <b style={{ color: "#fff" }}>{p.value}</b>
+        <p key={i} style={{ color: C.textMid, margin: "2px 0" }}>
+          {p.name}: <b style={{ color: C.text }}>{p.value}</b>
         </p>
       ))}
     </div>
@@ -811,8 +811,8 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle }) {
               <YAxis yAxisId="left"  tick={{ fill: C.textLight, fontSize: 11 }} axisLine={false} tickLine={false} unit="%" domain={[0,100]} />
               <YAxis yAxisId="right" orientation="right" tick={{ fill: C.textLight, fontSize: 11 }} axisLine={false} tickLine={false} unit="€" />
               <Tooltip content={<CustomTooltip />} />
-              <Bar  yAxisId="left"  dataKey="occ" name="Ocupación" fill={`${C.accent}99`} radius={[2,2,0,0]} />
-              <Line yAxisId="right" dataKey="adr" name="ADR" type="monotone" stroke={C.blue} strokeWidth={2} dot={false} />
+              <Bar  yAxisId="left"  dataKey="occ" name="Ocupación" fill={C.accent} radius={[2,2,0,0]} fillOpacity={0.85} />
+              <Line yAxisId="right" dataKey="adr" name="ADR" type="monotone" stroke="#E85D04" strokeWidth={2.5} dot={false} />
             </ComposedChart>
           </ResponsiveContainer>
         </Card>
@@ -832,7 +832,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle }) {
               <YAxis tick={{ fill: C.textLight, fontSize: 11 }} axisLine={false} tickLine={false} unit="€" />
               <Tooltip content={<CustomTooltip />} />
               <Area type="monotone" dataKey="revpar" name="RevPAR" stroke={C.accent} strokeWidth={2} fill="url(#gRevpar)" dot={{ fill: C.accent, r: 2.5 }} activeDot={{ r: 4 }} />
-              <Line type="monotone" dataKey="trevpar" name="TRevPAR" stroke={C.blue} strokeWidth={1.5} dot={false} strokeDasharray="5 4" />
+              <Line type="monotone" dataKey="trevpar" name="TRevPAR" stroke="#E85D04" strokeWidth={1.5} dot={false} strokeDasharray="5 4" />
             </AreaChart>
           </ResponsiveContainer>
         </Card>
