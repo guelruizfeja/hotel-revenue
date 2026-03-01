@@ -59,6 +59,7 @@ function KpiModal({ kpi, datos, mes, anio, onClose }) {
       const habDis = d.hab_disponibles||30;
       return {
         dia: f.getDate(),
+        diaSemana: f.getDay(),
         fecha: f.toLocaleDateString("es-ES",{weekday:"short",day:"numeric",month:"short"}),
         occ:    habDis>0 ? Math.round(d.hab_ocupadas/habDis*100) : 0,
         adr:    d.hab_ocupadas>0 ? Math.round(d.revenue_hab/d.hab_ocupadas) : 0,
@@ -172,8 +173,30 @@ function KpiModal({ kpi, datos, mes, anio, onClose }) {
           )}
         </div>
 
-        {/* Mejor y peor día */}
+        {/* Mejor y peor día / días semana */}
         {mejorDia && peorDia && (
+          kpi === "Ocupación" ? (() => {
+            const DIAS_SEM = ["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
+            const mediasPorDia = DIAS_SEM.map((nombre,idx)=>{
+              const vals = diasMes.filter(d=>d.diaSemana===idx);
+              const media = vals.length>0 ? vals.reduce((a,b)=>a+b.occ,0)/vals.length : 0;
+              return { nombre, media };
+            }).filter(d=>d.media>0).sort((a,b)=>b.media-a.media);
+            const top2    = mediasPorDia.slice(0,2).map(d=>d.nombre);
+            const bottom2 = mediasPorDia.slice(-2).map(d=>d.nombre);
+            return (
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
+                <div style={{ background:C.greenLight, borderRadius:8, padding:"14px 16px", borderLeft:`3px solid ${C.green}` }}>
+                  <p style={{ fontSize:10, color:C.green, textTransform:"uppercase", letterSpacing:1.5, fontWeight:700, marginBottom:8 }}>Mayor ocupación</p>
+                  <p style={{ fontSize:16, fontWeight:700, color:C.text, fontFamily:"'DM Sans',sans-serif" }}>{top2.join(" y ")}</p>
+                </div>
+                <div style={{ background:C.redLight, borderRadius:8, padding:"14px 16px", borderLeft:`3px solid ${C.red}` }}>
+                  <p style={{ fontSize:10, color:C.red, textTransform:"uppercase", letterSpacing:1.5, fontWeight:700, marginBottom:8 }}>Menor ocupación</p>
+                  <p style={{ fontSize:16, fontWeight:700, color:C.text, fontFamily:"'DM Sans',sans-serif" }}>{bottom2.join(" y ")}</p>
+                </div>
+              </div>
+            );
+          })() : (
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
             <div style={{ background:C.greenLight, borderRadius:8, padding:"12px 16px" }}>
               <p style={{ fontSize:10, color:C.green, textTransform:"uppercase", letterSpacing:1.5, fontWeight:700 }}>Mejor día</p>
@@ -186,6 +209,7 @@ function KpiModal({ kpi, datos, mes, anio, onClose }) {
               <p style={{ fontSize:11, color:C.textLight, marginTop:2 }}>{peorDia.fecha}</p>
             </div>
           </div>
+          )
         )}
       </div>
     </div>
