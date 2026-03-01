@@ -653,7 +653,6 @@ async function generarReportePDF(datos, mes, anio, hotelNombre) {
 
 // ─── DASHBOARD VIEW ───────────────────────────────────────────────
 function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle }) {
-  const [generandoPDF, setGenerandoPDF] = useState(false);
   const { produccion } = datos;
 
   if (!produccion || produccion.length === 0) return <EmptyState />;
@@ -760,16 +759,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle }) {
             {esMesActual ? "Mes en curso" : "Mes cerrado"} · {MESES[mes]} {anio}
           </p>
         </div>
-        <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-          <button
-            onClick={async()=>{ setGenerandoPDF(true); await generarReportePDF(datos,mes,anio,datos.hotel?.nombre||"Mi Hotel"); setGenerandoPDF(false); }}
-            disabled={generandoPDF}
-            style={{ padding:"8px 16px", borderRadius:8, border:`1px solid ${C.border}`, background:generandoPDF?C.bg:C.accent, color:generandoPDF?C.textLight:"#fff", fontSize:12, fontWeight:600, cursor:generandoPDF?"not-allowed":"pointer", fontFamily:"'DM Sans',sans-serif", display:"flex", alignItems:"center", gap:6 }}
-          >
-            {generandoPDF ? "⏳ Generando..." : "📄 Informe PDF"}
-          </button>
-          <PeriodSelector mes={mes} anio={anio} onChange={onPeriodo} />
-        </div>
+        <PeriodSelector mes={mes} anio={anio} onChange={onPeriodo} />
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 14, marginBottom: 24 }}>
@@ -1404,7 +1394,8 @@ export default function App() {
 
   const handleLogout = async () => { await supabase.auth.signOut(); };
 
-  const [mesDetalle, setMesDetalle] = useState(null); // { mes, anio }
+  const [mesDetalle, setMesDetalle] = useState(null);
+  const [generandoPDF, setGenerandoPDF] = useState(false); // { mes, anio }
 
   const views = {
     dashboard: (props) => <DashboardView {...props} onMesDetalle={(m, a) => setMesDetalle({ mes: m, anio: a })} />,
@@ -1467,6 +1458,15 @@ export default function App() {
             {datos.hotel?.ciudad && <p style={{ fontSize: 12, color: C.textLight, marginTop: 3, letterSpacing: 2, textTransform: "uppercase" }}>{datos.hotel.ciudad}</p>}
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            {view === "dashboard" && (
+              <button
+                onClick={async()=>{ setGenerandoPDF(true); await generarReportePDF(datos,mesSel,anioSel,datos.hotel?.nombre||"Mi Hotel"); setGenerandoPDF(false); }}
+                disabled={generandoPDF}
+                style={{ background:"transparent", color:C.accent, border:`1px solid ${C.accent}`, borderRadius:20, padding:"6px 16px", fontSize:11, fontWeight:600, cursor:generandoPDF?"not-allowed":"pointer", fontFamily:"'DM Sans',sans-serif" }}
+              >
+                {generandoPDF ? "⏳ Generando..." : "📄 Informe PDF"}
+              </button>
+            )}
             <button onClick={() => setImportar(true)} style={{ background: C.accent, color: "#fff", border: "none", borderRadius: 20, padding: "6px 16px", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>
               📊 Importar datos
             </button>
