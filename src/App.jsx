@@ -584,16 +584,67 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle }) {
 
 // ─── PICKUP VIEW ──────────────────────────────────────────────────
 function PickupView({ datos }) {
-  const { pickup } = datos;
+  const { pickup, produccion } = datos;
   if (!pickup || pickup.length === 0) return <EmptyState mensaje="Importa tu plantilla con datos de pickup para ver las curvas aquí" />;
 
+  const hoy = new Date();
+  const [heatAnio, setHeatAnio] = useState(hoy.getFullYear());
+  const [heatMes, setHeatMes]   = useState(hoy.getMonth());
+
+  const MESES_CAMPOS = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+
   const totalesPorMes = MESES_CORTO.map((mes, i) => {
-    const campo = `mes_${["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"][i]}`;
+    const campo = `mes_${MESES_CAMPOS[i]}`;
     return { mes, total: pickup.reduce((a, d) => a + (d[campo] || 0), 0) };
   }).filter(d => d.total > 0);
 
-  const ultimosDias   = [...pickup].sort((a,b) => new Date(b.fecha_pickup) - new Date(a.fecha_pickup)).slice(0, 14).reverse();
-  const pickupTotal   = pickup.reduce((a,d) => a + (d.total_dia || 0), 0);
+  const ultimosDias = [...pickup].sort((a,b) => new Date(b.fecha_pickup) - new Date(a.fecha_pickup)).slice(0, 14).reverse();
+  const pickupTotal = pickup.reduce((a,d) => a + (d.total_dia || 0), 0);
+
+  // Pickup reciente (últimos 2 días de datos)
+  const ultimaFechaPickup = pickup.reduce((max, d) => d.fecha_pickup > max ? d.fecha_pickup : max, "");
+  const pickupReciente = new Set(
+    pickup.filter(d => {
+      if (!ultimaFechaPickup) return false;
+      const diff = (new Date(ultimaFechaPickup) - new Date(d.fecha_pickup)) / 86400000;
+      return diff <= 1 && d.total_dia > 0;
+    }).map(d => d.fecha_pickup)
+  );
+
+  // Datos producción del mes del heatmap
+  const diasMes = new Date(heatAnio, heatMes + 1, 0).getDate();
+  const primerDia = new Date(heatAnio, heatMes, 1).getDay(); // 0=Dom
+  const offsetLunes = (primerDia + 6) % 7; // Lunes=0
+
+  const prodMes = {};
+  (produccion || []).forEach(d => {
+    const f = new Date(d.fecha + "T00:00:00");
+    if (f.getMonth() === heatMes && f.getFullYear() === heatAnio) {
+      prodMes[f.getDate()] = d;
+    }
+  });
+
+  // Pickup del mes del heatmap (reservas captadas para ese mes)
+  const campoPpickup = `mes_${MESES_CAMPOS[heatMes]}`;
+  const diasConPickup = new Set(
+    pickup.filter(d => (d[campoPpickup] || 0) > 0).map(d => d.fecha_pickup)
+  );
+  const esReciente = (dia) => {
+    const fechaStr = `${heatAnio}-${String(heatMes+1).padStart(2,"0")}-${String(dia).padStart(2,"0")}`;
+    return [...pickupReciente].some(f => f === fechaStr);
+  };
+
+  const getOccColor = (occ) => {
+    if (occ === null || occ === undefined) return { bg: C.bg, text: C.textLight };
+    if (occ >= 90) return { bg: "#1a5c2e", text: "#fff" };
+    if (occ >= 75) return { bg: "#2d7a4f", text: "#fff" };
+    if (occ >= 60) return { bg: "#52a870", text: "#fff" };
+    if (occ >= 45) return { bg: "#f0a500", text: "#fff" };
+    if (occ >= 30) return { bg: "#e07020", text: "#fff" };
+    return { bg: "#c0392b", text: "#fff" };
+  };
+
+  const aniosDisp = [...new Set((produccion||[]).map(d => new Date(d.fecha+"T00:00:00").getFullYear()))].sort();
 
   return (
     <div>
@@ -606,6 +657,77 @@ function PickupView({ datos }) {
         <KpiCard label="Días registrados" value={pickup.length} change={`${pickup.length}`} sub="días con pickup" up={true} i={1} />
         <KpiCard label="Media diaria"     value={pickup.length > 0 ? Math.round(pickupTotal/pickup.length) : 0} change="res/día" sub="media" up={true} i={2} />
       </div>
+
+      {/* HEATMAP */}
+      <Card style={{ marginBottom: 16 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+          <div>
+            <p style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700, fontSize: 16, color: C.text }}>Heatmap de Ocupación</p>
+            <p style={{ fontSize: 11, color: C.textLight, marginTop: 2 }}>Color por % ocupación · 🔴 sin pickup reciente · ⚡ con pickup</p>
+          </div>
+          <div style={{ display: "flex", gap: 6 }}>
+            <select value={heatMes} onChange={e => setHeatMes(parseInt(e.target.value))} style={{ padding: "6px 10px", borderRadius: 8, border: `1px solid ${C.border}`, fontSize: 12, color: C.text, background: C.bgCard, fontFamily: "'DM Sans',sans-serif", outline: "none" }}>
+              {MESES.map((m,i) => <option key={i} value={i}>{m}</option>)}
+            </select>
+            <select value={heatAnio} onChange={e => setHeatAnio(parseInt(e.target.value))} style={{ padding: "6px 10px", borderRadius: 8, border: `1px solid ${C.border}`, fontSize: 12, color: C.text, background: C.bgCard, fontFamily: "'DM Sans',sans-serif", outline: "none" }}>
+              {aniosDisp.map(a => <option key={a} value={a}>{a}</option>)}
+            </select>
+          </div>
+        </div>
+
+        {/* Cabecera días semana */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4, marginBottom: 4 }}>
+          {["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"].map(d => (
+            <div key={d} style={{ textAlign: "center", fontSize: 10, color: C.textLight, fontWeight: 600, padding: "4px 0" }}>{d}</div>
+          ))}
+        </div>
+
+        {/* Grid de días */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4 }}>
+          {/* Celdas vacías al inicio */}
+          {Array.from({ length: offsetLunes }).map((_, i) => <div key={`e${i}`} />)}
+
+          {Array.from({ length: diasMes }).map((_, i) => {
+            const dia = i + 1;
+            const d = prodMes[dia];
+            const habDis = d?.hab_disponibles || 30;
+            const occ = d ? Math.round(d.hab_ocupadas / habDis * 100) : null;
+            const { bg, text } = getOccColor(occ);
+            const tienePickup = [...diasConPickup].some(f => {
+              const fp = new Date(f + "T00:00:00");
+              return fp.getDate() === dia && fp.getMonth() === heatMes && fp.getFullYear() === heatAnio;
+            });
+            const fechaDia = new Date(heatAnio, heatMes, dia);
+            const esFinde = fechaDia.getDay() === 0 || fechaDia.getDay() === 6;
+
+            return (
+              <div key={dia} style={{ background: occ !== null ? bg : C.bg, borderRadius: 8, padding: "8px 4px", textAlign: "center", border: `1.5px solid ${esFinde ? C.accent+"66" : C.border}`, minHeight: 58, display: "flex", flexDirection: "column", justifyContent: "space-between", alignItems: "center" }}>
+                <span style={{ fontSize: 11, color: occ !== null ? text : C.textLight, fontWeight: esFinde ? 700 : 400 }}>{dia}</span>
+                {occ !== null ? (
+                  <>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: text }}>{occ}%</span>
+                    <span style={{ fontSize: 9, color: text+"cc" }}>{tienePickup ? "⚡" : ""}</span>
+                  </>
+                ) : (
+                  <span style={{ fontSize: 10, color: C.border }}>—</span>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Leyenda */}
+        <div style={{ display: "flex", gap: 8, marginTop: 14, flexWrap: "wrap", alignItems: "center" }}>
+          <span style={{ fontSize: 11, color: C.textLight, marginRight: 4 }}>Ocupación:</span>
+          {[["<30%","#c0392b"],["30-45%","#e07020"],["45-60%","#f0a500"],["60-75%","#52a870"],["75-90%","#2d7a4f"],["≥90%","#1a5c2e"]].map(([label, color]) => (
+            <div key={label} style={{ display: "flex", alignItems: "center", gap: 4 }}>
+              <div style={{ width: 12, height: 12, borderRadius: 3, background: color }} />
+              <span style={{ fontSize: 10, color: C.textLight }}>{label}</span>
+            </div>
+          ))}
+          <span style={{ fontSize: 11, color: C.textLight, marginLeft: 8 }}>⚡ pickup reciente</span>
+        </div>
+      </Card>
       <Card style={{ marginBottom: 16 }}>
         <p style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700, fontSize: 16, color: C.text, marginBottom: 4 }}>Pickup por mes de llegada</p>
         <p style={{ fontSize: 11, color: C.textLight, marginBottom: 18 }}>Total reservas captadas para cada mes</p>
