@@ -110,7 +110,7 @@ function KpiModal({ kpi, datos, mes, anio, onClose }) {
   const mejorDia = diasMes.length>0?diasMes.reduce((a,b)=>a[fieldKey]>b[fieldKey]?a:b):null;
   const peorDia  = diasMes.length>0?diasMes.reduce((a,b)=>a[fieldKey]<b[fieldKey]?a:b):null;
 
-  const pptoVal = kpi==="ADR"?ppto?.adr_ppto:kpi==="RevPAR"?ppto?.revpar_ppto:kpi==="Revenue Total"?ppto?.rev_total_ppto:null;
+  const pptoVal = kpi==="Ocupación"?ppto?.occ_ppto:kpi==="ADR"?ppto?.adr_ppto:kpi==="RevPAR"?ppto?.revpar_ppto:kpi==="Revenue Total"?ppto?.rev_total_ppto:null;
   const varPpto = pptoVal&&mediaActual?((mediaActual-pptoVal)/pptoVal*100).toFixed(1):null;
 
   const unit = kpi==="Ocupación"?"%":"€";
@@ -473,14 +473,16 @@ function ImportarExcel({ onClose, session, onImportado }) {
           for (let i = 0; i < 12; i++) {
             const row = rowsBu[startRow + i];
             if (!row || !row[0] || typeof row[0] !== "string") continue;
-            const adr_ppto = parseFloat(row[1]) || null;
-            const revpar_ppto = parseFloat(row[4]) || null;
-            const rev_total_ppto = parseFloat(row[7]) || null;
+            const occ_ppto = parseFloat(row[1]) || null;
+            const adr_ppto = parseFloat(row[4]) || null;
+            const revpar_ppto = parseFloat(row[7]) || null;
+            const rev_total_ppto = parseFloat(row[10]) || null;
             if (!adr_ppto && !revpar_ppto && !rev_total_ppto) continue;
             presupuestoRows.push({
               hotel_id: session.user.id,
               anio,
               mes: i + 1,
+              occ_ppto: occ_ppto ? Math.round(occ_ppto * 10) / 10 : null,
               adr_ppto: adr_ppto ? Math.round(adr_ppto * 100) / 100 : null,
               revpar_ppto: revpar_ppto ? Math.round(revpar_ppto * 100) / 100 : null,
               rev_total_ppto: rev_total_ppto ? Math.round(rev_total_ppto) : null,
