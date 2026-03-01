@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "./supabase";
 import {
   AreaChart, Area, BarChart, Bar, LineChart, Line, ComposedChart,
@@ -410,8 +410,250 @@ function MonthDetailView({ datos, mes, anio, onBack }) {
   );
 }
 
+
+// ─── PDF REPORT ──────────────────────────────────────────────────
+async function generarReportePDF(datos, mes, anio, hotelNombre) {
+  const MESES_FULL = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+  const MESES_C    = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+  const { produccion, presupuesto } = datos;
+  const fmt  = n => n != null ? Math.round(n).toLocaleString("es-ES") : "—";
+  const fmtP = n => n != null ? parseFloat(n).toFixed(1) + "%" : "—";
+
+  const getMes = (mIdx, aIdx) => {
+    const d = (produccion||[]).filter(r => {
+      const f = new Date(r.fecha+"T00:00:00");
+      return f.getMonth()===mIdx && f.getFullYear()===aIdx;
+    });
+    const habOcu = d.reduce((a,r)=>a+(r.hab_ocupadas||0),0);
+    const habDis = d.reduce((a,r)=>a+(r.hab_disponibles||0),0);
+    const revH   = d.reduce((a,r)=>a+(r.revenue_hab||0),0);
+    const revFnb = d.reduce((a,r)=>a+(r.revenue_fnb||0),0);
+    const revOt  = d.reduce((a,r)=>a+(r.revenue_otros||0),0);
+    const revTot = d.reduce((a,r)=>a+(r.revenue_total||0),0);
+    return { d, habOcu, habDis, revH, revFnb, revOt, revTot,
+      occ:    habDis>0 ? (habOcu/habDis*100) : 0,
+      adr:    habOcu>0 ? revH/habOcu : 0,
+      revpar: habDis>0 ? revH/habDis : 0,
+      trevpar:habDis>0 ? (revH+revFnb+revOt)/habDis : 0,
+    };
+  };
+
+  const mesAct = getMes(mes, anio);
+  const mesPrev = getMes(mes===0?11:mes-1, mes===0?anio-1:anio);
+
+  // Datos 12 meses rodantes
+  const rodantes = Array.from({length:12},(_,i)=>{
+    const total = mes-11+i;
+    const mIdx  = ((total%12)+12)%12;
+    const aIdx  = anio + Math.floor(total/12);
+    const md = getMes(mIdx, aIdx);
+    const pp = (presupuesto||[]).find(p=>p.mes===mIdx+1 && p.anio===aIdx);
+    return { mes: MESES_C[mIdx], anio: aIdx, ...md, ppto: pp };
+  }).filter(r=>r.habOcu>0||r.revTot>0);
+
+  // Detalle diario
+  const diasMes = mesAct.d.sort((a,b)=>new Date(a.fecha)-new Date(b.fecha)).map(d=>{
+    const f = new Date(d.fecha+"T00:00:00");
+    const habDis = d.hab_disponibles||30;
+    return {
+      dia:   f.getDate(),
+      sem:   ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"][f.getDay()],
+      occ:   habDis>0?(d.hab_ocupadas/habDis*100).toFixed(1):0,
+      adr:   d.hab_ocupadas>0?Math.round(d.revenue_hab/d.hab_ocupadas):0,
+      revpar:habDis>0?Math.round(d.revenue_hab/habDis):0,
+      revTot:Math.round(d.revenue_total||0),
+    };
+  });
+
+  // Presupuesto mes actual
+  const pptoMes = (presupuesto||[]).find(p=>p.mes===mes+1 && p.anio===anio);
+  const pptoVsReal = pptoMes ? {
+    adr:   pptoMes.adr_ppto   ? ((mesAct.adr    - pptoMes.adr_ppto)   / pptoMes.adr_ppto   * 100).toFixed(1) : null,
+    revpar:pptoMes.revpar_ppto ? ((mesAct.revpar  - pptoMes.revpar_ppto)/ pptoMes.revpar_ppto * 100).toFixed(1) : null,
+    rev:   pptoMes.rev_total_ppto ? ((mesAct.revTot - pptoMes.rev_total_ppto)/pptoMes.rev_total_ppto*100).toFixed(1) : null,
+  } : null;
+
+  // ── Generar resumen automático basado en datos ──
+  const diffPct = (curr, prev) => prev > 0 ? ((curr-prev)/prev*100).toFixed(1) : null;
+  const occDiff  = diffPct(mesAct.occ, mesPrev.occ);
+  const adrDiff  = diffPct(mesAct.adr, mesPrev.adr);
+  const revDiff  = diffPct(mesAct.revTot, mesPrev.revTot);
+  const tendOcc  = occDiff  ? (parseFloat(occDiff)>=0  ? `subió un ${occDiff}%`  : `bajó un ${Math.abs(occDiff)}%`)  : "sin comparativa";
+  const tendAdr  = adrDiff  ? (parseFloat(adrDiff)>=0  ? `subió un ${adrDiff}%`  : `bajó un ${Math.abs(adrDiff)}%`)  : "sin comparativa";
+  const tendRev  = revDiff  ? (parseFloat(revDiff)>=0  ? `aumentó un ${revDiff}%` : `cayó un ${Math.abs(revDiff)}%`) : "sin comparativa";
+  const mejorDia = diasMes.length>0 ? diasMes.reduce((a,b)=>parseFloat(a.occ)>parseFloat(b.occ)?a:b) : null;
+  const peorDia  = diasMes.length>0 ? diasMes.reduce((a,b)=>parseFloat(a.occ)<parseFloat(b.occ)?a:b) : null;
+  const pptoOk   = pptoVsReal?.rev ? parseFloat(pptoVsReal.rev) >= 0 : null;
+
+  const resumenIA = [
+    `El mes de ${MESES_FULL[mes]} ${anio} cerró con una ocupación del ${mesAct.occ.toFixed(1)}%, un ADR de €${Math.round(mesAct.adr)} y un RevPAR de €${Math.round(mesAct.revpar)}, generando un revenue total de €${fmt(mesAct.revTot)}. Respecto al mes anterior, la ocupación ${tendOcc}, el ADR ${tendAdr} y el revenue ${tendRev}.`,
+    pptoVsReal ? `En cuanto al cumplimiento presupuestario, el revenue total ${pptoOk?"superó":"no alcanzó"} el objetivo con una desviación del ${pptoVsReal.rev}%. El ADR ${parseFloat(pptoVsReal.adr)>=0?"superó":"estuvo por debajo de"} el presupuesto en un ${Math.abs(pptoVsReal.adr)}% y el RevPAR se desvió un ${pptoVsReal.revpar}% respecto al objetivo.` : `No se dispone de datos presupuestarios para este mes, por lo que no es posible realizar la comparativa vs objetivo.`,
+    mejorDia && peorDia ? `El día de mayor ocupación fue el ${mejorDia.dia} con un ${mejorDia.occ}% de ocupación y un ADR de €${mejorDia.adr}. Por el contrario, el día más débil fue el ${peorDia.dia} con un ${peorDia.occ}% de ocupación, lo que sugiere oportunidades de mejora en la captación de demanda en esos períodos.` : "",
+    `El TRevPAR del mes se situó en €${Math.round(mesAct.trevpar)}, con los ingresos de habitaciones representando el grueso del revenue total. Para el próximo mes se recomienda ${mesAct.occ < 70 ? "reforzar la estrategia de captación y revisar la política de precios para mejorar la ocupación" : mesAct.adr < mesPrev.adr ? "mantener la ocupación alcanzada y trabajar en incrementar el ADR mediante upselling y segmentación de tarifas" : "consolidar la estrategia actual que está mostrando resultados positivos tanto en ocupación como en precio medio"}.`
+  ].filter(Boolean).join("\n\n");
+
+  // ── Cargar jsPDF ──
+  const loadScript = (src) => new Promise((res, rej) => {
+    if (document.querySelector(`script[src="${src}"]`)) { res(); return; }
+    const s = document.createElement("script");
+    s.src = src; s.onload = res; s.onerror = rej;
+    document.head.appendChild(s);
+  });
+  await loadScript("https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js");
+  await loadScript("https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js");
+  const { jsPDF } = window.jspdf;
+
+  const doc = new jsPDF({ orientation:"portrait", unit:"mm", format:"a4" });
+  const W=210; const M=14; let y=M;
+
+  const azul   = [0,75,135];
+  const negro  = [26,26,26];
+  const gris   = [100,100,100];
+  const grisCl = [220,220,220];
+  const verde  = [0,159,77];
+  const rojo   = [211,47,47];
+
+  const addPage = () => { doc.addPage(); y=M; };
+  const checkY  = (needed=20) => { if(y+needed>285) addPage(); };
+
+  // ── Portada / Header ──
+  doc.setFillColor(...azul);
+  doc.rect(0,0,W,38,"F");
+  doc.setTextColor(255,255,255);
+  doc.setFontSize(22); doc.setFont("helvetica","bold");
+  doc.text((hotelNombre||"Mi Hotel").toUpperCase(), M, 18);
+  doc.setFontSize(13); doc.setFont("helvetica","normal");
+  doc.text(`Informe Mensual — ${MESES_FULL[mes]} ${anio}`, M, 28);
+  doc.setFontSize(9);
+  doc.text(`Generado el ${new Date().toLocaleDateString("es-ES",{day:"2-digit",month:"long",year:"numeric"})}`, W-M, 33, {align:"right"});
+  y = 48;
+
+  // ── KPIs del mes ──
+  doc.setTextColor(...azul);
+  doc.setFontSize(13); doc.setFont("helvetica","bold");
+  doc.text("KPIs del Mes", M, y); y+=6;
+  doc.setDrawColor(...grisCl); doc.line(M, y, W-M, y); y+=5;
+
+  const kpis = [
+    ["Ocupación", fmtP(mesAct.occ), "Mes anterior: "+fmtP(mesPrev.occ)],
+    ["ADR", "€"+fmt(mesAct.adr), "Mes anterior: €"+fmt(mesPrev.adr)],
+    ["RevPAR", "€"+fmt(mesAct.revpar), "Mes anterior: €"+fmt(mesPrev.revpar)],
+    ["TRevPAR", "€"+fmt(mesAct.trevpar), ""],
+    ["Revenue Hab.", "€"+fmt(mesAct.revH), ""],
+    ["Revenue Total", "€"+fmt(mesAct.revTot), pptoVsReal?.rev ? `vs Ppto: ${pptoVsReal.rev}%` : ""],
+  ];
+  const colW = (W-M*2)/3;
+  kpis.forEach((k,i)=>{
+    const col = i%3; const row = Math.floor(i/3);
+    const x = M + col*colW; const ky = y + row*22;
+    doc.setFillColor(248,250,253);
+    doc.roundedRect(x+1, ky, colW-3, 18, 2, 2, "F");
+    doc.setDrawColor(...grisCl); doc.roundedRect(x+1, ky, colW-3, 18, 2, 2, "S");
+    doc.setTextColor(...gris); doc.setFontSize(7); doc.setFont("helvetica","normal");
+    doc.text(k[0].toUpperCase(), x+5, ky+5);
+    doc.setTextColor(...negro); doc.setFontSize(13); doc.setFont("helvetica","bold");
+    doc.text(k[1], x+5, ky+12);
+    if(k[2]){ doc.setFontSize(7); doc.setFont("helvetica","normal"); doc.setTextColor(...gris); doc.text(k[2], x+5, ky+16.5); }
+  });
+  y += 48;
+
+  // ── Vs Presupuesto ──
+  if(pptoVsReal) {
+    checkY(30);
+    doc.setTextColor(...azul); doc.setFontSize(13); doc.setFont("helvetica","bold");
+    doc.text("Comparativa vs Presupuesto", M, y); y+=6;
+    doc.setDrawColor(...grisCl); doc.line(M,y,W-M,y); y+=5;
+    doc.autoTable({
+      startY: y,
+      head: [["Métrica","Presupuesto","Real","Desviación"]],
+      body: [
+        ["ADR", pptoMes?.adr_ppto?"€"+fmt(pptoMes.adr_ppto):"—", "€"+fmt(mesAct.adr), pptoVsReal.adr?(parseFloat(pptoVsReal.adr)>=0?"+":"")+pptoVsReal.adr+"%":"—"],
+        ["RevPAR", pptoMes?.revpar_ppto?"€"+fmt(pptoMes.revpar_ppto):"—", "€"+fmt(mesAct.revpar), pptoVsReal.revpar?(parseFloat(pptoVsReal.revpar)>=0?"+":"")+pptoVsReal.revpar+"%":"—"],
+        ["Revenue Total", pptoMes?.rev_total_ppto?"€"+fmt(pptoMes.rev_total_ppto):"—", "€"+fmt(mesAct.revTot), pptoVsReal.rev?(parseFloat(pptoVsReal.rev)>=0?"+":"")+pptoVsReal.rev+"%":"—"],
+      ],
+      styles: { fontSize:9, cellPadding:3 },
+      headStyles: { fillColor:azul, textColor:[255,255,255], fontStyle:"bold" },
+      alternateRowStyles: { fillColor:[248,250,253] },
+      columnStyles: { 3: { halign:"center", fontStyle:"bold" } },
+      margin: { left:M, right:M },
+      didParseCell: (d)=>{
+        if(d.section==="body" && d.column.index===3 && d.cell.raw!=="—"){
+          d.cell.styles.textColor = parseFloat(d.cell.raw)>=0 ? verde : rojo;
+        }
+      }
+    });
+    y = doc.lastAutoTable.finalY + 8;
+  }
+
+  // ── Resumen IA ──
+  checkY(40);
+  doc.setTextColor(...azul); doc.setFontSize(13); doc.setFont("helvetica","bold");
+  doc.text("Análisis IA del Mes", M, y); y+=6;
+  doc.setDrawColor(...grisCl); doc.line(M,y,W-M,y); y+=5;
+  doc.setFillColor(248,250,253);
+  const lines = doc.splitTextToSize(resumenIA, W-M*2-8);
+  doc.roundedRect(M, y, W-M*2, lines.length*4.5+8, 2, 2, "F");
+  doc.setTextColor(...negro); doc.setFontSize(9); doc.setFont("helvetica","normal");
+  doc.text(lines, M+4, y+6);
+  y += lines.length*4.5+14;
+
+  // ── Tabla resumen 12 meses ──
+  checkY(20); addPage();
+  doc.setTextColor(...azul); doc.setFontSize(13); doc.setFont("helvetica","bold");
+  doc.text("Resumen Últimos 12 Meses", M, y); y+=6;
+  doc.setDrawColor(...grisCl); doc.line(M,y,W-M,y); y+=3;
+  doc.autoTable({
+    startY: y,
+    head: [["Mes","Ocup.","ADR","RevPAR","TRevPAR","Rev. Hab.","Rev. Total"]],
+    body: rodantes.map(r=>[
+      r.mes+(r.anio!==anio?" "+r.anio:""),
+      fmtP(r.occ), "€"+fmt(r.adr), "€"+fmt(r.revpar),
+      "€"+fmt(r.trevpar), "€"+fmt(r.revH), "€"+fmt(r.revTot)
+    ]),
+    styles: { fontSize:8.5, cellPadding:2.5 },
+    headStyles: { fillColor:azul, textColor:[255,255,255], fontStyle:"bold" },
+    alternateRowStyles: { fillColor:[248,250,253] },
+    margin: { left:M, right:M },
+  });
+  y = doc.lastAutoTable.finalY + 10;
+
+  // ── Detalle diario ──
+  checkY(20);
+  doc.setTextColor(...azul); doc.setFontSize(13); doc.setFont("helvetica","bold");
+  doc.text(`Detalle Diario — ${MESES_FULL[mes]} ${anio}`, M, y); y+=6;
+  doc.setDrawColor(...grisCl); doc.line(M,y,W-M,y); y+=3;
+  doc.autoTable({
+    startY: y,
+    head: [["Día","","Ocup.","ADR","RevPAR","Rev. Total"]],
+    body: diasMes.map(d=>[d.dia, d.sem, d.occ+"%", "€"+d.adr, "€"+d.revpar, "€"+fmt(d.revTot)]),
+    styles: { fontSize:8, cellPadding:2 },
+    headStyles: { fillColor:azul, textColor:[255,255,255], fontStyle:"bold" },
+    alternateRowStyles: { fillColor:[248,250,253] },
+    columnStyles: { 1:{ textColor:gris, fontStyle:"italic" } },
+    margin: { left:M, right:M },
+    didParseCell: (d)=>{
+      if(d.section==="body" && d.column.index===2){
+        const v = parseFloat(d.cell.raw);
+        d.cell.styles.textColor = v>=80?verde:v<50?rojo:negro;
+        d.cell.styles.fontStyle = "bold";
+      }
+    }
+  });
+
+  // ── Footer ──
+  const pages = doc.internal.getNumberOfPages();
+  for(let i=1;i<=pages;i++){
+    doc.setPage(i);
+    doc.setFontSize(8); doc.setTextColor(...gris);
+    doc.text(`${hotelNombre||"RevManager"} · Informe ${MESES_FULL[mes]} ${anio} · Página ${i} de ${pages}`, W/2, 292, {align:"center"});
+  }
+
+  doc.save(`Informe_${MESES_FULL[mes]}_${anio}.pdf`);
+}
+
 // ─── DASHBOARD VIEW ───────────────────────────────────────────────
 function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle }) {
+  const [generandoPDF, setGenerandoPDF] = useState(false);
   const { produccion } = datos;
 
   if (!produccion || produccion.length === 0) return <EmptyState />;
@@ -518,7 +760,16 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle }) {
             {esMesActual ? "Mes en curso" : "Mes cerrado"} · {MESES[mes]} {anio}
           </p>
         </div>
-        <PeriodSelector mes={mes} anio={anio} onChange={onPeriodo} />
+        <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+          <button
+            onClick={async()=>{ setGenerandoPDF(true); await generarReportePDF(datos,mes,anio,datos.hotel?.nombre||"Mi Hotel"); setGenerandoPDF(false); }}
+            disabled={generandoPDF}
+            style={{ padding:"8px 16px", borderRadius:8, border:`1px solid ${C.border}`, background:generandoPDF?C.bg:C.accent, color:generandoPDF?C.textLight:"#fff", fontSize:12, fontWeight:600, cursor:generandoPDF?"not-allowed":"pointer", fontFamily:"'DM Sans',sans-serif", display:"flex", alignItems:"center", gap:6 }}
+          >
+            {generandoPDF ? "⏳ Generando..." : "📄 Informe PDF"}
+          </button>
+          <PeriodSelector mes={mes} anio={anio} onChange={onPeriodo} />
+        </div>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 14, marginBottom: 24 }}>
