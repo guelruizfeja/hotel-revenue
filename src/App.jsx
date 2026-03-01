@@ -1168,8 +1168,9 @@ function PickupView({ datos }) {
   };
 
   // ── BLOQUE 1: Calendario 3 meses ──────────────────────────────
-  const meses3 = [0,1,2].map(offset => {
-    const d = new Date(hoy.getFullYear(), hoy.getMonth() + offset, 1);
+  const [calOffset, setCalOffset] = useState(0);
+  const meses3 = [0].map(i => {
+    const d = new Date(hoy.getFullYear(), hoy.getMonth() + calOffset + i, 1);
     return { anio: d.getFullYear(), mes: d.getMonth() };
   });
 
@@ -1229,6 +1230,7 @@ function PickupView({ datos }) {
 
         {/* COLUMNA IZQUIERDA: Calendario 3 meses */}
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+
           {meses3.map(({ anio, mes }) => {
             const diasMes = new Date(anio, mes+1, 0).getDate();
             const primerDia = new Date(anio, mes, 1).getDay();
@@ -1236,9 +1238,13 @@ function PickupView({ datos }) {
             return (
               <Card key={`${anio}-${mes}`}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-                  <p style={{ fontWeight: 800, fontSize: 15, color: C.text, fontFamily: "'DM Sans',sans-serif", textTransform: "uppercase", letterSpacing: 0.5 }}>
-                    {MESES_FULL[mes]} {anio}
-                  </p>
+                  <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                    <button onClick={()=>setCalOffset(o=>o-1)} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, width:26, height:26, cursor:"pointer", color:C.textMid, fontSize:14, display:"flex", alignItems:"center", justifyContent:"center" }}>‹</button>
+                    <p style={{ fontWeight: 800, fontSize: 15, color: C.text, fontFamily: "'DM Sans',sans-serif", textTransform: "uppercase", letterSpacing: 0.5 }}>
+                      {MESES_FULL[mes]} {anio}
+                    </p>
+                    <button onClick={()=>setCalOffset(o=>o+1)} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, width:26, height:26, cursor:"pointer", color:C.textMid, fontSize:14, display:"flex", alignItems:"center", justifyContent:"center" }}>›</button>
+                  </div>
                   <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
                     {[["<40%","#E8F7EE"],["40-70%","#70C490"],["70-85%","#2E9E5B"],["≥85%","#004D26"]].map(([l,c])=>(
                       <div key={l} style={{ display:"flex", alignItems:"center", gap:3 }}>
