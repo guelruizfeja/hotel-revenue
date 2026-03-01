@@ -84,6 +84,7 @@ function KpiModal({ kpi, datos, mes, anio, onClose }) {
         occ: habDis>0?Math.round(d.hab_ocupadas/habDis*100):0,
         adr: d.hab_ocupadas>0?Math.round(d.revenue_hab/d.hab_ocupadas):0,
         revpar: habDis>0?Math.round(d.revenue_hab/habDis):0,
+        trevpar: habDis>0?Math.round((d.revenue_hab+(d.revenue_fnb||0)+(d.revenue_otros||0))/habDis):0,
         revTotal: Math.round(d.revenue_total||0),
       };
     });
@@ -103,7 +104,7 @@ function KpiModal({ kpi, datos, mes, anio, onClose }) {
   const chartData = getChartData();
 
   const mediaActual = diasMes.length>0 ? diasMes.reduce((a,d)=>a+(d[kpi==="Ocupación"?"occ":kpi==="ADR"?"adr":kpi==="RevPAR"?"revpar":kpi==="TRevPAR"?"trevpar":"revTotal"]||0),0)/diasMes.length : 0;
-  const mediaLY = diasLY.length>0 ? diasLY.reduce((a,d)=>a+(d[kpi==="Ocupación"?"occ":kpi==="ADR"?"adr":kpi==="RevPAR"?"revpar":"revTotal"]||0),0)/diasLY.length : 0;
+  const mediaLY = diasLY.length>0 ? diasLY.reduce((a,d)=>a+(d[kpi==="Ocupación"?"occ":kpi==="ADR"?"adr":kpi==="RevPAR"?"revpar":kpi==="TRevPAR"?"trevpar":"revTotal"]||0),0)/diasLY.length : 0;
   const varLY = mediaLY>0?((mediaActual-mediaLY)/mediaLY*100).toFixed(1):null;
   const fieldKey = kpi==="Ocupación"?"occ":kpi==="ADR"?"adr":kpi==="RevPAR"?"revpar":kpi==="TRevPAR"?"trevpar":"revTotal";
   const mejorDia = diasMes.length>0?diasMes.reduce((a,b)=>a[fieldKey]>b[fieldKey]?a:b):null;
@@ -136,7 +137,7 @@ function KpiModal({ kpi, datos, mes, anio, onClose }) {
           {[
             { label:"Media del mes", value:`${kpi==="Ocupación"?mediaActual.toFixed(1):Math.round(mediaActual).toLocaleString("es-ES")}${unit}` },
             { label:`Vs ${anio-1}`, value: varLY!==null ? `${parseFloat(varLY)>=0?"+":""}${varLY}%` : "Sin datos", up: varLY!==null?parseFloat(varLY)>=0:true },
-            { label:"Vs Presupuesto", value: varPpto!==null ? `${parseFloat(varPpto)>=0?"+":""}${varPpto}%` : "Sin datos ppto", up: varPpto!==null?parseFloat(varPpto)>=0:true },
+            ...(kpi!=="TRevPAR" ? [{ label:"Vs Presupuesto", value: varPpto!==null ? `${parseFloat(varPpto)>=0?"+":""}${varPpto}%` : "Sin datos ppto", up: varPpto!==null?parseFloat(varPpto)>=0:true }] : []),
           ].map((k,i)=>(
             <div key={i} style={{ background:C.bg, borderRadius:8, padding:"14px 16px", borderLeft:`3px solid ${C.accent}` }}>
               <p style={{ fontSize:10, color:C.textLight, textTransform:"uppercase", letterSpacing:1.5, marginBottom:6 }}>{k.label}</p>
