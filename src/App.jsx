@@ -228,10 +228,21 @@ function ImportarExcel({ onClose, session, onImportado }) {
 
       if (produccionRows.length === 0) throw new Error("No se encontraron datos en la hoja de Producción Diaria");
 
-      // Borrar y reinsertar
-      await supabase.from("produccion_diaria").delete().eq("hotel_id", session.user.id);
-      await supabase.from("pickup_diario").delete().eq("hotel_id", session.user.id);
-      await supabase.from("presupuesto").delete().eq("hotel_id", session.user.id);
+      // Detectar años presentes en el Excel
+      const aniosImport = [...new Set(produccionRows.map(r => r.fecha.slice(0, 4)))];
+      for (const anio of aniosImport) {
+        await supabase.from("produccion_diaria").delete()
+          .eq("hotel_id", session.user.id)
+          .gte("fecha", `${anio}-01-01`)
+          .lte("fecha", `${anio}-12-31`);
+        await supabase.from("pickup_diario").delete()
+          .eq("hotel_id", session.user.id)
+          .gte("fecha_pickup", `${anio}-01-01`)
+          .lte("fecha_pickup", `${anio}-12-31`);
+        await supabase.from("presupuesto").delete()
+          .eq("hotel_id", session.user.id)
+          .eq("anio", parseInt(anio));
+      }
 
       const { error: err1 } = await supabase.from("produccion_diaria").insert(produccionRows);
       if (err1) throw new Error("Error al guardar producción: " + err1.message);
