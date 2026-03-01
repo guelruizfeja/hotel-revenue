@@ -3,6 +3,7 @@ import { supabase } from "./supabase";
 import {
   AreaChart, Area, BarChart, Bar, LineChart, Line, ComposedChart,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
+  PieChart, Pie, Cell,
 } from "recharts";
 
 const C = {
@@ -146,8 +147,45 @@ function KpiModal({ kpi, datos, mes, anio, onClose }) {
 
         {/* Gráfica */}
         <div style={{ marginBottom:16 }}>
-          <p style={{ fontSize:12, fontWeight:600, color:C.textMid, marginBottom:10, textTransform:"uppercase", letterSpacing:1 }}>Evolución diaria{diasLY.length>0?" vs año anterior":""}</p>
-          {kpi==="Revenue Total" ? (
+          <p style={{ fontSize:12, fontWeight:600, color:C.textMid, marginBottom:10, textTransform:"uppercase", letterSpacing:1 }}>
+            {kpi==="TRevPAR" ? "Desglose de ingresos del mes" : `Evolución diaria${diasLY.length>0?" vs año anterior":""}`}
+          </p>
+          {kpi==="TRevPAR" ? (() => {
+            const totalHab  = diasMes.reduce((a,d)=>a+d.revHab,0);
+            const totalFnb  = diasMes.reduce((a,d)=>a+d.revFnb,0);
+            const totalOtros= diasMes.reduce((a,d)=>a+d.revOtros,0);
+            const total     = totalHab+totalFnb+totalOtros;
+            const pieData   = [
+              { name:"Habitaciones", value:totalHab,   pct: total>0?Math.round(totalHab/total*100):0 },
+              { name:"F&B",          value:totalFnb,   pct: total>0?Math.round(totalFnb/total*100):0 },
+              { name:"Otros",        value:totalOtros, pct: total>0?Math.round(totalOtros/total*100):0 },
+            ].filter(d=>d.value>0);
+            const PIE_COLORS = [C.accent, "#E85D04", C.green];
+            return (
+              <div style={{ display:"flex", alignItems:"center", gap:24 }}>
+                <PieChart width={200} height={200}>
+                  <Pie data={pieData} cx={95} cy={95} innerRadius={55} outerRadius={90} paddingAngle={3} dataKey="value">
+                    {pieData.map((_,i)=><Cell key={i} fill={PIE_COLORS[i]}/>)}
+                  </Pie>
+                  <Tooltip formatter={(v)=>`€${Math.round(v).toLocaleString("es-ES")}`}/>
+                </PieChart>
+                <div style={{ flex:1 }}>
+                  {pieData.map((d,i)=>(
+                    <div key={i} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"10px 0", borderBottom:`1px solid ${C.border}` }}>
+                      <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                        <div style={{ width:10, height:10, borderRadius:"50%", background:PIE_COLORS[i], flexShrink:0 }}/>
+                        <p style={{ fontSize:13, fontWeight:600, color:C.text }}>{d.name}</p>
+                      </div>
+                      <div style={{ textAlign:"right" }}>
+                        <p style={{ fontSize:13, fontWeight:700, color:C.text }}>€{Math.round(d.value).toLocaleString("es-ES")}</p>
+                        <p style={{ fontSize:11, color:C.textLight }}>{d.pct}%</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })() : kpi==="Revenue Total" ? (
             <ResponsiveContainer width="100%" height={220}>
               <BarChart data={diasMes} barSize={8}>
                 <CartesianGrid strokeDasharray="3 3" stroke={C.border} vertical={false}/>
@@ -159,7 +197,7 @@ function KpiModal({ kpi, datos, mes, anio, onClose }) {
                 <Bar dataKey="revOtros" name="Otros"  stackId="a" fill={C.green} radius={[2,2,0,0]}/>
               </BarChart>
             </ResponsiveContainer>
-          ) : (
+          ) : kpi!=="TRevPAR" ? (
             <ResponsiveContainer width="100%" height={220}>
               <ComposedChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" stroke={C.border} vertical={false}/>
@@ -170,7 +208,7 @@ function KpiModal({ kpi, datos, mes, anio, onClose }) {
                 {diasLY.length>0 && <Line type="monotone" dataKey="ly" name={`${anio-1}`} stroke="#E85D04" strokeWidth={1.5} dot={false} strokeDasharray="4 3"/>}
               </ComposedChart>
             </ResponsiveContainer>
-          )}
+          ) : null}
         </div>
 
         {/* Mejor y peor día / días semana */}
