@@ -21,7 +21,7 @@ const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null;
   return (
     <div style={{ background: "#fff", borderRadius: 8, padding: "10px 14px", fontSize: 12, color: C.text, border: `1px solid ${C.border}`, boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}>
-      <p style={{ color: C.accent, fontWeight: 700, marginBottom: 6 }}>{label}</p>
+      <p style={{ color: C.accent, fontWeight: 700, marginBottom: 6 }}>{payload[0]?.payload?.fecha || label}</p>
       {payload.map((p, i) => (
         <p key={i} style={{ color: C.textMid, margin: "2px 0" }}>
           {p.name}: <b style={{ color: C.text }}>{p.value}</b>
@@ -752,6 +752,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle }) {
     .sort((a, b) => new Date(a.fecha) - new Date(b.fecha))
     .map(d => ({
       dia: new Date(d.fecha + "T00:00:00").getDate(),
+      fecha: new Date(d.fecha + "T00:00:00").toLocaleDateString("es-ES", { weekday: "short", day: "numeric", month: "short" }),
       occ: d.hab_disponibles > 0 ? Math.round(d.hab_ocupadas / d.hab_disponibles * 100) : 0,
       adr: d.hab_ocupadas > 0 ? Math.round(d.revenue_hab / d.hab_ocupadas) : 0,
     }));
