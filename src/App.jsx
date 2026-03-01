@@ -283,37 +283,50 @@ function PeriodSelectorInline({ mes, anio, onChange, aniosDisponibles }) {
   const anios = aniosDisponibles && aniosDisponibles.length > 0 ? aniosDisponibles : [anioMax];
   const MESES_C = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
 
-  const anterior = () => {
-    if (mes === 0) onChange(11, anio - 1);
-    else onChange(mes - 1, anio);
+  const anioAnterior = () => {
+    const idx = anios.indexOf(anio);
+    if (idx > 0) onChange(mes, anios[idx-1]);
   };
-  const siguiente = () => {
-    if (mes === hoy.getMonth() && anio === hoy.getFullYear()) return;
-    if (mes === 11) onChange(0, anio + 1);
-    else onChange(mes + 1, anio);
+  const anioSiguiente = () => {
+    const idx = anios.indexOf(anio);
+    if (idx < anios.length-1) onChange(mes, anios[idx+1]);
   };
-  const esHoy = mes === hoy.getMonth() && anio === hoy.getFullYear();
-  const btnFlecha = { background: "none", border: `1px solid ${C.border}`, borderRadius: 6, width: 24, height: 24, cursor: "pointer", color: C.textMid, fontSize: 14, lineHeight: 1, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'DM Sans',sans-serif" };
+  const puedeAnterior = anios.indexOf(anio) > 0;
+  const puedeSiguiente = anios.indexOf(anio) < anios.length-1;
+  const btnFlecha = (activo) => ({ background:"none", border:`1px solid ${activo?C.border:"transparent"}`, borderRadius:6, width:22, height:22, cursor:activo?"pointer":"default", color:activo?C.textMid:C.border, fontSize:13, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 });
 
   return (
-    <div style={{ textAlign: "center" }}>
-      <div style={{ display: "flex", justifyContent: "center", gap: 4, marginBottom: 8 }}>
-        {anios.map(a => (
-          <button key={a} onClick={() => onChange(mes, a)} style={{ padding: "3px 10px", borderRadius: 6, border: `1.5px solid ${a === anio ? C.accent : C.border}`, background: a === anio ? C.accent : "transparent", color: a === anio ? "#fff" : C.textMid, fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "'DM Sans',sans-serif" }}>{a}</button>
-        ))}
+    <div style={{ userSelect:"none" }}>
+      {/* Cabecera año con flechas */}
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:10, marginBottom:8 }}>
+        <button onClick={anioAnterior} style={btnFlecha(puedeAnterior)}>‹</button>
+        <p style={{ fontSize:13, fontWeight:700, color:C.text, fontFamily:"'DM Sans',sans-serif", minWidth:36, textAlign:"center" }}>{anio}</p>
+        <button onClick={anioSiguiente} style={btnFlecha(puedeSiguiente)}>›</button>
       </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 6, justifyContent: "center" }}>
-        <button onClick={anterior} style={btnFlecha}>‹</button>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 3 }}>
-          {MESES_C.map((m, i) => {
-            const futuro = anio === anioMax && i > hoy.getMonth();
-            const activo = i === mes;
-            return (
-              <button key={i} onClick={() => !futuro && onChange(i, anio)} style={{ padding: "4px 6px", borderRadius: 6, border: `1.5px solid ${activo ? C.accent : "transparent"}`, background: activo ? C.accentLight : "transparent", color: futuro ? C.border : activo ? C.accent : C.textMid, fontSize: 11, fontWeight: activo ? 700 : 400, cursor: futuro ? "not-allowed" : "pointer", fontFamily: "'DM Sans',sans-serif" }}>{m}</button>
-            );
-          })}
-        </div>
-        <button onClick={siguiente} disabled={esHoy} style={{ ...btnFlecha, cursor: esHoy ? "not-allowed" : "pointer", color: esHoy ? C.border : C.textMid }}>›</button>
+      {/* Grid 4x3 meses */}
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:4 }}>
+        {MESES_C.map((m, i) => {
+          const futuro = anio === anioMax && i > hoy.getMonth();
+          const activo = i === mes;
+          const esHoyMes = i === hoy.getMonth() && anio === hoy.getFullYear();
+          return (
+            <button key={i} onClick={() => !futuro && onChange(i, anio)}
+              style={{
+                padding: "5px 4px",
+                borderRadius: 6,
+                border: esHoyMes && !activo ? `1.5px solid ${C.accent}44` : `1px solid ${activo?C.accent:"transparent"}`,
+                background: activo ? C.accent : "transparent",
+                color: futuro ? C.border : activo ? "#fff" : C.textMid,
+                fontSize: 11, fontWeight: activo ? 700 : 400,
+                cursor: futuro ? "not-allowed" : "pointer",
+                fontFamily: "'DM Sans',sans-serif",
+                textAlign: "center",
+                transition: "all 0.1s",
+              }}>
+              {m}
+            </button>
+          );
+        })}
       </div>
     </div>
   );
