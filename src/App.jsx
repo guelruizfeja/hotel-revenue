@@ -129,6 +129,7 @@ function ImportarExcel({ onClose, session, onImportado }) {
       const hotelRows = wsHotel ? XLSX.utils.sheet_to_json(wsHotel, { header: 1 }) : [];
       const totalHab = parseFloat(hotelRows?.[8]?.[4]) || null;
 
+
       for (const row of rows) {
         if (!row[0]) continue;
         const fecha = row[0];
@@ -244,6 +245,7 @@ function ImportarExcel({ onClose, session, onImportado }) {
           .eq("hotel_id", session.user.id)
           .eq("anio", parseInt(anio));
       }
+
 
       const { error: err1 } = await supabase.from("produccion_diaria").insert(produccionRows);
       if (err1) throw new Error("Error al guardar producción: " + err1.message);
@@ -1206,14 +1208,12 @@ export default function App() {
 
       {/* Main */}
       <main style={{ flex: 1, minWidth: 0, padding: "28px 32px", overflowY: "auto", height: "100vh" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 28 }}>
-          <div>
-            <p style={{ fontSize: 16, fontFamily: "'DM Sans', sans-serif", fontWeight: 700, color: C.text, letterSpacing: -0.2 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 28, position: "relative" }}>
+          <div style={{ textAlign: "center" }}>
+            <p style={{ fontSize: 26, fontFamily: "'DM Sans', sans-serif", fontWeight: 800, color: C.text, letterSpacing: -0.5, textTransform: "uppercase" }}>
               {datos.hotel?.nombre || "Mi Hotel"}
             </p>
-            <p style={{ fontSize: 12, color: C.textLight, marginTop: 2 }}>
-              {datos.hotel?.ciudad ? `${datos.hotel.ciudad} · ` : ""}{datos.produccion.length > 0 ? `${datos.produccion.length} días importados` : "Sin datos — importa tu plantilla"}
-            </p>
+            {datos.hotel?.ciudad && <p style={{ fontSize: 12, color: C.textLight, marginTop: 3, letterSpacing: 2, textTransform: "uppercase" }}>{datos.hotel.ciudad}</p>}
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <button onClick={() => setImportar(true)} style={{ background: C.accent, color: "#fff", border: "none", borderRadius: 20, padding: "6px 16px", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>
