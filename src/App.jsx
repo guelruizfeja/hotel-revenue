@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "./supabase";
 import {
-  AreaChart, Area, BarChart, Bar, LineChart, Line,
+  AreaChart, Area, BarChart, Bar, LineChart, Line, ComposedChart,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from "recharts";
 
@@ -446,6 +446,19 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle }) {
     };
   }).filter(d => d.occ > 0 || d.adr > 0);
 
+  // Datos diarios del mes seleccionado para gráfica
+  const datosDiariosMes = produccion
+    .filter(d => {
+      const f = new Date(d.fecha + "T00:00:00");
+      return f.getMonth() === mes && f.getFullYear() === anio;
+    })
+    .sort((a, b) => new Date(a.fecha) - new Date(b.fecha))
+    .map(d => ({
+      dia: new Date(d.fecha + "T00:00:00").getDate(),
+      occ: d.hab_disponibles > 0 ? Math.round(d.hab_ocupadas / d.hab_disponibles * 100) : 0,
+      adr: d.hab_ocupadas > 0 ? Math.round(d.revenue_hab / d.hab_ocupadas) : 0,
+    }));
+
   // Mes anterior para comparativa
   const mesPrevIdx = mes === 0 ? 11 : mes - 1;
   const anioPrev   = mes === 0 ? anio - 1 : anio;
@@ -478,7 +491,6 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle }) {
     { label: "ADR",           value: `€${adr}`,    ...diff(parseFloat(adr), prevAdr) },
     { label: "RevPAR",        value: `€${revpar}`,  ...diff(parseFloat(revpar), prevRevpar) },
     { label: "TRevPAR",       value: `€${trevpar}`, ...diff(parseFloat(trevpar), prevTrevpar) },
-    { label: "Revenue Hab.",  value: `€${Math.round(totalRevHab).toLocaleString("es-ES")}`,   ...diff(totalRevHab, prevRevHab, true) },
     { label: "Revenue Total", value: `€${Math.round(totalRevTotal).toLocaleString("es-ES")}`, ...diff(totalRevTotal, prevRevTot, true) },
   ];
 
@@ -501,18 +513,18 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle }) {
 
       <div style={{ display: "grid", gridTemplateColumns: "minmax(0,3fr) minmax(0,2fr)", gap: 16, marginBottom: 16 }}>
         <Card>
-          <p style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700, fontSize: 16, color: C.text, marginBottom: 4 }}>Ocupación vs ADR</p>
-          <p style={{ fontSize: 11, color: C.textLight, marginBottom: 18 }}>Correlación mensual {anio}</p>
+          <p style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700, fontSize: 16, color: C.text, marginBottom: 4 }}>Evolución diaria — {MESES[mes]} {anio}</p>
+          <p style={{ fontSize: 11, color: C.textLight, marginBottom: 18 }}>Ocupación % y ADR día a día</p>
           <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={porMes} barSize={18}>
+            <ComposedChart data={datosDiariosMes} barSize={8}>
               <CartesianGrid strokeDasharray="3 3" stroke={C.border} vertical={false} />
-              <XAxis dataKey="mes" tick={{ fill: C.textLight, fontSize: 11 }} axisLine={false} tickLine={false} />
-              <YAxis yAxisId="left"  tick={{ fill: C.textLight, fontSize: 11 }} axisLine={false} tickLine={false} unit="%" />
+              <XAxis dataKey="dia" tick={{ fill: C.textLight, fontSize: 10 }} axisLine={false} tickLine={false} />
+              <YAxis yAxisId="left"  tick={{ fill: C.textLight, fontSize: 11 }} axisLine={false} tickLine={false} unit="%" domain={[0,100]} />
               <YAxis yAxisId="right" orientation="right" tick={{ fill: C.textLight, fontSize: 11 }} axisLine={false} tickLine={false} unit="€" />
               <Tooltip content={<CustomTooltip />} />
-              <Bar yAxisId="left"  dataKey="occ" name="Ocupación" fill={`${C.accent}99`} radius={[3,3,0,0]} />
-              <Bar yAxisId="right" dataKey="adr" name="ADR"       fill={C.blue}           radius={[3,3,0,0]} fillOpacity={0.7} />
-            </BarChart>
+              <Bar  yAxisId="left"  dataKey="occ" name="Ocupación" fill={`${C.accent}99`} radius={[2,2,0,0]} />
+              <Line yAxisId="right" dataKey="adr" name="ADR" type="monotone" stroke={C.blue} strokeWidth={2} dot={false} />
+            </ComposedChart>
           </ResponsiveContainer>
         </Card>
         <Card>
