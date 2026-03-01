@@ -58,6 +58,49 @@ function KpiCard({ label, value, change, sub, up, i }) {
   );
 }
 
+function PeriodSelectorInline({ mes, anio, onChange }) {
+  const hoy = new Date();
+  const anioMin = hoy.getFullYear() - 3;
+  const anioMax = hoy.getFullYear();
+  const anios = Array.from({ length: anioMax - anioMin + 1 }, (_, i) => anioMin + i);
+  const MESES_C = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+
+  const anterior = () => {
+    if (mes === 0) onChange(11, anio - 1);
+    else onChange(mes - 1, anio);
+  };
+  const siguiente = () => {
+    if (mes === hoy.getMonth() && anio === hoy.getFullYear()) return;
+    if (mes === 11) onChange(0, anio + 1);
+    else onChange(mes + 1, anio);
+  };
+  const esHoy = mes === hoy.getMonth() && anio === hoy.getFullYear();
+  const btnFlecha = { background: "none", border: `1px solid ${C.border}`, borderRadius: 6, width: 24, height: 24, cursor: "pointer", color: C.textMid, fontSize: 14, lineHeight: 1, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'DM Sans',sans-serif" };
+
+  return (
+    <div style={{ textAlign: "center" }}>
+      <div style={{ display: "flex", justifyContent: "center", gap: 4, marginBottom: 8 }}>
+        {anios.map(a => (
+          <button key={a} onClick={() => onChange(mes, a)} style={{ padding: "3px 10px", borderRadius: 6, border: `1.5px solid ${a === anio ? C.accent : C.border}`, background: a === anio ? C.accent : "transparent", color: a === anio ? "#fff" : C.textMid, fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "'DM Sans',sans-serif" }}>{a}</button>
+        ))}
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: 6, justifyContent: "center" }}>
+        <button onClick={anterior} style={btnFlecha}>‹</button>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 3 }}>
+          {MESES_C.map((m, i) => {
+            const futuro = anio === anioMax && i > hoy.getMonth();
+            const activo = i === mes;
+            return (
+              <button key={i} onClick={() => !futuro && onChange(i, anio)} style={{ padding: "4px 6px", borderRadius: 6, border: `1.5px solid ${activo ? C.accent : "transparent"}`, background: activo ? C.accentLight : "transparent", color: futuro ? C.border : activo ? C.accent : C.textMid, fontSize: 11, fontWeight: activo ? 700 : 400, cursor: futuro ? "not-allowed" : "pointer", fontFamily: "'DM Sans',sans-serif" }}>{m}</button>
+            );
+          })}
+        </div>
+        <button onClick={siguiente} disabled={esHoy} style={{ ...btnFlecha, cursor: esHoy ? "not-allowed" : "pointer", color: esHoy ? C.border : C.textMid }}>›</button>
+      </div>
+    </div>
+  );
+}
+
 function PeriodSelector({ mes, anio, onChange }) {
   const hoy = new Date();
   const anioMin = hoy.getFullYear() - 3;
@@ -752,15 +795,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle }) {
   const esMesActual = mes === new Date().getMonth() && anio === new Date().getFullYear();
   return (
     <div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 28 }}>
-        <div>
-          <h2 style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 20, fontWeight: 700, color: C.text, letterSpacing: -0.3 }}>Panel de Control</h2>
-          <p style={{ fontSize: 12, color: C.textLight, marginTop: 4 }}>
-            {esMesActual ? "Mes en curso" : "Mes cerrado"} · {MESES[mes]} {anio}
-          </p>
-        </div>
-        <PeriodSelector mes={mes} anio={anio} onChange={onPeriodo} />
-      </div>
+
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 14, marginBottom: 24 }}>
         {kpis.map((k, i) => <KpiCard key={i} {...k} i={i} />)}
@@ -1450,30 +1485,60 @@ export default function App() {
 
       {/* Main */}
       <main style={{ flex: 1, minWidth: 0, padding: "28px 32px", overflowY: "auto", height: "100vh" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 28, position: "relative" }}>
-          <div style={{ textAlign: "center" }}>
-            <p style={{ fontSize: 26, fontFamily: "'DM Sans', sans-serif", fontWeight: 800, color: C.text, letterSpacing: -0.5, textTransform: "uppercase" }}>
-              {datos.hotel?.nombre || "Mi Hotel"}
-            </p>
-            {datos.hotel?.ciudad && <p style={{ fontSize: 12, color: C.textLight, marginTop: 3, letterSpacing: 2, textTransform: "uppercase" }}>{datos.hotel.ciudad}</p>}
+        {/* ── BIENVENIDA ── */}
+        <div style={{ marginBottom: 14 }}>
+          <p style={{ fontSize: 22, fontWeight: 800, color: C.text, fontFamily: "'DM Sans',sans-serif", letterSpacing: -0.5 }}>
+            Bienvenido, <span style={{ color: C.accent }}>{datos.hotel?.nombre || "Mi Hotel"}</span>
+          </p>
+          <p style={{ fontSize: 12, color: C.textLight, marginTop: 2 }}>
+            {new Date().toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).replace(/^\w/, c => c.toUpperCase())}
+          </p>
+        </div>
+
+        {/* ── HEADER 3 COLUMNAS ── */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", alignItems: "center", marginBottom: 24, gap: 16, background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: 12, padding: "16px 20px", boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>
+
+          {/* IZQUIERDA: Logo + nombre herramienta */}
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <div style={{ width: 44, height: 44, borderRadius: 10, background: C.accent, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M3 20V9l9-6 9 6v11H14v-5h-4v5H3z" fill="white" fillOpacity="0.9"/>
+                <rect x="9" y="13" width="6" height="7" rx="1" fill={C.accent}/>
+                <path d="M2 10h20M12 4v6" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
+              </svg>
+            </div>
+            <div>
+              <p style={{ fontSize: 15, fontWeight: 800, color: C.text, fontFamily: "'DM Sans',sans-serif", letterSpacing: -0.3 }}>RevManager</p>
+              <p style={{ fontSize: 10, color: C.textLight, letterSpacing: 1, textTransform: "uppercase" }}>Hotel Intelligence</p>
+            </div>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+
+          {/* CENTRO: Selector */}
+          <div style={{ display: "flex", justifyContent: "center" }}>
+            {view === "dashboard"
+              ? <PeriodSelectorInline mes={mesSel} anio={anioSel} onChange={(m,a)=>{ setMesSel(m); setAnioSel(a); localStorage.setItem("rm_mes",m); localStorage.setItem("rm_anio",a); }} />
+              : null
+            }
+          </div>
+
+          {/* DERECHA: Acciones apiladas */}
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 5, padding: "4px 10px", borderRadius: 20, background: C.greenLight, color: C.green, fontSize: 10, fontWeight: 600 }}>
+              <span style={{ width: 6, height: 6, background: C.green, borderRadius: "50%", display: "inline-block" }} />
+              {cargandoDatos ? "Cargando..." : "En directo"}
+            </div>
+            <button onClick={() => setImportar(true)} style={{ background: C.accent, color: "#fff", border: "none", borderRadius: 8, padding: "5px 14px", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "'DM Sans',sans-serif", width: "100%", maxWidth: 150 }}>
+              📊 Importar datos
+            </button>
             {view === "dashboard" && (
               <button
                 onClick={async()=>{ setGenerandoPDF(true); await generarReportePDF(datos,mesSel,anioSel,datos.hotel?.nombre||"Mi Hotel"); setGenerandoPDF(false); }}
                 disabled={generandoPDF}
-                style={{ background:"transparent", color:C.accent, border:`1px solid ${C.accent}`, borderRadius:20, padding:"6px 16px", fontSize:11, fontWeight:600, cursor:generandoPDF?"not-allowed":"pointer", fontFamily:"'DM Sans',sans-serif" }}
+                style={{ background: "transparent", color: C.accent, border: `1px solid ${C.accent}`, borderRadius: 8, padding: "5px 14px", fontSize: 11, fontWeight: 600, cursor: generandoPDF?"not-allowed":"pointer", fontFamily: "'DM Sans',sans-serif", width: "100%", maxWidth: 150 }}
               >
                 {generandoPDF ? "⏳ Generando..." : "📄 Informe PDF"}
               </button>
             )}
-            <button onClick={() => setImportar(true)} style={{ background: C.accent, color: "#fff", border: "none", borderRadius: 20, padding: "6px 16px", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>
-              📊 Importar datos
-            </button>
-            <div style={{ padding: "6px 14px", borderRadius: 20, background: C.greenLight, color: C.green, fontSize: 11, fontWeight: 600, display: "flex", alignItems: "center", gap: 5 }}>
-              <span style={{ width: 6, height: 6, background: C.green, borderRadius: "50%", display: "inline-block" }} />
-              {cargandoDatos ? "Cargando..." : "En directo"}
-            </div>
           </div>
         </div>
         {cargandoDatos ? <LoadingSpinner /> : mesDetalle ? (
