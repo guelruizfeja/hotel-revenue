@@ -1667,7 +1667,7 @@ function AuthScreen() {
     const { data, error } = await supabase.auth.signUp({ email, password });
     if (error) { setError(error.message); setLoading(false); return; }
     if (data.user) {
-      await supabase.from("hoteles").insert({ nombre: hotelNombre, ciudad: hotelCiudad, habitaciones: parseInt(habitaciones) || null });
+      await supabase.from("hoteles").insert({ id: data.user.id, nombre: hotelNombre, ciudad: hotelCiudad, habitaciones: parseInt(habitaciones) || null });
     }
     setMensaje("¡Cuenta creada! Ya puedes iniciar sesión.");
     setLoading(false);
