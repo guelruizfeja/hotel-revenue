@@ -1111,10 +1111,143 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
   );
 }
 
+// ─── MODAL RELLENAR PICKUP ───────────────────────────────────────
+function PickupEntryModal({ session, onClose, onGuardado }) {
+  const hoy = new Date();
+  const hoyStr = hoy.toISOString().slice(0,10);
+  const CANALES = ["OTA (Booking, Expedia...)", "Web propia", "Teléfono / Email", "Walk-in", "TTOO / Agencia", "Otro"];
+
+  const [entradas, setEntradas] = useState([
+    { fecha_llegada: "", canal: "", num_reservas: 1 }
+  ]);
+  const [notas, setNotas] = useState("");
+  const [guardando, setGuardando] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const handler = (e) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
+
+  const addEntrada = () => setEntradas(e => [...e, { fecha_llegada: "", canal: "", num_reservas: 1 }]);
+  const removeEntrada = (i) => setEntradas(e => e.filter((_,j) => j!==i));
+  const updateEntrada = (i, field, val) => setEntradas(e => e.map((r,j) => j===i ? {...r,[field]:val} : r));
+
+  const totalHoy = entradas.reduce((a,e) => a + (parseInt(e.num_reservas)||0), 0);
+
+  const guardar = async () => {
+    const validas = entradas.filter(e => e.fecha_llegada && e.num_reservas > 0);
+    if (validas.length === 0) { setError("Añade al menos una entrada con fecha de llegada"); return; }
+    setGuardando(true); setError("");
+    const rows = validas.map(e => ({
+      hotel_id: session.user.id,
+      fecha_pickup: hoyStr,
+      fecha_llegada: e.fecha_llegada,
+      canal: e.canal || null,
+      num_reservas: parseInt(e.num_reservas) || 1,
+      notas: notas || null,
+    }));
+    const { error: err } = await supabase.from("pickup_entries").insert(rows);
+    if (err) { setError("Error al guardar: " + err.message); setGuardando(false); return; }
+    setGuardando(false);
+    if (onGuardado) onGuardado();
+    onClose();
+  };
+
+  const inp = { width:"100%", padding:"9px 12px", borderRadius:8, border:`1.5px solid ${C.border}`, fontSize:13, fontFamily:"'DM Sans',sans-serif", color:C.text, background:C.bg, outline:"none", boxSizing:"border-box" };
+  const sel = { ...inp, cursor:"pointer" };
+
+  return (
+    <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.55)", zIndex:1000, display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}>
+      <div style={{ background:C.bgCard, borderRadius:14, width:"100%", maxWidth:640, maxHeight:"90vh", overflow:"auto", padding:28, boxShadow:"0 20px 60px rgba(0,0,0,0.25)" }} onClick={e=>e.stopPropagation()}>
+
+        {/* Header */}
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20 }}>
+          <div>
+            <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:2, marginBottom:4 }}>Pickup diario</p>
+            <h3 style={{ fontSize:20, fontWeight:800, color:C.text, fontFamily:"'DM Sans',sans-serif", letterSpacing:-0.5 }}>Rellenar Pickup Hoy</h3>
+          </div>
+          <button onClick={onClose} style={{ background:"none", border:`1.5px solid ${C.border}`, borderRadius:8, width:34, height:34, cursor:"pointer", fontSize:16, color:C.textMid }}
+            onMouseEnter={e=>{ e.currentTarget.style.background=C.accent; e.currentTarget.style.color="#fff"; e.currentTarget.style.borderColor=C.accent; }}
+            onMouseLeave={e=>{ e.currentTarget.style.background="none"; e.currentTarget.style.color=C.textMid; e.currentTarget.style.borderColor=C.border; }}>
+            ×
+          </button>
+        </div>
+
+        {/* Fecha hoy */}
+        <div style={{ background:C.accentLight, borderRadius:10, padding:"12px 16px", marginBottom:20, display:"flex", alignItems:"center", gap:10 }}>
+          <span style={{ fontSize:18 }}>📅</span>
+          <div>
+            <p style={{ fontSize:10, color:C.accent, textTransform:"uppercase", letterSpacing:1.5, fontWeight:700 }}>Fecha de hoy</p>
+            <p style={{ fontSize:16, fontWeight:800, color:C.accent, fontFamily:"'DM Sans',sans-serif" }}>
+              {hoy.toLocaleDateString("es-ES",{ weekday:"long", day:"numeric", month:"long", year:"numeric" }).replace(/^\w/,c=>c.toUpperCase())}
+            </p>
+          </div>
+        </div>
+
+        {/* Entradas */}
+        <div style={{ marginBottom:16 }}>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
+            <p style={{ fontSize:12, fontWeight:700, color:C.textMid, textTransform:"uppercase", letterSpacing:1 }}>Reservas captadas hoy</p>
+            <button onClick={addEntrada} style={{ background:C.accent, color:"#fff", border:"none", borderRadius:6, padding:"5px 12px", fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"'DM Sans',sans-serif" }}>+ Añadir fila</button>
+          </div>
+
+          {/* Cabecera */}
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 80px 32px", gap:8, marginBottom:6 }}>
+            {["Fecha de llegada","Canal","Nº res.",""].map((h,i) => (
+              <p key={i} style={{ fontSize:10, color:C.textLight, textTransform:"uppercase", letterSpacing:1, fontWeight:600 }}>{h}</p>
+            ))}
+          </div>
+
+          {/* Filas */}
+          {entradas.map((e,i) => (
+            <div key={i} style={{ display:"grid", gridTemplateColumns:"1fr 1fr 80px 32px", gap:8, marginBottom:8 }}>
+              <input type="date" value={e.fecha_llegada} onChange={ev=>updateEntrada(i,"fecha_llegada",ev.target.value)} style={inp}/>
+              <select value={e.canal} onChange={ev=>updateEntrada(i,"canal",ev.target.value)} style={sel}>
+                <option value="">— Canal —</option>
+                {CANALES.map(c=><option key={c} value={c}>{c}</option>)}
+              </select>
+              <input type="number" min="1" value={e.num_reservas} onChange={ev=>updateEntrada(i,"num_reservas",ev.target.value)} style={{...inp, textAlign:"center"}}/>
+              {entradas.length > 1
+                ? <button onClick={()=>removeEntrada(i)} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, cursor:"pointer", color:C.red, fontSize:14, fontWeight:700 }}>×</button>
+                : <div/>
+              }
+            </div>
+          ))}
+        </div>
+
+        {/* Total */}
+        <div style={{ background:C.accentLight, borderRadius:8, padding:"10px 16px", marginBottom:16, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+          <p style={{ fontSize:12, fontWeight:700, color:C.accent, textTransform:"uppercase", letterSpacing:1 }}>Total pickup hoy</p>
+          <p style={{ fontSize:24, fontWeight:800, color:C.accent, fontFamily:"'DM Sans',sans-serif" }}>{totalHoy} reservas</p>
+        </div>
+
+        {/* Notas */}
+        <div style={{ marginBottom:20 }}>
+          <p style={{ fontSize:10, color:C.textLight, textTransform:"uppercase", letterSpacing:1.5, fontWeight:600, marginBottom:6 }}>📝 Notas del día (opcional)</p>
+          <textarea value={notas} onChange={e=>setNotas(e.target.value)} placeholder="Ej: Evento en la ciudad este fin de semana, subida de precios en Booking..." rows={3}
+            style={{ ...inp, resize:"vertical", lineHeight:1.5 }}/>
+        </div>
+
+        {error && <div style={{ background:C.redLight, color:C.red, padding:"10px 14px", borderRadius:8, fontSize:12, marginBottom:12 }}>⚠️ {error}</div>}
+
+        {/* Botones */}
+        <div style={{ display:"flex", gap:10 }}>
+          <button onClick={onClose} style={{ flex:1, padding:"12px", borderRadius:10, border:`1px solid ${C.border}`, background:"transparent", color:C.textMid, fontSize:13, fontWeight:600, cursor:"pointer", fontFamily:"'DM Sans',sans-serif" }}>Cancelar</button>
+          <button onClick={guardar} disabled={guardando} style={{ flex:2, padding:"12px", borderRadius:10, border:"none", background:guardando?C.accentLight:C.accent, color:guardando?C.accentDark:"#fff", fontSize:13, fontWeight:700, cursor:guardando?"not-allowed":"pointer", fontFamily:"'DM Sans',sans-serif" }}>
+            {guardando ? "Guardando..." : `✓ Guardar ${totalHoy} reservas`}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── PICKUP VIEW ──────────────────────────────────────────────────
 function PickupView({ datos }) {
-  const { pickup, produccion } = datos;
-  if (!pickup || pickup.length === 0) return <EmptyState mensaje="Importa tu plantilla con datos de pickup para ver las curvas aquí" />;
+  const { pickup, produccion, session } = datos;
+  const [showEntryModal, setShowEntryModal] = useState(false);
 
   const hoy = new Date();
   const hoyStr = hoy.toISOString().slice(0,10);
@@ -1153,22 +1286,25 @@ function PickupView({ datos }) {
       .reduce((a,d) => a+(d[`mes_${campo}`]||0), 0);
   });
 
-  // Ocupación OTB para una fecha concreta
-  // - Si hay producción real (pasado): usa hab_ocupadas / hab_disponibles
-  // - Si es futuro: distribuye el OTB del mes entre los días del mes
+  // OTB acumulado hasta hoy por mes (reservas captadas para ese mes de llegada)
+  // Para fechas futuras: el OTB representa reservas ya captadas para ese mes
+  // Se muestra como % sobre habitaciones disponibles del mes
   const getOccOTB = (fechaStr) => {
     const prod = prodPorFecha[fechaStr];
     if (prod) {
+      // Fecha pasada: ocupación real
       const habDis = prod.hab_disponibles || 30;
       return habDis > 0 ? Math.round(prod.hab_ocupadas / habDis * 100) : 0;
     }
-    // Fecha futura: estimar OTB del mes distribuido en días
+    // Fecha futura: OTB del mes dividido entre días del mes
     const f = new Date(fechaStr + "T00:00:00");
     const mesIdx = f.getMonth();
-    const diasDelMes = new Date(f.getFullYear(), mesIdx+1, 0).getDate();
+    const anioF = f.getFullYear();
+    const diasDelMes = new Date(anioF, mesIdx + 1, 0).getDate();
     const otbMes = otbPorMes[mesIdx] || 0;
-    const occEstimada = diasDelMes > 0 ? Math.round((otbMes / diasDelMes) / habDisponibles * 100) : 0;
-    return Math.min(occEstimada, 100);
+    if (otbMes === 0 || habDisponibles === 0 || diasDelMes === 0) return 0;
+    // OTB del mes / (días del mes * hab disponibles) = % ocupación media estimada
+    return Math.min(Math.round(otbMes / (diasDelMes * habDisponibles) * 100), 100);
   };
 
   // Pickup de una fecha para un mes concreto (hab reservadas ese día para ese mes)
@@ -1240,12 +1376,18 @@ function PickupView({ datos }) {
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
 
       {/* ── HEADER ── */}
-      <div>
-        <h2 style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 20, fontWeight: 700, color: C.text, letterSpacing: -0.3 }}>Pickup & Demanda</h2>
-        <p style={{ fontSize: 12, color: C.textLight, marginTop: 3 }}>
-          {hoy.toLocaleDateString("es-ES",{weekday:"long",day:"numeric",month:"long",year:"numeric"}).replace(/^\w/,c=>c.toUpperCase())}
-        </p>
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+        <div>
+          <h2 style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 20, fontWeight: 700, color: C.text, letterSpacing: -0.3 }}>Pickup & Demanda</h2>
+          <p style={{ fontSize: 12, color: C.textLight, marginTop: 3 }}>
+            {hoy.toLocaleDateString("es-ES",{weekday:"long",day:"numeric",month:"long",year:"numeric"}).replace(/^./,c=>c.toUpperCase())}
+          </p>
+        </div>
+        <button onClick={()=>setShowEntryModal(true)} style={{ background:C.accent, color:"#fff", border:"none", borderRadius:10, padding:"10px 20px", fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"'DM Sans',sans-serif", display:"flex", alignItems:"center", gap:8, boxShadow:"0 2px 8px rgba(0,75,135,0.3)" }}>
+          ✏️ Rellenar Pickup Hoy
+        </button>
       </div>
+      {showEntryModal && <PickupEntryModal session={session} onClose={()=>setShowEntryModal(false)} onGuardado={()=>{}} />}
 
       {/* ── LAYOUT: Calendario + Lateral ── */}
       <div style={{ display: "grid", gridTemplateColumns: "minmax(0,3fr) minmax(0,2fr)", gap: 20, alignItems: "start" }}>
@@ -1772,7 +1914,7 @@ export default function App() {
       supabase.from("presupuesto").select("*").eq("hotel_id", session.user.id).order("mes"),
       supabase.from("hoteles").select("nombre, ciudad").eq("id", session.user.id).maybeSingle(),
     ]);
-    setDatos({ produccion: produccion || [], pickup: pickup || [], presupuesto: presupuesto || [], hotel: hotelData });
+    setDatos({ produccion: produccion || [], pickup: pickup || [], presupuesto: presupuesto || [], hotel: hotelData, session });
     setCargandoDatos(false);
   };
 
