@@ -1452,14 +1452,20 @@ function PickupView({ datos }) {
                         boxShadow: !esPasado && occ > 0 ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
                         transition: "transform 0.1s",
                         cursor: "default",
+                        position: "relative",
+                        overflow: "hidden",
                       }}>
-                        <span style={{ fontSize:10, color: esPasado ? C.textLight : occ>0 ? text : C.textLight, fontWeight: esFinde||esHoy2 ? 700 : 400, lineHeight:1.4 }}>{dia}</span>
+                        {/* Barras decorativas interiores */}
+                        {!esPasado && occ > 0 && (
+                          <div style={{ position:"absolute", bottom:0, left:0, right:0, height:`${Math.round(occ * 0.45)}%`, background: "rgba(255,255,255,0.15)", borderRadius:"0 0 8px 8px", pointerEvents:"none" }}/>
+                        )}
+                        <span style={{ fontSize:10, color: esPasado ? C.textLight : occ>0 ? text : C.textLight, fontWeight: esFinde||esHoy2 ? 700 : 400, lineHeight:1.4, position:"relative" }}>{dia}</span>
                         {!esPasado && occ > 0 ? (
-                          <span style={{ fontSize:12, fontWeight:800, color:text, lineHeight:1, fontFamily:"'DM Sans',sans-serif" }}>{occ}%</span>
+                          <span style={{ fontSize:12, fontWeight:800, color:text, lineHeight:1, fontFamily:"'DM Sans',sans-serif", position:"relative" }}>{occ}%</span>
                         ) : !esPasado ? (
                           <span style={{ fontSize:10, color:C.border }}>—</span>
                         ) : null}
-                        <span style={{ fontSize:8, color: hayActividad?"#1A7A3C":esFinde&&!esPasado?C.accent+"88":"transparent", fontWeight:700 }}>{hayActividad?"↑":esFinde&&!esPasado?"★":""}</span>
+                        <span style={{ fontSize:8, color: hayActividad?"#1A7A3C":esFinde&&!esPasado?C.accent+"88":"transparent", fontWeight:700, position:"relative" }}>{hayActividad?"↑":esFinde&&!esPasado?"★":""}</span>
                       </div>
                     );
                   })}
@@ -1923,6 +1929,7 @@ export default function App() {
   const [mesDetalle, setMesDetalle] = useState(null);
   const [generandoPDF, setGenerandoPDF] = useState(false);
   const [kpiModal, setKpiModal] = useState(null);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const views = {
     dashboard: (props) => <DashboardView {...props} onMesDetalle={(m, a) => setMesDetalle({ mes: m, anio: a })} kpiModal={kpiModal} setKpiModal={setKpiModal} />,
@@ -1951,27 +1958,42 @@ export default function App() {
         .nav-item:hover { background: rgba(255,255,255,0.12) !important; color: #FFFFFF !important; }
       `}</style>
 
-      {/* Sidebar */}
-      <div style={{ width: 220, flexShrink: 0, minHeight: "100vh", background: C.bgDeep, display: "flex", flexDirection: "column", position: "sticky", top: 0, height: "100vh" }}>
-        <div style={{ padding: "24px 20px 20px", borderBottom: "1px solid #FFFFFF11" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <div style={{ width: 36, height: 36, background: "rgba(255,255,255,0.15)", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 700, color: "#FFFFFF", fontFamily: "'DM Sans', sans-serif", letterSpacing: 1 }}>RM</div>
-            <div>
-              <p style={{ fontFamily: "'DM Sans', sans-serif", color: "#FFFFFF", fontWeight: 700, fontSize: 15, letterSpacing: 0.3 }}>RevManager</p>
-              <p style={{ fontSize: 10, color: "rgba(255,255,255,0.5)" }}>Hotel Intelligence</p>
+      {/* Sidebar desplegable */}
+      <div style={{ width: sidebarOpen ? 220 : 60, flexShrink: 0, minHeight: "100vh", background: C.bgDeep, display: "flex", flexDirection: "column", position: "sticky", top: 0, height: "100vh", transition: "width 0.25s ease", overflow: "hidden" }}>
+        {/* Header con toggle */}
+        <div style={{ padding: sidebarOpen ? "24px 20px 20px" : "20px 12px", borderBottom: "1px solid #FFFFFF11", display: "flex", alignItems: "center", justifyContent: sidebarOpen ? "space-between" : "center" }}>
+          {sidebarOpen && (
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <div style={{ width: 36, height: 36, background: "rgba(255,255,255,0.15)", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: "#FFFFFF", fontFamily: "'DM Sans', sans-serif", letterSpacing: 1, flexShrink: 0 }}>RM</div>
+              <div>
+                <p style={{ fontFamily: "'DM Sans', sans-serif", color: "#FFFFFF", fontWeight: 700, fontSize: 15, letterSpacing: 0.3, whiteSpace: "nowrap" }}>RevManager</p>
+                <p style={{ fontSize: 10, color: "rgba(255,255,255,0.5)", whiteSpace: "nowrap" }}>Hotel Intelligence</p>
+              </div>
             </div>
-          </div>
+          )}
+          <button onClick={() => setSidebarOpen(o => !o)} style={{ background: "rgba(255,255,255,0.08)", border: "none", borderRadius: 8, width: 32, height: 32, cursor: "pointer", color: "rgba(255,255,255,0.6)", fontSize: 16, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "background 0.15s" }}
+            onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.18)"}
+            onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,0.08)"}>
+            {sidebarOpen ? "‹" : "›"}
+          </button>
         </div>
-        <nav style={{ flex: 1, padding: "16px 12px" }}>
+        <nav style={{ flex: 1, padding: "16px 10px" }}>
           {NAV.map(n => (
-            <button key={n.key} className="nav-item" onClick={() => { setView(n.key); setMesDetalle(null); }} style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 8, border: "none", cursor: "pointer", background: view===n.key ? C.accent : "transparent", color: view===n.key ? "#fff" : "#A8998A", fontSize: 13, fontWeight: view===n.key ? 600 : 400, fontFamily: "'DM Sans', sans-serif", marginBottom: 2, textAlign: "left" }}>
-              <span style={{ fontSize: 14 }}>{n.icon}</span>{n.label}
+            <button key={n.key} className="nav-item" onClick={() => { setView(n.key); setMesDetalle(null); }}
+              title={!sidebarOpen ? n.label : ""}
+              style={{ width: "100%", display: "flex", alignItems: "center", gap: sidebarOpen ? 10 : 0, justifyContent: sidebarOpen ? "flex-start" : "center", padding: sidebarOpen ? "10px 12px" : "10px 0", borderRadius: 8, border: "none", cursor: "pointer", background: view===n.key ? C.accent : "transparent", color: view===n.key ? "#fff" : "#A8998A", fontSize: 13, fontWeight: view===n.key ? 600 : 400, fontFamily: "'DM Sans', sans-serif", marginBottom: 2, textAlign: "left", transition: "all 0.15s", overflow: "hidden" }}>
+              <span style={{ fontSize: 16, flexShrink: 0 }}>{n.icon}</span>
+              {sidebarOpen && <span style={{ whiteSpace: "nowrap" }}>{n.label}</span>}
             </button>
           ))}
         </nav>
-        <div style={{ padding: "16px 12px", borderTop: "1px solid #FFFFFF11" }}>
-          <p style={{ fontSize: 11, color: "#FFFFFF44", marginBottom: 8, paddingLeft: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{session.user.email}</p>
-<button onClick={handleLogout} style={{ width: "100%", padding: "10px", borderRadius: 8, border: "1px solid #FFFFFF22", background: "transparent", color: "#A8998A", cursor: "pointer", fontSize: 12, fontFamily: "'DM Sans', sans-serif" }}>Cerrar sesión</button>
+        <div style={{ padding: sidebarOpen ? "16px 12px" : "16px 10px", borderTop: "1px solid #FFFFFF11" }}>
+          {sidebarOpen && <p style={{ fontSize: 11, color: "#FFFFFF44", marginBottom: 8, paddingLeft: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{session.user.email}</p>}
+          <button onClick={handleLogout}
+            title={!sidebarOpen ? "Cerrar sesión" : ""}
+            style={{ width: "100%", padding: "10px", borderRadius: 8, border: "1px solid #FFFFFF22", background: "transparent", color: "#A8998A", cursor: "pointer", fontSize: sidebarOpen ? 12 : 16, fontFamily: "'DM Sans', sans-serif", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            {sidebarOpen ? "Cerrar sesión" : "↩"}
+          </button>
         </div>
       </div>
 
