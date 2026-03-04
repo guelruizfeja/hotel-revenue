@@ -439,35 +439,42 @@ function ImportarExcel({ onClose, session, onImportado }) {
         });
       }
 
-      // ── Pickup ──
+      // ── Pickup (nuevo formato: fecha_pickup, fecha_llegada, canal, num_reservas) ──
       const wsPu = wb.Sheets["🎯 Pickup"];
       const pickupRows = [];
       if (wsPu) {
         const rowsPu = XLSX.utils.sheet_to_json(wsPu, { header: 1, range: 4 });
-        for (const row of rowsPu) {
-          if (!row[0]) continue;
-          const fecha = row[0];
-          let fechaISO;
-          if (typeof fecha === "number") {
-            const d = XLSX.SSF.parse_date_code(fecha);
-            fechaISO = `${d.y}-${String(d.m).padStart(2,"0")}-${String(d.d).padStart(2,"0")}`;
-          } else if (typeof fecha === "string") {
-            const parts = fecha.split("/");
-            if (parts.length === 3) fechaISO = `${parts[2]}-${parts[1]}-${parts[0]}`;
+        const parseFechaES = (val) => {
+          if (!val) return null;
+          if (typeof val === "number") {
+            const d = XLSX.SSF.parse_date_code(val);
+            return `${d.y}-${String(d.m).padStart(2,"0")}-${String(d.d).padStart(2,"0")}`;
           }
-          if (!fechaISO) continue;
-          const meses = [row[1],row[2],row[3],row[4],row[5],row[6],row[7],row[8],row[9],row[10],row[11],row[12]];
-          if (meses.every(m => !m)) continue;
+          if (typeof val === "string") {
+            // DD/MM/AAAA o DD/MM/AA
+            const parts = val.trim().split("/");
+            if (parts.length === 3) {
+              const anio = parts[2].length === 2 ? "20" + parts[2] : parts[2];
+              return `${anio}-${parts[1].padStart(2,"0")}-${parts[0].padStart(2,"0")}`;
+            }
+          }
+          return null;
+        };
+        for (const row of rowsPu) {
+          if (!row[0] && !row[1]) continue;
+          const fechaPickup = parseFechaES(row[0]);
+          const fechaLlegada = parseFechaES(row[1]);
+          if (!fechaPickup || !fechaLlegada) continue;
+          const canal = row[2] || null;
+          const numReservas = parseInt(row[3]) || 1;
+          const notas = row[4] || "";
           pickupRows.push({
-            hotel_id: session.user.id, fecha_pickup: fechaISO,
-            mes_enero: parseInt(meses[0])||0, mes_febrero: parseInt(meses[1])||0,
-            mes_marzo: parseInt(meses[2])||0, mes_abril: parseInt(meses[3])||0,
-            mes_mayo: parseInt(meses[4])||0, mes_junio: parseInt(meses[5])||0,
-            mes_julio: parseInt(meses[6])||0, mes_agosto: parseInt(meses[7])||0,
-            mes_septiembre: parseInt(meses[8])||0, mes_octubre: parseInt(meses[9])||0,
-            mes_noviembre: parseInt(meses[10])||0, mes_diciembre: parseInt(meses[11])||0,
-            total_dia: meses.reduce((a,b) => a+(parseInt(b)||0), 0),
-            notas: row[14] || "",
+            hotel_id: session.user.id,
+            fecha_pickup: fechaPickup,
+            fecha_llegada: fechaLlegada,
+            canal,
+            num_reservas: numReservas,
+            notas,
           });
         }
       }
@@ -517,7 +524,7 @@ function ImportarExcel({ onClose, session, onImportado }) {
           .eq("hotel_id", session.user.id)
           .gte("fecha", `${anio}-01-01`)
           .lte("fecha", `${anio}-12-31`);
-        await supabase.from("pickup_diario").delete()
+        await supabase.from("pickup_entries").delete()
           .eq("hotel_id", session.user.id)
           .gte("fecha_pickup", `${anio}-01-01`)
           .lte("fecha_pickup", `${anio}-12-31`);
@@ -531,7 +538,7 @@ function ImportarExcel({ onClose, session, onImportado }) {
       if (err1) throw new Error("Error al guardar producción: " + err1.message);
 
       if (pickupRows.length > 0) {
-        const { error: err2 } = await supabase.from("pickup_diario").insert(pickupRows);
+        const { error: err2 } = await supabase.from("pickup_entries").insert(pickupRows);
         if (err2) throw new Error("Error al guardar pickup: " + err2.message);
       }
 
@@ -1246,7 +1253,7 @@ function PickupEntryModal({ session, onClose, onGuardado }) {
 
 // ─── PICKUP VIEW ──────────────────────────────────────────────────
 function PickupView({ datos }) {
-  const { pickup, produccion, session } = datos;
+  const { pickup, produccion, session, pickupEntries } = datos;
   const [showEntryModal, setShowEntryModal] = useState(false);
 
   const hoy = new Date();
@@ -1278,33 +1285,43 @@ function PickupView({ datos }) {
     ? Math.round((produccion||[]).reduce((a,d)=>a+(d.hab_disponibles||30),0)/(produccion||[]).length)
     : 30;
 
-  // OTB acumulado por mes (total reservas captadas hasta hoy para ese mes)
-  const otbPorMes = {};
-  MESES_CAMPOS.forEach((campo, i) => {
-    otbPorMes[i] = pickup
-      .filter(d => d.fecha_pickup <= hoyStr)
-      .reduce((a,d) => a+(d[`mes_${campo}`]||0), 0);
+  // Todas las entradas de pickup (Excel + web) indexadas por fecha_llegada
+  // pickup y pickupEntries apuntan al mismo array (pickup_entries)
+  const reservasPorFechaLlegada = {};
+  (pickupEntries || []).forEach(e => {
+    const fl = e.fecha_llegada;
+    if (!fl) return;
+    reservasPorFechaLlegada[fl] = (reservasPorFechaLlegada[fl] || 0) + (e.num_reservas || 1);
   });
 
-  // OTB acumulado hasta hoy por mes (reservas captadas para ese mes de llegada)
-  // Para fechas futuras: el OTB representa reservas ya captadas para ese mes
-  // Se muestra como % sobre habitaciones disponibles del mes
+  // OTB total por mes (suma de reservas captadas para ese mes de llegada)
+  const otbPorMes = {};
+  Object.entries(reservasPorFechaLlegada).forEach(([fecha, reservas]) => {
+    const mesIdx = new Date(fecha + "T00:00:00").getMonth();
+    otbPorMes[mesIdx] = (otbPorMes[mesIdx] || 0) + reservas;
+  });
+
   const getOccOTB = (fechaStr) => {
     const prod = prodPorFecha[fechaStr];
     if (prod) {
-      // Fecha pasada: ocupación real
-      const habDis = prod.hab_disponibles || 30;
+      // Fecha pasada o hoy: ocupación real
+      const habDis = prod.hab_disponibles || habDisponibles;
       return habDis > 0 ? Math.round(prod.hab_ocupadas / habDis * 100) : 0;
     }
-    // Fecha futura: OTB del mes dividido entre días del mes
+    // Fecha futura: reservas captadas para ese día exacto
+    const reservasDia = reservasPorFechaLlegada[fechaStr] || 0;
+    if (reservasDia > 0) {
+      // Tenemos dato exacto por día
+      return Math.min(Math.round(reservasDia / habDisponibles * 100), 100);
+    }
+    // Sin dato por día: distribuir OTB del mes uniformemente
     const f = new Date(fechaStr + "T00:00:00");
     const mesIdx = f.getMonth();
     const anioF = f.getFullYear();
     const diasDelMes = new Date(anioF, mesIdx + 1, 0).getDate();
     const otbMes = otbPorMes[mesIdx] || 0;
-    if (otbMes === 0 || habDisponibles === 0 || diasDelMes === 0) return 0;
-    // OTB del mes / (días del mes * hab disponibles) = % ocupación media estimada
-    return Math.min(Math.round(otbMes / (diasDelMes * habDisponibles) * 100), 100);
+    if (!otbMes || !habDisponibles || !diasDelMes) return 0;
+    return Math.min(Math.round((otbMes / diasDelMes) / habDisponibles * 100), 100);
   };
 
   // Pickup de una fecha para un mes concreto (hab reservadas ese día para ese mes)
@@ -1916,11 +1933,11 @@ export default function App() {
     setCargandoDatos(true);
     const [{ data: produccion }, { data: pickup }, { data: presupuesto }, { data: hotelData }] = await Promise.all([
       supabase.from("produccion_diaria").select("*").eq("hotel_id", session.user.id).order("fecha"),
-      supabase.from("pickup_diario").select("*").eq("hotel_id", session.user.id).order("fecha_pickup"),
+      supabase.from("pickup_entries").select("*").eq("hotel_id", session.user.id).order("fecha_pickup"),
       supabase.from("presupuesto").select("*").eq("hotel_id", session.user.id).order("mes"),
       supabase.from("hoteles").select("nombre, ciudad").eq("id", session.user.id).maybeSingle(),
     ]);
-    setDatos({ produccion: produccion || [], pickup: pickup || [], presupuesto: presupuesto || [], hotel: hotelData, session });
+    setDatos({ produccion: produccion || [], pickup: pickup || [], presupuesto: presupuesto || [], hotel: hotelData, session, pickupEntries: pickup || [] });
     setCargandoDatos(false);
   };
 
