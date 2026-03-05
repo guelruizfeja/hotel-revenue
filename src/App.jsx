@@ -1127,6 +1127,22 @@ function PickupEntryModal({ session, onClose, onGuardado }) {
   const [notas, setNotas] = useState("");
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState("");
+  const [guardadas, setGuardadas] = useState([]);
+  const [cargandoHoy, setCargandoHoy] = useState(true);
+
+  // Cargar entradas ya guardadas hoy al abrir
+  useEffect(() => {
+    const cargar = async () => {
+      const { data } = await supabase.from("pickup_entries")
+        .select("*")
+        .eq("hotel_id", session.user.id)
+        .eq("fecha_pickup", hoyStr)
+        .order("created_at", { ascending: false });
+      setGuardadas(data || []);
+      setCargandoHoy(false);
+    };
+    cargar();
+  }, []);
 
   useEffect(() => {
     const handler = (e) => { if (e.key === "Escape") onClose(); };
@@ -1138,7 +1154,8 @@ function PickupEntryModal({ session, onClose, onGuardado }) {
   const removeEntrada = (i) => setEntradas(e => e.filter((_,j) => j!==i));
   const updateEntrada = (i, field, val) => setEntradas(e => e.map((r,j) => j===i ? {...r,[field]:val} : r));
 
-  const totalHoy = entradas.reduce((a,e) => a + (parseInt(e.num_reservas)||0), 0);
+  const totalNuevas = entradas.reduce((a,e) => a + (parseInt(e.num_reservas)||0), 0);
+  const totalHoy = guardadas.reduce((a,e) => a + (e.num_reservas||0), 0);
 
   const guardar = async () => {
     const validas = entradas.filter(e => e.fecha_llegada && e.num_reservas > 0);
@@ -1154,9 +1171,12 @@ function PickupEntryModal({ session, onClose, onGuardado }) {
     }));
     const { error: err } = await supabase.from("pickup_entries").insert(rows);
     if (err) { setError("Error al guardar: " + err.message); setGuardando(false); return; }
+    // Actualizar lista de guardadas y limpiar formulario
+    setGuardadas(prev => [...rows.map((r,i) => ({...r, id: Date.now()+i})), ...prev]);
+    setEntradas([]);
+    setNotas("");
     setGuardando(false);
     if (onGuardado) onGuardado();
-    onClose();
   };
 
   const inp = { width:"100%", padding:"9px 12px", borderRadius:8, border:`1.5px solid ${C.border}`, fontSize:13, fontFamily:"'DM Sans',sans-serif", color:C.text, background:C.bg, outline:"none", boxSizing:"border-box" };
@@ -1221,27 +1241,57 @@ function PickupEntryModal({ session, onClose, onGuardado }) {
           ))}
         </div>
 
-        {/* Total */}
-        <div style={{ background:C.accentLight, borderRadius:8, padding:"10px 16px", marginBottom:16, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-          <p style={{ fontSize:12, fontWeight:700, color:C.accent, textTransform:"uppercase", letterSpacing:1 }}>Total pickup hoy</p>
-          <p style={{ fontSize:24, fontWeight:800, color:C.accent, fontFamily:"'DM Sans',sans-serif" }}>{totalHoy} reservas</p>
-        </div>
-
         {/* Notas */}
-        <div style={{ marginBottom:20 }}>
+        <div style={{ marginBottom:16 }}>
           <p style={{ fontSize:10, color:C.textLight, textTransform:"uppercase", letterSpacing:1.5, fontWeight:600, marginBottom:6 }}>📝 Notas del día (opcional)</p>
-          <textarea value={notas} onChange={e=>setNotas(e.target.value)} placeholder="Ej: Evento en la ciudad este fin de semana, subida de precios en Booking..." rows={3}
+          <textarea value={notas} onChange={e=>setNotas(e.target.value)} placeholder="Ej: Evento en la ciudad este fin de semana, subida de precios en Booking..." rows={2}
             style={{ ...inp, resize:"vertical", lineHeight:1.5 }}/>
         </div>
 
         {error && <div style={{ background:C.redLight, color:C.red, padding:"10px 14px", borderRadius:8, fontSize:12, marginBottom:12 }}>⚠️ {error}</div>}
 
         {/* Botones */}
-        <div style={{ display:"flex", gap:10 }}>
-          <button onClick={onClose} style={{ flex:1, padding:"12px", borderRadius:10, border:`1px solid ${C.border}`, background:"transparent", color:C.textMid, fontSize:13, fontWeight:600, cursor:"pointer", fontFamily:"'DM Sans',sans-serif" }}>Cancelar</button>
-          <button onClick={guardar} disabled={guardando} style={{ flex:2, padding:"12px", borderRadius:10, border:"none", background:guardando?C.accentLight:C.accent, color:guardando?C.accentDark:"#fff", fontSize:13, fontWeight:700, cursor:guardando?"not-allowed":"pointer", fontFamily:"'DM Sans',sans-serif" }}>
-            {guardando ? "Guardando..." : `✓ Guardar ${totalHoy} reservas`}
+        <div style={{ display:"flex", gap:10, marginBottom:20 }}>
+          <button onClick={onClose} style={{ flex:1, padding:"12px", borderRadius:10, border:`1px solid ${C.border}`, background:"transparent", color:C.textMid, fontSize:13, fontWeight:600, cursor:"pointer", fontFamily:"'DM Sans',sans-serif" }}>Cerrar</button>
+          <button onClick={guardar} disabled={guardando || entradas.length===0} style={{ flex:2, padding:"12px", borderRadius:10, border:"none", background:(guardando||entradas.length===0)?C.accentLight:C.accent, color:(guardando||entradas.length===0)?C.accentDark:"#fff", fontSize:13, fontWeight:700, cursor:(guardando||entradas.length===0)?"not-allowed":"pointer", fontFamily:"'DM Sans',sans-serif" }}>
+            {guardando ? "Guardando..." : `✓ Guardar ${totalNuevas} reservas`}
           </button>
+        </div>
+
+        {/* ── Reservas captadas hoy ── */}
+        <div style={{ borderTop:`1px solid ${C.border}`, paddingTop:16 }}>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
+            <p style={{ fontSize:11, fontWeight:700, color:C.textMid, textTransform:"uppercase", letterSpacing:1 }}>
+              ✅ Reservas captadas hoy
+            </p>
+            <span style={{ fontSize:18, fontWeight:800, color:C.accent, fontFamily:"'DM Sans',sans-serif" }}>
+              {totalHoy} reservas
+            </span>
+          </div>
+          {cargandoHoy ? (
+            <p style={{ fontSize:12, color:C.textLight, textAlign:"center", padding:"12px 0" }}>Cargando...</p>
+          ) : guardadas.length === 0 ? (
+            <p style={{ fontSize:12, color:C.textLight, textAlign:"center", padding:"12px 0" }}>Aún no hay reservas registradas hoy</p>
+          ) : (
+            <div style={{ display:"flex", flexDirection:"column", gap:6, maxHeight:220, overflowY:"auto" }}>
+              {guardadas.map((e, i) => (
+                <div key={i} style={{ display:"grid", gridTemplateColumns:"1fr 1fr 60px", gap:8, background:i%2===0?C.bg:C.bgCard, borderRadius:8, padding:"8px 12px", border:`1px solid ${C.border}` }}>
+                  <div>
+                    <p style={{ fontSize:9, color:C.textLight, textTransform:"uppercase", letterSpacing:1 }}>Llegada</p>
+                    <p style={{ fontSize:12, fontWeight:600, color:C.text }}>{e.fecha_llegada}</p>
+                  </div>
+                  <div>
+                    <p style={{ fontSize:9, color:C.textLight, textTransform:"uppercase", letterSpacing:1 }}>Canal</p>
+                    <p style={{ fontSize:12, color:C.textMid }}>{e.canal || "—"}</p>
+                  </div>
+                  <div style={{ textAlign:"right" }}>
+                    <p style={{ fontSize:9, color:C.textLight, textTransform:"uppercase", letterSpacing:1 }}>Res.</p>
+                    <p style={{ fontSize:16, fontWeight:800, color:C.accent, fontFamily:"'DM Sans',sans-serif" }}>{e.num_reservas}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>
