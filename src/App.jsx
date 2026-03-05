@@ -2037,7 +2037,7 @@ export default function App() {
         </div>
 
         {/* ── HEADER 3 COLUMNAS ── */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", alignItems: "center", marginBottom: 24, gap: 16, background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: 12, padding: "16px 20px", boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>
+        {view !== "pickup" && <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", alignItems: "center", marginBottom: 24, gap: 16, background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: 12, padding: "16px 20px", boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>
 
           {/* IZQUIERDA: Logo + nombre herramienta */}
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -2081,7 +2081,7 @@ export default function App() {
               </button>
             )}
           </div>
-        </div>
+        </div>}
         {cargandoDatos ? <LoadingSpinner /> : mesDetalle ? (
           <MonthDetailView datos={datos} mes={mesDetalle.mes} anio={mesDetalle.anio} onBack={() => setMesDetalle(null)} />
         ) : (
