@@ -1123,9 +1123,7 @@ function PickupEntryModal({ session, onClose, onGuardado }) {
   const hoyStr = hoy.toISOString().slice(0,10);
   const CANALES = ["OTA (Booking, Expedia...)", "Web propia", "Teléfono / Email", "Walk-in", "TTOO / Agencia", "Otro"];
 
-  const [entradas, setEntradas] = useState([
-    { fecha_llegada: "", canal: "", num_reservas: 1 }
-  ]);
+  const [entradas, setEntradas] = useState([]);
   const [notas, setNotas] = useState("");
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState("");
@@ -1895,9 +1893,18 @@ function AuthScreen() {
   );
 }
 
+const IconPickup = () => (
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <line x1="3" y1="4" x2="3" y2="12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+    <line x1="8" y1="2" x2="8" y2="14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+    <line x1="13" y1="4" x2="13" y2="12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+    <line x1="1" y1="8" x2="15" y2="8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+  </svg>
+);
+
 const NAV = [
   { key: "dashboard",  icon: "◈",  label: "Dashboard" },
-  { key: "pickup",     icon: "⟳",  label: "Pickup" },
+  { key: "pickup",     icon: <IconPickup />,  label: "Pickup" },
   { key: "budget",     icon: "💰", label: "Presupuesto" },
 ];
 
