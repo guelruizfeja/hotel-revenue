@@ -1945,7 +1945,7 @@ export default function App() {
   const [mesDetalle, setMesDetalle] = useState(null);
   const [generandoPDF, setGenerandoPDF] = useState(false);
   const [kpiModal, setKpiModal] = useState(null);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const views = {
     dashboard: (props) => <DashboardView {...props} onMesDetalle={(m, a) => setMesDetalle({ mes: m, anio: a })} kpiModal={kpiModal} setKpiModal={setKpiModal} />,
@@ -1990,7 +1990,11 @@ export default function App() {
           <button onClick={() => setSidebarOpen(o => !o)} style={{ background: "rgba(255,255,255,0.08)", border: "none", borderRadius: 8, width: 32, height: 32, cursor: "pointer", color: "rgba(255,255,255,0.6)", fontSize: 16, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "background 0.15s" }}
             onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.18)"}
             onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,0.08)"}>
-            {sidebarOpen ? "‹" : "›"}
+            <span style={{ display:"flex", flexDirection:"column", gap:4, alignItems:"center", justifyContent:"center" }}>
+              <span style={{ width:16, height:2, background:"rgba(255,255,255,0.7)", borderRadius:2, display:"block" }}/>
+              <span style={{ width:16, height:2, background:"rgba(255,255,255,0.7)", borderRadius:2, display:"block" }}/>
+              <span style={{ width:16, height:2, background:"rgba(255,255,255,0.7)", borderRadius:2, display:"block" }}/>
+            </span>
           </button>
         </div>
         <nav style={{ flex: 1, padding: "16px 10px" }}>
