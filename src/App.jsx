@@ -988,15 +988,14 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
     };
   }).filter(d => d.occ > 0 || d.adr > 0);
 
-  // Datos diarios del mes seleccionado para gráfica
+  // Últimos 30 días con datos para gráfica
+  const hace30 = new Date(); hace30.setDate(hace30.getDate() - 29);
+  const hace30Str = hace30.toISOString().slice(0,10);
   const datosDiariosMes = produccion
-    .filter(d => {
-      const f = new Date(d.fecha + "T00:00:00");
-      return f.getMonth() === mes && f.getFullYear() === anio;
-    })
+    .filter(d => d.fecha >= hace30Str)
     .sort((a, b) => new Date(a.fecha) - new Date(b.fecha))
     .map(d => ({
-      dia: new Date(d.fecha + "T00:00:00").getDate(),
+      dia: new Date(d.fecha + "T00:00:00").toLocaleDateString("es-ES", { day: "numeric", month: "short" }),
       fecha: new Date(d.fecha + "T00:00:00").toLocaleDateString("es-ES", { weekday: "short", day: "numeric", month: "short" }),
       occ: d.hab_disponibles > 0 ? Math.round(d.hab_ocupadas / d.hab_disponibles * 100) : 0,
       adr: d.hab_ocupadas > 0 ? Math.round(d.revenue_hab / d.hab_ocupadas) : 0,
@@ -1048,7 +1047,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
 
       <div style={{ display: "grid", gridTemplateColumns: "minmax(0,3fr) minmax(0,2fr)", gap: 16, marginBottom: 16 }}>
         <Card>
-          <p style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700, fontSize: 16, color: C.text, marginBottom: 4 }}>Evolución diaria — {MESES[mes]} {anio}</p>
+          <p style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700, fontSize: 16, color: C.text, marginBottom: 4 }}>Evolución — Últimos 30 días</p>
           <p style={{ fontSize: 11, color: C.textLight, marginBottom: 18 }}>Ocupación % y ADR día a día</p>
           <ResponsiveContainer width="100%" height={220}>
             <ComposedChart data={datosDiariosMes} barSize={8}>
