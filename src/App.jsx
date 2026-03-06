@@ -1323,8 +1323,9 @@ function PickupView({ datos }) {
 
   // OTB acumulado hasta una fecha para un mes específico
   const getOTB = (hastaFecha, mesIdx) => {
-    const campo = `mes_${MESES_CAMPOS[mesIdx]}`;
-    return pickup.filter(d => d.fecha_pickup <= hastaFecha).reduce((a,d)=>a+(d[campo]||0),0);
+    return (pickupEntries || [])
+      .filter(e => e.fecha_pickup <= hastaFecha && new Date(e.fecha_llegada + "T00:00:00").getMonth() === mesIdx)
+      .reduce((a, e) => a + (e.num_reservas || 1), 0);
   };
 
   // Habitaciones disponibles por día (media de producción histórica)
