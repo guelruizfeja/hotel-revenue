@@ -1415,27 +1415,7 @@ function PickupView({ datos }) {
 
   // ── BLOQUE 3: Top 5 fechas calientes ─────────────────────────
   // Para cada fecha futura, suma pickup total de ayer y anteayer
-  const fechasCalientes = [];
-  for (let i = 1; i <= 90; i++) {
-    const fd = new Date(hoy); fd.setDate(hoy.getDate() + i);
-    const fdStr = fd.toISOString().slice(0,10);
-    const mesIdx = fd.getMonth();
-    const campo  = `mes_${MESES_CAMPOS[mesIdx]}`;
-    const puAyer = pickupPorFecha[ayerStr]?.[campo] || 0;
-    const puAntes= pickupPorFecha[hace2dStr]?.[campo] || 0;
-    const puReciente = puAyer + puAntes;
-    if (puReciente > 0) {
-      const occ = getOccOTB(fdStr);
-      fechasCalientes.push({
-        fecha: fd,
-        fechaStr: fdStr,
-        label: fd.toLocaleDateString("es-ES",{weekday:"long",day:"numeric",month:"long"}),
-        puReciente, puAyer, occ
-      });
-    }
-  }
-  fechasCalientes.sort((a,b)=>b.puReciente-a.puReciente);
-  const top5 = fechasCalientes.slice(0,5);
+
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
@@ -1579,31 +1559,7 @@ function PickupView({ datos }) {
             </div>
           </Card>
 
-          {/* TOP 5 FECHAS CALIENTES */}
-          <Card>
-            <p style={{ fontWeight:800, fontSize:15, color:C.text, fontFamily:"'DM Sans',sans-serif", marginBottom:4 }}>🔥 Fechas Calientes</p>
-            <p style={{ fontSize:11, color:C.textLight, marginBottom:14 }}>Días futuros con mayor pickup en las últimas 48h</p>
-            {top5.length === 0 ? (
-              <p style={{ fontSize:12, color:C.textLight, textAlign:"center", padding:"20px 0" }}>Sin actividad reciente detectada</p>
-            ) : (
-              <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
-                {top5.map((d,i)=>(
-                  <div key={i} style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 12px", borderRadius:8, background:i===0?"#FFF8E7":C.bg, border:`1px solid ${i===0?"#F0A500":C.border}` }}>
-                    <div style={{ width:28, height:28, borderRadius:"50%", background:i===0?"#F0A500":C.accentLight, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-                      <span style={{ fontSize:13, fontWeight:800, color:i===0?"#fff":C.accent }}>#{i+1}</span>
-                    </div>
-                    <div style={{ flex:1 }}>
-                      <p style={{ fontSize:12, fontWeight:700, color:C.text, textTransform:"capitalize" }}>{d.label}</p>
-                      <p style={{ fontSize:11, color:C.textLight, marginTop:1 }}>+{d.puReciente} reservas · Ocup. actual: {d.occ}%</p>
-                    </div>
-                    <div style={{ textAlign:"right" }}>
-                      <p style={{ fontSize:16, fontWeight:800, color:d.occ>=75?C.green:d.occ>=50?C.accent:C.red, fontFamily:"'DM Sans',sans-serif" }}>{d.occ}%</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </Card>
+
         </div>
       </div>
     </div>
