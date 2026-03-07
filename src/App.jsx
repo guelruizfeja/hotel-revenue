@@ -1381,7 +1381,7 @@ function PickupView({ datos, onGuardado }) {
     const f = String(e.fecha_llegada).trim().slice(0, 10); // asegurar YYYY-MM-DD
     otbIdx[f] = (otbIdx[f] || 0) + (e.num_reservas || 1);
   });
-  window.__hmDebug = { totalEntries: pickupEntries?.length, otbKeys: Object.keys(otbIdx).length, otbSample: Object.entries(otbIdx).slice(0,5), habHotel };
+
 
   // % ocupación de un día: producción si existe, OTB si es futuro
   const getOccDia = (fechaStr) => {
