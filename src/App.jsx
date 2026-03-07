@@ -1135,7 +1135,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
 }
 
 // ─── MODAL RELLENAR PICKUP ───────────────────────────────────────
-function PickupEntryModal({ session, onClose, onGuardado }) {
+function PickupEntryModal({ session, onClose, onGuardado, fechaLlegadaInicial }) {
   const hoy = new Date();
   const hoyStr = hoy.toISOString().slice(0,10);
   const CANALES = ["OTA (Booking, Expedia...)", "Web propia", "Teléfono / Email", "Walk-in", "TTOO / Agencia", "Otro"];
@@ -1157,6 +1157,9 @@ function PickupEntryModal({ session, onClose, onGuardado }) {
         .order("created_at", { ascending: false });
       setGuardadas(data || []);
       setCargandoHoy(false);
+      if (fechaLlegadaInicial) {
+        setEntradas([{ fecha_llegada: fechaLlegadaInicial, canal: "", num_reservas: 1 }]);
+      }
     };
     cargar();
   }, []);
@@ -1167,7 +1170,7 @@ function PickupEntryModal({ session, onClose, onGuardado }) {
     return () => window.removeEventListener("keydown", handler);
   }, []);
 
-  const addEntrada = () => setEntradas(e => [...e, { fecha_llegada: "", canal: "", num_reservas: 1 }]);
+  const addEntrada = () => setEntradas(e => [...e, { fecha_llegada: fechaLlegadaInicial || "", canal: "", num_reservas: 1 }]);
   const removeEntrada = (i) => setEntradas(e => e.filter((_,j) => j!==i));
   const updateEntrada = (i, field, val) => setEntradas(e => e.map((r,j) => j===i ? {...r,[field]:val} : r));
 
@@ -1319,6 +1322,7 @@ function PickupEntryModal({ session, onClose, onGuardado }) {
 function PickupView({ datos }) {
   const { pickup, produccion, session, pickupEntries } = datos;
   const [showEntryModal, setShowEntryModal] = useState(false);
+  const [fechaPickupModal, setFechaPickupModal] = useState(null);
 
   const hoy = new Date();
   const hoyStr = hoy.toISOString().slice(0,10);
@@ -1450,6 +1454,7 @@ function PickupView({ datos }) {
         </button>
       </div>
       {showEntryModal && <PickupEntryModal session={session} onClose={()=>setShowEntryModal(false)} onGuardado={()=>{}} />}
+      {fechaPickupModal && <PickupEntryModal session={session} onClose={()=>setFechaPickupModal(null)} onGuardado={()=>setFechaPickupModal(null)} fechaLlegadaInicial={fechaPickupModal} />}
 
       {/* ── LAYOUT: Calendario + Lateral ── */}
       <div style={{ display: "grid", gridTemplateColumns: "minmax(0,3fr) minmax(0,2fr)", gap: 20, alignItems: "start" }}>
@@ -1465,11 +1470,11 @@ function PickupView({ datos }) {
               <Card key={`${anio}-${mes}`}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
                   <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                    <button onClick={()=>setCalOffset(o=>o-1)} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, width:26, height:26, cursor:"pointer", color:C.textMid, fontSize:14, display:"flex", alignItems:"center", justifyContent:"center" }}>‹</button>
-                    <p style={{ fontWeight: 800, fontSize: 15, color: C.text, fontFamily: "'DM Sans',sans-serif", textTransform: "uppercase", letterSpacing: 0.5 }}>
+                    <button onClick={()=>setCalOffset(o=>o-1)} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, width:26, height:26, cursor:"pointer", color:C.textMid, fontSize:14, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>‹</button>
+                    <p style={{ fontWeight: 800, fontSize: 15, color: C.text, fontFamily: "'DM Sans',sans-serif", textTransform: "uppercase", letterSpacing: 0.5, width:160, textAlign:"center" }}>
                       {MESES_FULL[mes]} {anio}
                     </p>
-                    <button onClick={()=>setCalOffset(o=>o+1)} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, width:26, height:26, cursor:"pointer", color:C.textMid, fontSize:14, display:"flex", alignItems:"center", justifyContent:"center" }}>›</button>
+                    <button onClick={()=>setCalOffset(o=>o+1)} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, width:26, height:26, cursor:"pointer", color:C.textMid, fontSize:14, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>›</button>
                   </div>
                   <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
                     {[["<25%","#D32F2F"],["25-40%","#FF7043"],["40-55%","#FFC107"],["55-70%","#4CAF50"],["70-85%","#1A7A3C"],["≥85%","#004D26"]].map(([l,c])=>(
@@ -1502,7 +1507,7 @@ function PickupView({ datos }) {
                     const pickupAyer = pickupPorFecha[ayerStr]?.[campo] || 0;
                     const hayActividad = pickupAyer > 0 && !esPasado;
                     return (
-                      <div key={dia} style={{
+                      <div key={dia} onClick={()=>!esPasado && setFechaPickupModal(fechaStr)} style={{
                         background: esPasado ? "#F5F5F5" : occ > 0 ? bg : C.bg,
                         borderRadius: 8,
                         padding: "6px 2px",
@@ -1512,11 +1517,13 @@ function PickupView({ datos }) {
                         display: "flex", flexDirection: "column", justifyContent: "space-between", alignItems: "center",
                         opacity: esPasado ? 0.45 : 1,
                         boxShadow: !esPasado && occ > 0 ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
-                        transition: "transform 0.1s",
-                        cursor: "default",
+                        cursor: esPasado ? "default" : "pointer",
+                        transition: "filter 0.15s, transform 0.1s",
                         position: "relative",
                         overflow: "hidden",
-                      }}>
+                      }}
+                      onMouseEnter={e=>{ if(!esPasado){ e.currentTarget.style.filter="brightness(0.92)"; e.currentTarget.style.transform="scale(1.04)"; }}}
+                      onMouseLeave={e=>{ e.currentTarget.style.filter="none"; e.currentTarget.style.transform="scale(1)"; }}>
                         {/* Barras decorativas interiores */}
                         {!esPasado && occ > 0 && (
                           <div style={{ position:"absolute", bottom:0, left:0, right:0, height:`${Math.round(occ * 0.45)}%`, background: "rgba(255,255,255,0.15)", borderRadius:"0 0 8px 8px", pointerEvents:"none" }}/>
