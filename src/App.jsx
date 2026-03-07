@@ -555,6 +555,9 @@ function ImportarExcel({ onClose, session, onImportado }) {
       if (err1) throw new Error("Error al guardar producción: " + err1.message);
 
       if (pickupRows.length > 0) {
+        // Borrar entradas anteriores del Excel (las manuales del día se mantienen
+        // porque vienen de fecha_pickup = hoy, no del rango del Excel)
+        await supabase.from("pickup_entries").delete().eq("hotel_id", session.user.id);
         const { error: err2 } = await supabase.from("pickup_entries").insert(pickupRows);
         if (err2) throw new Error("Error al guardar pickup: " + err2.message);
       }
@@ -1359,7 +1362,76 @@ function PickupView({ datos, onGuardado }) {
       .reduce((a, e) => a + (e.num_reservas || 1), 0);
   };
 
-  // Pace tabla 4 meses
+  // ── HEATMAP ───────────────────────────────────────────────────────
+
+  // Habitaciones del hotel (prioridad: perfil > media producción > 30)
+  const habHotel = datos.hotel?.habitaciones
+    || ((produccion||[]).length > 0
+      ? Math.round((produccion||[]).reduce((a,d) => a + (d.hab_disponibles||30), 0) / produccion.length)
+      : 30);
+
+  // Producción indexada por fecha "YYYY-MM-DD"
+  const prodIdx = {};
+  (produccion||[]).forEach(d => { prodIdx[d.fecha] = d; });
+
+  // pickup_entries indexado por fecha_llegada, sumando num_reservas
+  const otbIdx = {};
+  (pickupEntries||[]).forEach(e => {
+    if (!e.fecha_llegada) return;
+    const f = String(e.fecha_llegada).trim().slice(0, 10); // asegurar YYYY-MM-DD
+    otbIdx[f] = (otbIdx[f] || 0) + (e.num_reservas || 1);
+  });
+  window.__hmDebug = { totalEntries: pickupEntries?.length, otbKeys: Object.keys(otbIdx).length, otbSample: Object.entries(otbIdx).slice(0,5), habHotel };
+
+  // % ocupación de un día: producción si existe, OTB si es futuro
+  const getOccDia = (fechaStr) => {
+    const prod = prodIdx[fechaStr];
+    if (prod) {
+      const hab = prod.hab_disponibles || habHotel;
+      return hab > 0 ? Math.round(prod.hab_ocupadas / hab * 100) : null;
+    }
+    if (fechaStr > hoyStr) {
+      const res = otbIdx[fechaStr] || 0;
+      return Math.round(res / habHotel * 100);
+    }
+    return null;
+  };
+
+  // % ocupación media de un mes
+  const getOccMes = (anio, mes) => {
+    const diasMes = new Date(anio, mes + 1, 0).getDate();
+    let total = 0, count = 0;
+    for (let d = 1; d <= diasMes; d++) {
+      const f = `${anio}-${String(mes+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+      const occ = getOccDia(f);
+      if (occ !== null) { total += occ; count++; }
+    }
+    return count > 0 ? Math.round(total / count) : null;
+  };
+
+  // Color degradado verde oscuro → rojo oscuro
+  const getOccBg = (occ) => {
+    if (occ === null) return { bg: "#F5F5F5", col: C.textLight };
+    if (occ >= 85)   return { bg: "#004D26", col: "#fff" };
+    if (occ >= 70)   return { bg: "#1A7A3C", col: "#fff" };
+    if (occ >= 55)   return { bg: "#4CAF50", col: "#fff" };
+    if (occ >= 40)   return { bg: "#C0392B", col: "#fff" };
+    if (occ >= 25)   return { bg: "#A93226", col: "#fff" };
+    return             { bg: "#7B241C",  col: "#fff" };
+  };
+
+  const LEYENDA = [["<25%","#7B241C"],["25-40%","#A93226"],["40-55%","#C0392B"],["55-70%","#4CAF50"],["70-85%","#1A7A3C"],["≥85%","#004D26"]];
+
+  // Años disponibles en producción + año actual
+  const aniosDisp = [...new Set([
+    ...(produccion||[]).map(d => new Date(d.fecha+"T00:00:00").getFullYear()),
+    hoy.getFullYear()
+  ])].sort();
+
+  const [anioHeatmap, setAnioHeatmap]   = useState(hoy.getFullYear());
+  const [mesDetalle,  setMesDetalle]    = useState(null); // { anio, mes }
+
+  // ── Pace tabla 4 meses
   const pace4 = [0,1,2,3].map(offset => {
     const d = new Date(hoy.getFullYear(), hoy.getMonth() + offset, 1);
     const mesIdx = d.getMonth();
@@ -1396,45 +1468,151 @@ function PickupView({ datos, onGuardado }) {
       {fechaPickupModal && <PickupEntryModal session={session} onClose={()=>setFechaPickupModal(null)} onGuardado={()=>{ setFechaPickupModal(null); recargarPickup(); onGuardado && onGuardado(); }} fechaLlegadaInicial={fechaPickupModal} />}
 
 
-      {/* PACE */}
-        {/* COLUMNA DERECHA: Pace */}
-        <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
-          <Card>
-            <p style={{ fontWeight:800, fontSize:15, color:C.text, fontFamily:"'DM Sans',sans-serif", marginBottom:4 }}>Pace vs Año Anterior</p>
-            <p style={{ fontSize:11, color:C.textLight, marginBottom:14 }}>OTB actual vs misma fecha de {hoy.getFullYear()-1}</p>
-            <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
-              {pace4.map((d,i)=>(
-                <div key={i} style={{ background:C.bg, borderRadius:8, padding:"12px 14px", border:`1px solid ${C.border}`, borderLeft:`3px solid ${d.status==="up"?C.green:d.status==="down"?C.red:C.border}` }}>
-                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
-                    <p style={{ fontSize:13, fontWeight:700, color:C.text }}>{d.label}</p>
-                    {d.diffPct!==null && (
-                      <span style={{ fontSize:11, fontWeight:700, padding:"2px 8px", borderRadius:4, background:parseFloat(d.diffPct)>=0?C.greenLight:C.redLight, color:parseFloat(d.diffPct)>=0?C.green:C.red }}>
-                        {parseFloat(d.diffPct)>=0?"+":""}{d.diffPct}%
-                      </span>
-                    )}
+      {/* HEATMAP */}
+      <Card>
+        {!mesDetalle ? (
+          <>
+            {/* Header mensual */}
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
+              <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                <button onClick={()=>setAnioHeatmap(a=>{ const i=aniosDisp.indexOf(a); return i>0?aniosDisp[i-1]:a; })}
+                  style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, width:26, height:26, cursor:"pointer", color:C.textMid, fontSize:14, display:"flex", alignItems:"center", justifyContent:"center" }}>‹</button>
+                <p style={{ fontWeight:800, fontSize:18, color:C.text, fontFamily:"'DM Sans',sans-serif", minWidth:52, textAlign:"center" }}>{anioHeatmap}</p>
+                <button onClick={()=>setAnioHeatmap(a=>{ const i=aniosDisp.indexOf(a); return i<aniosDisp.length-1?aniosDisp[i+1]:a; })}
+                  style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, width:26, height:26, cursor:"pointer", color:C.textMid, fontSize:14, display:"flex", alignItems:"center", justifyContent:"center" }}>›</button>
+              </div>
+              <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+                {LEYENDA.map(([l,c])=>(
+                  <div key={l} style={{ display:"flex", alignItems:"center", gap:3 }}>
+                    <div style={{ width:9, height:9, borderRadius:2, background:c }}/>
+                    <span style={{ fontSize:9, color:C.textLight }}>{l}</span>
                   </div>
-                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8 }}>
-                    <div>
-                      <p style={{ fontSize:9, color:C.textLight, textTransform:"uppercase", letterSpacing:1 }}>OTB Actual</p>
-                      <p style={{ fontSize:18, fontWeight:800, color:C.accent, fontFamily:"'DM Sans',sans-serif" }}>{d.otbActual}</p>
-                    </div>
-                    <div>
-                      <p style={{ fontSize:9, color:C.textLight, textTransform:"uppercase", letterSpacing:1 }}>OTB LY</p>
-                      <p style={{ fontSize:18, fontWeight:800, color:C.textMid, fontFamily:"'DM Sans',sans-serif" }}>{d.otbLY>0?d.otbLY:"—"}</p>
-                    </div>
-                    <div>
-                      <p style={{ fontSize:9, color:C.textLight, textTransform:"uppercase", letterSpacing:1 }}>Diferencia</p>
-                      <p style={{ fontSize:18, fontWeight:800, color:d.diff===null?C.textLight:d.diff>=0?C.green:C.red, fontFamily:"'DM Sans',sans-serif" }}>
-                        {d.diff!==null?`${d.diff>=0?"+":""}${d.diff}`:"—"}
-                      </p>
-                    </div>
+                ))}
+              </div>
+            </div>
+            {/* Grid 4x3 meses */}
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:6 }}>
+              {Array.from({length:12},(_,mes)=>{
+                const occ = getOccMes(anioHeatmap, mes);
+                const esHoyMes = anioHeatmap===hoy.getFullYear() && mes===hoy.getMonth();
+                const { bg, col } = getOccBg(occ);
+                return (
+                  <div key={mes}
+                    onClick={()=>occ!==null && setMesDetalle({anio:anioHeatmap, mes})}
+                    style={{ background:bg, borderRadius:10, padding:"16px 8px", textAlign:"center",
+                      border: esHoyMes?`2px solid ${C.accent}`:`1px solid ${C.border}`,
+                      minHeight:90, display:"flex", flexDirection:"column", justifyContent:"space-between", alignItems:"center",
+                      cursor: occ!==null?"pointer":"default", opacity: occ===null?0.35:1,
+                      boxShadow: occ!==null?"0 1px 4px rgba(0,0,0,0.12)":"none",
+                      transition:"transform 0.12s, filter 0.12s" }}
+                    onMouseEnter={e=>{ if(occ!==null){ e.currentTarget.style.transform="scale(1.03)"; e.currentTarget.style.filter="brightness(0.88)"; }}}
+                    onMouseLeave={e=>{ e.currentTarget.style.transform="scale(1)"; e.currentTarget.style.filter="none"; }}>
+                    <span style={{ fontSize:13, fontWeight:600, color:col, textTransform:"uppercase", letterSpacing:0.5 }}>{MESES_FULL[mes]}</span>
+                    <span style={{ fontSize:26, fontWeight:800, color:col, fontFamily:"'DM Sans',sans-serif", lineHeight:1 }}>
+                      {occ!==null ? `${occ}%` : "—"}
+                    </span>
+                    <span style={{ fontSize:8, color:"transparent" }}>·</span>
                   </div>
-                </div>
+                );
+              })}
+            </div>
+          </>
+        ) : (
+          <>
+            {/* Header diario */}
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
+              <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                <button onClick={()=>setMesDetalle(null)}
+                  style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, padding:"5px 10px", cursor:"pointer", fontSize:12, color:C.textMid, fontFamily:"'DM Sans',sans-serif" }}>← Volver</button>
+                <p style={{ fontWeight:800, fontSize:15, color:C.text, fontFamily:"'DM Sans',sans-serif", textTransform:"uppercase", letterSpacing:0.5 }}>
+                  {MESES_FULL[mesDetalle.mes]} {mesDetalle.anio}
+                </p>
+              </div>
+              <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+                {LEYENDA.map(([l,c])=>(
+                  <div key={l} style={{ display:"flex", alignItems:"center", gap:3 }}>
+                    <div style={{ width:9, height:9, borderRadius:2, background:c }}/>
+                    <span style={{ fontSize:9, color:C.textLight }}>{l}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            {/* Cabecera días semana */}
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:3, marginBottom:3 }}>
+              {["L","M","X","J","V","S","D"].map(d=>(
+                <div key={d} style={{ textAlign:"center", fontSize:10, color:C.textLight, fontWeight:600, padding:"2px 0" }}>{d}</div>
               ))}
             </div>
-          </Card>
+            {/* Grid días */}
+            {(()=>{
+              const { anio, mes } = mesDetalle;
+              const diasMes = new Date(anio, mes+1, 0).getDate();
+              const offset = (new Date(anio, mes, 1).getDay()+6)%7;
+              return (
+                <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:3 }}>
+                  {Array.from({length:offset}).map((_,i)=><div key={`e${i}`}/>)}
+                  {Array.from({length:diasMes}).map((_,i)=>{
+                    const dia = i+1;
+                    const f = `${anio}-${String(mes+1).padStart(2,"0")}-${String(dia).padStart(2,"0")}`;
+                    const esHoy2 = f===hoyStr;
+                    const occ = getOccDia(f);
+                    const { bg, col } = getOccBg(occ);
+                    const esFinde = new Date(anio,mes,dia).getDay()===0||new Date(anio,mes,dia).getDay()===6;
+                    return (
+                      <div key={dia} style={{ background:bg, borderRadius:8, padding:"6px 2px", textAlign:"center",
+                        border: esHoy2?`2px solid ${C.accent}`:`1px solid ${esFinde?C.accent+"33":C.border}`,
+                        minHeight:52, display:"flex", flexDirection:"column", justifyContent:"space-between", alignItems:"center",
+                        opacity: occ===null?0.35:1 }}>
+                        <span style={{ fontSize:10, color:col, fontWeight:esFinde||esHoy2?700:400, lineHeight:1.4 }}>{dia}</span>
+                        <span style={{ fontSize:12, fontWeight:800, color:col, lineHeight:1, fontFamily:"'DM Sans',sans-serif" }}>
+                          {occ!==null ? `${occ}%` : "—"}
+                        </span>
+                        <span style={{ fontSize:8, color:esFinde&&occ!==null?C.accent+"88":"transparent", fontWeight:700 }}>{esFinde&&occ!==null?"★":""}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
+          </>
+        )}
+      </Card>
+
+      {/* PACE */}
+      <Card>
+        <p style={{ fontWeight:800, fontSize:15, color:C.text, fontFamily:"'DM Sans',sans-serif", marginBottom:4 }}>Pace vs Año Anterior</p>
+        <p style={{ fontSize:11, color:C.textLight, marginBottom:14 }}>OTB actual vs misma fecha de {hoy.getFullYear()-1}</p>
+        <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+          {pace4.map((d,i)=>(
+            <div key={i} style={{ background:C.bg, borderRadius:8, padding:"12px 14px", border:`1px solid ${C.border}`, borderLeft:`3px solid ${d.status==="up"?C.green:d.status==="down"?C.red:C.border}` }}>
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
+                <p style={{ fontSize:13, fontWeight:700, color:C.text }}>{d.label}</p>
+                {d.diffPct!==null && (
+                  <span style={{ fontSize:11, fontWeight:700, padding:"2px 8px", borderRadius:4, background:parseFloat(d.diffPct)>=0?C.greenLight:C.redLight, color:parseFloat(d.diffPct)>=0?C.green:C.red }}>
+                    {parseFloat(d.diffPct)>=0?"+":""}{d.diffPct}%
+                  </span>
+                )}
+              </div>
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8 }}>
+                <div>
+                  <p style={{ fontSize:9, color:C.textLight, textTransform:"uppercase", letterSpacing:1 }}>OTB Actual</p>
+                  <p style={{ fontSize:18, fontWeight:800, color:C.accent, fontFamily:"'DM Sans',sans-serif" }}>{d.otbActual}</p>
+                </div>
+                <div>
+                  <p style={{ fontSize:9, color:C.textLight, textTransform:"uppercase", letterSpacing:1 }}>OTB LY</p>
+                  <p style={{ fontSize:18, fontWeight:800, color:C.textMid, fontFamily:"'DM Sans',sans-serif" }}>{d.otbLY>0?d.otbLY:"—"}</p>
+                </div>
+                <div>
+                  <p style={{ fontSize:9, color:C.textLight, textTransform:"uppercase", letterSpacing:1 }}>Diferencia</p>
+                  <p style={{ fontSize:18, fontWeight:800, color:d.diff===null?C.textLight:d.diff>=0?C.green:C.red, fontFamily:"'DM Sans',sans-serif" }}>
+                    {d.diff!==null?`${d.diff>=0?"+":""}${d.diff}`:"—"}
+                  </p>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
-      
+      </Card>
     </div>
   )
 }
