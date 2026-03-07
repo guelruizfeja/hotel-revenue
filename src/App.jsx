@@ -1189,10 +1189,10 @@ function PickupEntryModal({ session, onClose, onGuardado, fechaLlegadaInicial })
       num_reservas: parseInt(e.num_reservas) || 1,
       notas: notas || null,
     }));
-    const { error: err } = await supabase.from("pickup_entries").insert(rows);
+    const { data: insertadas, error: err } = await supabase.from("pickup_entries").insert(rows).select();
     if (err) { setError("Error al guardar: " + err.message); setGuardando(false); return; }
-    // Actualizar lista de guardadas y limpiar formulario
-    setGuardadas(prev => [...rows.map((r,i) => ({...r, id: Date.now()+i})), ...prev]);
+    // Actualizar lista de guardadas con ids reales de Supabase
+    setGuardadas(prev => [...(insertadas || rows), ...prev]);
     setEntradas([]);
     setNotas("");
     setGuardando(false);
@@ -1295,7 +1295,7 @@ function PickupEntryModal({ session, onClose, onGuardado, fechaLlegadaInicial })
           ) : (
             <div style={{ display:"flex", flexDirection:"column", gap:6, maxHeight:220, overflowY:"auto" }}>
               {guardadas.map((e, i) => (
-                <div key={i} style={{ display:"grid", gridTemplateColumns:"1fr 1fr 60px", gap:8, background:i%2===0?C.bg:C.bgCard, borderRadius:8, padding:"8px 12px", border:`1px solid ${C.border}` }}>
+                <div key={i} style={{ display:"grid", gridTemplateColumns:"1fr 1fr 60px 32px", gap:8, background:i%2===0?C.bg:C.bgCard, borderRadius:8, padding:"8px 12px", border:`1px solid ${C.border}` }}>
                   <div>
                     <p style={{ fontSize:9, color:C.textLight, textTransform:"uppercase", letterSpacing:1 }}>Llegada</p>
                     <p style={{ fontSize:12, fontWeight:600, color:C.text }}>{e.fecha_llegada}</p>
@@ -1308,6 +1308,17 @@ function PickupEntryModal({ session, onClose, onGuardado, fechaLlegadaInicial })
                     <p style={{ fontSize:9, color:C.textLight, textTransform:"uppercase", letterSpacing:1 }}>Res.</p>
                     <p style={{ fontSize:16, fontWeight:800, color:C.accent, fontFamily:"'DM Sans',sans-serif" }}>{e.num_reservas}</p>
                   </div>
+                  <div style={{ display:"flex", alignItems:"center", justifyContent:"center" }}>
+                    <button onClick={async()=>{
+                      if(!e.id) return;
+                      await supabase.from("pickup_entries").delete().eq("id", e.id);
+                      setGuardadas(g => g.filter((_,j)=>j!==i));
+                    }} style={{ background:"none", border:"none", cursor:"pointer", color:C.textLight, fontSize:16, lineHeight:1, padding:2, borderRadius:4, transition:"color 0.15s" }}
+                    onMouseEnter={e=>e.currentTarget.style.color=C.red}
+                    onMouseLeave={e=>e.currentTarget.style.color=C.textLight}>
+                      ×
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -1319,8 +1330,25 @@ function PickupEntryModal({ session, onClose, onGuardado, fechaLlegadaInicial })
 }
 
 // ─── PICKUP VIEW ──────────────────────────────────────────────────
-function PickupView({ datos }) {
-  const { pickup, produccion, session, pickupEntries } = datos;
+function PickupView({ datos, onGuardado }) {
+  const { pickup, produccion, session } = datos;
+
+  // Estado local de pickupEntries para refrescar el heatmap sin remontar el componente
+  const [pickupEntries, setPickupEntries] = useState(datos.pickupEntries || []);
+
+  const recargarPickup = async () => {
+    const { data } = await supabase.from("pickup_entries")
+      .select("*")
+      .eq("hotel_id", session.user.id)
+      .order("fecha_pickup");
+    if (data) setPickupEntries(data);
+  };
+
+  // Sincronizar si llegan datos nuevos desde fuera (ej: importar Excel)
+  useEffect(() => {
+    setPickupEntries(datos.pickupEntries || []);
+  }, [datos.pickupEntries]);
+
   const [showEntryModal, setShowEntryModal] = useState(false);
   const [fechaPickupModal, setFechaPickupModal] = useState(null);
 
@@ -1406,19 +1434,42 @@ function PickupView({ datos }) {
     if (occ >= 85) return { bg: "#004D26", text: "#fff" };
     if (occ >= 70) return { bg: "#1A7A3C", text: "#fff" };
     if (occ >= 55) return { bg: "#4CAF50", text: "#fff" };
-    if (occ >= 40) return { bg: "#FFC107", text: "#1A1A1A" };
-    if (occ >= 25) return { bg: "#FF7043", text: "#fff" };
-    return { bg: "#D32F2F", text: "#fff" };
+    if (occ >= 40) return { bg: "#C0392B", text: "#fff" };
+    if (occ >= 25) return { bg: "#A93226", text: "#fff" };
+    return { bg: "#7B241C", text: "#fff" };
   };
 
-  // ── BLOQUE 1: Calendario 3 meses ──────────────────────────────
-  const [calOffset, setCalOffset] = useState(0);
-  const meses3 = [0].map(i => {
-    const d = new Date(hoy.getFullYear(), hoy.getMonth() + calOffset + i, 1);
-    return { anio: d.getFullYear(), mes: d.getMonth() };
-  });
+  // ── HEATMAP: años disponibles en producción ─────────────────
+  const aniosDisp = [...new Set((produccion||[]).map(d=>new Date(d.fecha+"T00:00:00").getFullYear()))].sort();
+  if (!aniosDisp.includes(hoy.getFullYear())) aniosDisp.push(hoy.getFullYear());
 
-  // ── BLOQUE 2: Pace tabla 4 meses ─────────────────────────────
+  // Estado: año visible en heatmap mensual
+  const [anioHeatmap, setAnioHeatmap] = useState(hoy.getFullYear());
+
+  // Estado: mes seleccionado para ver detalle diario (null = vista mensual)
+  const [mesDetalle, setMesDetalle] = useState(null); // { anio, mes }
+
+  // Ocupación media de un mes
+  const getOccMes = (anio, mes) => {
+    const dias = (produccion||[]).filter(d => {
+      const f = new Date(d.fecha+"T00:00:00");
+      return f.getFullYear()===anio && f.getMonth()===mes;
+    });
+    if (!dias.length) return null;
+    const habOcu = dias.reduce((a,d)=>a+(d.hab_ocupadas||0),0);
+    const habDis = dias.reduce((a,d)=>a+(d.hab_disponibles||30),0);
+    return habDis>0 ? Math.round(habOcu/habDis*100) : null;
+  };
+
+  // Ocupación de un día
+  const getOccDia = (fechaStr) => {
+    const d = prodPorFecha[fechaStr];
+    if (!d) return null;
+    const habDis = d.hab_disponibles||30;
+    return habDis>0 ? Math.round(d.hab_ocupadas/habDis*100) : null;
+  };
+
+  // Pace tabla 4 meses
   const pace4 = [0,1,2,3].map(offset => {
     const d = new Date(hoy.getFullYear(), hoy.getMonth() + offset, 1);
     const mesIdx = d.getMonth();
@@ -1428,24 +1479,21 @@ function PickupView({ datos }) {
     const diffPct   = otbLY > 0 ? ((otbActual - otbLY)/otbLY*100).toFixed(1) : null;
     return {
       label: `${MESES_FULL[mesIdx]} ${d.getFullYear()}`,
-      otbActual, otbLY,
-      diff, diffPct,
+      otbActual, otbLY, diff, diffPct,
       status: diffPct===null?"neutral":parseFloat(diffPct)>=5?"up":parseFloat(diffPct)<=-5?"down":"neutral"
     };
   });
 
-  // ── BLOQUE 3: Top 5 fechas calientes ─────────────────────────
-  // Para cada fecha futura, suma pickup total de ayer y anteayer
 
-
+  // ── RENDER ──────────────────────────────────────────────────
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+    <div style={{ display:"flex", flexDirection:"column", gap:20 }}>
 
-      {/* ── HEADER ── */}
+      {/* HEADER */}
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
         <div>
-          <h2 style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 20, fontWeight: 700, color: C.text, letterSpacing: -0.3 }}>Pickup & Demanda</h2>
-          <p style={{ fontSize: 12, color: C.textLight, marginTop: 3 }}>
+          <h2 style={{ fontFamily:"'DM Sans',sans-serif", fontSize:20, fontWeight:700, color:C.text, letterSpacing:-0.3 }}>Pickup & Demanda</h2>
+          <p style={{ fontSize:12, color:C.textLight, marginTop:3 }}>
             {hoy.toLocaleDateString("es-ES",{weekday:"long",day:"numeric",month:"long",year:"numeric"}).replace(/^./,c=>c.toUpperCase())}
           </p>
         </div>
@@ -1453,101 +1501,144 @@ function PickupView({ datos }) {
           ✏️ Rellenar Pickup Hoy
         </button>
       </div>
-      {showEntryModal && <PickupEntryModal session={session} onClose={()=>setShowEntryModal(false)} onGuardado={()=>{}} />}
-      {fechaPickupModal && <PickupEntryModal session={session} onClose={()=>setFechaPickupModal(null)} onGuardado={()=>setFechaPickupModal(null)} fechaLlegadaInicial={fechaPickupModal} />}
 
-      {/* ── LAYOUT: Calendario + Lateral ── */}
-      <div style={{ display: "grid", gridTemplateColumns: "minmax(0,3fr) minmax(0,2fr)", gap: 20, alignItems: "start" }}>
+      {showEntryModal && <PickupEntryModal session={session} onClose={()=>setShowEntryModal(false)} onGuardado={()=>{ setShowEntryModal(false); recargarPickup(); onGuardado && onGuardado(); }} />}
+      {fechaPickupModal && <PickupEntryModal session={session} onClose={()=>setFechaPickupModal(null)} onGuardado={()=>{ setFechaPickupModal(null); recargarPickup(); onGuardado && onGuardado(); }} fechaLlegadaInicial={fechaPickupModal} />}
 
-        {/* COLUMNA IZQUIERDA: Calendario 3 meses */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      {/* LAYOUT: Heatmap + Lateral */}
+      <div style={{ display:"grid", gridTemplateColumns:"minmax(0,3fr) minmax(0,2fr)", gap:20, alignItems:"start" }}>
 
-          {meses3.map(({ anio, mes }) => {
-            const diasMes = new Date(anio, mes+1, 0).getDate();
-            const primerDia = new Date(anio, mes, 1).getDay();
-            const offset = (primerDia + 6) % 7;
-            return (
-              <Card key={`${anio}-${mes}`}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-                  <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                    <button onClick={()=>setCalOffset(o=>o-1)} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, width:26, height:26, cursor:"pointer", color:C.textMid, fontSize:14, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>‹</button>
-                    <p style={{ fontWeight: 800, fontSize: 15, color: C.text, fontFamily: "'DM Sans',sans-serif", textTransform: "uppercase", letterSpacing: 0.5, width:160, textAlign:"center" }}>
-                      {MESES_FULL[mes]} {anio}
-                    </p>
-                    <button onClick={()=>setCalOffset(o=>o+1)} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, width:26, height:26, cursor:"pointer", color:C.textMid, fontSize:14, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>›</button>
-                  </div>
-                  <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                    {[["<25%","#D32F2F"],["25-40%","#FF7043"],["40-55%","#FFC107"],["55-70%","#4CAF50"],["70-85%","#1A7A3C"],["≥85%","#004D26"]].map(([l,c])=>(
-                      <div key={l} style={{ display:"flex", alignItems:"center", gap:3 }}>
-                        <div style={{ width:10, height:10, borderRadius:2, background:c, border:`1px solid ${C.border}` }}/>
-                        <span style={{ fontSize:9, color:C.textLight }}>{l}</span>
-                      </div>
-                    ))}
-                  </div>
+        {/* COLUMNA IZQUIERDA: Heatmap */}
+        <div>
+          {!mesDetalle ? (
+            /* ── VISTA MENSUAL ── */
+            <Card>
+              {/* Header: flechas año + leyenda */}
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
+                <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                  <button onClick={()=>setAnioHeatmap(a=>{ const idx=aniosDisp.indexOf(a); return idx>0?aniosDisp[idx-1]:a; })}
+                    style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, width:26, height:26, cursor:"pointer", color:C.textMid, fontSize:14, display:"flex", alignItems:"center", justifyContent:"center" }}>‹</button>
+                  <p style={{ fontWeight:800, fontSize:18, color:C.text, fontFamily:"'DM Sans',sans-serif", minWidth:48, textAlign:"center" }}>{anioHeatmap}</p>
+                  <button onClick={()=>setAnioHeatmap(a=>{ const idx=aniosDisp.indexOf(a); return idx<aniosDisp.length-1?aniosDisp[idx+1]:a; })}
+                    style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, width:26, height:26, cursor:"pointer", color:C.textMid, fontSize:14, display:"flex", alignItems:"center", justifyContent:"center" }}>›</button>
                 </div>
-                {/* Cabecera días */}
-                <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:3, marginBottom:3 }}>
-                  {["L","M","X","J","V","S","D"].map(d=>(
-                    <div key={d} style={{ textAlign:"center", fontSize:10, color:C.textLight, fontWeight:600, padding:"2px 0" }}>{d}</div>
+                <div style={{ display:"flex", gap:6, alignItems:"center", flexWrap:"wrap" }}>
+                  {[["<25%","#7B241C"],["25-40%","#A93226"],["40-55%","#C0392B"],["55-70%","#4CAF50"],["70-85%","#1A7A3C"],["≥85%","#004D26"]].map(([l,c])=>(
+                    <div key={l} style={{ display:"flex", alignItems:"center", gap:3 }}>
+                      <div style={{ width:9, height:9, borderRadius:2, background:c }}/>
+                      <span style={{ fontSize:9, color:C.textLight }}>{l}</span>
+                    </div>
                   ))}
                 </div>
-                {/* Grid días */}
-                <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:3 }}>
-                  {Array.from({length:offset}).map((_,i)=><div key={`e${i}`}/>)}
-                  {Array.from({length:diasMes}).map((_,i)=>{
-                    const dia = i+1;
-                    const fechaStr = `${anio}-${String(mes+1).padStart(2,"0")}-${String(dia).padStart(2,"0")}`;
-                    const esPasado = fechaStr < hoyStr;
-                    const esHoy2   = fechaStr === hoyStr;
-                    const occ      = getOccOTB(fechaStr);
-                    const { bg, text } = getOccBg(occ);
-                    const esFinde  = new Date(anio,mes,dia).getDay()===0||new Date(anio,mes,dia).getDay()===6;
-                    // Actividad reciente: pickup ayer para este mes
-                    const campo = `mes_${MESES_CAMPOS[mes]}`;
-                    const pickupAyer = pickupPorFecha[ayerStr]?.[campo] || 0;
-                    const hayActividad = pickupAyer > 0 && !esPasado;
-                    return (
-                      <div key={dia} onClick={()=>!esPasado && setFechaPickupModal(fechaStr)} style={{
-                        background: esPasado ? "#F5F5F5" : occ > 0 ? bg : C.bg,
-                        borderRadius: 8,
-                        padding: "6px 2px",
-                        textAlign: "center",
-                        border: esHoy2 ? `2px solid ${C.accent}` : hayActividad ? `1.5px solid #1A7A3C` : `1px solid ${esFinde ? C.accent+"33" : C.border}`,
-                        minHeight: 52,
-                        display: "flex", flexDirection: "column", justifyContent: "space-between", alignItems: "center",
-                        opacity: esPasado ? 0.45 : 1,
-                        boxShadow: !esPasado && occ > 0 ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
-                        cursor: esPasado ? "default" : "pointer",
-                        transition: "filter 0.15s, transform 0.1s",
-                        position: "relative",
-                        overflow: "hidden",
+              </div>
+
+              {/* Grid 4 columnas x 3 filas, celdas grandes igual que días */}
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:6 }}>
+                {Array.from({length:12},(_,mes)=>{
+                  const occ = getOccMes(anioHeatmap, mes);
+                  const esFuturo = anioHeatmap===hoy.getFullYear() && mes>hoy.getMonth();
+                  const esHoyMes = anioHeatmap===hoy.getFullYear() && mes===hoy.getMonth();
+                  const { bg, text: textCol } = occ!==null ? getOccBg(occ) : { bg:C.bg, text:C.textLight };
+                  return (
+                    <div key={mes}
+                      onClick={()=>!esFuturo && setMesDetalle({anio:anioHeatmap, mes})}
+                      style={{
+                        background: esFuturo ? "#F5F5F5" : occ!==null ? bg : C.bg,
+                        borderRadius:10,
+                        padding:"16px 8px",
+                        textAlign:"center",
+                        border: esHoyMes ? `2px solid ${C.accent}` : `1px solid ${C.border}`,
+                        minHeight:90,
+                        display:"flex", flexDirection:"column", justifyContent:"space-between", alignItems:"center",
+                        cursor: esFuturo ? "default" : "pointer",
+                        opacity: esFuturo ? 0.35 : 1,
+                        boxShadow: !esFuturo && occ!==null ? "0 1px 4px rgba(0,0,0,0.12)" : "none",
+                        transition:"transform 0.12s, filter 0.12s",
                       }}
-                      onMouseEnter={e=>{ if(!esPasado){ e.currentTarget.style.filter="brightness(0.92)"; e.currentTarget.style.transform="scale(1.04)"; }}}
-                      onMouseLeave={e=>{ e.currentTarget.style.filter="none"; e.currentTarget.style.transform="scale(1)"; }}>
-                        {/* Barras decorativas interiores */}
-                        {!esPasado && occ > 0 && (
-                          <div style={{ position:"absolute", bottom:0, left:0, right:0, height:`${Math.round(occ * 0.45)}%`, background: "rgba(255,255,255,0.15)", borderRadius:"0 0 8px 8px", pointerEvents:"none" }}/>
-                        )}
-                        <span style={{ fontSize:10, color: esPasado ? C.textLight : occ>0 ? text : C.textLight, fontWeight: esFinde||esHoy2 ? 700 : 400, lineHeight:1.4, position:"relative" }}>{dia}</span>
-                        {!esPasado && occ > 0 ? (
-                          <span style={{ fontSize:12, fontWeight:800, color:text, lineHeight:1, fontFamily:"'DM Sans',sans-serif", position:"relative" }}>{occ}%</span>
-                        ) : !esPasado ? (
-                          <span style={{ fontSize:10, color:C.border }}>—</span>
-                        ) : null}
-                        <span style={{ fontSize:8, color: hayActividad?"#1A7A3C":esFinde&&!esPasado?C.accent+"88":"transparent", fontWeight:700, position:"relative" }}>{hayActividad?"↑":esFinde&&!esPasado?"★":""}</span>
-                      </div>
-                    );
-                  })}
+                      onMouseEnter={e=>{ if(!esFuturo){ e.currentTarget.style.transform="scale(1.03)"; e.currentTarget.style.filter="brightness(0.88)"; }}}
+                      onMouseLeave={e=>{ e.currentTarget.style.transform="scale(1)"; e.currentTarget.style.filter="none"; }}>
+                      <span style={{ fontSize:13, fontWeight:600, color: esFuturo?C.textLight:occ!==null?textCol:C.textLight, lineHeight:1.4, textTransform:"uppercase", letterSpacing:0.5 }}>{MESES_FULL[mes]}</span>
+                      <span style={{ fontSize:26, fontWeight:800, color: esFuturo?C.border:occ!==null?textCol:C.border, fontFamily:"'DM Sans',sans-serif", lineHeight:1 }}>
+                        {occ!==null ? `${occ}%` : "—"}
+                      </span>
+                      <span style={{ fontSize:8, color:"transparent" }}>·</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </Card>
+          ) : (
+            /* ── VISTA DIARIA ── */
+            <Card>
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
+                <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                  <button onClick={()=>setMesDetalle(null)} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, padding:"5px 10px", cursor:"pointer", fontSize:12, color:C.textMid, fontFamily:"'DM Sans',sans-serif" }}>← Volver</button>
+                  <p style={{ fontWeight:800, fontSize:15, color:C.text, fontFamily:"'DM Sans',sans-serif", textTransform:"uppercase", letterSpacing:0.5 }}>
+                    {MESES_FULL[mesDetalle.mes]} {mesDetalle.anio}
+                  </p>
                 </div>
-              </Card>
-            );
-          })}
+                <div style={{ display:"flex", gap:6, alignItems:"center" }}>
+                  {[["<25%","#7B241C"],["25-40%","#A93226"],["40-55%","#C0392B"],["55-70%","#4CAF50"],["70-85%","#1A7A3C"],["≥85%","#004D26"]].map(([l,c])=>(
+                    <div key={l} style={{ display:"flex", alignItems:"center", gap:3 }}>
+                      <div style={{ width:9, height:9, borderRadius:2, background:c }}/>
+                      <span style={{ fontSize:9, color:C.textLight }}>{l}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Cabecera días semana */}
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:3, marginBottom:3 }}>
+                {["L","M","X","J","V","S","D"].map(d=>(
+                  <div key={d} style={{ textAlign:"center", fontSize:10, color:C.textLight, fontWeight:600, padding:"2px 0" }}>{d}</div>
+                ))}
+              </div>
+
+              {/* Grid días */}
+              {(() => {
+                const { anio, mes } = mesDetalle;
+                const diasMes = new Date(anio, mes+1, 0).getDate();
+                const primerDia = new Date(anio, mes, 1).getDay();
+                const offset = (primerDia+6)%7;
+                return (
+                  <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:3 }}>
+                    {Array.from({length:offset}).map((_,i)=><div key={`e${i}`}/>)}
+                    {Array.from({length:diasMes}).map((_,i)=>{
+                      const dia = i+1;
+                      const fechaStr = `${anio}-${String(mes+1).padStart(2,"0")}-${String(dia).padStart(2,"0")}`;
+                      const esHoy2 = fechaStr===hoyStr;
+                      const esFuturo = fechaStr>hoyStr;
+                      const occ = getOccDia(fechaStr);
+                      const { bg, text: textCol } = occ!==null ? getOccBg(occ) : { bg:C.bg, text:C.textLight };
+                      const esFinde = new Date(anio,mes,dia).getDay()===0||new Date(anio,mes,dia).getDay()===6;
+                      return (
+                        <div key={dia} style={{
+                          background: esFuturo ? "#F5F5F5" : occ!==null ? bg : C.bg,
+                          borderRadius:8,
+                          padding:"6px 2px",
+                          textAlign:"center",
+                          border: esHoy2 ? `2px solid ${C.accent}` : `1px solid ${esFinde?C.accent+"33":C.border}`,
+                          minHeight:52,
+                          display:"flex", flexDirection:"column", justifyContent:"space-between", alignItems:"center",
+                          opacity: esFuturo ? 0.35 : 1,
+                        }}>
+                          <span style={{ fontSize:10, color:esFuturo?C.border:occ!==null?textCol:C.textLight, fontWeight:esFinde||esHoy2?700:400, lineHeight:1.4 }}>{dia}</span>
+                          <span style={{ fontSize:12, fontWeight:800, color:esFuturo?C.border:occ!==null?textCol:C.border, lineHeight:1, fontFamily:"'DM Sans',sans-serif" }}>
+                            {!esFuturo && occ!==null ? `${occ}%` : "—"}
+                          </span>
+                          <span style={{ fontSize:8, color:esFinde&&!esFuturo?C.accent+"88":"transparent", fontWeight:700 }}>{esFinde&&!esFuturo?"★":""}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
+            </Card>
+          )}
         </div>
 
-        {/* COLUMNA DERECHA: Pace + Top 5 */}
+        {/* COLUMNA DERECHA: Pace */}
         <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
-
-          {/* PACE */}
           <Card>
             <p style={{ fontWeight:800, fontSize:15, color:C.text, fontFamily:"'DM Sans',sans-serif", marginBottom:4 }}>Pace vs Año Anterior</p>
             <p style={{ fontSize:11, color:C.textLight, marginBottom:14 }}>OTB actual vs misma fecha de {hoy.getFullYear()-1}</p>
@@ -1556,7 +1647,7 @@ function PickupView({ datos }) {
                 <div key={i} style={{ background:C.bg, borderRadius:8, padding:"12px 14px", border:`1px solid ${C.border}`, borderLeft:`3px solid ${d.status==="up"?C.green:d.status==="down"?C.red:C.border}` }}>
                   <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
                     <p style={{ fontSize:13, fontWeight:700, color:C.text }}>{d.label}</p>
-                    {d.diffPct !== null && (
+                    {d.diffPct!==null && (
                       <span style={{ fontSize:11, fontWeight:700, padding:"2px 8px", borderRadius:4, background:parseFloat(d.diffPct)>=0?C.greenLight:C.redLight, color:parseFloat(d.diffPct)>=0?C.green:C.red }}>
                         {parseFloat(d.diffPct)>=0?"+":""}{d.diffPct}%
                       </span>
@@ -1582,12 +1673,10 @@ function PickupView({ datos }) {
               ))}
             </div>
           </Card>
-
-
         </div>
       </div>
     </div>
-  );
+  )
 }
 
 // ─── BUDGET VIEW ──────────────────────────────────────────────────
@@ -1966,6 +2055,8 @@ export default function App() {
     if (session) cargarDatos();
   }, [session]);
 
+  const [refreshKey, setRefreshKey] = useState(0);
+
   const cargarDatos = async () => {
     setCargandoDatos(true);
     const [{ data: produccion }, { data: pickup }, { data: presupuesto }, { data: hotelData }] = await Promise.all([
@@ -1976,6 +2067,7 @@ export default function App() {
     ]);
     setDatos({ produccion: produccion || [], pickup: pickup || [], presupuesto: presupuesto || [], hotel: hotelData, session, pickupEntries: pickup || [] });
     setCargandoDatos(false);
+    setRefreshKey(k => k + 1);
   };
 
   const handleLogout = async () => { await supabase.auth.signOut(); };
@@ -2116,7 +2208,7 @@ export default function App() {
         {cargandoDatos ? <LoadingSpinner /> : mesDetalle ? (
           <MonthDetailView datos={datos} mes={mesDetalle.mes} anio={mesDetalle.anio} onBack={() => setMesDetalle(null)} />
         ) : (
-          <View datos={datos} mes={mesSel} anio={anioSel} onPeriodo={(m,a) => { setMesSel(m); setAnioSel(a); localStorage.setItem("rm_mes", m); localStorage.setItem("rm_anio", a); }} />
+          <View datos={datos} mes={mesSel} anio={anioSel} onGuardado={cargarDatos} onPeriodo={(m,a) => { setMesSel(m); setAnioSel(a); localStorage.setItem("rm_mes", m); localStorage.setItem("rm_anio", a); }} />
         )}
       </main>
 
