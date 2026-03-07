@@ -1333,18 +1333,14 @@ function PickupEntryModal({ session, onClose, onGuardado, fechaLlegadaInicial })
 function PickupView({ datos, onGuardado }) {
   const { pickup, produccion, session } = datos;
 
-  // Estado local de pickupEntries para refrescar el heatmap sin remontar el componente
   const [pickupEntries, setPickupEntries] = useState(datos.pickupEntries || []);
 
   const recargarPickup = async () => {
     const { data } = await supabase.from("pickup_entries")
-      .select("*")
-      .eq("hotel_id", session.user.id)
-      .order("fecha_pickup");
+      .select("*").eq("hotel_id", session.user.id).order("fecha_pickup");
     if (data) setPickupEntries(data);
   };
 
-  // Sincronizar si llegan datos nuevos desde fuera (ej: importar Excel)
   useEffect(() => {
     setPickupEntries(datos.pickupEntries || []);
   }, [datos.pickupEntries]);
@@ -1355,118 +1351,12 @@ function PickupView({ datos, onGuardado }) {
   const hoy = new Date();
   const hoyStr = hoy.toISOString().slice(0,10);
   const hoyLYStr = `${hoy.getFullYear()-1}-${String(hoy.getMonth()+1).padStart(2,"0")}-${String(hoy.getDate()).padStart(2,"0")}`;
-  const ayer = new Date(hoy); ayer.setDate(hoy.getDate()-1);
-  const ayerStr = ayer.toISOString().slice(0,10);
-  const hace2d = new Date(hoy); hace2d.setDate(hoy.getDate()-2);
-  const hace2dStr = hace2d.toISOString().slice(0,10);
-
-  const MESES_CAMPOS = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
-
-  // Producción indexada por fecha
-  const prodPorFecha = {};
-  (produccion||[]).forEach(d => { prodPorFecha[d.fecha] = d; });
-
-  // Pickup indexado por fecha
-  const pickupPorFecha = {};
-  pickup.forEach(d => { pickupPorFecha[d.fecha_pickup] = d; });
 
   // OTB acumulado hasta una fecha para un mes específico
   const getOTB = (hastaFecha, mesIdx) => {
     return (pickupEntries || [])
       .filter(e => e.fecha_pickup <= hastaFecha && new Date(e.fecha_llegada + "T00:00:00").getMonth() === mesIdx)
       .reduce((a, e) => a + (e.num_reservas || 1), 0);
-  };
-
-  // Habitaciones disponibles por día (media de producción histórica)
-  const habDisponibles = (produccion||[]).length > 0
-    ? Math.round((produccion||[]).reduce((a,d)=>a+(d.hab_disponibles||30),0)/(produccion||[]).length)
-    : 30;
-
-  // Todas las entradas de pickup (Excel + web) indexadas por fecha_llegada
-  // pickup y pickupEntries apuntan al mismo array (pickup_entries)
-  const reservasPorFechaLlegada = {};
-  (pickupEntries || []).forEach(e => {
-    const fl = e.fecha_llegada;
-    if (!fl) return;
-    reservasPorFechaLlegada[fl] = (reservasPorFechaLlegada[fl] || 0) + (e.num_reservas || 1);
-  });
-
-  // OTB total por mes (suma de reservas captadas para ese mes de llegada)
-  const otbPorMes = {};
-  Object.entries(reservasPorFechaLlegada).forEach(([fecha, reservas]) => {
-    const mesIdx = new Date(fecha + "T00:00:00").getMonth();
-    otbPorMes[mesIdx] = (otbPorMes[mesIdx] || 0) + reservas;
-  });
-
-  const getOccOTB = (fechaStr) => {
-    const prod = prodPorFecha[fechaStr];
-    if (prod) {
-      // Fecha pasada o hoy: ocupación real
-      const habDis = prod.hab_disponibles || habDisponibles;
-      return habDis > 0 ? Math.round(prod.hab_ocupadas / habDis * 100) : 0;
-    }
-    // Fecha futura: reservas captadas para ese día exacto
-    const reservasDia = reservasPorFechaLlegada[fechaStr] || 0;
-    if (reservasDia > 0) {
-      // Tenemos dato exacto por día
-      return Math.min(Math.round(reservasDia / habDisponibles * 100), 100);
-    }
-    // Sin dato por día: distribuir OTB del mes uniformemente
-    const f = new Date(fechaStr + "T00:00:00");
-    const mesIdx = f.getMonth();
-    const anioF = f.getFullYear();
-    const diasDelMes = new Date(anioF, mesIdx + 1, 0).getDate();
-    const otbMes = otbPorMes[mesIdx] || 0;
-    if (!otbMes || !habDisponibles || !diasDelMes) return 0;
-    return Math.min(Math.round((otbMes / diasDelMes) / habDisponibles * 100), 100);
-  };
-
-  // Pickup de una fecha para un mes concreto (hab reservadas ese día para ese mes)
-  const getPickupDia = (fechaPickup, mesIdx) => {
-    const d = pickupPorFecha[fechaPickup];
-    if (!d) return 0;
-    return d[`mes_${MESES_CAMPOS[mesIdx]}`] || 0;
-  };
-
-  // Color ocupación degradado rojo → amarillo → verde oscuro
-  const getOccBg = (occ) => {
-    if (!occ || occ === 0) return { bg: C.bg, text: C.textLight };
-    if (occ >= 85) return { bg: "#004D26", text: "#fff" };
-    if (occ >= 70) return { bg: "#1A7A3C", text: "#fff" };
-    if (occ >= 55) return { bg: "#4CAF50", text: "#fff" };
-    if (occ >= 40) return { bg: "#C0392B", text: "#fff" };
-    if (occ >= 25) return { bg: "#A93226", text: "#fff" };
-    return { bg: "#7B241C", text: "#fff" };
-  };
-
-  // ── HEATMAP: años disponibles en producción ─────────────────
-  const aniosDisp = [...new Set((produccion||[]).map(d=>new Date(d.fecha+"T00:00:00").getFullYear()))].sort();
-  if (!aniosDisp.includes(hoy.getFullYear())) aniosDisp.push(hoy.getFullYear());
-
-  // Estado: año visible en heatmap mensual
-  const [anioHeatmap, setAnioHeatmap] = useState(hoy.getFullYear());
-
-  // Estado: mes seleccionado para ver detalle diario (null = vista mensual)
-  const [mesDetalle, setMesDetalle] = useState(null); // { anio, mes }
-
-  // Ocupación media de un mes
-  const getOccMes = (anio, mes) => {
-    const dias = (produccion||[]).filter(d => {
-      const f = new Date(d.fecha+"T00:00:00");
-      return f.getFullYear()===anio && f.getMonth()===mes;
-    });
-    if (!dias.length) return null;
-    const habOcu = dias.reduce((a,d)=>a+(d.hab_ocupadas||0),0);
-    const habDis = dias.reduce((a,d)=>a+(d.hab_disponibles||30),0);
-    return habDis>0 ? Math.round(habOcu/habDis*100) : null;
-  };
-
-  // Ocupación de un día
-  const getOccDia = (fechaStr) => {
-    const d = prodPorFecha[fechaStr];
-    if (!d) return null;
-    const habDis = d.hab_disponibles||30;
-    return habDis>0 ? Math.round(d.hab_ocupadas/habDis*100) : null;
   };
 
   // Pace tabla 4 meses
@@ -1505,138 +1395,8 @@ function PickupView({ datos, onGuardado }) {
       {showEntryModal && <PickupEntryModal session={session} onClose={()=>setShowEntryModal(false)} onGuardado={()=>{ setShowEntryModal(false); recargarPickup(); onGuardado && onGuardado(); }} />}
       {fechaPickupModal && <PickupEntryModal session={session} onClose={()=>setFechaPickupModal(null)} onGuardado={()=>{ setFechaPickupModal(null); recargarPickup(); onGuardado && onGuardado(); }} fechaLlegadaInicial={fechaPickupModal} />}
 
-      {/* LAYOUT: Heatmap + Lateral */}
-      <div style={{ display:"grid", gridTemplateColumns:"minmax(0,3fr) minmax(0,2fr)", gap:20, alignItems:"start" }}>
 
-        {/* COLUMNA IZQUIERDA: Heatmap */}
-        <div>
-          {!mesDetalle ? (
-            /* ── VISTA MENSUAL ── */
-            <Card>
-              {/* Header: flechas año + leyenda */}
-              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
-                <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-                  <button onClick={()=>setAnioHeatmap(a=>{ const idx=aniosDisp.indexOf(a); return idx>0?aniosDisp[idx-1]:a; })}
-                    style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, width:26, height:26, cursor:"pointer", color:C.textMid, fontSize:14, display:"flex", alignItems:"center", justifyContent:"center" }}>‹</button>
-                  <p style={{ fontWeight:800, fontSize:18, color:C.text, fontFamily:"'DM Sans',sans-serif", minWidth:48, textAlign:"center" }}>{anioHeatmap}</p>
-                  <button onClick={()=>setAnioHeatmap(a=>{ const idx=aniosDisp.indexOf(a); return idx<aniosDisp.length-1?aniosDisp[idx+1]:a; })}
-                    style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, width:26, height:26, cursor:"pointer", color:C.textMid, fontSize:14, display:"flex", alignItems:"center", justifyContent:"center" }}>›</button>
-                </div>
-                <div style={{ display:"flex", gap:6, alignItems:"center", flexWrap:"wrap" }}>
-                  {[["<25%","#7B241C"],["25-40%","#A93226"],["40-55%","#C0392B"],["55-70%","#4CAF50"],["70-85%","#1A7A3C"],["≥85%","#004D26"]].map(([l,c])=>(
-                    <div key={l} style={{ display:"flex", alignItems:"center", gap:3 }}>
-                      <div style={{ width:9, height:9, borderRadius:2, background:c }}/>
-                      <span style={{ fontSize:9, color:C.textLight }}>{l}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Grid 4 columnas x 3 filas, celdas grandes igual que días */}
-              <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:6 }}>
-                {Array.from({length:12},(_,mes)=>{
-                  const occ = getOccMes(anioHeatmap, mes);
-                  const esFuturo = anioHeatmap===hoy.getFullYear() && mes>hoy.getMonth();
-                  const esHoyMes = anioHeatmap===hoy.getFullYear() && mes===hoy.getMonth();
-                  const { bg, text: textCol } = occ!==null ? getOccBg(occ) : { bg:C.bg, text:C.textLight };
-                  return (
-                    <div key={mes}
-                      onClick={()=>!esFuturo && setMesDetalle({anio:anioHeatmap, mes})}
-                      style={{
-                        background: esFuturo ? "#F5F5F5" : occ!==null ? bg : C.bg,
-                        borderRadius:10,
-                        padding:"16px 8px",
-                        textAlign:"center",
-                        border: esHoyMes ? `2px solid ${C.accent}` : `1px solid ${C.border}`,
-                        minHeight:90,
-                        display:"flex", flexDirection:"column", justifyContent:"space-between", alignItems:"center",
-                        cursor: esFuturo ? "default" : "pointer",
-                        opacity: esFuturo ? 0.35 : 1,
-                        boxShadow: !esFuturo && occ!==null ? "0 1px 4px rgba(0,0,0,0.12)" : "none",
-                        transition:"transform 0.12s, filter 0.12s",
-                      }}
-                      onMouseEnter={e=>{ if(!esFuturo){ e.currentTarget.style.transform="scale(1.03)"; e.currentTarget.style.filter="brightness(0.88)"; }}}
-                      onMouseLeave={e=>{ e.currentTarget.style.transform="scale(1)"; e.currentTarget.style.filter="none"; }}>
-                      <span style={{ fontSize:13, fontWeight:600, color: esFuturo?C.textLight:occ!==null?textCol:C.textLight, lineHeight:1.4, textTransform:"uppercase", letterSpacing:0.5 }}>{MESES_FULL[mes]}</span>
-                      <span style={{ fontSize:26, fontWeight:800, color: esFuturo?C.border:occ!==null?textCol:C.border, fontFamily:"'DM Sans',sans-serif", lineHeight:1 }}>
-                        {occ!==null ? `${occ}%` : "—"}
-                      </span>
-                      <span style={{ fontSize:8, color:"transparent" }}>·</span>
-                    </div>
-                  );
-                })}
-              </div>
-            </Card>
-          ) : (
-            /* ── VISTA DIARIA ── */
-            <Card>
-              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
-                <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-                  <button onClick={()=>setMesDetalle(null)} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, padding:"5px 10px", cursor:"pointer", fontSize:12, color:C.textMid, fontFamily:"'DM Sans',sans-serif" }}>← Volver</button>
-                  <p style={{ fontWeight:800, fontSize:15, color:C.text, fontFamily:"'DM Sans',sans-serif", textTransform:"uppercase", letterSpacing:0.5 }}>
-                    {MESES_FULL[mesDetalle.mes]} {mesDetalle.anio}
-                  </p>
-                </div>
-                <div style={{ display:"flex", gap:6, alignItems:"center" }}>
-                  {[["<25%","#7B241C"],["25-40%","#A93226"],["40-55%","#C0392B"],["55-70%","#4CAF50"],["70-85%","#1A7A3C"],["≥85%","#004D26"]].map(([l,c])=>(
-                    <div key={l} style={{ display:"flex", alignItems:"center", gap:3 }}>
-                      <div style={{ width:9, height:9, borderRadius:2, background:c }}/>
-                      <span style={{ fontSize:9, color:C.textLight }}>{l}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Cabecera días semana */}
-              <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:3, marginBottom:3 }}>
-                {["L","M","X","J","V","S","D"].map(d=>(
-                  <div key={d} style={{ textAlign:"center", fontSize:10, color:C.textLight, fontWeight:600, padding:"2px 0" }}>{d}</div>
-                ))}
-              </div>
-
-              {/* Grid días */}
-              {(() => {
-                const { anio, mes } = mesDetalle;
-                const diasMes = new Date(anio, mes+1, 0).getDate();
-                const primerDia = new Date(anio, mes, 1).getDay();
-                const offset = (primerDia+6)%7;
-                return (
-                  <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:3 }}>
-                    {Array.from({length:offset}).map((_,i)=><div key={`e${i}`}/>)}
-                    {Array.from({length:diasMes}).map((_,i)=>{
-                      const dia = i+1;
-                      const fechaStr = `${anio}-${String(mes+1).padStart(2,"0")}-${String(dia).padStart(2,"0")}`;
-                      const esHoy2 = fechaStr===hoyStr;
-                      const esFuturo = fechaStr>hoyStr;
-                      const occ = getOccDia(fechaStr);
-                      const { bg, text: textCol } = occ!==null ? getOccBg(occ) : { bg:C.bg, text:C.textLight };
-                      const esFinde = new Date(anio,mes,dia).getDay()===0||new Date(anio,mes,dia).getDay()===6;
-                      return (
-                        <div key={dia} style={{
-                          background: esFuturo ? "#F5F5F5" : occ!==null ? bg : C.bg,
-                          borderRadius:8,
-                          padding:"6px 2px",
-                          textAlign:"center",
-                          border: esHoy2 ? `2px solid ${C.accent}` : `1px solid ${esFinde?C.accent+"33":C.border}`,
-                          minHeight:52,
-                          display:"flex", flexDirection:"column", justifyContent:"space-between", alignItems:"center",
-                          opacity: esFuturo ? 0.35 : 1,
-                        }}>
-                          <span style={{ fontSize:10, color:esFuturo?C.border:occ!==null?textCol:C.textLight, fontWeight:esFinde||esHoy2?700:400, lineHeight:1.4 }}>{dia}</span>
-                          <span style={{ fontSize:12, fontWeight:800, color:esFuturo?C.border:occ!==null?textCol:C.border, lineHeight:1, fontFamily:"'DM Sans',sans-serif" }}>
-                            {!esFuturo && occ!==null ? `${occ}%` : "—"}
-                          </span>
-                          <span style={{ fontSize:8, color:esFinde&&!esFuturo?C.accent+"88":"transparent", fontWeight:700 }}>{esFinde&&!esFuturo?"★":""}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                );
-              })()}
-            </Card>
-          )}
-        </div>
-
+      {/* PACE */}
         {/* COLUMNA DERECHA: Pace */}
         <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
           <Card>
@@ -1674,7 +1434,7 @@ function PickupView({ datos, onGuardado }) {
             </div>
           </Card>
         </div>
-      </div>
+      
     </div>
   )
 }
