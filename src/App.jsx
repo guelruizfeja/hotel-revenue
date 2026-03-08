@@ -449,9 +449,6 @@ function ImportarExcel({ onClose, session, onImportado }) {
       if (wsPu) {
         // Leer toda la hoja sin range fijo — buscar filas con seriales de fecha válidos
         const rowsPu = XLSX.utils.sheet_to_json(wsPu, { header: 1, raw: true });
-        console.log("[ImportPickup] fila 0:", JSON.stringify(rowsPu[0]));
-        console.log("[ImportPickup] fila 4:", JSON.stringify(rowsPu[4]));
-        console.log("[ImportPickup] fila 5:", JSON.stringify(rowsPu[5]));
         const esSerial = (v) => typeof v === "number" && v > 40000 && v < 60000;
         const serialToDate = (v) => {
           const d = new Date(Date.UTC(1899, 11, 30) + Math.floor(v) * 86400000);
@@ -644,7 +641,7 @@ function MonthDetailView({ datos, mes, anio, onBack }) {
 
       <Card>
         <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
             <thead>
               <tr style={{ borderBottom: `2px solid ${C.border}` }}>
                 {["Fecha", "Hab. Ocup.", "Ocupación", "ADR", "RevPAR", "Rev. Hab.", "Rev. Total"].map(h => (
@@ -963,7 +960,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
     const revFnb   = d.reduce((a, r) => a + (r.revenue_fnb || 0), 0);
     const revOtros = d.reduce((a, r) => a + (r.revenue_otros || 0), 0);
     return {
-      mes: MESES_CORTO[mIdx],
+      mes: MESES_FULL[mIdx],
       mesIdx: mIdx,
       anioIdx: aIdx,
       occ:     habDis > 0 ? Math.round(habOcu / habDis * 100) : 0,
@@ -1200,8 +1197,8 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
                 </ResponsiveContainer>
               </Card>
               <Card>
-                <p style={{ fontFamily:"'Playfair Display',serif", fontWeight:700, fontSize:14, color:C.text, marginBottom:2 }}>RevPAR — {anio}</p>
-                <p style={{ fontSize:12, color:C.textMid, marginBottom:12 }}>RevPAR vs TRevPAR (€/hab)</p>
+                <p style={{ fontFamily:"'Playfair Display',serif", fontWeight:700, fontSize:18, color:C.text, marginBottom:2 }}>RevPAR — {anio}</p>
+                <p style={{ fontSize:13, color:C.textMid, marginBottom:12 }}>RevPAR vs TRevPAR (€/hab)</p>
                 <ResponsiveContainer width="100%" height={160}>
                   <AreaChart data={porMes}>
                     <defs>
@@ -1230,18 +1227,18 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
           Últimos 12 meses
         </p>
         <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
             <thead>
               <tr style={{ borderBottom: `2px solid ${C.border}` }}>
-                {["Mes","Ocup.","ADR","RevPAR","TRevPAR","Rev. Hab.","Rev. Total"].map(h => (
-                  <th key={h} style={{ padding: "8px 12px", textAlign: "right", fontSize: 10, color: C.textLight, textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600 }}>{h}</th>
+                {["Mes","Ocup.","ADR","RevPAR","TRevPAR","Rev. Hab.","Rev. Total"].map((h,hi) => (
+                  <th key={h} style={{ padding: "8px 12px", textAlign: hi===0?"left":"right", fontSize: 11, color: C.textLight, textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600 }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {porMes.map((d, i) => (
                 <tr key={i} onClick={() => onMesDetalle && onMesDetalle(d.mesIdx, d.anioIdx)} style={{ borderBottom: `1px solid ${C.border}`, background: d.mesIdx === mes && d.anioIdx === anio ? C.accentLight : (i % 2 === 0 ? C.bg : C.bgCard), cursor: "pointer" }} onMouseEnter={e => e.currentTarget.style.background = C.accentLight} onMouseLeave={e => e.currentTarget.style.background = MESES_CORTO.indexOf(d.mes) === mes ? C.accentLight : (i % 2 === 0 ? C.bg : C.bgCard)}>
-                  <td style={{ padding: "10px 12px", fontWeight: 600, color: C.accent, textDecoration: "underline", cursor: "pointer" }}>{d.mes}</td>
+                  <td style={{ padding: "10px 12px", fontWeight: 700, fontSize: 15, color: C.accent, textDecoration: "underline", cursor: "pointer" }}>{d.mes}</td>
                   <td style={{ padding: "10px 12px", textAlign: "right", color: d.occ > 80 ? C.green : C.textMid }}>{d.occ}%</td>
                   <td style={{ padding: "10px 12px", textAlign: "right", color: C.textMid }}>€{d.adr}</td>
                   <td style={{ padding: "10px 12px", textAlign: "right", fontWeight: 600, color: C.accent }}>€{d.revpar}</td>
@@ -1284,7 +1281,6 @@ function PickupView({ datos }) {
           .eq("hotel_id", session.user.id)
           .order("fecha_llegada")
           .range(desde, desde + PAGINA - 1);
-        console.log(`[Pickup] página desde=${desde} → data=${data?.length} error=${error?.message}`);
         if (error || !data || data.length === 0) break;
         todas = todas.concat(data);
         if (data.length < PAGINA) break;
@@ -1372,13 +1368,8 @@ function PickupView({ datos }) {
   return (
     <div style={{ display:"flex", flexDirection:"column", gap:20 }}>
 
-      {/* ── HEADER ── */}
-      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", flexWrap:"wrap", gap:12 }}>
-        <div>
-          <h2 style={{ fontFamily:"'DM Sans',sans-serif", fontSize:20, fontWeight:700, color:C.text, letterSpacing:-0.3 }}>Pickup & OTB</h2>
-          <p style={{ fontSize:12, color:C.textLight, marginTop:3 }}>Reservas en cartera vs Presupuesto vs Año Anterior</p>
-        </div>
-        {/* Selector año */}
+      {/* Selector año */}
+      <div style={{ display:"flex", justifyContent:"flex-end" }}>
         <div style={{ display:"flex", alignItems:"center", gap:8 }}>
           <button
             onClick={()=>setAnio(a=>{const i=aniosDisp.indexOf(a); return i>0?aniosDisp[i-1]:a;})}
@@ -2067,6 +2058,7 @@ export default function App() {
 
       {/* Main */}
       <main style={{ flex: 1, minWidth: 0, padding: "28px 32px", overflowY: "auto", height: "100vh" }}>
+        {view === "dashboard" && (
         <div style={{ marginBottom: 14 }}>
           <p style={{ fontSize: 22, fontWeight: 800, color: C.text, fontFamily: "'DM Sans',sans-serif", letterSpacing: -0.5 }}>
             Bienvenido, <span style={{ color: C.accent }}>{datos.hotel?.nombre || "Mi Hotel"}</span>
@@ -2075,8 +2067,9 @@ export default function App() {
             {new Date().toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).replace(/^\w/, c => c.toUpperCase())}
           </p>
         </div>
+        )}
 
-        {(
+        {view === "dashboard" && (
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", alignItems: "center", marginBottom: 24, gap: 16, background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: 12, padding: "16px 20px", boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
               <div style={{ width: 44, height: 44, borderRadius: 10, background: C.accent, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
