@@ -1230,8 +1230,64 @@ function PickupView({ datos }) {
         </div>
       </div>
 
-      {/* ── GRÁFICA ── */}
-      <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:12, padding:"24px 28px" }}>
+      {/* ── GRÁFICA + DÍA MÁS RESERVADO ── */}
+      <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:12, padding:"24px 28px", display:"flex", gap:24 }}>
+        {/* Col izquierda: días más reservados */}
+        <div style={{ display:"flex", flexDirection:"column", gap:12, minWidth:170 }}>
+          <p style={{ fontSize:11, fontWeight:700, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:4 }}>🏆 Día pico</p>
+          {(pickupEntries && pickupEntries.length > 0) && (() => {
+            const porDia = {};
+            (pickupEntries || []).forEach(e => {
+              const f = String(e.fecha_llegada || "").slice(0, 10);
+              if (!f || f.length < 10) return;
+              porDia[f] = (porDia[f] || 0) + (e.num_reservas || 1);
+            });
+            const findPeak = (desde, hasta) => {
+              let best = null, bestVal = 0;
+              Object.entries(porDia).forEach(([fecha, val]) => {
+                if (fecha >= desde && fecha <= hasta && val > bestVal) { bestVal = val; best = fecha; }
+              });
+              return best ? { fecha: best, reservas: bestVal } : null;
+            };
+            const fmt = (isoStr) => {
+              const [y, m, d] = isoStr.split("-");
+              const dias  = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
+              const meses = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+              const dt = new Date(Number(y), Number(m)-1, Number(d));
+              return `${dias[dt.getDay()]} ${Number(d)} ${meses[Number(m)-1]}`;
+            };
+            const pad = n => String(n).padStart(2,"0");
+            const hoyStr    = `${hoy.getFullYear()}-${pad(hoy.getMonth()+1)}-${pad(hoy.getDate())}`;
+            const semFin    = new Date(hoy); semFin.setDate(semFin.getDate()+7);
+            const semFinStr = `${semFin.getFullYear()}-${pad(semFin.getMonth()+1)}-${pad(semFin.getDate())}`;
+            const mesSig    = new Date(hoy.getFullYear(), hoy.getMonth()+1, 1);
+            const mesSigFin = new Date(hoy.getFullYear(), hoy.getMonth()+2, 0);
+            const mesDesde  = `${mesSig.getFullYear()}-${pad(mesSig.getMonth()+1)}-01`;
+            const mesHasta  = `${mesSigFin.getFullYear()}-${pad(mesSigFin.getMonth()+1)}-${pad(mesSigFin.getDate())}`;
+            const anioDesde = `${hoy.getFullYear()}-01-01`;
+            const anioHasta = `${hoy.getFullYear()}-12-31`;
+            const tarjetas  = [
+              { label:"Próx. semana", icon:"📅", peak: findPeak(hoyStr,    semFinStr) },
+              { label:"Próx. mes",    icon:"🗓️",  peak: findPeak(mesDesde,  mesHasta)  },
+              { label:"Año actual",   icon:"📆",  peak: findPeak(anioDesde, anioHasta) },
+            ];
+            return tarjetas.map(({ label, icon, peak }) => (
+              <div key={label} style={{ borderLeft:`3px solid ${COL_OTB}`, paddingLeft:12 }}>
+                <p style={{ fontSize:10, color:C.textLight, fontWeight:600, marginBottom:4 }}>{icon} {label}</p>
+                {peak ? (
+                  <>
+                    <p style={{ fontSize:15, fontWeight:800, color:C.text, fontFamily:"'DM Sans',sans-serif", letterSpacing:-0.3 }}>{fmt(peak.fecha)}</p>
+                    <p style={{ fontSize:11, color:C.textMid, marginTop:2 }}><span style={{ fontWeight:700, color:COL_PPTO }}>{peak.reservas}</span> reservas</p>
+                  </>
+                ) : (
+                  <p style={{ fontSize:11, color:C.textLight }}>Sin datos</p>
+                )}
+              </div>
+            ));
+          })()}
+        </div>
+        {/* Col derecha: gráfica */}
+        <div style={{ flex:1 }}>
 
         {/* Leyenda */}
         <div style={{ display:"flex", gap:20, marginBottom:24, flexWrap:"wrap" }}>
@@ -1250,12 +1306,12 @@ function PickupView({ datos }) {
         ) : (
           <div style={{ display:"flex", gap:0, alignItems:"flex-end", height:280, position:"relative" }}>
 
-            {/* Líneas de escala Y */}
+            {/* Escala Y solo números, sin líneas */}
             {[0,25,50,75,100].map(p => {
               const val = Math.round(yMax * p / 100);
               return (
-                <div key={p} style={{ position:"absolute", left:36, right:0, bottom:`${p}%`, borderTop:`1px solid ${C.border}`, display:"flex", alignItems:"center" }}>
-                  <span style={{ position:"absolute", left:-36, fontSize:10, color:C.textLight, lineHeight:1 }}>{val}</span>
+                <div key={p} style={{ position:"absolute", left:0, bottom:`${p}%`, display:"flex", alignItems:"center" }}>
+                  <span style={{ fontSize:10, color:C.textLight, lineHeight:1 }}>{val}</span>
                 </div>
               );
             })}
@@ -1295,54 +1351,9 @@ function PickupView({ datos }) {
             </div>
           </div>
         )}
-      </div>
+        </div>{/* fin col derecha */}
+      </div>{/* fin card gráfica+pico */}
 
-      {/* ── TABLA RESUMEN ── */}
-      {hayDatos && (
-        <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:12, overflow:"hidden" }}>
-          <table style={{ width:"100%", borderCollapse:"collapse", fontSize:12 }}>
-            <thead>
-              <tr style={{ background:C.bg }}>
-                <th style={{ padding:"10px 16px", textAlign:"left", color:C.textLight, fontWeight:600, fontSize:11, textTransform:"uppercase", letterSpacing:1 }}>Mes</th>
-                <th style={{ padding:"10px 12px", textAlign:"right", color:COL_OTB, fontWeight:700, fontSize:11, textTransform:"uppercase", letterSpacing:1 }}>OTB</th>
-                <th style={{ padding:"10px 12px", textAlign:"right", color:COL_PPTO, fontWeight:700, fontSize:11, textTransform:"uppercase", letterSpacing:1 }}>Ppto</th>
-                <th style={{ padding:"10px 12px", textAlign:"right", color:COL_LY, fontWeight:700, fontSize:11, textTransform:"uppercase", letterSpacing:1 }}>LY</th>
-                <th style={{ padding:"10px 12px", textAlign:"right", color:C.textLight, fontWeight:600, fontSize:11, textTransform:"uppercase", letterSpacing:1 }}>vs Ppto</th>
-                <th style={{ padding:"10px 16px", textAlign:"right", color:C.textLight, fontWeight:600, fontSize:11, textTransform:"uppercase", letterSpacing:1 }}>vs LY</th>
-              </tr>
-            </thead>
-            <tbody>
-              {datosGrafica.map((d, i) => {
-                const vsPpto = d.ppto > 0 ? ((( d.otb||0) - d.ppto) / d.ppto * 100).toFixed(1) : null;
-                const vsLY   = d.ly   > 0 ? ((( d.otb||0) - d.ly)   / d.ly   * 100).toFixed(1) : null;
-                const esMesAct = i === hoy.getMonth() && anio === hoy.getFullYear();
-                return (
-                  <tr key={i} style={{ borderTop:`1px solid ${C.border}`, background: esMesAct ? C.accentLight : "transparent" }}>
-                    <td style={{ padding:"10px 16px", fontWeight: esMesAct?700:400, color:C.text }}>{d.mes} {esMesAct && <span style={{ fontSize:9, background:C.accent, color:"#fff", borderRadius:3, padding:"1px 5px", marginLeft:4 }}>HOY</span>}</td>
-                    <td style={{ padding:"10px 12px", textAlign:"right", fontWeight:700, color: d.otb ? COL_OTB : C.textLight }}>{d.otb ?? "—"}</td>
-                    <td style={{ padding:"10px 12px", textAlign:"right", color: d.ppto ? COL_PPTO : C.textLight }}>{d.ppto ?? "—"}</td>
-                    <td style={{ padding:"10px 12px", textAlign:"right", color: d.ly ? COL_LY : C.textLight }}>{d.ly ?? "—"}</td>
-                    <td style={{ padding:"10px 12px", textAlign:"right" }}>
-                      {vsPpto != null ? (
-                        <span style={{ fontWeight:600, color: parseFloat(vsPpto)>=0 ? C.green : C.red }}>
-                          {parseFloat(vsPpto)>=0?"+":""}{vsPpto}%
-                        </span>
-                      ) : "—"}
-                    </td>
-                    <td style={{ padding:"10px 16px", textAlign:"right" }}>
-                      {vsLY != null ? (
-                        <span style={{ fontWeight:600, color: parseFloat(vsLY)>=0 ? C.green : C.red }}>
-                          {parseFloat(vsLY)>=0?"+":""}{vsLY}%
-                        </span>
-                      ) : "—"}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
     </div>
   );
 }
