@@ -170,7 +170,7 @@ function KpiModal({ kpi, datos, mes, anio, onClose }) {
 
         <div style={{ marginBottom:16 }}>
           <p style={{ fontSize:12, fontWeight:600, color:C.textMid, marginBottom:10, textTransform:"uppercase", letterSpacing:1 }}>
-            {kpi==="TRevPAR" ? "Desglose de ingresos del mes" : "Últimos 30 días"}
+            {kpi==="TRevPAR" ? "Desglose de ingresos del mes" : kpi==="Revenue Total" ? "Evolución anual" : "Evolución del mes"}
           </p>
           {kpi==="TRevPAR" ? (() => {
             const totalHab  = diasMes.reduce((a,d)=>a+d.revHab,0);
@@ -230,6 +230,7 @@ function KpiModal({ kpi, datos, mes, anio, onClose }) {
                 <Bar dataKey="revHab"   name="Hab."   stackId="a" fill={C.accent} radius={[0,0,0,0]}/>
                 <Bar dataKey="revFnb"   name="F&B"    stackId="a" fill="#E85D04" radius={[0,0,0,0]}/>
                 <Bar dataKey="revOtros" name="Otros"  stackId="a" fill={C.green} radius={[2,2,0,0]}/>
+                <Legend wrapperStyle={{ fontSize:11, color:C.textMid, paddingTop:8 }}/>
               </BarChart>
             </ResponsiveContainer>
             );
@@ -927,6 +928,7 @@ async function generarReportePDF(datos, mes, anio, hotelNombre) {
 // ─── DASHBOARD VIEW ───────────────────────────────────────────────
 function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, setKpiModal }) {
   const { produccion } = datos;
+  const [hmMesSel, setHmMesSel] = useState(null);
 
   if (!produccion || produccion.length === 0) return <EmptyState />;
 
@@ -1032,43 +1034,196 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
         {kpis.map((k, i) => <KpiCard key={i} {...k} i={i} onClick={()=>setKpiModal(k.label)} />)}
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "minmax(0,3fr) minmax(0,2fr)", gap: 16, marginBottom: 16 }}>
-        <Card>
-          <p style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700, fontSize: 16, color: C.text, marginBottom: 4 }}>Evolución — Últimos 30 días</p>
-          <p style={{ fontSize: 11, color: C.textLight, marginBottom: 18 }}>Ocupación % y ADR día a día</p>
-          <ResponsiveContainer width="100%" height={220}>
-            <ComposedChart data={datosDiariosMes} barSize={8}>
-              <CartesianGrid strokeDasharray="3 3" stroke={C.border} vertical={false} />
-              <XAxis dataKey="dia" tick={{ fill: C.textLight, fontSize: 10 }} axisLine={false} tickLine={false} />
-              <YAxis yAxisId="left"  tick={{ fill: C.textLight, fontSize: 11 }} axisLine={false} tickLine={false} unit="%" domain={[0,100]} />
-              <YAxis yAxisId="right" orientation="right" tick={{ fill: C.textLight, fontSize: 11 }} axisLine={false} tickLine={false} unit="€" />
-              <Tooltip content={<CustomTooltip />} />
-              <Bar  yAxisId="left"  dataKey="occ" name="Ocupación" fill={C.accent} radius={[2,2,0,0]} fillOpacity={0.85} />
-              <Line yAxisId="right" dataKey="adr" name="ADR" type="monotone" stroke="#E85D04" strokeWidth={2.5} dot={false} />
-            </ComposedChart>
-          </ResponsiveContainer>
-        </Card>
-        <Card>
-          <p style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700, fontSize: 16, color: C.text, marginBottom: 4 }}>RevPAR — Evolución {anio}</p>
-          <p style={{ fontSize: 11, color: C.textLight, marginBottom: 18 }}>RevPAR vs TRevPAR (€/hab disponible)</p>
-          <ResponsiveContainer width="100%" height={220}>
-            <AreaChart data={porMes}>
-              <defs>
-                <linearGradient id="gRevpar" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={C.accent} stopOpacity={0.15} />
-                  <stop offset="95%" stopColor={C.accent} stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke={C.border} />
-              <XAxis dataKey="mes" tick={{ fill: C.textLight, fontSize: 11 }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fill: C.textLight, fontSize: 11 }} axisLine={false} tickLine={false} unit="€" />
-              <Tooltip content={<CustomTooltip />} />
-              <Area type="monotone" dataKey="revpar" name="RevPAR" stroke={C.accent} strokeWidth={2} fill="url(#gRevpar)" dot={{ fill: C.accent, r: 2.5 }} activeDot={{ r: 4 }} />
-              <Line type="monotone" dataKey="trevpar" name="TRevPAR" stroke="#E85D04" strokeWidth={1.5} dot={false} strokeDasharray="5 4" />
-            </AreaChart>
-          </ResponsiveContainer>
-        </Card>
-      </div>
+      {/* ── HEATMAP + GRÁFICAS ── */}
+      {(() => {
+        const MESES_H = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+        const DIAS_S  = ["L","M","X","J","V","S","D"];
+        // Ocupación por mes para el heatmap (real o OTB para futuros)
+        const _pad = n => String(n).padStart(2,"0");
+        const _hoy = new Date();
+        const _hoyStr = `${_hoy.getFullYear()}-${_pad(_hoy.getMonth()+1)}-${_pad(_hoy.getDate())}`;
+        const otbDia = {};
+        (datos.pickupEntries||[]).forEach(e => {
+          const f = String(e.fecha_llegada||"").slice(0,10);
+          if (!f||f.length<10) return;
+          otbDia[f] = (otbDia[f]||0)+(e.num_reservas||1);
+        });
+        const occPorMes = MESES_H.map((label, mi) => {
+          const d = produccion.filter(r => {
+            const f = new Date(r.fecha+"T00:00:00");
+            return f.getMonth()===mi && f.getFullYear()===anio;
+          });
+          const habOcu = d.reduce((a,r)=>a+(r.hab_ocupadas||0),0);
+          const habDis = d.reduce((a,r)=>a+(r.hab_disponibles||0),0);
+          if (habDis>0) return { label, mi, occ: habOcu/habDis*100, esOtb: false };
+          // Mes futuro: sumar reservas OTB del pickup
+          const mesStr = `${anio}-${_pad(mi+1)}`;
+          const primerDia = `${mesStr}-01`;
+          if (primerDia <= _hoyStr) return { label, mi, occ: null, esOtb: false };
+          const diasMes = new Date(anio, mi+1, 0).getDate();
+          const habH = datos.hotel?.habitaciones || 30;
+          let totalRes = 0;
+          for (let di=1; di<=diasMes; di++) {
+            const iso = `${mesStr}-${_pad(di)}`;
+            totalRes += otbDia[iso] || 0;
+          }
+          const occ = habH > 0 ? (totalRes / (habH * diasMes) * 100) : null;
+          return { label, mi, occ: totalRes>0 ? occ : null, esOtb: true };
+        });
+
+        // Color heatmap
+        const heatColor = (occ) => {
+          if (occ==null) return C.border;
+          if (occ<25)  return "#7B241C";
+          if (occ<40)  return "#A93226";
+          if (occ<55)  return "#C0392B";
+          if (occ<70)  return "#4CAF50";
+          if (occ<85)  return "#1A7A3C";
+          return "#004D26";
+        };
+
+        // Datos diarios del mes seleccionado (pasado=produccion, futuro=pickup)
+        const habHotel = datos.hotel?.habitaciones ||
+          (produccion.length > 0 ? Math.round(produccion.reduce((a,r)=>a+(r.hab_disponibles||0),0)/produccion.length) : 30);
+        const _hoy2 = new Date();
+        const pad2  = n => String(n).padStart(2,"0");
+        const hoyStr2 = `${_hoy2.getFullYear()}-${pad2(_hoy2.getMonth()+1)}-${pad2(_hoy2.getDate())}`;
+
+
+        const diasDelMes = hmMesSel!=null ? (() => {
+          const diasEnMes = new Date(anio, hmMesSel+1, 0).getDate();
+          const pad = n => String(n).padStart(2,"0");
+          return Array.from({length:diasEnMes},(_,di)=>{
+            const dt   = new Date(anio, hmMesSel, di+1);
+            const iso  = `${anio}-${pad(hmMesSel+1)}-${pad(di+1)}`;
+            const prod = produccion.find(r=>r.fecha===iso);
+            const esFut = iso > hoyStr2;
+            let occ=null, adr=null;
+            if (prod) {
+              occ = prod.hab_disponibles>0 ? (prod.hab_ocupadas/prod.hab_disponibles*100) : null;
+              adr = prod.hab_ocupadas>0    ? (prod.revenue_hab/prod.hab_ocupadas)         : null;
+            } else if (esFut) {
+              const res = otbDia[iso]||0;
+              occ = res>0 ? (res/habHotel*100) : null;
+            }
+            return { iso, dia:di+1, diaSem:dt.getDay(), occ, adr, esFut, tieneReal:!!prod };
+          });
+        })() : [];
+
+        return (
+          <div style={{ display:"grid", gridTemplateColumns:"minmax(0,3fr) minmax(0,2fr)", gap:16, marginBottom:16 }}>
+
+            {/* ── HEATMAP ── */}
+            <Card style={{ display:"flex", flexDirection:"column" }}>
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
+                <div>
+                  <p style={{ fontFamily:"'Playfair Display',serif", fontWeight:700, fontSize:16, color:C.text, marginBottom:2 }}>Ocupación mensual</p>
+                  <p style={{ fontSize:11, color:C.textLight }}>Haz clic en un mes para ver el detalle diario</p>
+                </div>
+                {hmMesSel!=null && (
+                  <button onClick={()=>setHmMesSel(null)} style={{ fontSize:11, color:C.accent, background:"none", border:`1px solid ${C.accent}`, borderRadius:6, padding:"3px 10px", cursor:"pointer" }}>← Volver</button>
+                )}
+              </div>
+
+              {hmMesSel==null ? (
+                /* Vista anual: grid 4x3 */
+                <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gridTemplateRows:"repeat(3,1fr)", gap:8, flex:1 }}>
+                  {occPorMes.map(({label, mi, occ, esOtb})=>(
+                    <div key={mi} onClick={()=>setHmMesSel(mi)} style={{ borderRadius:8, padding:"10px 6px", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", background: occ!=null ? heatColor(occ)+"22" : C.bg, border:`1.5px solid ${occ!=null?heatColor(occ):C.border}`, cursor:"pointer", textAlign:"center", transition:"all 0.15s" }}
+                      onMouseEnter={e=>e.currentTarget.style.opacity="0.8"} onMouseLeave={e=>e.currentTarget.style.opacity="1"}>
+                      <p style={{ fontSize:9, fontWeight:600, color:C.textLight, textTransform:"uppercase", letterSpacing:0.5, marginBottom:3 }}>{label}</p>
+                      {occ!=null
+                        ? <p style={{ fontSize:16, fontWeight:800, color:heatColor(occ), fontFamily:"'DM Sans',sans-serif" }}>{occ.toFixed(0)}%</p>
+                        : <p style={{ fontSize:12, color:C.border }}>—</p>
+                      }
+                      {esOtb && occ!=null && <p style={{ fontSize:8, color:"#7A9CC8", fontWeight:700, marginTop:2 }}>OTB</p>}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                /* Vista diaria del mes */
+                <div style={{ display:"flex", flexDirection:"column", flex:1 }}>
+                  <p style={{ fontSize:12, fontWeight:700, color:C.text, marginBottom:10 }}>{MESES_H[hmMesSel]} {anio}</p>
+                  <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:3, marginBottom:6 }}>
+                    {DIAS_S.map(d=><p key={d} style={{ fontSize:9, color:C.textLight, textAlign:"center", fontWeight:600 }}>{d}</p>)}
+                  </div>
+                  {/* Espaciado inicial según día semana del día 1 (lun=0) */}
+                  <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gridAutoRows:"1fr", gap:3, flex:1 }}>
+                    {Array.from({length: (diasDelMes[0]?.diaSem===0?6:diasDelMes[0]?.diaSem-1)||0 },(_,i)=>(
+                      <div key={"e"+i}/>
+                    ))}
+                    {diasDelMes.map(({dia,occ,adr,esFut,tieneReal})=>{
+                      const col = occ!=null ? heatColor(occ) : C.border;
+                      return (
+                        <div key={dia} title={occ!=null?`OCC: ${occ.toFixed(0)}%${adr?` | ADR: €${Math.round(adr)}`:""}`:""} style={{ borderRadius:4, padding:"4px 2px", background: occ!=null?col+"33":C.bg, border:`1px solid ${occ!=null?col:C.border}`, textAlign:"center", opacity: esFut&&!tieneReal?0.7:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center" }}>
+                          <p style={{ fontSize:9, color:C.textLight, lineHeight:1 }}>{dia}</p>
+                          {occ!=null
+                            ? <p style={{ fontSize:10, fontWeight:700, color:col, lineHeight:1.4 }}>{occ.toFixed(0)}%</p>
+                            : <p style={{ fontSize:9, color:C.border }}>—</p>
+                          }
+                          {esFut && <p style={{ fontSize:7, color:"#7A9CC8", lineHeight:1 }}>OTB</p>}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {/* Leyenda */}
+                  <div style={{ display:"flex", gap:8, marginTop:10, flexWrap:"wrap" }}>
+                    {[["<25%","#7B241C"],["25-40%","#A93226"],["40-55%","#C0392B"],["55-70%","#4CAF50"],["70-85%","#1A7A3C"],["≥85%","#004D26"]].map(([l,c])=>(
+                      <div key={l} style={{ display:"flex", alignItems:"center", gap:4 }}>
+                        <div style={{ width:8, height:8, borderRadius:2, background:c }}/>
+                        <span style={{ fontSize:9, color:C.textLight }}>{l}</span>
+                      </div>
+                    ))}
+                    <div style={{ display:"flex", alignItems:"center", gap:4 }}>
+                      <span style={{ fontSize:9, color:"#7A9CC8", fontWeight:600 }}>OTB</span><span style={{ fontSize:9, color:C.textLight }}>=pickup futuro</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </Card>
+
+            {/* ── GRÁFICAS DERECHA ── */}
+            <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
+              <Card>
+                <p style={{ fontFamily:"'Playfair Display',serif", fontWeight:700, fontSize:14, color:C.text, marginBottom:2 }}>ADR & Ocupación</p>
+                <p style={{ fontSize:10, color:C.textLight, marginBottom:12 }}>Evolución mensual {anio}</p>
+                <ResponsiveContainer width="100%" height={160}>
+                  <ComposedChart data={porMes} barSize={10}>
+                    <CartesianGrid strokeDasharray="3 3" stroke={C.border} vertical={false}/>
+                    <XAxis dataKey="mes" tick={{fill:C.textLight,fontSize:9}} axisLine={false} tickLine={false}/>
+                    <YAxis yAxisId="left"  tick={{fill:C.textLight,fontSize:9}} axisLine={false} tickLine={false} unit="%" domain={[0,100]}/>
+                    <YAxis yAxisId="right" orientation="right" tick={{fill:C.textLight,fontSize:9}} axisLine={false} tickLine={false} unit="€"/>
+                    <Tooltip content={<CustomTooltip/>}/>
+                    <Bar  yAxisId="left"  dataKey="occ"  name="Ocupación" fill={C.accent} radius={[2,2,0,0]} fillOpacity={0.8}/>
+                    <Line yAxisId="right" dataKey="adr"  name="ADR" type="monotone" stroke="#E85D04" strokeWidth={2} dot={false}/>
+                  </ComposedChart>
+                </ResponsiveContainer>
+              </Card>
+              <Card>
+                <p style={{ fontFamily:"'Playfair Display',serif", fontWeight:700, fontSize:14, color:C.text, marginBottom:2 }}>RevPAR — {anio}</p>
+                <p style={{ fontSize:10, color:C.textLight, marginBottom:12 }}>RevPAR vs TRevPAR (€/hab)</p>
+                <ResponsiveContainer width="100%" height={160}>
+                  <AreaChart data={porMes}>
+                    <defs>
+                      <linearGradient id="gRevpar2" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%"  stopColor={C.accent} stopOpacity={0.15}/>
+                        <stop offset="95%" stopColor={C.accent} stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke={C.border}/>
+                    <XAxis dataKey="mes" tick={{fill:C.textLight,fontSize:9}} axisLine={false} tickLine={false}/>
+                    <YAxis tick={{fill:C.textLight,fontSize:9}} axisLine={false} tickLine={false} unit="€"/>
+                    <Tooltip content={<CustomTooltip/>}/>
+                    <Area type="monotone" dataKey="revpar"  name="RevPAR"  stroke={C.accent} strokeWidth={2} fill="url(#gRevpar2)" dot={{fill:C.accent,r:2}} activeDot={{r:3}}/>
+                    <Line type="monotone" dataKey="trevpar" name="TRevPAR" stroke="#E85D04" strokeWidth={1.5} dot={false} strokeDasharray="5 4"/>
+                  </AreaChart>
+                </ResponsiveContainer>
+              </Card>
+            </div>
+
+          </div>
+        );
+      })()}
 
       <Card>
         <p style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700, fontSize: 16, color: C.text, marginBottom: 16 }}>
@@ -1812,9 +1967,17 @@ export default function App() {
     // Pickup separado — si la tabla no existe no rompe la carga principal
     let pickupEntries = [];
     try {
-      const { data: pe } = await supabase.from("pickup_entries")
-        .select("*").eq("hotel_id", session.user.id).order("fecha_llegada");
-      pickupEntries = pe || [];
+      let _peDesde = 0;
+      const _pePagina = 1000;
+      while (true) {
+        const { data: pe, error: peErr } = await supabase.from("pickup_entries")
+          .select("*").eq("hotel_id", session.user.id).order("fecha_llegada")
+          .range(_peDesde, _peDesde + _pePagina - 1);
+        if (peErr || !pe || pe.length === 0) break;
+        pickupEntries = pickupEntries.concat(pe);
+        if (pe.length < _pePagina) break;
+        _peDesde += _pePagina;
+      }
     } catch(_) {}
     setDatos({
       produccion: produccion || [],
