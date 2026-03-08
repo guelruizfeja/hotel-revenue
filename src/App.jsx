@@ -1296,45 +1296,20 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
 // ─── PICKUP VIEW ──────────────────────────────────────────────────
 function PickupView({ datos }) {
   const { session, presupuesto, produccion } = datos;
-  const [pickupEntries, setPickupEntries] = useState([]);
-  const [cargando, setCargando]           = useState(true);
+  const pickupEntries = datos.pickupEntries || [];
+  const cargando = false;
   const [anio, setAnio]                   = useState(new Date().getFullYear());
 
   const hoy     = new Date();
   const MESES   = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
 
-  // ── Recargar cuando cambia session ──
+  // Año inicial: el más reciente con datos
   useEffect(() => {
-    if (!session?.user?.id) return;
-    const cargar = async () => {
-      setCargando(true);
-      // Cargar en páginas de 1000 para evitar el límite de Supabase
-      let todas = [];
-      let desde = 0;
-      const PAGINA = 1000;
-      while (true) {
-        const { data, error } = await supabase.from("pickup_entries")
-          .select("*")
-          .eq("hotel_id", session.user.id)
-          .order("fecha_llegada")
-          .range(desde, desde + PAGINA - 1);
-        if (error || !data || data.length === 0) break;
-        todas = todas.concat(data);
-        if (data.length < PAGINA) break;
-        desde += PAGINA;
-      }
-      console.log(`[Pickup] total cargado: ${todas.length}`);
-      console.log(`[Pickup] años detectados:`, [...new Set(todas.map(e => String(e.fecha_llegada||"").slice(0,4)))]);
-      setPickupEntries(todas);
-      // Ajustar año al más reciente con datos
-      if (todas.length > 0) {
-        const anios = [...new Set(todas.map(e => String(e.fecha_llegada||"").slice(0,4)).filter(Boolean).map(Number))].sort();
-        if (anios.length > 0) setAnio(anios[anios.length - 1]);
-      }
-      setCargando(false);
-    };
-    cargar();
-  }, [session?.user?.id]);
+    if (pickupEntries.length > 0) {
+      const anios = [...new Set(pickupEntries.map(e => String(e.fecha_llegada||"").slice(0,4)).filter(Boolean).map(Number))].sort();
+      if (anios.length > 0) setAnio(anios[anios.length - 1]);
+    }
+  }, [pickupEntries.length]);
 
   // ── OTB por mes (suma num_reservas por fecha_llegada) ──
   const otbPorMes = {};
@@ -1402,8 +1377,104 @@ function PickupView({ datos }) {
     </div>
   );
 
+  // ── Pickup de ayer ──
+  const hoyD = new Date();
+  const ayerD = new Date(hoyD); ayerD.setDate(hoyD.getDate()-1);
+  const ayerStr = `${ayerD.getFullYear()}-${String(ayerD.getMonth()+1).padStart(2,"0")}-${String(ayerD.getDate()).padStart(2,"0")}`;
+  const MESES_FULL_PU = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+
+  const reservasAyer = pickupEntries.filter(e => String(e.fecha_pickup||"").slice(0,10) === ayerStr);
+
+  const ayerPorMes = {};
+  const ayerPorCanal = {};
+  let ayerTotal = 0;
+  reservasAyer.forEach(e => {
+    const fl = String(e.fecha_llegada||"").slice(0,7); // YYYY-MM
+    const mes = parseInt(fl.slice(5,7)) - 1;
+    const nr = e.num_reservas || 1;
+    ayerPorMes[mes] = (ayerPorMes[mes]||0) + nr;
+    const canal = e.canal || "Directo";
+    ayerPorCanal[canal] = (ayerPorCanal[canal]||0) + nr;
+    ayerTotal += nr;
+  });
+
+  const CANAL_COLORS = {
+    "Booking.com": "#003580", "Expedia": "#FFD700", "Directo Web": "#1A7A3C",
+    "Teléfono": "#B8860B", "Agencia": "#6B4C9A", "Directo": "#1A7A3C"
+  };
+
   return (
     <div style={{ display:"flex", flexDirection:"column", gap:20 }}>
+
+      {/* ── PICKUP AYER ── */}
+      <Card>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:16 }}>
+          <div>
+            <p style={{ fontFamily:"'Playfair Display',serif", fontWeight:700, fontSize:18, color:C.text }}>Reservas de ayer</p>
+            <p style={{ fontSize:12, color:C.textLight, marginTop:2 }}>
+              {ayerD.toLocaleDateString("es-ES",{weekday:"long",day:"numeric",month:"long"}).replace(/^\w/,c=>c.toUpperCase())}
+            </p>
+          </div>
+          <div style={{ background:"#B8860B22", border:"1px solid #B8860B44", borderRadius:10, padding:"10px 20px", textAlign:"center" }}>
+            <p style={{ fontSize:28, fontWeight:800, color:"#B8860B", fontFamily:"'DM Sans',sans-serif", lineHeight:1 }}>{ayerTotal}</p>
+            <p style={{ fontSize:10, color:"#B8860B", fontWeight:600, textTransform:"uppercase", letterSpacing:0.8, marginTop:3 }}>reservas captadas</p>
+          </div>
+        </div>
+
+        {ayerTotal === 0 ? (
+          <p style={{ color:C.textLight, fontSize:13, textAlign:"center", padding:"20px 0" }}>No hay reservas registradas para ayer</p>
+        ) : (
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:20 }}>
+
+            {/* Por mes de llegada */}
+            <div>
+              <p style={{ fontSize:11, fontWeight:700, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:10 }}>Por mes de llegada</p>
+              <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+                {Object.entries(ayerPorMes).sort((a,b)=>a[0]-b[0]).map(([mi, nr]) => {
+                  const pct = ayerTotal > 0 ? nr/ayerTotal : 0;
+                  return (
+                    <div key={mi}>
+                      <div style={{ display:"flex", justifyContent:"space-between", marginBottom:3 }}>
+                        <span style={{ fontSize:12, color:C.textMid, fontWeight:500 }}>{MESES_FULL_PU[parseInt(mi)]}</span>
+                        <span style={{ fontSize:12, fontWeight:700, color:"#B8860B" }}>{nr} res.</span>
+                      </div>
+                      <div style={{ height:6, borderRadius:3, background:C.border }}>
+                        <div style={{ height:6, borderRadius:3, background:"#B8860B", width:`${pct*100}%`, transition:"width 0.4s" }}/>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Por canal */}
+            <div>
+              <p style={{ fontSize:11, fontWeight:700, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:10 }}>Por canal</p>
+              <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+                {Object.entries(ayerPorCanal).sort((a,b)=>b[1]-a[1]).map(([canal, nr]) => {
+                  const pct = ayerTotal > 0 ? nr/ayerTotal : 0;
+                  const col = CANAL_COLORS[canal] || C.accent;
+                  return (
+                    <div key={canal}>
+                      <div style={{ display:"flex", justifyContent:"space-between", marginBottom:3 }}>
+                        <span style={{ fontSize:12, color:C.textMid, fontWeight:500 }}>{canal}</span>
+                        <div style={{ display:"flex", gap:6, alignItems:"center" }}>
+                          <span style={{ fontSize:11, color:C.textLight }}>{Math.round(pct*100)}%</span>
+                          <span style={{ fontSize:12, fontWeight:700, color:col }}>{nr}</span>
+                        </div>
+                      </div>
+                      <div style={{ height:6, borderRadius:3, background:C.border }}>
+                        <div style={{ height:6, borderRadius:3, background:col, width:`${pct*100}%`, transition:"width 0.4s" }}/>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+          </div>
+        )}
+      </Card>
 
       {/* Selector año */}
       <div style={{ display:"flex", justifyContent:"flex-end" }}>
@@ -1997,7 +2068,7 @@ export default function App() {
     try {
       // Primera llamada para saber el total
       const { data: pe0, count } = await supabase.from("pickup_entries")
-        .select("fecha_llegada, num_reservas", { count: "exact" })
+        .select("fecha_llegada, fecha_pickup, canal, num_reservas", { count: "exact" })
         .eq("hotel_id", session.user.id)
         .range(0, 999);
       if (pe0 && pe0.length > 0) {
@@ -2009,7 +2080,7 @@ export default function App() {
           ? await Promise.all(
               Array.from({ length: paginas - 1 }, (_, i) =>
                 supabase.from("pickup_entries")
-                  .select("fecha_llegada, num_reservas")
+                  .select("fecha_llegada, fecha_pickup, canal, num_reservas")
                   .eq("hotel_id", session.user.id)
                   .range((i + 1) * PAGINA, (i + 2) * PAGINA - 1)
                   .then(r => r.data || [])
