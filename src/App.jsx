@@ -53,7 +53,6 @@ function KpiModal({ kpi, datos, mes, anio, onClose }) {
   const { produccion, presupuesto } = datos;
   const MESES_FULL = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 
-  // Últimos 30 días con datos hasta la última fecha disponible del mes seleccionado
   const todasProd = (produccion||[]).sort((a,b)=>new Date(a.fecha)-new Date(b.fecha));
   const ultimaFechaMes = todasProd
     .filter(d => { const f=new Date(d.fecha+"T00:00:00"); return f.getMonth()===mes && f.getFullYear()===anio; })
@@ -95,7 +94,6 @@ function KpiModal({ kpi, datos, mes, anio, onClose }) {
     };
   };
 
-  // Mes anterior: misma ventana de 30 días desplazada un mes atrás
   const refDateMP = new Date(refDate); refDateMP.setMonth(refDateMP.getMonth()-1);
   const desde30MP = new Date(desde30); desde30MP.setMonth(desde30MP.getMonth()-1);
   const diasMP = todasProd
@@ -106,10 +104,8 @@ function KpiModal({ kpi, datos, mes, anio, onClose }) {
   const diasComp  = diasMP;
   const compLabel = `últimos 30 días`;
 
-  // Presupuesto mes
   const ppto = (presupuesto||[]).find(p=>p.mes===mes+1&&p.anio===anio);
 
-  // Métricas según KPI
   const getChartData = () => {
     if (kpi==="Ocupación") return diasMes.map((d,i)=>({...d, ly: diasComp[i]?.occ}));
     if (kpi==="ADR")       return diasMes.map((d,i)=>({...d, ly: diasComp[i]?.adr}));
@@ -122,7 +118,6 @@ function KpiModal({ kpi, datos, mes, anio, onClose }) {
 
   const fk = kpi==="Ocupación"?"occ":kpi==="ADR"?"adr":kpi==="RevPAR"?"revpar":kpi==="TRevPAR"?"trevpar":"revTotal";
 
-  // Para TRevPAR comparar mes completo actual vs mes anterior completo
   const diasMesCompleto = todasProd
     .filter(d => { const f=new Date(d.fecha+"T00:00:00"); return f.getMonth()===mes && f.getFullYear()===anio; })
     .map(mapProd);
@@ -147,14 +142,12 @@ function KpiModal({ kpi, datos, mes, anio, onClose }) {
     <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", zIndex:1000, display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}>
       <div style={{ background:C.bgCard, borderRadius:14, width:"100%", maxWidth:820, maxHeight:"90vh", overflow:"auto", padding:28, boxShadow:"0 20px 60px rgba(0,0,0,0.2)" }} onClick={e=>e.stopPropagation()}>
 
-        {/* Header modal */}
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20 }}>
           <div>
             <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:2 }}>{MESES_FULL[mes]} {anio}</p>
             <h3 style={{ fontSize:22, fontWeight:800, color:C.text, fontFamily:"'DM Sans',sans-serif", letterSpacing:-0.5 }}>{kpi}</h3>
           </div>
           <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-
             <button onClick={onClose} style={{ background:"none", border:`1.5px solid ${C.border}`, borderRadius:8, width:34, height:34, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", fontSize:16, color:C.textMid, fontWeight:300, transition:"all 0.15s" }}
               onMouseEnter={e=>{ e.currentTarget.style.background=C.accent; e.currentTarget.style.borderColor=C.accent; e.currentTarget.style.color="#fff"; }}
               onMouseLeave={e=>{ e.currentTarget.style.background="none"; e.currentTarget.style.borderColor=C.border; e.currentTarget.style.color=C.textMid; }}>
@@ -163,7 +156,6 @@ function KpiModal({ kpi, datos, mes, anio, onClose }) {
           </div>
         </div>
 
-        {/* 3 KPIs rápidos */}
         <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:12, marginBottom:20 }}>
           {[
             { label:"Media del mes", value:`${kpi==="Ocupación"?mediaActual.toFixed(1):Math.round(mediaActual).toLocaleString("es-ES")}${unit}` },
@@ -177,7 +169,6 @@ function KpiModal({ kpi, datos, mes, anio, onClose }) {
           ))}
         </div>
 
-        {/* Gráfica */}
         <div style={{ marginBottom:16 }}>
           <p style={{ fontSize:12, fontWeight:600, color:C.textMid, marginBottom:10, textTransform:"uppercase", letterSpacing:1 }}>
             {kpi==="TRevPAR" ? "Desglose de ingresos del mes" : "Últimos 30 días"}
@@ -251,7 +242,6 @@ function KpiModal({ kpi, datos, mes, anio, onClose }) {
                 <YAxis tick={{fill:C.textLight,fontSize:10}} axisLine={false} tickLine={false} unit={unit}/>
                 <Tooltip content={<CustomTooltip/>}/>
                 <Area type="monotone" dataKey={fieldKey} name={kpi} stroke={C.accent} strokeWidth={2} fill={`${C.accent}15`} dot={false}/>
-                
               </ComposedChart>
             </ResponsiveContainer>
           ) : null}
@@ -314,13 +304,11 @@ function PeriodSelectorInline({ mes, anio, onChange, aniosDisponibles }) {
 
   return (
     <div style={{ userSelect:"none" }}>
-      {/* Cabecera año con flechas */}
       <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:10, marginBottom:8 }}>
         <button onClick={anioAnterior} style={btnFlecha(puedeAnterior)}>‹</button>
         <p style={{ fontSize:13, fontWeight:700, color:C.text, fontFamily:"'DM Sans',sans-serif", minWidth:36, textAlign:"center" }}>{anio}</p>
         <button onClick={anioSiguiente} style={btnFlecha(puedeSiguiente)}>›</button>
       </div>
-      {/* Grid 4x3 meses */}
       <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:4 }}>
         {MESES_C.map((m, i) => {
           const futuro = anio === anioMax && i > hoy.getMonth();
@@ -358,13 +346,11 @@ function PeriodSelector({ mes, anio, onChange }) {
 
   return (
     <div style={{ background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: 10, padding: "14px 16px", display: "inline-block" }}>
-      {/* Selector de año */}
       <div style={{ display: "flex", justifyContent: "center", gap: 6, marginBottom: 10 }}>
         {anios.map(a => (
           <button key={a} onClick={() => onChange(mes, a)} style={{ padding: "4px 12px", borderRadius: 8, border: `1.5px solid ${a === anio ? C.accent : C.border}`, background: a === anio ? C.accent : "transparent", color: a === anio ? "#fff" : C.textMid, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>{a}</button>
         ))}
       </div>
-      {/* Grid de meses */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 5 }}>
         {MESES_CORTOS.map((m, i) => {
           const futuro = anio === anioMax && i > hoy.getMonth();
@@ -420,7 +406,6 @@ function ImportarExcel({ onClose, session, onImportado }) {
       const hotelRows = wsHotel ? XLSX.utils.sheet_to_json(wsHotel, { header: 1 }) : [];
       const totalHab = parseFloat(hotelRows?.[8]?.[4]) || null;
 
-
       for (const row of rows) {
         if (!row[0]) continue;
         const fecha = row[0];
@@ -456,76 +441,35 @@ function ImportarExcel({ onClose, session, onImportado }) {
         });
       }
 
-      // ── Pickup (nuevo formato: fecha_pickup, fecha_llegada, canal, num_reservas) ──
-      const wsPu = wb.Sheets["🎯 Pickup"];
-      const pickupRows = [];
-      if (wsPu) {
-        const rowsPu = XLSX.utils.sheet_to_json(wsPu, { header: 1, range: 4 });
-        const parseFechaES = (val) => {
-          if (!val) return null;
-          if (typeof val === "number") {
-            const d = XLSX.SSF.parse_date_code(val);
-            return `${d.y}-${String(d.m).padStart(2,"0")}-${String(d.d).padStart(2,"0")}`;
-          }
-          if (typeof val === "string") {
-            // DD/MM/AAAA o DD/MM/AA
-            const parts = val.trim().split("/");
-            if (parts.length === 3) {
-              const anio = parts[2].length === 2 ? "20" + parts[2] : parts[2];
-              return `${anio}-${parts[1].padStart(2,"0")}-${parts[0].padStart(2,"0")}`;
-            }
-          }
-          return null;
-        };
-        for (const row of rowsPu) {
-          if (!row[0] && !row[1]) continue;
-          const fechaPickup = parseFechaES(row[0]);
-          const fechaLlegada = parseFechaES(row[1]);
-          if (!fechaPickup || !fechaLlegada) continue;
-          const canal = row[2] || null;
-          const numReservas = parseInt(row[3]) || 1;
-          const notas = row[4] || "";
-          pickupRows.push({
-            hotel_id: session.user.id,
-            fecha_pickup: fechaPickup,
-            fecha_llegada: fechaLlegada,
-            canal,
-            num_reservas: numReservas,
-            notas,
-          });
-        }
-      }
 
-      // ── Presupuesto ──
-      // Lee dos bloques: filas 5-16 (2025) y filas 22-33 (2026)
+      // ── Presupuesto — col[0]=Mes, col[1]=OCC(decimal), col[4]=ADR, col[7]=RevPAR, col[10]=RevTotal ──
       const wsBu = wb.Sheets["💰 Presupuesto"];
       const presupuestoRows = [];
       if (wsBu) {
         const rowsBu = XLSX.utils.sheet_to_json(wsBu, { header: 1 });
-        // Detectar bloques dinámicamente: buscar filas con nombre de mes en col 0
-        const MESES_PPTO = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+        const MESES_PPTO = ["Enero","Febrero","Marzo","Abril","Mayo","Junio",
+                            "Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
         const anioImportPpto = parseInt(produccionRows[0]?.fecha?.slice(0,4)) || new Date().getFullYear();
-        const bloques = [{ startRow: null, anio: anioImportPpto }];
+        let startRow = null;
         for (let r = 0; r < rowsBu.length; r++) {
-          if (rowsBu[r]?.[0] === "Enero") { bloques[0].startRow = r; break; }
+          if (rowsBu[r]?.[0] === "Enero") { startRow = r; break; }
         }
-        for (const { startRow, anio } of bloques) {
-          if (startRow === null) continue;
+        if (startRow !== null) {
           for (let i = 0; i < 12; i++) {
             const row = rowsBu[startRow + i];
-            if (!row || !row[0] || typeof row[0] !== "string") continue;
-            const occ_ppto = parseFloat(row[1]) || null;
-            const adr_ppto = parseFloat(row[4]) || null;
-            const revpar_ppto = parseFloat(row[7]) || null;
+            if (!row || !MESES_PPTO.includes(row[0])) continue;
+            const occ_ppto       = parseFloat(row[1])  || null;
+            const adr_ppto       = parseFloat(row[4])  || null;
+            const revpar_ppto    = parseFloat(row[7])  || null;
             const rev_total_ppto = parseFloat(row[10]) || null;
             if (!occ_ppto && !adr_ppto && !revpar_ppto && !rev_total_ppto) continue;
             presupuestoRows.push({
               hotel_id: session.user.id,
-              anio,
+              anio: anioImportPpto,
               mes: i + 1,
-              occ_ppto: occ_ppto ? Math.round(occ_ppto * 10) / 10 : null,
-              adr_ppto: adr_ppto ? Math.round(adr_ppto * 100) / 100 : null,
-              revpar_ppto: revpar_ppto ? Math.round(revpar_ppto * 100) / 100 : null,
+              occ_ppto:       occ_ppto       ? Math.round(occ_ppto * 1000) / 10 : null,
+              adr_ppto:       adr_ppto       ? Math.round(adr_ppto * 100) / 100 : null,
+              revpar_ppto:    revpar_ppto    ? Math.round(revpar_ppto * 100) / 100 : null,
               rev_total_ppto: rev_total_ppto ? Math.round(rev_total_ppto) : null,
             });
           }
@@ -534,40 +478,25 @@ function ImportarExcel({ onClose, session, onImportado }) {
 
       if (produccionRows.length === 0) throw new Error("No se encontraron datos en la hoja de Producción Diaria");
 
-      // Detectar años presentes en el Excel
+      // Detectar años y limpiar
       const aniosImport = [...new Set(produccionRows.map(r => r.fecha.slice(0, 4)))];
       for (const anio of aniosImport) {
         await supabase.from("produccion_diaria").delete()
           .eq("hotel_id", session.user.id)
-          .gte("fecha", `${anio}-01-01`)
-          .lte("fecha", `${anio}-12-31`);
-        await supabase.from("pickup_entries").delete()
-          .eq("hotel_id", session.user.id)
-          .gte("fecha_pickup", `${anio}-01-01`)
-          .lte("fecha_pickup", `${anio}-12-31`);
+          .gte("fecha", `${anio}-01-01`).lte("fecha", `${anio}-12-31`);
         await supabase.from("presupuesto").delete()
-          .eq("hotel_id", session.user.id)
-          .eq("anio", parseInt(anio));
+          .eq("hotel_id", session.user.id).eq("anio", parseInt(anio));
       }
-
 
       const { error: err1 } = await supabase.from("produccion_diaria").insert(produccionRows);
       if (err1) throw new Error("Error al guardar producción: " + err1.message);
-
-      if (pickupRows.length > 0) {
-        // Borrar entradas anteriores del Excel (las manuales del día se mantienen
-        // porque vienen de fecha_pickup = hoy, no del rango del Excel)
-        await supabase.from("pickup_entries").delete().eq("hotel_id", session.user.id);
-        const { error: err2 } = await supabase.from("pickup_entries").insert(pickupRows);
-        if (err2) throw new Error("Error al guardar pickup: " + err2.message);
-      }
 
       if (presupuestoRows.length > 0) {
         const { error: err3 } = await supabase.from("presupuesto").insert(presupuestoRows);
         if (err3) throw new Error("Error al guardar presupuesto: " + err3.message);
       }
 
-      setResultado({ produccion: produccionRows.length, pickup: pickupRows.length, presupuesto: presupuestoRows.length });
+      setResultado({ produccion: produccionRows.length, presupuesto: presupuestoRows.length });
       if (onImportado) onImportado();
     } catch (e) {
       setError(e.message);
@@ -602,7 +531,6 @@ function ImportarExcel({ onClose, session, onImportado }) {
             <p style={{ fontWeight: 700, fontSize: 16, color: "#1C1814", marginBottom: 8 }}>¡Datos importados correctamente!</p>
             <div style={{ background: "#D4EDDE", borderRadius: 10, padding: "16px", marginBottom: 20 }}>
               <p style={{ color: "#2D7A4F", fontSize: 13 }}>📅 {resultado.produccion} días de producción importados</p>
-              {resultado.pickup > 0 && <p style={{ color: "#2D7A4F", fontSize: 13, marginTop: 6 }}>🎯 {resultado.pickup} días de pickup importados</p>}
               {resultado.presupuesto > 0 && <p style={{ color: "#2D7A4F", fontSize: 13, marginTop: 6 }}>💰 {resultado.presupuesto} meses de presupuesto importados</p>}
             </div>
             <button onClick={onClose} style={{ background: "#C8933A", color: "#fff", border: "none", borderRadius: 10, padding: "12px 32px", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>Ver dashboard</button>
@@ -645,7 +573,6 @@ function MonthDetailView({ datos, mes, anio, onBack }) {
         </div>
       </div>
 
-      {/* KPIs resumen del mes */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 14, marginBottom: 24 }}>
         {[
           { label: "Ocupación media", value: `${mediaOcc}%` },
@@ -661,7 +588,6 @@ function MonthDetailView({ datos, mes, anio, onBack }) {
         ))}
       </div>
 
-      {/* Tabla diaria */}
       <Card>
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
@@ -698,7 +624,6 @@ function MonthDetailView({ datos, mes, anio, onBack }) {
                 );
               })}
             </tbody>
-            {/* Totales */}
             <tfoot>
               <tr style={{ borderTop: `2px solid ${C.border}`, background: C.accentLight, fontWeight: 700 }}>
                 <td style={{ padding: "10px 14px", color: C.text, fontWeight: 700 }}>TOTAL MES</td>
@@ -748,7 +673,6 @@ async function generarReportePDF(datos, mes, anio, hotelNombre) {
   const mesAct = getMes(mes, anio);
   const mesPrev = getMes(mes===0?11:mes-1, mes===0?anio-1:anio);
 
-  // Datos 12 meses rodantes
   const rodantes = Array.from({length:12},(_,i)=>{
     const total = mes-11+i;
     const mIdx  = ((total%12)+12)%12;
@@ -758,7 +682,6 @@ async function generarReportePDF(datos, mes, anio, hotelNombre) {
     return { mes: MESES_C[mIdx], anio: aIdx, ...md, ppto: pp };
   }).filter(r=>r.habOcu>0||r.revTot>0);
 
-  // Detalle diario
   const diasMes = mesAct.d.sort((a,b)=>new Date(a.fecha)-new Date(b.fecha)).map(d=>{
     const f = new Date(d.fecha+"T00:00:00");
     const habDis = d.hab_disponibles||30;
@@ -772,7 +695,6 @@ async function generarReportePDF(datos, mes, anio, hotelNombre) {
     };
   });
 
-  // Presupuesto mes actual
   const pptoMes = (presupuesto||[]).find(p=>p.mes===mes+1 && p.anio===anio);
   const pptoVsReal = pptoMes ? {
     adr:   pptoMes.adr_ppto   ? ((mesAct.adr    - pptoMes.adr_ppto)   / pptoMes.adr_ppto   * 100).toFixed(1) : null,
@@ -780,7 +702,6 @@ async function generarReportePDF(datos, mes, anio, hotelNombre) {
     rev:   pptoMes.rev_total_ppto ? ((mesAct.revTot - pptoMes.rev_total_ppto)/pptoMes.rev_total_ppto*100).toFixed(1) : null,
   } : null;
 
-  // ── Generar resumen automático basado en datos ──
   const diffPct = (curr, prev) => prev > 0 ? ((curr-prev)/prev*100).toFixed(1) : null;
   const occDiff  = diffPct(mesAct.occ, mesPrev.occ);
   const adrDiff  = diffPct(mesAct.adr, mesPrev.adr);
@@ -799,7 +720,6 @@ async function generarReportePDF(datos, mes, anio, hotelNombre) {
     `El TRevPAR del mes se situó en €${Math.round(mesAct.trevpar)}, con los ingresos de habitaciones representando el grueso del revenue total. Para el próximo mes se recomienda ${mesAct.occ < 70 ? "reforzar la estrategia de captación y revisar la política de precios para mejorar la ocupación" : mesAct.adr < mesPrev.adr ? "mantener la ocupación alcanzada y trabajar en incrementar el ADR mediante upselling y segmentación de tarifas" : "consolidar la estrategia actual que está mostrando resultados positivos tanto en ocupación como en precio medio"}.`
   ].filter(Boolean).join("\n\n");
 
-  // ── Cargar jsPDF ──
   const loadScript = (src) => new Promise((res, rej) => {
     if (document.querySelector(`script[src="${src}"]`)) { res(); return; }
     const s = document.createElement("script");
@@ -823,7 +743,6 @@ async function generarReportePDF(datos, mes, anio, hotelNombre) {
   const addPage = () => { doc.addPage(); y=M; };
   const checkY  = (needed=20) => { if(y+needed>285) addPage(); };
 
-  // ── Portada / Header ──
   doc.setFillColor(...azul);
   doc.rect(0,0,W,38,"F");
   doc.setTextColor(255,255,255);
@@ -835,7 +754,6 @@ async function generarReportePDF(datos, mes, anio, hotelNombre) {
   doc.text(`Generado el ${new Date().toLocaleDateString("es-ES",{day:"2-digit",month:"long",year:"numeric"})}`, W-M, 33, {align:"right"});
   y = 48;
 
-  // ── KPIs del mes ──
   doc.setTextColor(...azul);
   doc.setFontSize(13); doc.setFont("helvetica","bold");
   doc.text("KPIs del Mes", M, y); y+=6;
@@ -864,7 +782,6 @@ async function generarReportePDF(datos, mes, anio, hotelNombre) {
   });
   y += 48;
 
-  // ── Vs Presupuesto ──
   if(pptoVsReal) {
     checkY(30);
     doc.setTextColor(...azul); doc.setFontSize(13); doc.setFont("helvetica","bold");
@@ -892,7 +809,6 @@ async function generarReportePDF(datos, mes, anio, hotelNombre) {
     y = doc.lastAutoTable.finalY + 8;
   }
 
-  // ── Resumen IA ──
   checkY(40);
   doc.setTextColor(...azul); doc.setFontSize(13); doc.setFont("helvetica","bold");
   doc.text("Análisis IA del Mes", M, y); y+=6;
@@ -904,7 +820,6 @@ async function generarReportePDF(datos, mes, anio, hotelNombre) {
   doc.text(lines, M+4, y+6);
   y += lines.length*4.5+14;
 
-  // ── Tabla resumen 12 meses ──
   checkY(20); addPage();
   doc.setTextColor(...azul); doc.setFontSize(13); doc.setFont("helvetica","bold");
   doc.text("Resumen Últimos 12 Meses", M, y); y+=6;
@@ -924,7 +839,6 @@ async function generarReportePDF(datos, mes, anio, hotelNombre) {
   });
   y = doc.lastAutoTable.finalY + 10;
 
-  // ── Detalle diario ──
   checkY(20);
   doc.setTextColor(...azul); doc.setFontSize(13); doc.setFont("helvetica","bold");
   doc.text(`Detalle Diario — ${MESES_FULL[mes]} ${anio}`, M, y); y+=6;
@@ -947,7 +861,6 @@ async function generarReportePDF(datos, mes, anio, hotelNombre) {
     }
   });
 
-  // ── Footer ──
   const pages = doc.internal.getNumberOfPages();
   for(let i=1;i<=pages;i++){
     doc.setPage(i);
@@ -981,7 +894,6 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
   const revpar  = totalHabDisponibles > 0 ? (totalRevHab / totalHabDisponibles).toFixed(0) : 0;
   const trevpar = totalHabDisponibles > 0 ? ((totalRevHab + totalRevFnb + totalRevOtros) / totalHabDisponibles).toFixed(0) : 0;
 
-  // Últimos 12 meses rodantes desde el mes seleccionado
   const porMes = Array.from({ length: 12 }, (_, i) => {
     const totalMeses = mes - 11 + i;
     const mIdx = ((totalMeses % 12) + 12) % 12;
@@ -1008,7 +920,6 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
     };
   }).filter(d => d.occ > 0 || d.adr > 0);
 
-  // Últimos 30 días con datos para gráfica
   const hace30 = new Date(); hace30.setDate(hace30.getDate() - 29);
   const hace30Str = hace30.toISOString().slice(0,10);
   const datosDiariosMes = produccion
@@ -1021,7 +932,6 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
       adr: d.hab_ocupadas > 0 ? Math.round(d.revenue_hab / d.hab_ocupadas) : 0,
     }));
 
-  // Mes anterior para comparativa
   const mesPrevIdx = mes === 0 ? 11 : mes - 1;
   const anioPrev   = mes === 0 ? anio - 1 : anio;
   const datosPrev  = produccion.filter(d => {
@@ -1044,7 +954,6 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
     const d = curr - prev;
     const pct = ((d / prev) * 100).toFixed(1);
     const sign = d >= 0 ? "+" : "";
-    const val = isEur ? `${sign}€${Math.round(Math.abs(d)).toLocaleString("es-ES")}` : `${sign}${Math.abs(parseFloat(pct))}%`;
     return { change: `${sign}${pct}% vs mes ant.`, up: d >= 0, sub: "" };
   };
 
@@ -1056,11 +965,8 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
     { label: "Revenue Total", value: `€${Math.round(totalRevTotal).toLocaleString("es-ES")}`, ...diff(totalRevTotal, prevRevTot, true) },
   ];
 
-  const esMesActual = mes === new Date().getMonth() && anio === new Date().getFullYear();
   return (
     <div>
-
-
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 14, marginBottom: 24 }}>
         {kpis.map((k, i) => <KpiCard key={i} {...k} i={i} onClick={()=>setKpiModal(k.label)} />)}
       </div>
@@ -1137,491 +1043,10 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
   );
 }
 
-// ─── MODAL RELLENAR PICKUP ───────────────────────────────────────
-function PickupEntryModal({ session, onClose, onGuardado, fechaLlegadaInicial }) {
-  const hoy = new Date();
-  const hoyStr = hoy.toISOString().slice(0,10);
-  const CANALES = ["OTA (Booking, Expedia...)", "Web propia", "Teléfono / Email", "Walk-in", "TTOO / Agencia", "Otro"];
-
-  const [entradas, setEntradas] = useState([]);
-  const [notas, setNotas] = useState("");
-  const [guardando, setGuardando] = useState(false);
-  const [error, setError] = useState("");
-  const [guardadas, setGuardadas] = useState([]);
-  const [cargandoHoy, setCargandoHoy] = useState(true);
-
-  // Cargar entradas ya guardadas hoy al abrir
-  useEffect(() => {
-    const cargar = async () => {
-      const { data } = await supabase.from("pickup_entries")
-        .select("*")
-        .eq("hotel_id", session.user.id)
-        .eq("fecha_pickup", hoyStr)
-        .order("created_at", { ascending: false });
-      setGuardadas(data || []);
-      setCargandoHoy(false);
-      if (fechaLlegadaInicial) {
-        setEntradas([{ fecha_llegada: fechaLlegadaInicial, canal: "", num_reservas: 1 }]);
-      }
-    };
-    cargar();
-  }, []);
-
-  useEffect(() => {
-    const handler = (e) => { if (e.key === "Escape") onClose(); };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, []);
-
-  const addEntrada = () => setEntradas(e => [...e, { fecha_llegada: fechaLlegadaInicial || "", canal: "", num_reservas: 1 }]);
-  const removeEntrada = (i) => setEntradas(e => e.filter((_,j) => j!==i));
-  const updateEntrada = (i, field, val) => setEntradas(e => e.map((r,j) => j===i ? {...r,[field]:val} : r));
-
-  const totalNuevas = entradas.reduce((a,e) => a + (parseInt(e.num_reservas)||0), 0);
-  const totalHoy = guardadas.reduce((a,e) => a + (e.num_reservas||0), 0);
-
-  const guardar = async () => {
-    const validas = entradas.filter(e => e.fecha_llegada && e.num_reservas > 0);
-    if (validas.length === 0) { setError("Añade al menos una entrada con fecha de llegada"); return; }
-    setGuardando(true); setError("");
-    const rows = validas.map(e => ({
-      hotel_id: session.user.id,
-      fecha_pickup: hoyStr,
-      fecha_llegada: e.fecha_llegada,
-      canal: e.canal || null,
-      num_reservas: parseInt(e.num_reservas) || 1,
-      notas: notas || null,
-    }));
-    const { data: insertadas, error: err } = await supabase.from("pickup_entries").insert(rows).select();
-    if (err) { setError("Error al guardar: " + err.message); setGuardando(false); return; }
-    // Actualizar lista de guardadas con ids reales de Supabase
-    setGuardadas(prev => [...(insertadas || rows), ...prev]);
-    setEntradas([]);
-    setNotas("");
-    setGuardando(false);
-    if (onGuardado) onGuardado();
-  };
-
-  const inp = { width:"100%", padding:"9px 12px", borderRadius:8, border:`1.5px solid ${C.border}`, fontSize:13, fontFamily:"'DM Sans',sans-serif", color:C.text, background:C.bg, outline:"none", boxSizing:"border-box" };
-  const sel = { ...inp, cursor:"pointer" };
-
-  return (
-    <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.55)", zIndex:1000, display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}>
-      <div style={{ background:C.bgCard, borderRadius:14, width:"100%", maxWidth:640, maxHeight:"90vh", overflow:"auto", padding:28, boxShadow:"0 20px 60px rgba(0,0,0,0.25)" }} onClick={e=>e.stopPropagation()}>
-
-        {/* Header */}
-        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20 }}>
-          <div>
-            <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:2, marginBottom:4 }}>Pickup diario</p>
-            <h3 style={{ fontSize:20, fontWeight:800, color:C.text, fontFamily:"'DM Sans',sans-serif", letterSpacing:-0.5 }}>Rellenar Pickup Hoy</h3>
-          </div>
-          <button onClick={onClose} style={{ background:"none", border:`1.5px solid ${C.border}`, borderRadius:8, width:34, height:34, cursor:"pointer", fontSize:16, color:C.textMid }}
-            onMouseEnter={e=>{ e.currentTarget.style.background=C.accent; e.currentTarget.style.color="#fff"; e.currentTarget.style.borderColor=C.accent; }}
-            onMouseLeave={e=>{ e.currentTarget.style.background="none"; e.currentTarget.style.color=C.textMid; e.currentTarget.style.borderColor=C.border; }}>
-            ×
-          </button>
-        </div>
-
-        {/* Fecha hoy */}
-        <div style={{ background:C.accentLight, borderRadius:10, padding:"12px 16px", marginBottom:20, display:"flex", alignItems:"center", gap:10 }}>
-          <span style={{ fontSize:18 }}>📅</span>
-          <div>
-            <p style={{ fontSize:10, color:C.accent, textTransform:"uppercase", letterSpacing:1.5, fontWeight:700 }}>Fecha de hoy</p>
-            <p style={{ fontSize:16, fontWeight:800, color:C.accent, fontFamily:"'DM Sans',sans-serif" }}>
-              {hoy.toLocaleDateString("es-ES",{ weekday:"long", day:"numeric", month:"long", year:"numeric" }).replace(/^\w/,c=>c.toUpperCase())}
-            </p>
-          </div>
-        </div>
-
-        {/* Entradas */}
-        <div style={{ marginBottom:16 }}>
-          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
-            <p style={{ fontSize:12, fontWeight:700, color:C.textMid, textTransform:"uppercase", letterSpacing:1 }}>Reservas captadas hoy</p>
-            <button onClick={addEntrada} style={{ background:C.accent, color:"#fff", border:"none", borderRadius:6, padding:"5px 12px", fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"'DM Sans',sans-serif" }}>+ Añadir fila</button>
-          </div>
-
-          {/* Cabecera */}
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 80px 32px", gap:8, marginBottom:6 }}>
-            {["Fecha de llegada","Canal","Nº res.",""].map((h,i) => (
-              <p key={i} style={{ fontSize:10, color:C.textLight, textTransform:"uppercase", letterSpacing:1, fontWeight:600 }}>{h}</p>
-            ))}
-          </div>
-
-          {/* Filas */}
-          {entradas.map((e,i) => (
-            <div key={i} style={{ display:"grid", gridTemplateColumns:"1fr 1fr 80px 32px", gap:8, marginBottom:8 }}>
-              <input type="date" value={e.fecha_llegada} onChange={ev=>updateEntrada(i,"fecha_llegada",ev.target.value)} style={inp}/>
-              <select value={e.canal} onChange={ev=>updateEntrada(i,"canal",ev.target.value)} style={sel}>
-                <option value="">— Canal —</option>
-                {CANALES.map(c=><option key={c} value={c}>{c}</option>)}
-              </select>
-              <input type="number" min="1" value={e.num_reservas} onChange={ev=>updateEntrada(i,"num_reservas",ev.target.value)} style={{...inp, textAlign:"center"}}/>
-              {entradas.length > 1
-                ? <button onClick={()=>removeEntrada(i)} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, cursor:"pointer", color:C.red, fontSize:14, fontWeight:700 }}>×</button>
-                : <div/>
-              }
-            </div>
-          ))}
-        </div>
-
-        {/* Notas */}
-        <div style={{ marginBottom:16 }}>
-          <p style={{ fontSize:10, color:C.textLight, textTransform:"uppercase", letterSpacing:1.5, fontWeight:600, marginBottom:6 }}>📝 Notas del día (opcional)</p>
-          <textarea value={notas} onChange={e=>setNotas(e.target.value)} placeholder="Ej: Evento en la ciudad este fin de semana, subida de precios en Booking..." rows={2}
-            style={{ ...inp, resize:"vertical", lineHeight:1.5 }}/>
-        </div>
-
-        {error && <div style={{ background:C.redLight, color:C.red, padding:"10px 14px", borderRadius:8, fontSize:12, marginBottom:12 }}>⚠️ {error}</div>}
-
-        {/* Botones */}
-        <div style={{ display:"flex", gap:10, marginBottom:20 }}>
-          <button onClick={onClose} style={{ flex:1, padding:"12px", borderRadius:10, border:`1px solid ${C.border}`, background:"transparent", color:C.textMid, fontSize:13, fontWeight:600, cursor:"pointer", fontFamily:"'DM Sans',sans-serif" }}>Cerrar</button>
-          <button onClick={guardar} disabled={guardando || entradas.length===0} style={{ flex:2, padding:"12px", borderRadius:10, border:"none", background:(guardando||entradas.length===0)?C.accentLight:C.accent, color:(guardando||entradas.length===0)?C.accentDark:"#fff", fontSize:13, fontWeight:700, cursor:(guardando||entradas.length===0)?"not-allowed":"pointer", fontFamily:"'DM Sans',sans-serif" }}>
-            {guardando ? "Guardando..." : `✓ Guardar ${totalNuevas} reservas`}
-          </button>
-        </div>
-
-        {/* ── Reservas captadas hoy ── */}
-        <div style={{ borderTop:`1px solid ${C.border}`, paddingTop:16 }}>
-          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
-            <p style={{ fontSize:11, fontWeight:700, color:C.textMid, textTransform:"uppercase", letterSpacing:1 }}>
-              ✅ Reservas captadas hoy
-            </p>
-            <span style={{ fontSize:18, fontWeight:800, color:C.accent, fontFamily:"'DM Sans',sans-serif" }}>
-              {totalHoy} reservas
-            </span>
-          </div>
-          {cargandoHoy ? (
-            <p style={{ fontSize:12, color:C.textLight, textAlign:"center", padding:"12px 0" }}>Cargando...</p>
-          ) : guardadas.length === 0 ? (
-            <p style={{ fontSize:12, color:C.textLight, textAlign:"center", padding:"12px 0" }}>Aún no hay reservas registradas hoy</p>
-          ) : (
-            <div style={{ display:"flex", flexDirection:"column", gap:6, maxHeight:220, overflowY:"auto" }}>
-              {guardadas.map((e, i) => (
-                <div key={i} style={{ display:"grid", gridTemplateColumns:"1fr 1fr 60px 32px", gap:8, background:i%2===0?C.bg:C.bgCard, borderRadius:8, padding:"8px 12px", border:`1px solid ${C.border}` }}>
-                  <div>
-                    <p style={{ fontSize:9, color:C.textLight, textTransform:"uppercase", letterSpacing:1 }}>Llegada</p>
-                    <p style={{ fontSize:12, fontWeight:600, color:C.text }}>{e.fecha_llegada}</p>
-                  </div>
-                  <div>
-                    <p style={{ fontSize:9, color:C.textLight, textTransform:"uppercase", letterSpacing:1 }}>Canal</p>
-                    <p style={{ fontSize:12, color:C.textMid }}>{e.canal || "—"}</p>
-                  </div>
-                  <div style={{ textAlign:"right" }}>
-                    <p style={{ fontSize:9, color:C.textLight, textTransform:"uppercase", letterSpacing:1 }}>Res.</p>
-                    <p style={{ fontSize:16, fontWeight:800, color:C.accent, fontFamily:"'DM Sans',sans-serif" }}>{e.num_reservas}</p>
-                  </div>
-                  <div style={{ display:"flex", alignItems:"center", justifyContent:"center" }}>
-                    <button onClick={async()=>{
-                      if(!e.id) return;
-                      await supabase.from("pickup_entries").delete().eq("id", e.id);
-                      setGuardadas(g => g.filter((_,j)=>j!==i));
-                    }} style={{ background:"none", border:"none", cursor:"pointer", color:C.textLight, fontSize:16, lineHeight:1, padding:2, borderRadius:4, transition:"color 0.15s" }}
-                    onMouseEnter={e=>e.currentTarget.style.color=C.red}
-                    onMouseLeave={e=>e.currentTarget.style.color=C.textLight}>
-                      ×
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── PICKUP VIEW ──────────────────────────────────────────────────
-function PickupView({ datos, onGuardado }) {
-  const { pickup, produccion, session } = datos;
-
-  const [pickupEntries, setPickupEntries] = useState(datos.pickupEntries || []);
-
-  const recargarPickup = async () => {
-    const { data } = await supabase.from("pickup_entries")
-      .select("*").eq("hotel_id", session.user.id).order("fecha_pickup");
-    if (data) setPickupEntries(data);
-  };
-
-  useEffect(() => {
-    setPickupEntries(datos.pickupEntries || []);
-  }, [datos.pickupEntries]);
-
-  const [showEntryModal, setShowEntryModal] = useState(false);
-  const [fechaPickupModal, setFechaPickupModal] = useState(null);
-
-  const hoy = new Date();
-  const hoyStr = hoy.toISOString().slice(0,10);
-  const hoyLYStr = `${hoy.getFullYear()-1}-${String(hoy.getMonth()+1).padStart(2,"0")}-${String(hoy.getDate()).padStart(2,"0")}`;
-
-  // OTB acumulado hasta una fecha para un mes específico
-  const getOTB = (hastaFecha, mesIdx) => {
-    return (pickupEntries || [])
-      .filter(e => e.fecha_pickup <= hastaFecha && new Date(e.fecha_llegada + "T00:00:00").getMonth() === mesIdx)
-      .reduce((a, e) => a + (e.num_reservas || 1), 0);
-  };
-
-  // ── HEATMAP ───────────────────────────────────────────────────────
-
-  // Habitaciones del hotel (prioridad: perfil > media producción > 30)
-  const habHotel = datos.hotel?.habitaciones
-    || ((produccion||[]).length > 0
-      ? Math.round((produccion||[]).reduce((a,d) => a + (d.hab_disponibles||30), 0) / produccion.length)
-      : 30);
-
-  // Producción indexada por fecha "YYYY-MM-DD"
-  const prodIdx = {};
-  (produccion||[]).forEach(d => { prodIdx[d.fecha] = d; });
-
-  // pickup_entries indexado por fecha_llegada, sumando num_reservas
-  const otbIdx = {};
-  (pickupEntries||[]).forEach(e => {
-    if (!e.fecha_llegada) return;
-    const f = String(e.fecha_llegada).trim().slice(0, 10); // asegurar YYYY-MM-DD
-    otbIdx[f] = (otbIdx[f] || 0) + (e.num_reservas || 1);
-  });
-
-
-  // % ocupación de un día: producción si existe, OTB si es futuro
-  const getOccDia = (fechaStr) => {
-    const prod = prodIdx[fechaStr];
-    if (prod) {
-      const hab = prod.hab_disponibles || habHotel;
-      return hab > 0 ? Math.round(prod.hab_ocupadas / hab * 100) : null;
-    }
-    if (fechaStr > hoyStr) {
-      const res = otbIdx[fechaStr] || 0;
-      return Math.round(res / habHotel * 100);
-    }
-    return null;
-  };
-
-  // % ocupación media de un mes
-  const getOccMes = (anio, mes) => {
-    const diasMes = new Date(anio, mes + 1, 0).getDate();
-    let total = 0, count = 0;
-    for (let d = 1; d <= diasMes; d++) {
-      const f = `${anio}-${String(mes+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
-      const occ = getOccDia(f);
-      if (occ !== null) { total += occ; count++; }
-    }
-    return count > 0 ? Math.round(total / count) : null;
-  };
-
-  // Color degradado verde oscuro → rojo oscuro
-  const getOccBg = (occ) => {
-    if (occ === null) return { bg: "#F5F5F5", col: C.textLight };
-    if (occ >= 85)   return { bg: "#004D26", col: "#fff" };
-    if (occ >= 70)   return { bg: "#1A7A3C", col: "#fff" };
-    if (occ >= 55)   return { bg: "#4CAF50", col: "#fff" };
-    if (occ >= 40)   return { bg: "#C0392B", col: "#fff" };
-    if (occ >= 25)   return { bg: "#A93226", col: "#fff" };
-    return             { bg: "#7B241C",  col: "#fff" };
-  };
-
-  const LEYENDA = [["<25%","#7B241C"],["25-40%","#A93226"],["40-55%","#C0392B"],["55-70%","#4CAF50"],["70-85%","#1A7A3C"],["≥85%","#004D26"]];
-
-  // Años disponibles en producción + año actual
-  const aniosDisp = [...new Set([
-    ...(produccion||[]).map(d => new Date(d.fecha+"T00:00:00").getFullYear()),
-    hoy.getFullYear()
-  ])].sort();
-
-  const [anioHeatmap, setAnioHeatmap]   = useState(hoy.getFullYear());
-  const [mesDetalle,  setMesDetalle]    = useState(null); // { anio, mes }
-
-  // ── Pace tabla 4 meses
-  const pace4 = [0,1,2,3].map(offset => {
-    const d = new Date(hoy.getFullYear(), hoy.getMonth() + offset, 1);
-    const mesIdx = d.getMonth();
-    const otbActual = getOTB(hoyStr, mesIdx);
-    const otbLY     = getOTB(hoyLYStr, mesIdx);
-    const diff      = otbLY > 0 ? otbActual - otbLY : null;
-    const diffPct   = otbLY > 0 ? ((otbActual - otbLY)/otbLY*100).toFixed(1) : null;
-    return {
-      label: `${MESES_FULL[mesIdx]} ${d.getFullYear()}`,
-      otbActual, otbLY, diff, diffPct,
-      status: diffPct===null?"neutral":parseFloat(diffPct)>=5?"up":parseFloat(diffPct)<=-5?"down":"neutral"
-    };
-  });
-
-
-  // ── RENDER ──────────────────────────────────────────────────
-  return (
-    <div style={{ display:"flex", flexDirection:"column", gap:20 }}>
-
-      {/* HEADER */}
-      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-        <div>
-          <h2 style={{ fontFamily:"'DM Sans',sans-serif", fontSize:20, fontWeight:700, color:C.text, letterSpacing:-0.3 }}>Pickup & Demanda</h2>
-          <p style={{ fontSize:12, color:C.textLight, marginTop:3 }}>
-            {hoy.toLocaleDateString("es-ES",{weekday:"long",day:"numeric",month:"long",year:"numeric"}).replace(/^./,c=>c.toUpperCase())}
-          </p>
-        </div>
-        <button onClick={()=>setShowEntryModal(true)} style={{ background:C.accent, color:"#fff", border:"none", borderRadius:10, padding:"10px 20px", fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"'DM Sans',sans-serif", display:"flex", alignItems:"center", gap:8, boxShadow:"0 2px 8px rgba(0,75,135,0.3)" }}>
-          ✏️ Rellenar Pickup Hoy
-        </button>
-      </div>
-
-      {showEntryModal && <PickupEntryModal session={session} onClose={()=>setShowEntryModal(false)} onGuardado={()=>{ setShowEntryModal(false); recargarPickup(); onGuardado && onGuardado(); }} />}
-      {fechaPickupModal && <PickupEntryModal session={session} onClose={()=>setFechaPickupModal(null)} onGuardado={()=>{ setFechaPickupModal(null); recargarPickup(); onGuardado && onGuardado(); }} fechaLlegadaInicial={fechaPickupModal} />}
-
-
-      {/* HEATMAP */}
-      <Card>
-        {!mesDetalle ? (
-          <>
-            {/* Header mensual */}
-            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
-              <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-                <button onClick={()=>setAnioHeatmap(a=>{ const i=aniosDisp.indexOf(a); return i>0?aniosDisp[i-1]:a; })}
-                  style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, width:26, height:26, cursor:"pointer", color:C.textMid, fontSize:14, display:"flex", alignItems:"center", justifyContent:"center" }}>‹</button>
-                <p style={{ fontWeight:800, fontSize:18, color:C.text, fontFamily:"'DM Sans',sans-serif", minWidth:52, textAlign:"center" }}>{anioHeatmap}</p>
-                <button onClick={()=>setAnioHeatmap(a=>{ const i=aniosDisp.indexOf(a); return i<aniosDisp.length-1?aniosDisp[i+1]:a; })}
-                  style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, width:26, height:26, cursor:"pointer", color:C.textMid, fontSize:14, display:"flex", alignItems:"center", justifyContent:"center" }}>›</button>
-              </div>
-              <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
-                {LEYENDA.map(([l,c])=>(
-                  <div key={l} style={{ display:"flex", alignItems:"center", gap:3 }}>
-                    <div style={{ width:9, height:9, borderRadius:2, background:c }}/>
-                    <span style={{ fontSize:9, color:C.textLight }}>{l}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-            {/* Grid 4x3 meses */}
-            <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:6 }}>
-              {Array.from({length:12},(_,mes)=>{
-                const occ = getOccMes(anioHeatmap, mes);
-                const esHoyMes = anioHeatmap===hoy.getFullYear() && mes===hoy.getMonth();
-                const { bg, col } = getOccBg(occ);
-                return (
-                  <div key={mes}
-                    onClick={()=>occ!==null && setMesDetalle({anio:anioHeatmap, mes})}
-                    style={{ background:bg, borderRadius:10, padding:"16px 8px", textAlign:"center",
-                      border: esHoyMes?`2px solid ${C.accent}`:`1px solid ${C.border}`,
-                      minHeight:90, display:"flex", flexDirection:"column", justifyContent:"space-between", alignItems:"center",
-                      cursor: occ!==null?"pointer":"default", opacity: occ===null?0.35:1,
-                      boxShadow: occ!==null?"0 1px 4px rgba(0,0,0,0.12)":"none",
-                      transition:"transform 0.12s, filter 0.12s" }}
-                    onMouseEnter={e=>{ if(occ!==null){ e.currentTarget.style.transform="scale(1.03)"; e.currentTarget.style.filter="brightness(0.88)"; }}}
-                    onMouseLeave={e=>{ e.currentTarget.style.transform="scale(1)"; e.currentTarget.style.filter="none"; }}>
-                    <span style={{ fontSize:13, fontWeight:600, color:col, textTransform:"uppercase", letterSpacing:0.5 }}>{MESES_FULL[mes]}</span>
-                    <span style={{ fontSize:26, fontWeight:800, color:col, fontFamily:"'DM Sans',sans-serif", lineHeight:1 }}>
-                      {occ!==null ? `${occ}%` : "—"}
-                    </span>
-                    <span style={{ fontSize:8, color:"transparent" }}>·</span>
-                  </div>
-                );
-              })}
-            </div>
-          </>
-        ) : (
-          <>
-            {/* Header diario */}
-            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
-              <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-                <button onClick={()=>setMesDetalle(null)}
-                  style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, padding:"5px 10px", cursor:"pointer", fontSize:12, color:C.textMid, fontFamily:"'DM Sans',sans-serif" }}>← Volver</button>
-                <p style={{ fontWeight:800, fontSize:15, color:C.text, fontFamily:"'DM Sans',sans-serif", textTransform:"uppercase", letterSpacing:0.5 }}>
-                  {MESES_FULL[mesDetalle.mes]} {mesDetalle.anio}
-                </p>
-              </div>
-              <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
-                {LEYENDA.map(([l,c])=>(
-                  <div key={l} style={{ display:"flex", alignItems:"center", gap:3 }}>
-                    <div style={{ width:9, height:9, borderRadius:2, background:c }}/>
-                    <span style={{ fontSize:9, color:C.textLight }}>{l}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-            {/* Cabecera días semana */}
-            <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:3, marginBottom:3 }}>
-              {["L","M","X","J","V","S","D"].map(d=>(
-                <div key={d} style={{ textAlign:"center", fontSize:10, color:C.textLight, fontWeight:600, padding:"2px 0" }}>{d}</div>
-              ))}
-            </div>
-            {/* Grid días */}
-            {(()=>{
-              const { anio, mes } = mesDetalle;
-              const diasMes = new Date(anio, mes+1, 0).getDate();
-              const offset = (new Date(anio, mes, 1).getDay()+6)%7;
-              return (
-                <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:3 }}>
-                  {Array.from({length:offset}).map((_,i)=><div key={`e${i}`}/>)}
-                  {Array.from({length:diasMes}).map((_,i)=>{
-                    const dia = i+1;
-                    const f = `${anio}-${String(mes+1).padStart(2,"0")}-${String(dia).padStart(2,"0")}`;
-                    const esHoy2 = f===hoyStr;
-                    const occ = getOccDia(f);
-                    const { bg, col } = getOccBg(occ);
-                    const esFinde = new Date(anio,mes,dia).getDay()===0||new Date(anio,mes,dia).getDay()===6;
-                    return (
-                      <div key={dia} style={{ background:bg, borderRadius:8, padding:"6px 2px", textAlign:"center",
-                        border: esHoy2?`2px solid ${C.accent}`:`1px solid ${esFinde?C.accent+"33":C.border}`,
-                        minHeight:52, display:"flex", flexDirection:"column", justifyContent:"space-between", alignItems:"center",
-                        opacity: occ===null?0.35:1 }}>
-                        <span style={{ fontSize:10, color:col, fontWeight:esFinde||esHoy2?700:400, lineHeight:1.4 }}>{dia}</span>
-                        <span style={{ fontSize:12, fontWeight:800, color:col, lineHeight:1, fontFamily:"'DM Sans',sans-serif" }}>
-                          {occ!==null ? `${occ}%` : "—"}
-                        </span>
-                        <span style={{ fontSize:8, color:esFinde&&occ!==null?C.accent+"88":"transparent", fontWeight:700 }}>{esFinde&&occ!==null?"★":""}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              );
-            })()}
-          </>
-        )}
-      </Card>
-
-      {/* PACE */}
-      <Card>
-        <p style={{ fontWeight:800, fontSize:15, color:C.text, fontFamily:"'DM Sans',sans-serif", marginBottom:4 }}>Pace vs Año Anterior</p>
-        <p style={{ fontSize:11, color:C.textLight, marginBottom:14 }}>OTB actual vs misma fecha de {hoy.getFullYear()-1}</p>
-        <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
-          {pace4.map((d,i)=>(
-            <div key={i} style={{ background:C.bg, borderRadius:8, padding:"12px 14px", border:`1px solid ${C.border}`, borderLeft:`3px solid ${d.status==="up"?C.green:d.status==="down"?C.red:C.border}` }}>
-              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
-                <p style={{ fontSize:13, fontWeight:700, color:C.text }}>{d.label}</p>
-                {d.diffPct!==null && (
-                  <span style={{ fontSize:11, fontWeight:700, padding:"2px 8px", borderRadius:4, background:parseFloat(d.diffPct)>=0?C.greenLight:C.redLight, color:parseFloat(d.diffPct)>=0?C.green:C.red }}>
-                    {parseFloat(d.diffPct)>=0?"+":""}{d.diffPct}%
-                  </span>
-                )}
-              </div>
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8 }}>
-                <div>
-                  <p style={{ fontSize:9, color:C.textLight, textTransform:"uppercase", letterSpacing:1 }}>OTB Actual</p>
-                  <p style={{ fontSize:18, fontWeight:800, color:C.accent, fontFamily:"'DM Sans',sans-serif" }}>{d.otbActual}</p>
-                </div>
-                <div>
-                  <p style={{ fontSize:9, color:C.textLight, textTransform:"uppercase", letterSpacing:1 }}>OTB LY</p>
-                  <p style={{ fontSize:18, fontWeight:800, color:C.textMid, fontFamily:"'DM Sans',sans-serif" }}>{d.otbLY>0?d.otbLY:"—"}</p>
-                </div>
-                <div>
-                  <p style={{ fontSize:9, color:C.textLight, textTransform:"uppercase", letterSpacing:1 }}>Diferencia</p>
-                  <p style={{ fontSize:18, fontWeight:800, color:d.diff===null?C.textLight:d.diff>=0?C.green:C.red, fontFamily:"'DM Sans',sans-serif" }}>
-                    {d.diff!==null?`${d.diff>=0?"+":""}${d.diff}`:"—"}
-                  </p>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </Card>
-    </div>
-  )
-}
-
 // ─── BUDGET VIEW ──────────────────────────────────────────────────
 function BudgetView({ datos, anio: anioProp }) {
   const { produccion, presupuesto } = datos;
 
-  // Detectar años disponibles en el presupuesto
   const aniosDisponibles = [...new Set((presupuesto || []).map(p => p.anio))].sort();
   const [anio, setAnio] = useState(() => aniosDisponibles.includes(anioProp) ? anioProp : (aniosDisponibles[aniosDisponibles.length - 1] || anioProp));
 
@@ -1629,7 +1054,6 @@ function BudgetView({ datos, anio: anioProp }) {
     return <EmptyState mensaje="Importa tu plantilla Excel con los datos de la hoja 💰 Presupuesto para ver el análisis aquí" />;
   }
 
-  // Calcular reales desde producción por mes
   const realesPorMes = MESES_FULL.map((_, i) => {
     const d = (produccion || []).filter(r => {
       const f = new Date(r.fecha + "T00:00:00");
@@ -1646,14 +1070,13 @@ function BudgetView({ datos, anio: anioProp }) {
     };
   });
 
-  // Combinar presupuesto + reales
   const filas = presupuesto
     .filter(p => p.anio === anio)
     .sort((a, b) => a.mes - b.mes)
     .map(p => {
       const real = realesPorMes[p.mes - 1];
-      const adr_dev       = real.adr_real != null       ? real.adr_real - p.adr_ppto           : null;
-      const revpar_dev    = real.revpar_real != null     ? real.revpar_real - p.revpar_ppto       : null;
+      const adr_dev       = real.adr_real != null       ? Math.round((real.adr_real - p.adr_ppto) * 100) / 100           : null;
+      const revpar_dev    = real.revpar_real != null     ? Math.round((real.revpar_real - p.revpar_ppto) * 100) / 100       : null;
       const revtotal_dev  = real.rev_total_real != null  ? real.rev_total_real - p.rev_total_ppto : null;
       return {
         mes:            MESES_CORTO[p.mes - 1],
@@ -1675,7 +1098,6 @@ function BudgetView({ datos, anio: anioProp }) {
 
   const filasConReal = filas.filter(f => f.adr_real != null || f.revpar_real != null);
 
-  // KPIs anuales acumulados (solo meses con real)
   const totalRevPpto  = filas.reduce((a, f) => a + (f.rev_total_ppto || 0), 0);
   const totalRevReal  = filasConReal.reduce((a, f) => a + (f.rev_total_real || 0), 0);
   const totalRevDev   = totalRevReal - filasConReal.reduce((a, f) => a + (f.rev_total_ppto || 0), 0);
@@ -1688,7 +1110,6 @@ function BudgetView({ datos, anio: anioProp }) {
   const mediaRevparPpto = filas.length > 0 ? Math.round(filas.reduce((a,f) => a+(f.revpar_ppto||0),0)/filas.length) : 0;
   const mediaRevparReal = filasConReal.length > 0 ? Math.round(filasConReal.reduce((a,f) => a+(f.revpar_real||0),0)/filasConReal.length) : null;
 
-  // Datos para la gráfica (solo meses con ambos datos)
   const chartData = filas.map(f => ({
     mes:          f.mes,
     "RevPAR Ppto": f.revpar_ppto,
@@ -1705,11 +1126,12 @@ function BudgetView({ datos, anio: anioProp }) {
 
   const DevBadge = ({ val, pct }) => {
     if (val == null) return <span style={{ color: C.textLight, fontSize: 11 }}>—</span>;
-    const up = val >= 0;
+    const rounded = Math.round(val * 100) / 100;
+    const up = rounded >= 0;
     return (
       <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
         <span style={{ fontSize: 13, fontWeight: 600, color: up ? C.green : C.red }}>
-          {up ? "+" : ""}{val > 999 ? `${(val/1000).toFixed(1)}k` : val}€
+          {up ? "+" : ""}{Math.abs(rounded) > 999 ? `${(rounded/1000).toFixed(1)}k` : rounded}€
         </span>
         {pct != null && (
           <span style={{ fontSize: 10, fontWeight: 600, padding: "1px 5px", borderRadius: 3, background: up ? C.greenLight : C.redLight, color: up ? C.green : C.red }}>
@@ -1734,39 +1156,13 @@ function BudgetView({ datos, anio: anioProp }) {
         )}
       </div>
 
-      {/* KPIs resumen */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 14, marginBottom: 24 }}>
-        <KpiCard
-          label="Revenue Total Ppto."
-          value={`€${Math.round(totalRevPpto).toLocaleString("es-ES")}`}
-          change="Año completo"
-          sub="objetivo anual"
-          up={true} i={0}
-        />
-        <KpiCard
-          label="Revenue Real (YTD)"
-          value={`€${Math.round(totalRevReal).toLocaleString("es-ES")}`}
-          change={totalRevDevPct != null ? `${totalRevDevPct >= 0 ? "+" : ""}${totalRevDevPct}%` : "—"}
-          sub="vs presupuesto"
-          up={totalRevDev >= 0} i={1}
-        />
-        <KpiCard
-          label="ADR Medio Ppto."
-          value={`€${mediaAdrPpto}`}
-          change={mediaAdrReal != null ? `Real: €${mediaAdrReal}` : "Sin real"}
-          sub="precio medio objetivo"
-          up={mediaAdrReal == null || mediaAdrReal >= mediaAdrPpto} i={2}
-        />
-        <KpiCard
-          label="RevPAR Medio Ppto."
-          value={`€${mediaRevparPpto}`}
-          change={mediaRevparReal != null ? `Real: €${mediaRevparReal}` : "Sin real"}
-          sub="por hab disponible"
-          up={mediaRevparReal == null || mediaRevparReal >= mediaRevparPpto} i={3}
-        />
+        <KpiCard label="Revenue Total Ppto." value={`€${Math.round(totalRevPpto).toLocaleString("es-ES")}`} change="Año completo" sub="objetivo anual" up={true} i={0} />
+        <KpiCard label="Revenue Real (YTD)" value={`€${Math.round(totalRevReal).toLocaleString("es-ES")}`} change={totalRevDevPct != null ? `${totalRevDevPct >= 0 ? "+" : ""}${totalRevDevPct}%` : "—"} sub="vs presupuesto" up={totalRevDev >= 0} i={1} />
+        <KpiCard label="ADR Medio Ppto." value={`€${mediaAdrPpto}`} change={mediaAdrReal != null ? `Real: €${mediaAdrReal}` : "Sin real"} sub="precio medio objetivo" up={mediaAdrReal == null || mediaAdrReal >= mediaAdrPpto} i={2} />
+        <KpiCard label="RevPAR Medio Ppto." value={`€${mediaRevparPpto}`} change={mediaRevparReal != null ? `Real: €${mediaRevparReal}` : "Sin real"} sub="por hab disponible" up={mediaRevparReal == null || mediaRevparReal >= mediaRevparPpto} i={3} />
       </div>
 
-      {/* Gráficas */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
         <Card>
           <p style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700, fontSize: 16, color: C.text, marginBottom: 4 }}>ADR — Ppto. vs Real</p>
@@ -1801,7 +1197,6 @@ function BudgetView({ datos, anio: anioProp }) {
         </Card>
       </div>
 
-      {/* Tabla detallada */}
       <Card>
         <p style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700, fontSize: 16, color: C.text, marginBottom: 16 }}>Detalle mensual</p>
         <div style={{ overflowX: "auto" }}>
@@ -1809,15 +1204,12 @@ function BudgetView({ datos, anio: anioProp }) {
             <thead>
               <tr style={{ borderBottom: `2px solid ${C.border}` }}>
                 <th style={{ padding: "8px 12px", textAlign: "left",  fontSize: 10, color: C.textLight, textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600 }}>Mes</th>
-                {/* ADR */}
                 <th style={{ padding: "8px 8px",  textAlign: "right", fontSize: 10, color: C.textLight, textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600 }}>ADR Ppto.</th>
                 <th style={{ padding: "8px 8px",  textAlign: "right", fontSize: 10, color: C.textLight, textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600 }}>ADR Real</th>
                 <th style={{ padding: "8px 8px",  textAlign: "right", fontSize: 10, color: C.textLight, textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600 }}>Desv. ADR</th>
-                {/* RevPAR */}
                 <th style={{ padding: "8px 8px",  textAlign: "right", fontSize: 10, color: C.textLight, textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600 }}>RevPAR Ppto.</th>
                 <th style={{ padding: "8px 8px",  textAlign: "right", fontSize: 10, color: C.textLight, textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600 }}>RevPAR Real</th>
                 <th style={{ padding: "8px 8px",  textAlign: "right", fontSize: 10, color: C.textLight, textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600 }}>Desv. RevPAR</th>
-                {/* Rev Total */}
                 <th style={{ padding: "8px 8px",  textAlign: "right", fontSize: 10, color: C.textLight, textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600 }}>Rev. Total Ppto.</th>
                 <th style={{ padding: "8px 8px",  textAlign: "right", fontSize: 10, color: C.textLight, textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600 }}>Rev. Total Real</th>
                 <th style={{ padding: "8px 8px",  textAlign: "right", fontSize: 10, color: C.textLight, textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600 }}>Desv. Rev. Total</th>
@@ -1827,21 +1219,17 @@ function BudgetView({ datos, anio: anioProp }) {
               {filas.map((f, i) => (
                 <tr key={i} style={{ borderBottom: `1px solid ${C.border}`, background: i % 2 === 0 ? "#FAFAFA" : C.bgCard }}>
                   <td style={{ padding: "10px 12px", fontWeight: 600, color: C.text }}>{f.mes}</td>
-                  {/* ADR */}
                   <td style={{ padding: "10px 8px", textAlign: "right", color: C.textMid }}>€{f.adr_ppto}</td>
                   <td style={{ padding: "10px 8px", textAlign: "right", color: C.text, fontWeight: f.adr_real ? 600 : 400 }}>{f.adr_real != null ? `€${f.adr_real}` : "—"}</td>
                   <td style={{ padding: "10px 8px", textAlign: "right" }}><DevBadge val={f.adr_dev} pct={f.adr_dev_pct} /></td>
-                  {/* RevPAR */}
                   <td style={{ padding: "10px 8px", textAlign: "right", color: C.textMid }}>€{f.revpar_ppto}</td>
                   <td style={{ padding: "10px 8px", textAlign: "right", color: C.accent, fontWeight: f.revpar_real ? 600 : 400 }}>{f.revpar_real != null ? `€${f.revpar_real}` : "—"}</td>
                   <td style={{ padding: "10px 8px", textAlign: "right" }}><DevBadge val={f.revpar_dev} pct={f.revpar_dev_pct} /></td>
-                  {/* Rev Total */}
                   <td style={{ padding: "10px 8px", textAlign: "right", color: C.textMid }}>€{f.rev_total_ppto?.toLocaleString("es-ES")}</td>
                   <td style={{ padding: "10px 8px", textAlign: "right", color: C.blue, fontWeight: f.rev_total_real ? 600 : 400 }}>{f.rev_total_real != null ? `€${f.rev_total_real.toLocaleString("es-ES")}` : "—"}</td>
                   <td style={{ padding: "10px 8px", textAlign: "right" }}><DevBadge val={f.revtotal_dev} pct={f.revtotal_dev_pct} /></td>
                 </tr>
               ))}
-              {/* Fila totales */}
               {filasConReal.length > 0 && (
                 <tr style={{ borderTop: `2px solid ${C.border}`, background: C.accentLight, fontWeight: 700 }}>
                   <td style={{ padding: "10px 12px", color: C.text, fontWeight: 700 }}>TOTAL YTD</td>
@@ -1951,18 +1339,8 @@ function AuthScreen() {
   );
 }
 
-const IconPickup = () => (
-  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <line x1="3" y1="4" x2="3" y2="12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-    <line x1="8" y1="2" x2="8" y2="14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-    <line x1="13" y1="4" x2="13" y2="12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-    <line x1="1" y1="8" x2="15" y2="8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-  </svg>
-);
-
 const NAV = [
   { key: "dashboard",  icon: "◈",  label: "Dashboard" },
-  { key: "pickup",     icon: <IconPickup />,  label: "Pickup" },
   { key: "budget",     icon: "💰", label: "Presupuesto" },
 ];
 
@@ -1975,7 +1353,7 @@ export default function App() {
   const [mesSel,  setMesSel]  = useState(() => { const v = localStorage.getItem("rm_mes");  return v !== null ? parseInt(v) : hoy.getMonth(); });
   const [anioSel, setAnioSel] = useState(() => { const v = localStorage.getItem("rm_anio"); return v !== null ? parseInt(v) : hoy.getFullYear(); });
   const [importar, setImportar] = useState(false);
-  const [datos, setDatos] = useState({ produccion: [], pickup: [], presupuesto: [] });
+  const [datos, setDatos] = useState({ produccion: [], presupuesto: [] });
   const [cargandoDatos, setCargandoDatos] = useState(false);
 
   useEffect(() => {
@@ -1997,13 +1375,17 @@ export default function App() {
 
   const cargarDatos = async () => {
     setCargandoDatos(true);
-    const [{ data: produccion }, { data: pickup }, { data: presupuesto }, { data: hotelData }] = await Promise.all([
+    const [{ data: produccion }, { data: presupuesto }, { data: hotelData }] = await Promise.all([
       supabase.from("produccion_diaria").select("*").eq("hotel_id", session.user.id).order("fecha"),
-      supabase.from("pickup_entries").select("*").eq("hotel_id", session.user.id).order("fecha_pickup"),
       supabase.from("presupuesto").select("*").eq("hotel_id", session.user.id).order("mes"),
-      supabase.from("hoteles").select("nombre, ciudad").eq("id", session.user.id).maybeSingle(),
+      supabase.from("hoteles").select("nombre, ciudad, habitaciones").eq("id", session.user.id).maybeSingle(),
     ]);
-    setDatos({ produccion: produccion || [], pickup: pickup || [], presupuesto: presupuesto || [], hotel: hotelData, session, pickupEntries: pickup || [] });
+    setDatos({
+      produccion: produccion || [],
+      presupuesto: presupuesto || [],
+      hotel: hotelData,
+      session,
+    });
     setCargandoDatos(false);
     setRefreshKey(k => k + 1);
   };
@@ -2017,7 +1399,6 @@ export default function App() {
 
   const views = {
     dashboard: (props) => <DashboardView {...props} onMesDetalle={(m, a) => setMesDetalle({ mes: m, anio: a })} kpiModal={kpiModal} setKpiModal={setKpiModal} />,
-    pickup:    (props) => <PickupView    {...props} />,
     budget:    (props) => <BudgetView    {...props} />,
   };
   const View = views[view];
@@ -2042,9 +1423,8 @@ export default function App() {
         .nav-item:hover { background: rgba(255,255,255,0.12) !important; color: #FFFFFF !important; }
       `}</style>
 
-      {/* Sidebar desplegable */}
+      {/* Sidebar */}
       <div style={{ width: sidebarOpen ? 220 : 60, flexShrink: 0, minHeight: "100vh", background: C.bgDeep, display: "flex", flexDirection: "column", position: "sticky", top: 0, height: "100vh", transition: "width 0.25s ease", overflow: "hidden" }}>
-        {/* Header con toggle */}
         <div style={{ padding: sidebarOpen ? "24px 20px 20px" : "20px 12px", borderBottom: "1px solid #FFFFFF11", display: "flex", alignItems: "center", justifyContent: sidebarOpen ? "space-between" : "center" }}>
           {sidebarOpen && (
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -2077,8 +1457,7 @@ export default function App() {
         </nav>
         <div style={{ padding: sidebarOpen ? "16px 12px" : "16px 10px", borderTop: "1px solid #FFFFFF11" }}>
           {sidebarOpen && <p style={{ fontSize: 11, color: "#FFFFFF44", marginBottom: 8, paddingLeft: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{session.user.email}</p>}
-          <button onClick={handleLogout}
-            title={!sidebarOpen ? "Cerrar sesión" : ""}
+          <button onClick={handleLogout} title={!sidebarOpen ? "Cerrar sesión" : ""}
             style={{ width: "100%", padding: "10px", borderRadius: 8, border: "1px solid #FFFFFF22", background: "transparent", color: "#A8998A", cursor: "pointer", fontSize: sidebarOpen ? 12 : 16, fontFamily: "'DM Sans', sans-serif", display: "flex", alignItems: "center", justifyContent: "center" }}>
             {sidebarOpen ? "Cerrar sesión" : "↩"}
           </button>
@@ -2087,7 +1466,6 @@ export default function App() {
 
       {/* Main */}
       <main style={{ flex: 1, minWidth: 0, padding: "28px 32px", overflowY: "auto", height: "100vh" }}>
-        {/* ── BIENVENIDA ── */}
         <div style={{ marginBottom: 14 }}>
           <p style={{ fontSize: 22, fontWeight: 800, color: C.text, fontFamily: "'DM Sans',sans-serif", letterSpacing: -0.5 }}>
             Bienvenido, <span style={{ color: C.accent }}>{datos.hotel?.nombre || "Mi Hotel"}</span>
@@ -2097,52 +1475,50 @@ export default function App() {
           </p>
         </div>
 
-        {/* ── HEADER 3 COLUMNAS ── */}
-        {view !== "pickup" && <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", alignItems: "center", marginBottom: 24, gap: 16, background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: 12, padding: "16px 20px", boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>
-
-          {/* IZQUIERDA: Logo + nombre herramienta */}
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <div style={{ width: 44, height: 44, borderRadius: 10, background: C.accent, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M3 20V9l9-6 9 6v11H14v-5h-4v5H3z" fill="white" fillOpacity="0.9"/>
-                <rect x="9" y="13" width="6" height="7" rx="1" fill={C.accent}/>
-                <path d="M2 10h20M12 4v6" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
-              </svg>
+        {(
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", alignItems: "center", marginBottom: 24, gap: 16, background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: 12, padding: "16px 20px", boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <div style={{ width: 44, height: 44, borderRadius: 10, background: C.accent, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M3 20V9l9-6 9 6v11H14v-5h-4v5H3z" fill="white" fillOpacity="0.9"/>
+                  <rect x="9" y="13" width="6" height="7" rx="1" fill={C.accent}/>
+                  <path d="M2 10h20M12 4v6" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
+                </svg>
+              </div>
+              <div>
+                <p style={{ fontSize: 15, fontWeight: 800, color: C.text, fontFamily: "'DM Sans',sans-serif", letterSpacing: -0.3 }}>RevManager</p>
+                <p style={{ fontSize: 10, color: C.textLight, letterSpacing: 1, textTransform: "uppercase" }}>Hotel Intelligence</p>
+              </div>
             </div>
-            <div>
-              <p style={{ fontSize: 15, fontWeight: 800, color: C.text, fontFamily: "'DM Sans',sans-serif", letterSpacing: -0.3 }}>RevManager</p>
-              <p style={{ fontSize: 10, color: C.textLight, letterSpacing: 1, textTransform: "uppercase" }}>Hotel Intelligence</p>
-            </div>
-          </div>
 
-          {/* CENTRO: Selector */}
-          <div style={{ display: "flex", justifyContent: "center" }}>
-            {view === "dashboard"
-              ? <PeriodSelectorInline mes={mesSel} anio={anioSel} onChange={(m,a)=>{ setMesSel(m); setAnioSel(a); localStorage.setItem("rm_mes",m); localStorage.setItem("rm_anio",a); }} aniosDisponibles={[...new Set((datos.produccion||[]).map(d=>new Date(d.fecha+"T00:00:00").getFullYear()))].sort()} />
-              : null
-            }
-          </div>
-
-          {/* DERECHA: Acciones apiladas */}
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 5, padding: "4px 10px", borderRadius: 20, background: C.greenLight, color: C.green, fontSize: 10, fontWeight: 600 }}>
-              <span style={{ width: 6, height: 6, background: C.green, borderRadius: "50%", display: "inline-block" }} />
-              {cargandoDatos ? "Cargando..." : "En directo"}
+            <div style={{ display: "flex", justifyContent: "center" }}>
+              {view === "dashboard"
+                ? <PeriodSelectorInline mes={mesSel} anio={anioSel} onChange={(m,a)=>{ setMesSel(m); setAnioSel(a); localStorage.setItem("rm_mes",m); localStorage.setItem("rm_anio",a); }} aniosDisponibles={[...new Set((datos.produccion||[]).map(d=>new Date(d.fecha+"T00:00:00").getFullYear()))].sort()} />
+                : null
+              }
             </div>
-            <button onClick={() => setImportar(true)} style={{ background: C.accent, color: "#fff", border: "none", borderRadius: 8, padding: "5px 14px", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "'DM Sans',sans-serif", width: "100%", maxWidth: 150 }}>
-              📊 Importar datos
-            </button>
-            {view === "dashboard" && (
-              <button
-                onClick={async()=>{ setGenerandoPDF(true); await generarReportePDF(datos,mesSel,anioSel,datos.hotel?.nombre||"Mi Hotel"); setGenerandoPDF(false); }}
-                disabled={generandoPDF}
-                style={{ background: "transparent", color: C.accent, border: `1px solid ${C.accent}`, borderRadius: 8, padding: "5px 14px", fontSize: 11, fontWeight: 600, cursor: generandoPDF?"not-allowed":"pointer", fontFamily: "'DM Sans',sans-serif", width: "100%", maxWidth: 150 }}
-              >
-                {generandoPDF ? "⏳ Generando..." : "📄 Informe PDF"}
+
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 5, padding: "4px 10px", borderRadius: 20, background: C.greenLight, color: C.green, fontSize: 10, fontWeight: 600 }}>
+                <span style={{ width: 6, height: 6, background: C.green, borderRadius: "50%", display: "inline-block" }} />
+                {cargandoDatos ? "Cargando..." : "En directo"}
+              </div>
+              <button onClick={() => setImportar(true)} style={{ background: C.accent, color: "#fff", border: "none", borderRadius: 8, padding: "5px 14px", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "'DM Sans',sans-serif", width: "100%", maxWidth: 150 }}>
+                📊 Importar datos
               </button>
-            )}
+              {view === "dashboard" && (
+                <button
+                  onClick={async()=>{ setGenerandoPDF(true); await generarReportePDF(datos,mesSel,anioSel,datos.hotel?.nombre||"Mi Hotel"); setGenerandoPDF(false); }}
+                  disabled={generandoPDF}
+                  style={{ background: "transparent", color: C.accent, border: `1px solid ${C.accent}`, borderRadius: 8, padding: "5px 14px", fontSize: 11, fontWeight: 600, cursor: generandoPDF?"not-allowed":"pointer", fontFamily: "'DM Sans',sans-serif", width: "100%", maxWidth: 150 }}
+                >
+                  {generandoPDF ? "⏳ Generando..." : "📄 Informe PDF"}
+                </button>
+              )}
+            </div>
           </div>
-        </div>}
+        )}
+
         {cargandoDatos ? <LoadingSpinner /> : mesDetalle ? (
           <MonthDetailView datos={datos} mes={mesDetalle.mes} anio={mesDetalle.anio} onBack={() => setMesDetalle(null)} />
         ) : (
