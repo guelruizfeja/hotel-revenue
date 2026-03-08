@@ -288,7 +288,7 @@ function PeriodSelectorInline({ mes, anio, onChange, aniosDisponibles }) {
   const hoy = new Date();
   const anioMax = hoy.getFullYear();
   const anios = aniosDisponibles && aniosDisponibles.length > 0 ? aniosDisponibles : [anioMax];
-  const MESES_C = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+  const MESES_C = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 
   const anioAnterior = () => {
     const idx = anios.indexOf(anio);
@@ -309,7 +309,7 @@ function PeriodSelectorInline({ mes, anio, onChange, aniosDisponibles }) {
         <p style={{ fontSize:13, fontWeight:700, color:C.text, fontFamily:"'DM Sans',sans-serif", minWidth:36, textAlign:"center" }}>{anio}</p>
         <button onClick={anioSiguiente} style={btnFlecha(puedeSiguiente)}>›</button>
       </div>
-      <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:4 }}>
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:6, minWidth:260 }}>
         {MESES_C.map((m, i) => {
           const futuro = anio === anioMax && i > hoy.getMonth();
           const activo = i === mes;
@@ -317,12 +317,12 @@ function PeriodSelectorInline({ mes, anio, onChange, aniosDisponibles }) {
           return (
             <button key={i} onClick={() => !futuro && onChange(i, anio)}
               style={{
-                padding: "5px 4px",
+                padding: "6px 10px",
                 borderRadius: 6,
                 border: esHoyMes && !activo ? `1.5px solid ${C.accent}44` : `1px solid ${activo?C.accent:"transparent"}`,
                 background: activo ? C.accent : "transparent",
-                color: futuro ? C.border : activo ? "#fff" : C.textMid,
-                fontSize: 11, fontWeight: activo ? 700 : 400,
+                color: futuro ? C.border : activo ? "#fff" : C.text,
+                fontSize: 11, fontWeight: activo ? 700 : 400, opacity: futuro ? 0.3 : activo ? 1 : 0.75,
                 cursor: futuro ? "not-allowed" : "pointer",
                 fontFamily: "'DM Sans',sans-serif",
                 textAlign: "center",
