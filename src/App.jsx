@@ -1161,14 +1161,20 @@ function PickupView({ datos }) {
     pptoPorMes[key] = reservasPpto;
   });
 
-  // ── Datos para la gráfica: 12 meses del año seleccionado ──
-  const datosGrafica = MESES.map((mes, i) => {
-    const key     = `${anio}-${String(i+1).padStart(2,"0")}`;
-    const keyLY   = `${anio-1}-${String(i+1).padStart(2,"0")}`;
-    const otb     = otbPorMes[key]   || 0;
-    const ppto    = pptoPorMes[key]  || null;
-    const ly      = otbPorMes[keyLY] || null;
-    return { mes, otb: otb || null, ppto, ly };
+  // ── Datos para la gráfica: 4 trimestres del año seleccionado ──
+  const TRIMESTRES = ["Q1", "Q2", "Q3", "Q4"];
+  const datosGrafica = TRIMESTRES.map((trim, qi) => {
+    const meses = [qi*3, qi*3+1, qi*3+2]; // índices 0-based
+    let otb = 0, ppto = 0, ly = 0, tienePpto = false, tieneLY = false;
+    meses.forEach(mi => {
+      const key   = `${anio}-${String(mi+1).padStart(2,"0")}`;
+      const keyLY = `${anio-1}-${String(mi+1).padStart(2,"0")}`;
+      otb  += otbPorMes[key]  || 0;
+      ly   += otbPorMes[keyLY] || 0;
+      if (pptoPorMes[key] != null) { ppto += pptoPorMes[key]; tienePpto = true; }
+      if (otbPorMes[keyLY]) tieneLY = true;
+    });
+    return { mes: trim, otb: otb || null, ppto: tienePpto ? ppto : null, ly: tieneLY ? ly : null };
   });
 
   // ── Años disponibles: unión de pickup + presupuesto (siempre navegable) ──
@@ -1176,10 +1182,10 @@ function PickupView({ datos }) {
   const aniosPptoDisp   = (presupuesto || []).map(p => p.anio).filter(Boolean);
   const aniosDisp = [...new Set([...aniosPickupDisp, ...aniosPptoDisp, anio])].sort();
 
-  // ── Colores gráfica ──
-  const COL_OTB  = "#1A3A2A";
-  const COL_PPTO = "#2C3E7A";
-  const COL_LY   = "#C8933A";
+  // ── Colores gráfica: tonos dorados ──
+  const COL_OTB  = "#B8860B";  // dorado oscuro
+  const COL_PPTO = "#DAA520";  // dorado medio
+  const COL_LY   = "#F5D78E";  // dorado claro
 
   // ── Calcular máximo para escala ──
   const maxVal = Math.max(
