@@ -442,6 +442,42 @@ function ImportarExcel({ onClose, session, onImportado }) {
       }
 
 
+      // ── Pickup — hoja "🎯 Pickup", datos desde fila 5 ──
+      // raw:false hace que SheetJS convierta datetime → string "YYYY-MM-DD"
+      const wsPu = wb.Sheets["🎯 Pickup"];
+      const pickupRows = [];
+      if (wsPu) {
+        // Leer toda la hoja sin range fijo — buscar filas con seriales de fecha válidos
+        const rowsPu = XLSX.utils.sheet_to_json(wsPu, { header: 1, raw: true });
+        console.log("[ImportPickup] fila 0:", JSON.stringify(rowsPu[0]));
+        console.log("[ImportPickup] fila 4:", JSON.stringify(rowsPu[4]));
+        console.log("[ImportPickup] fila 5:", JSON.stringify(rowsPu[5]));
+        const esSerial = (v) => typeof v === "number" && v > 40000 && v < 60000;
+        const serialToDate = (v) => {
+          const d = new Date(Date.UTC(1899, 11, 30) + Math.floor(v) * 86400000);
+          return d.toISOString().slice(0, 10);
+        };
+        for (const row of rowsPu) {
+          if (!row || row.length < 2) continue;
+          if (!esSerial(row[0]) || !esSerial(row[1])) continue;
+          const fp = serialToDate(row[0]);
+          const fl = serialToDate(row[1]);
+          // col2=canal, col3=num_reservas (puede ser número o serial pequeño 1900-xx)
+          const nrRaw = row[3];
+          const nr = typeof nrRaw === "number"
+            ? (nrRaw < 40000 ? Math.round(nrRaw) : 1)  // serial < 40000 = número real de reservas
+            : (parseInt(nrRaw) || 1);
+          pickupRows.push({
+            hotel_id: session.user.id,
+            fecha_pickup:  fp,
+            fecha_llegada: fl,
+            canal:         row[2] || null,
+            num_reservas:  nr || 1,
+          });
+        }
+        console.log(`[ImportPickup] filas parseadas: ${pickupRows.length}`);
+      }
+
       // ── Presupuesto — col[0]=Mes, col[1]=OCC(decimal), col[4]=ADR, col[7]=RevPAR, col[10]=RevTotal ──
       const wsBu = wb.Sheets["💰 Presupuesto"];
       const presupuestoRows = [];
@@ -480,6 +516,10 @@ function ImportarExcel({ onClose, session, onImportado }) {
 
       // Detectar años y limpiar
       const aniosImport = [...new Set(produccionRows.map(r => r.fecha.slice(0, 4)))];
+      // Años en pickup (por fecha_llegada)
+      const aniosPickup = [...new Set(pickupRows.map(r => r.fecha_llegada.slice(0, 4)))];
+      const todosAnios  = [...new Set([...aniosImport, ...aniosPickup])];
+
       for (const anio of aniosImport) {
         await supabase.from("produccion_diaria").delete()
           .eq("hotel_id", session.user.id)
@@ -487,16 +527,29 @@ function ImportarExcel({ onClose, session, onImportado }) {
         await supabase.from("presupuesto").delete()
           .eq("hotel_id", session.user.id).eq("anio", parseInt(anio));
       }
+      for (const anio of todosAnios) {
+        await supabase.from("pickup_entries").delete()
+          .eq("hotel_id", session.user.id)
+          .gte("fecha_llegada", `${anio}-01-01`).lte("fecha_llegada", `${anio}-12-31`);
+      }
 
       const { error: err1 } = await supabase.from("produccion_diaria").insert(produccionRows);
       if (err1) throw new Error("Error al guardar producción: " + err1.message);
+
+      if (pickupRows.length > 0) {
+        // Insertar en lotes de 100 para evitar límites
+        for (let i = 0; i < pickupRows.length; i += 100) {
+          const { error: errPu } = await supabase.from("pickup_entries").insert(pickupRows.slice(i, i + 100));
+          if (errPu) throw new Error("Error al guardar pickup: " + errPu.message);
+        }
+      }
 
       if (presupuestoRows.length > 0) {
         const { error: err3 } = await supabase.from("presupuesto").insert(presupuestoRows);
         if (err3) throw new Error("Error al guardar presupuesto: " + err3.message);
       }
 
-      setResultado({ produccion: produccionRows.length, presupuesto: presupuestoRows.length });
+      setResultado({ produccion: produccionRows.length, pickup: pickupRows.length, presupuesto: presupuestoRows.length });
       if (onImportado) onImportado();
     } catch (e) {
       setError(e.message);
@@ -531,6 +584,7 @@ function ImportarExcel({ onClose, session, onImportado }) {
             <p style={{ fontWeight: 700, fontSize: 16, color: "#1C1814", marginBottom: 8 }}>¡Datos importados correctamente!</p>
             <div style={{ background: "#D4EDDE", borderRadius: 10, padding: "16px", marginBottom: 20 }}>
               <p style={{ color: "#2D7A4F", fontSize: 13 }}>📅 {resultado.produccion} días de producción importados</p>
+              {resultado.pickup > 0 && <p style={{ color: "#2D7A4F", fontSize: 13, marginTop: 6 }}>🎯 {resultado.pickup} reservas de pickup importadas</p>}
               {resultado.presupuesto > 0 && <p style={{ color: "#2D7A4F", fontSize: 13, marginTop: 6 }}>💰 {resultado.presupuesto} meses de presupuesto importados</p>}
             </div>
             <button onClick={onClose} style={{ background: "#C8933A", color: "#fff", border: "none", borderRadius: 10, padding: "12px 32px", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>Ver dashboard</button>
@@ -1043,6 +1097,250 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
   );
 }
 
+// ─── PICKUP VIEW ──────────────────────────────────────────────────
+function PickupView({ datos }) {
+  const { session, presupuesto, produccion } = datos;
+  const [pickupEntries, setPickupEntries] = useState([]);
+  const [cargando, setCargando]           = useState(true);
+  const [anio, setAnio]                   = useState(new Date().getFullYear());
+
+  const hoy     = new Date();
+  const MESES   = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+
+  // ── Recargar cuando cambia session ──
+  useEffect(() => {
+    if (!session?.user?.id) return;
+    const cargar = async () => {
+      setCargando(true);
+      // Cargar en páginas de 1000 para evitar el límite de Supabase
+      let todas = [];
+      let desde = 0;
+      const PAGINA = 1000;
+      while (true) {
+        const { data, error } = await supabase.from("pickup_entries")
+          .select("*")
+          .eq("hotel_id", session.user.id)
+          .order("fecha_llegada")
+          .range(desde, desde + PAGINA - 1);
+        console.log(`[Pickup] página desde=${desde} → data=${data?.length} error=${error?.message}`);
+        if (error || !data || data.length === 0) break;
+        todas = todas.concat(data);
+        if (data.length < PAGINA) break;
+        desde += PAGINA;
+      }
+      console.log(`[Pickup] total cargado: ${todas.length}`);
+      console.log(`[Pickup] años detectados:`, [...new Set(todas.map(e => String(e.fecha_llegada||"").slice(0,4)))]);
+      setPickupEntries(todas);
+      // Ajustar año al más reciente con datos
+      if (todas.length > 0) {
+        const anios = [...new Set(todas.map(e => String(e.fecha_llegada||"").slice(0,4)).filter(Boolean).map(Number))].sort();
+        if (anios.length > 0) setAnio(anios[anios.length - 1]);
+      }
+      setCargando(false);
+    };
+    cargar();
+  }, [session?.user?.id]);
+
+  // ── OTB por mes (suma num_reservas por fecha_llegada) ──
+  const otbPorMes = {};
+  (pickupEntries || []).forEach(e => {
+    const f = String(e.fecha_llegada || "").slice(0, 7);
+    if (!f || f.length < 7) return;
+    otbPorMes[f] = (otbPorMes[f] || 0) + (e.num_reservas || 1);
+  });
+
+  // ── Presupuesto por mes del año seleccionado ──
+  const pptoPorMes = {};
+  (presupuesto || []).forEach(p => {
+    if (!p.anio || !p.mes) return;
+    // Convertir OCC ppto + habitaciones → reservas estimadas
+    const hab = datos.hotel?.habitaciones || 30;
+    const diasMes = new Date(p.anio, p.mes, 0).getDate();
+    const reservasPpto = p.occ_ppto ? Math.round((p.occ_ppto / 100) * hab * diasMes) : null;
+    const key = `${p.anio}-${String(p.mes).padStart(2,"0")}`;
+    pptoPorMes[key] = reservasPpto;
+  });
+
+  // ── Datos para la gráfica: 12 meses del año seleccionado ──
+  const datosGrafica = MESES.map((mes, i) => {
+    const key     = `${anio}-${String(i+1).padStart(2,"0")}`;
+    const keyLY   = `${anio-1}-${String(i+1).padStart(2,"0")}`;
+    const otb     = otbPorMes[key]   || 0;
+    const ppto    = pptoPorMes[key]  || null;
+    const ly      = otbPorMes[keyLY] || null;
+    return { mes, otb: otb || null, ppto, ly };
+  });
+
+  // ── Años disponibles: unión de pickup + presupuesto (siempre navegable) ──
+  const aniosPickupDisp = Object.keys(otbPorMes).map(k => parseInt(k.slice(0,4)));
+  const aniosPptoDisp   = (presupuesto || []).map(p => p.anio).filter(Boolean);
+  const aniosDisp = [...new Set([...aniosPickupDisp, ...aniosPptoDisp, anio])].sort();
+
+  // ── Colores gráfica ──
+  const COL_OTB  = "#1A3A2A";
+  const COL_PPTO = "#2C3E7A";
+  const COL_LY   = "#C8933A";
+
+  // ── Calcular máximo para escala ──
+  const maxVal = Math.max(
+    ...datosGrafica.map(d => Math.max(d.otb||0, d.ppto||0, d.ly||0)),
+    10
+  );
+  const escala = [0, 25, 50, 75, 100].map(p => Math.round(maxVal * p / 100));
+  escala.push(Math.ceil(maxVal / 10) * 10);
+  const yMax = Math.ceil(maxVal * 1.15 / 10) * 10;
+
+  const barH = (val) => val && yMax > 0 ? `${Math.min((val/yMax)*100, 100)}%` : "0%";
+
+  const hayDatos = datosGrafica.some(d => d.otb || d.ppto || d.ly);
+
+  if (cargando) return (
+    <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", minHeight:300, gap:12 }}>
+      <div style={{ width:32, height:32, border:`3px solid ${C.border}`, borderTop:`3px solid ${C.accent}`, borderRadius:"50%", animation:"spin 0.8s linear infinite" }} />
+      <p style={{ color:C.textLight, fontSize:13 }}>Cargando pickup...</p>
+    </div>
+  );
+
+  return (
+    <div style={{ display:"flex", flexDirection:"column", gap:20 }}>
+
+      {/* ── HEADER ── */}
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", flexWrap:"wrap", gap:12 }}>
+        <div>
+          <h2 style={{ fontFamily:"'DM Sans',sans-serif", fontSize:20, fontWeight:700, color:C.text, letterSpacing:-0.3 }}>Pickup & OTB</h2>
+          <p style={{ fontSize:12, color:C.textLight, marginTop:3 }}>Reservas en cartera vs Presupuesto vs Año Anterior</p>
+        </div>
+        {/* Selector año */}
+        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+          <button
+            onClick={()=>setAnio(a=>{const i=aniosDisp.indexOf(a); return i>0?aniosDisp[i-1]:a;})}
+            disabled={aniosDisp.indexOf(anio)===0}
+            style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, width:28, height:28, cursor: aniosDisp.indexOf(anio)===0?"default":"pointer", fontSize:15, color: aniosDisp.indexOf(anio)===0?C.border:C.textMid, display:"flex", alignItems:"center", justifyContent:"center" }}>‹</button>
+          <span style={{ fontWeight:700, fontSize:16, color:C.text, minWidth:44, textAlign:"center", fontFamily:"'DM Sans',sans-serif" }}>{anio}</span>
+          <button
+            onClick={()=>setAnio(a=>{const i=aniosDisp.indexOf(a); return i<aniosDisp.length-1?aniosDisp[i+1]:a;})}
+            disabled={aniosDisp.indexOf(anio)===aniosDisp.length-1}
+            style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, width:28, height:28, cursor: aniosDisp.indexOf(anio)===aniosDisp.length-1?"default":"pointer", fontSize:15, color: aniosDisp.indexOf(anio)===aniosDisp.length-1?C.border:C.textMid, display:"flex", alignItems:"center", justifyContent:"center" }}>›</button>
+        </div>
+      </div>
+
+      {/* ── GRÁFICA ── */}
+      <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:12, padding:"24px 28px" }}>
+
+        {/* Leyenda */}
+        <div style={{ display:"flex", gap:20, marginBottom:24, flexWrap:"wrap" }}>
+          {[["OTB Actual", COL_OTB], ["Presupuesto", COL_PPTO], ["Año Anterior", COL_LY]].map(([label, color]) => (
+            <div key={label} style={{ display:"flex", alignItems:"center", gap:7 }}>
+              <div style={{ width:14, height:14, background:color, borderRadius:2 }} />
+              <span style={{ fontSize:12, fontWeight:600, color:C.textMid }}>{label}</span>
+            </div>
+          ))}
+        </div>
+
+        {!hayDatos ? (
+          <div style={{ textAlign:"center", padding:"60px 0", color:C.textLight, fontSize:13 }}>
+            Sin datos de pickup. Sube un CSV para ver la gráfica.
+          </div>
+        ) : (
+          <div style={{ display:"flex", gap:0, alignItems:"flex-end", height:280, position:"relative" }}>
+
+            {/* Líneas de escala Y */}
+            {[0,25,50,75,100].map(p => {
+              const val = Math.round(yMax * p / 100);
+              return (
+                <div key={p} style={{ position:"absolute", left:36, right:0, bottom:`${p}%`, borderTop:`1px solid ${C.border}`, display:"flex", alignItems:"center" }}>
+                  <span style={{ position:"absolute", left:-36, fontSize:10, color:C.textLight, lineHeight:1 }}>{val}</span>
+                </div>
+              );
+            })}
+
+            {/* Barras por mes */}
+            <div style={{ display:"flex", flex:1, alignItems:"flex-end", height:"100%", paddingLeft:36, gap:4 }}>
+              {datosGrafica.map((d, i) => (
+                <div key={i} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", height:"100%", justifyContent:"flex-end", gap:2 }}>
+                  {/* Grupo de 3 barras */}
+                  <div style={{ display:"flex", alignItems:"flex-end", gap:2, width:"100%", height:"calc(100% - 20px)", justifyContent:"center" }}>
+                    {/* OTB */}
+                    <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"flex-end", height:"100%" }}>
+                      {d.otb > 0 && (
+                        <span style={{ fontSize:9, fontWeight:700, color:COL_OTB, marginBottom:2, lineHeight:1 }}>{d.otb}</span>
+                      )}
+                      <div title={`OTB: ${d.otb||0}`} style={{ width:"100%", height:barH(d.otb), background:COL_OTB, borderRadius:"3px 3px 0 0", minHeight: d.otb>0?4:0, transition:"height 0.3s" }} />
+                    </div>
+                    {/* PPTO */}
+                    <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"flex-end", height:"100%" }}>
+                      {d.ppto > 0 && (
+                        <span style={{ fontSize:9, fontWeight:700, color:COL_PPTO, marginBottom:2, lineHeight:1 }}>{d.ppto}</span>
+                      )}
+                      <div title={`Ppto: ${d.ppto||0}`} style={{ width:"100%", height:barH(d.ppto), background:COL_PPTO, borderRadius:"3px 3px 0 0", minHeight: d.ppto>0?4:0, transition:"height 0.3s" }} />
+                    </div>
+                    {/* LY */}
+                    <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"flex-end", height:"100%" }}>
+                      {d.ly > 0 && (
+                        <span style={{ fontSize:9, fontWeight:700, color:COL_LY, marginBottom:2, lineHeight:1 }}>{d.ly}</span>
+                      )}
+                      <div title={`LY: ${d.ly||0}`} style={{ width:"100%", height:barH(d.ly), background:COL_LY, borderRadius:"3px 3px 0 0", minHeight: d.ly>0?4:0, transition:"height 0.3s" }} />
+                    </div>
+                  </div>
+                  {/* Label mes */}
+                  <span style={{ fontSize:10, color:C.textLight, fontWeight:600, marginTop:6 }}>{d.mes}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ── TABLA RESUMEN ── */}
+      {hayDatos && (
+        <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:12, overflow:"hidden" }}>
+          <table style={{ width:"100%", borderCollapse:"collapse", fontSize:12 }}>
+            <thead>
+              <tr style={{ background:C.bg }}>
+                <th style={{ padding:"10px 16px", textAlign:"left", color:C.textLight, fontWeight:600, fontSize:11, textTransform:"uppercase", letterSpacing:1 }}>Mes</th>
+                <th style={{ padding:"10px 12px", textAlign:"right", color:COL_OTB, fontWeight:700, fontSize:11, textTransform:"uppercase", letterSpacing:1 }}>OTB</th>
+                <th style={{ padding:"10px 12px", textAlign:"right", color:COL_PPTO, fontWeight:700, fontSize:11, textTransform:"uppercase", letterSpacing:1 }}>Ppto</th>
+                <th style={{ padding:"10px 12px", textAlign:"right", color:COL_LY, fontWeight:700, fontSize:11, textTransform:"uppercase", letterSpacing:1 }}>LY</th>
+                <th style={{ padding:"10px 12px", textAlign:"right", color:C.textLight, fontWeight:600, fontSize:11, textTransform:"uppercase", letterSpacing:1 }}>vs Ppto</th>
+                <th style={{ padding:"10px 16px", textAlign:"right", color:C.textLight, fontWeight:600, fontSize:11, textTransform:"uppercase", letterSpacing:1 }}>vs LY</th>
+              </tr>
+            </thead>
+            <tbody>
+              {datosGrafica.map((d, i) => {
+                const vsPpto = d.ppto > 0 ? ((( d.otb||0) - d.ppto) / d.ppto * 100).toFixed(1) : null;
+                const vsLY   = d.ly   > 0 ? ((( d.otb||0) - d.ly)   / d.ly   * 100).toFixed(1) : null;
+                const esMesAct = i === hoy.getMonth() && anio === hoy.getFullYear();
+                return (
+                  <tr key={i} style={{ borderTop:`1px solid ${C.border}`, background: esMesAct ? C.accentLight : "transparent" }}>
+                    <td style={{ padding:"10px 16px", fontWeight: esMesAct?700:400, color:C.text }}>{d.mes} {esMesAct && <span style={{ fontSize:9, background:C.accent, color:"#fff", borderRadius:3, padding:"1px 5px", marginLeft:4 }}>HOY</span>}</td>
+                    <td style={{ padding:"10px 12px", textAlign:"right", fontWeight:700, color: d.otb ? COL_OTB : C.textLight }}>{d.otb ?? "—"}</td>
+                    <td style={{ padding:"10px 12px", textAlign:"right", color: d.ppto ? COL_PPTO : C.textLight }}>{d.ppto ?? "—"}</td>
+                    <td style={{ padding:"10px 12px", textAlign:"right", color: d.ly ? COL_LY : C.textLight }}>{d.ly ?? "—"}</td>
+                    <td style={{ padding:"10px 12px", textAlign:"right" }}>
+                      {vsPpto != null ? (
+                        <span style={{ fontWeight:600, color: parseFloat(vsPpto)>=0 ? C.green : C.red }}>
+                          {parseFloat(vsPpto)>=0?"+":""}{vsPpto}%
+                        </span>
+                      ) : "—"}
+                    </td>
+                    <td style={{ padding:"10px 16px", textAlign:"right" }}>
+                      {vsLY != null ? (
+                        <span style={{ fontWeight:600, color: parseFloat(vsLY)>=0 ? C.green : C.red }}>
+                          {parseFloat(vsLY)>=0?"+":""}{vsLY}%
+                        </span>
+                      ) : "—"}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── BUDGET VIEW ──────────────────────────────────────────────────
 function BudgetView({ datos, anio: anioProp }) {
   const { produccion, presupuesto } = datos;
@@ -1341,6 +1639,7 @@ function AuthScreen() {
 
 const NAV = [
   { key: "dashboard",  icon: "◈",  label: "Dashboard" },
+  { key: "pickup",     icon: "📊", label: "Pickup" },
   { key: "budget",     icon: "💰", label: "Presupuesto" },
 ];
 
@@ -1380,9 +1679,17 @@ export default function App() {
       supabase.from("presupuesto").select("*").eq("hotel_id", session.user.id).order("mes"),
       supabase.from("hoteles").select("nombre, ciudad, habitaciones").eq("id", session.user.id).maybeSingle(),
     ]);
+    // Pickup separado — si la tabla no existe no rompe la carga principal
+    let pickupEntries = [];
+    try {
+      const { data: pe } = await supabase.from("pickup_entries")
+        .select("*").eq("hotel_id", session.user.id).order("fecha_llegada");
+      pickupEntries = pe || [];
+    } catch(_) {}
     setDatos({
       produccion: produccion || [],
       presupuesto: presupuesto || [],
+      pickupEntries,
       hotel: hotelData,
       session,
     });
@@ -1399,6 +1706,7 @@ export default function App() {
 
   const views = {
     dashboard: (props) => <DashboardView {...props} onMesDetalle={(m, a) => setMesDetalle({ mes: m, anio: a })} kpiModal={kpiModal} setKpiModal={setKpiModal} />,
+    pickup:    (props) => <PickupView    {...props} />,
     budget:    (props) => <BudgetView    {...props} />,
   };
   const View = views[view];
