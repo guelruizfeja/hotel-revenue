@@ -252,20 +252,21 @@ function KpiModal({ kpi, datos, mes, anio, onClose }) {
   );
 }
 
-function KpiCard({ label, value, change, sub, up, i, onClick }) {
+function KpiCard({ label, value, change, sub, up, i, onClick, accentColor }) {
+  const kpiAccent = accentColor || C.accent;
   return (
     <div onClick={onClick} style={{
       background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: 10,
       padding: "20px 22px", animation: `fadeUp 0.5s ease ${i * 0.08}s both`,
-      borderLeft: `3px solid ${C.accent}`, position: "relative", overflow: "hidden",
+      borderLeft: `3px solid ${kpiAccent}`, position: "relative", overflow: "hidden",
       boxShadow: "0 1px 4px rgba(0,0,0,0.06)", cursor: "pointer",
       transition: "box-shadow 0.2s, transform 0.2s, border-color 0.2s, background 0.2s",
     }}
     onMouseEnter={e=>{ 
-      e.currentTarget.style.boxShadow=`0 6px 24px ${C.accent}28`; 
+      e.currentTarget.style.boxShadow=`0 6px 24px ${kpiAccent}40`; 
       e.currentTarget.style.transform="translateY(-2px)";
-      e.currentTarget.style.borderColor=C.accent;
-      e.currentTarget.style.background=`${C.accent}08`;
+      e.currentTarget.style.borderColor=kpiAccent;
+      e.currentTarget.style.background=`${kpiAccent}08`;
     }}
     onMouseLeave={e=>{ 
       e.currentTarget.style.boxShadow="0 1px 4px rgba(0,0,0,0.06)"; 
@@ -676,7 +677,7 @@ function MonthDetailView({ datos, mes, anio, onBack }) {
               })}
             </tbody>
             <tfoot>
-              <tr style={{ borderTop: `2px solid ${C.border}`, background: C.accentLight, fontWeight: 700 }}>
+              <tr style={{ borderTop: `2px solid ${C.border}`, background: "#E8F5EE", fontWeight: 700 }}>
                 <td style={{ padding: "10px 14px", color: C.text, fontWeight: 700 }}>TOTAL MES</td>
                 <td style={{ padding: "10px 14px", textAlign: "right", color: C.text }}>{totalHabOcu}</td>
                 <td style={{ padding: "10px 14px", textAlign: "right", color: C.text }}>{mediaOcc}%</td>
@@ -1731,10 +1732,10 @@ function BudgetView({ datos, anio: anioProp }) {
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 14, marginBottom: 24 }}>
-        <KpiCard label="Revenue Total Ppto." value={`€${Math.round(totalRevPpto).toLocaleString("es-ES")}`} change="Año completo" sub="objetivo anual" up={true} i={0} />
-        <KpiCard label="Revenue Real (YTD)" value={`€${Math.round(totalRevReal).toLocaleString("es-ES")}`} change={totalRevDevPct != null ? `${totalRevDevPct >= 0 ? "+" : ""}${totalRevDevPct}%` : "—"} sub="vs presupuesto" up={totalRevDev >= 0} i={1} />
-        <KpiCard label="ADR Medio Ppto." value={`€${mediaAdrPpto}`} change={mediaAdrReal != null ? `Real: €${mediaAdrReal}` : "Sin real"} sub="precio medio objetivo" up={mediaAdrReal == null || mediaAdrReal >= mediaAdrPpto} i={2} />
-        <KpiCard label="RevPAR Medio Ppto." value={`€${mediaRevparPpto}`} change={mediaRevparReal != null ? `Real: €${mediaRevparReal}` : "Sin real"} sub="por hab disponible" up={mediaRevparReal == null || mediaRevparReal >= mediaRevparPpto} i={3} />
+        <KpiCard accentColor="#1A7A3C" label="Revenue Total Ppto." value={`€${Math.round(totalRevPpto).toLocaleString("es-ES")}`} change="Año completo" sub="objetivo anual" up={true} i={0} />
+        <KpiCard accentColor="#1A7A3C" label="Revenue Real (YTD)" value={`€${Math.round(totalRevReal).toLocaleString("es-ES")}`} change={totalRevDevPct != null ? `${totalRevDevPct >= 0 ? "+" : ""}${totalRevDevPct}%` : "—"} sub="vs presupuesto" up={totalRevDev >= 0} i={1} />
+        <KpiCard accentColor="#1A7A3C" label="ADR Medio Ppto." value={`€${mediaAdrPpto}`} change={mediaAdrReal != null ? `Real: €${mediaAdrReal}` : "Sin real"} sub="precio medio objetivo" up={mediaAdrReal == null || mediaAdrReal >= mediaAdrPpto} i={2} />
+        <KpiCard accentColor="#1A7A3C" label="RevPAR Medio Ppto." value={`€${mediaRevparPpto}`} change={mediaRevparReal != null ? `Real: €${mediaRevparReal}` : "Sin real"} sub="por hab disponible" up={mediaRevparReal == null || mediaRevparReal >= mediaRevparPpto} i={3} />
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
@@ -1748,8 +1749,8 @@ function BudgetView({ datos, anio: anioProp }) {
               <YAxis tick={{ fill: C.textLight, fontSize: 11 }} axisLine={false} tickLine={false} unit="€" />
               <Tooltip content={<CustomTooltip />} />
               <Legend wrapperStyle={{ fontSize: 11, color: C.textMid, paddingTop: 8 }} />
-              <Bar dataKey="ADR Ppto" fill={`${C.accent}55`} radius={[3,3,0,0]} />
-              <Bar dataKey="ADR Real" fill={C.accent}        radius={[3,3,0,0]} />
+              <Bar dataKey="ADR Ppto" fill="#2E9C5588" radius={[3,3,0,0]} />
+              <Bar dataKey="ADR Real" fill="#1A7A3C" radius={[3,3,0,0]} />
             </BarChart>
           </ResponsiveContainer>
         </Card>
@@ -1764,8 +1765,8 @@ function BudgetView({ datos, anio: anioProp }) {
               <YAxis tick={{ fill: C.textLight, fontSize: 11 }} axisLine={false} tickLine={false} unit="k" />
               <Tooltip content={<CustomTooltip />} />
               <Legend wrapperStyle={{ fontSize: 11, color: C.textMid, paddingTop: 8 }} />
-              <Bar dataKey="Rev. Ppto (k€)" fill={`${C.blue}55`} radius={[3,3,0,0]} />
-              <Bar dataKey="Rev. Real (k€)" fill={C.blue}        radius={[3,3,0,0]} />
+              <Bar dataKey="Rev. Ppto (k€)" fill="#2E9C5588" radius={[3,3,0,0]} />
+              <Bar dataKey="Rev. Real (k€)" fill="#1A7A3C" radius={[3,3,0,0]} />
             </BarChart>
           </ResponsiveContainer>
         </Card>
@@ -1797,22 +1798,22 @@ function BudgetView({ datos, anio: anioProp }) {
                   <td style={{ padding: "10px 8px", textAlign: "right", color: C.text, fontWeight: f.adr_real ? 600 : 400 }}>{f.adr_real != null ? `€${f.adr_real}` : "—"}</td>
                   <td style={{ padding: "10px 8px", textAlign: "right" }}><DevBadge val={f.adr_dev} pct={f.adr_dev_pct} /></td>
                   <td style={{ padding: "10px 8px", textAlign: "right", color: C.textMid }}>€{f.revpar_ppto}</td>
-                  <td style={{ padding: "10px 8px", textAlign: "right", color: C.accent, fontWeight: f.revpar_real ? 600 : 400 }}>{f.revpar_real != null ? `€${f.revpar_real}` : "—"}</td>
+                  <td style={{ padding: "10px 8px", textAlign: "right", color: "#1A7A3C", fontWeight: f.revpar_real ? 600 : 400 }}>{f.revpar_real != null ? `€${f.revpar_real}` : "—"}</td>
                   <td style={{ padding: "10px 8px", textAlign: "right" }}><DevBadge val={f.revpar_dev} pct={f.revpar_dev_pct} /></td>
                   <td style={{ padding: "10px 8px", textAlign: "right", color: C.textMid }}>€{f.rev_total_ppto?.toLocaleString("es-ES")}</td>
-                  <td style={{ padding: "10px 8px", textAlign: "right", color: C.blue, fontWeight: f.rev_total_real ? 600 : 400 }}>{f.rev_total_real != null ? `€${f.rev_total_real.toLocaleString("es-ES")}` : "—"}</td>
+                  <td style={{ padding: "10px 8px", textAlign: "right", color: "#1A7A3C", fontWeight: f.rev_total_real ? 600 : 400 }}>{f.rev_total_real != null ? `€${f.rev_total_real.toLocaleString("es-ES")}` : "—"}</td>
                   <td style={{ padding: "10px 8px", textAlign: "right" }}><DevBadge val={f.revtotal_dev} pct={f.revtotal_dev_pct} /></td>
                 </tr>
               ))}
               {filasConReal.length > 0 && (
-                <tr style={{ borderTop: `2px solid ${C.border}`, background: C.accentLight, fontWeight: 700 }}>
+                <tr style={{ borderTop: `2px solid ${C.border}`, background: "#E8F5EE", fontWeight: 700 }}>
                   <td style={{ padding: "10px 12px", color: C.text, fontWeight: 700 }}>TOTAL YTD</td>
                   <td colSpan={2} style={{ padding: "10px 8px", textAlign: "right", color: C.textMid, fontSize: 11 }}>Ppto: €{mediaAdrPpto} media</td>
                   <td style={{ padding: "10px 8px", textAlign: "right" }}><DevBadge val={mediaAdrReal != null ? mediaAdrReal - mediaAdrPpto : null} pct={mediaAdrReal != null ? (((mediaAdrReal - mediaAdrPpto)/mediaAdrPpto)*100).toFixed(1) : null} /></td>
                   <td colSpan={2} style={{ padding: "10px 8px", textAlign: "right", color: C.textMid, fontSize: 11 }}>Ppto: €{mediaRevparPpto} media</td>
                   <td style={{ padding: "10px 8px", textAlign: "right" }}><DevBadge val={mediaRevparReal != null ? mediaRevparReal - mediaRevparPpto : null} pct={mediaRevparReal != null ? (((mediaRevparReal - mediaRevparPpto)/mediaRevparPpto)*100).toFixed(1) : null} /></td>
                   <td style={{ padding: "10px 8px", textAlign: "right", color: C.textMid, fontSize: 11 }}>€{Math.round(filasConReal.reduce((a,f)=>a+(f.rev_total_ppto||0),0)).toLocaleString("es-ES")}</td>
-                  <td style={{ padding: "10px 8px", textAlign: "right", color: C.blue }}>€{Math.round(totalRevReal).toLocaleString("es-ES")}</td>
+                  <td style={{ padding: "10px 8px", textAlign: "right", color: "#1A7A3C" }}>€{Math.round(totalRevReal).toLocaleString("es-ES")}</td>
                   <td style={{ padding: "10px 8px", textAlign: "right" }}><DevBadge val={Math.round(totalRevDev)} pct={totalRevDevPct} /></td>
                 </tr>
               )}
@@ -2012,7 +2013,7 @@ export default function App() {
         ::-webkit-scrollbar-track { background: ${C.bg}; }
         ::-webkit-scrollbar-thumb { background: ${C.accentLight}; border-radius: 3px; }
         @keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
-        .nav-item:hover { background: rgba(255,255,255,0.12) !important; color: #FFFFFF !important; }
+        
       `}</style>
 
       {/* Sidebar */}
@@ -2038,14 +2039,20 @@ export default function App() {
           </button>
         </div>
         <nav style={{ flex: 1, padding: "16px 10px" }}>
-          {NAV.map(n => (
-            <button key={n.key} className="nav-item" onClick={() => { setView(n.key); setMesDetalle(null); }}
-              title={!sidebarOpen ? n.label : ""}
-              style={{ width: "100%", display: "flex", alignItems: "center", gap: sidebarOpen ? 10 : 0, justifyContent: sidebarOpen ? "flex-start" : "center", padding: sidebarOpen ? "10px 12px" : "10px 0", borderRadius: 8, border: "none", cursor: "pointer", background: view===n.key ? C.accent : "transparent", color: view===n.key ? "#fff" : "#A8998A", fontSize: 13, fontWeight: view===n.key ? 600 : 400, fontFamily: "'DM Sans', sans-serif", marginBottom: 2, textAlign: "left", transition: "all 0.15s", overflow: "hidden" }}>
-              <span style={{ fontSize: 16, flexShrink: 0 }}>{n.icon}</span>
-              {sidebarOpen && <span style={{ whiteSpace: "nowrap" }}>{n.label}</span>}
-            </button>
-          ))}
+          {NAV.map(n => {
+              const navColor = n.key==="budget" ? "#1A7A3C" : n.key==="pickup" ? "#B8860B" : C.accent;
+              const isActive = view===n.key;
+              return (
+                <button key={n.key} onClick={() => { setView(n.key); setMesDetalle(null); }}
+                  title={!sidebarOpen ? n.label : ""}
+                  style={{ width: "100%", display: "flex", alignItems: "center", gap: sidebarOpen ? 10 : 0, justifyContent: sidebarOpen ? "flex-start" : "center", padding: sidebarOpen ? "10px 12px" : "10px 0", borderRadius: 8, border: "none", cursor: "pointer", background: isActive ? navColor : "transparent", color: isActive ? "#fff" : "#A8998A", fontSize: 13, fontWeight: isActive ? 600 : 400, fontFamily: "'DM Sans', sans-serif", marginBottom: 2, textAlign: "left", transition: "all 0.15s", overflow: "hidden" }}
+                  onMouseEnter={e=>{ if(!isActive){ e.currentTarget.style.background=navColor+"55"; e.currentTarget.style.color="#fff"; } }}
+                  onMouseLeave={e=>{ e.currentTarget.style.background=isActive ? navColor : "transparent"; e.currentTarget.style.color=isActive ? "#fff" : "#A8998A"; }}>
+                  <span style={{ fontSize: 16, flexShrink: 0 }}>{n.icon}</span>
+                  {sidebarOpen && <span style={{ whiteSpace: "nowrap" }}>{n.label}</span>}
+                </button>
+              );
+            })}
         </nav>
         <div style={{ padding: sidebarOpen ? "16px 12px" : "16px 10px", borderTop: "1px solid #FFFFFF11" }}>
           {sidebarOpen && <p style={{ fontSize: 11, color: "#FFFFFF44", marginBottom: 8, paddingLeft: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{session.user.email}</p>}
