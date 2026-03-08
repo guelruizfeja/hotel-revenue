@@ -1021,6 +1021,14 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
 
   return (
     <div>
+      {/* ── CABECERA MES ACTIVO ── */}
+      <div style={{ display:"flex", alignItems:"baseline", gap:12, marginBottom:16, paddingBottom:14, borderBottom:`1px solid ${C.border}` }}>
+        <h2 style={{ fontFamily:"'Playfair Display',serif", fontSize:28, fontWeight:700, color:C.text, margin:0, letterSpacing:-0.5 }}>
+          {["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"][mes]}
+        </h2>
+        <span style={{ fontSize:20, fontWeight:400, color:C.textLight }}>{anio}</span>
+      </div>
+
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 14, marginBottom: 24 }}>
         {kpis.map((k, i) => <KpiCard key={i} {...k} i={i} onClick={()=>setKpiModal(k.label)} />)}
       </div>
