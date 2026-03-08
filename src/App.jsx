@@ -1992,19 +1992,31 @@ export default function App() {
       supabase.from("presupuesto").select("*").eq("hotel_id", session.user.id).order("mes"),
       supabase.from("hoteles").select("nombre, ciudad, habitaciones").eq("id", session.user.id).maybeSingle(),
     ]);
-    // Pickup separado — si la tabla no existe no rompe la carga principal
+    // Pickup separado — carga en paralelo para máxima velocidad
     let pickupEntries = [];
     try {
-      let _peDesde = 0;
-      const _pePagina = 1000;
-      while (true) {
-        const { data: pe, error: peErr } = await supabase.from("pickup_entries")
-          .select("*").eq("hotel_id", session.user.id).order("fecha_llegada")
-          .range(_peDesde, _peDesde + _pePagina - 1);
-        if (peErr || !pe || pe.length === 0) break;
-        pickupEntries = pickupEntries.concat(pe);
-        if (pe.length < _pePagina) break;
-        _peDesde += _pePagina;
+      // Primera llamada para saber el total
+      const { data: pe0, count } = await supabase.from("pickup_entries")
+        .select("fecha_llegada, num_reservas", { count: "exact" })
+        .eq("hotel_id", session.user.id)
+        .range(0, 999);
+      if (pe0 && pe0.length > 0) {
+        const total = count || pe0.length;
+        const PAGINA = 1000;
+        const paginas = Math.ceil(total / PAGINA);
+        // Lanzar el resto en paralelo
+        const resto = paginas > 1
+          ? await Promise.all(
+              Array.from({ length: paginas - 1 }, (_, i) =>
+                supabase.from("pickup_entries")
+                  .select("fecha_llegada, num_reservas")
+                  .eq("hotel_id", session.user.id)
+                  .range((i + 1) * PAGINA, (i + 2) * PAGINA - 1)
+                  .then(r => r.data || [])
+              )
+            )
+          : [];
+        pickupEntries = [...pe0, ...resto.flat()];
       }
     } catch(_) {}
     setDatos({
