@@ -1492,9 +1492,9 @@ function PickupView({ datos }) {
       </div>
 
       {/* ── GRÁFICA + DÍA MÁS RESERVADO ── */}
-      <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:12, padding:"24px 28px", display:"flex", gap:24 }}>
+      <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:12, padding:"24px 28px", display:"flex", gap:40 }}>
         {/* Col izquierda: días más reservados */}
-        <div style={{ display:"flex", flexDirection:"column", gap:12, minWidth:170 }}>
+        <div style={{ display:"flex", flexDirection:"column", gap:12, minWidth:190, paddingRight:24, borderRight:`1px solid ${C.border}` }}>
           <p style={{ fontSize:11, fontWeight:700, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:4 }}>🏆 Día pico</p>
           {(pickupEntries && pickupEntries.length > 0) && (() => {
             const porDia = {};
@@ -1578,7 +1578,7 @@ function PickupView({ datos }) {
             })}
 
             {/* Barras por mes */}
-            <div style={{ display:"flex", flex:1, alignItems:"flex-end", height:"100%", paddingLeft:36, gap:4 }}>
+            <div style={{ display:"flex", flex:1, alignItems:"flex-end", height:"100%", paddingLeft:36, gap:24 }}>
               {datosGrafica.map((d, i) => (
                 <div key={i} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", height:"100%", justifyContent:"flex-end", gap:2 }}>
                   {/* Grupo de 3 barras */}
