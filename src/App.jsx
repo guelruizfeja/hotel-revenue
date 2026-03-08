@@ -388,6 +388,23 @@ function ImportarExcel({ onClose, session, onImportado }) {
   const [loading, setLoading] = useState(false);
   const [resultado, setResultado] = useState(null);
   const [error, setError] = useState("");
+  const [vaciando, setVaciando] = useState(false);
+  const [confirmVaciar, setConfirmVaciar] = useState(false);
+
+  const vaciarDatos = async () => {
+    setVaciando(true); setError("");
+    try {
+      await supabase.from("produccion_diaria").delete().eq("hotel_id", session.user.id);
+      await supabase.from("pickup_entries").delete().eq("hotel_id", session.user.id);
+      await supabase.from("presupuesto").delete().eq("hotel_id", session.user.id);
+      setConfirmVaciar(false);
+      onImportado();
+      onClose();
+    } catch(e) {
+      setError("Error al vaciar datos: " + e.message);
+    }
+    setVaciando(false);
+  };
 
   const procesarExcel = async (file) => {
     setLoading(true); setError(""); setResultado(null);
@@ -547,6 +564,11 @@ function ImportarExcel({ onClose, session, onImportado }) {
         if (err3) throw new Error("Error al guardar presupuesto: " + err3.message);
       }
 
+      // Actualizar habitaciones en hoteles si viene del Excel
+      if (totalHab) {
+        await supabase.from("hoteles").update({ habitaciones: totalHab }).eq("id", session.user.id);
+      }
+
       setResultado({ produccion: produccionRows.length, pickup: pickupRows.length, presupuesto: presupuestoRows.length });
       if (onImportado) onImportado();
     } catch (e) {
@@ -567,6 +589,20 @@ function ImportarExcel({ onClose, session, onImportado }) {
         </div>
         {!resultado ? (
           <>
+            {confirmVaciar ? (
+              <div style={{ background: "#FDECEA", borderRadius: 10, padding: "20px", marginBottom: 16, textAlign: "center" }}>
+                <p style={{ fontWeight: 700, color: "#C0392B", marginBottom: 8 }}>⚠️ ¿Vaciar todos los datos?</p>
+                <p style={{ fontSize: 12, color: "#A8998A", marginBottom: 16 }}>Se eliminarán producción, pickup y presupuesto. Esta acción no se puede deshacer.</p>
+                <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
+                  <button onClick={()=>setConfirmVaciar(false)} style={{ padding: "8px 20px", borderRadius: 8, border: "1px solid #E8E0D5", background: "#fff", color: "#A8998A", cursor: "pointer", fontFamily: "'DM Sans',sans-serif", fontSize: 13 }}>Cancelar</button>
+                  <button onClick={vaciarDatos} disabled={vaciando} style={{ padding: "8px 20px", borderRadius: 8, border: "none", background: "#C0392B", color: "#fff", cursor: vaciando?"not-allowed":"pointer", fontWeight: 700, fontFamily: "'DM Sans',sans-serif", fontSize: 13 }}>{vaciando ? "Vaciando..." : "Sí, vaciar todo"}</button>
+                </div>
+              </div>
+            ) : (
+              <button onClick={()=>setConfirmVaciar(true)} style={{ width: "100%", padding: "9px", borderRadius: 8, border: "1px solid #FDECEA", background: "#FFF5F5", color: "#C0392B", cursor: "pointer", fontSize: 12, fontWeight: 600, fontFamily: "'DM Sans',sans-serif", marginBottom: 16, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                🗑️ Vaciar todos los datos importados
+              </button>
+            )}
             <div onClick={() => document.getElementById("excel-input").click()} style={{ border: "2px dashed #E8E0D5", borderRadius: 8, padding: "40px 20px", textAlign: "center", cursor: "pointer", background: "#F7F3EE", marginBottom: 16 }}>
               <div style={{ fontSize: 40, marginBottom: 12 }}>📊</div>
               <p style={{ fontWeight: 600, color: "#1C1814", marginBottom: 6 }}>{loading ? "Procesando..." : "Haz clic para seleccionar el archivo"}</p>
