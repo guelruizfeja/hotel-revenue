@@ -1603,7 +1603,7 @@ function PickupView({ datos }) {
         if (!hayPace) return null;
 
         const colorDiff = v => v == null ? C.textLight : parseFloat(v) >= 0 ? "#2ECC71" : "#E74C3C";
-        const fmtDiff   = v => v == null ? "—" : `${parseFloat(v)>=0?"+":""}${v}pp`;
+        const fmtDiff   = v => v == null ? "—" : `${parseFloat(v)>=0?"+":""}${v}%`;
 
         return (
           <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:12, overflow:"hidden" }}>
