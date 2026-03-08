@@ -1354,6 +1354,112 @@ function PickupView({ datos }) {
         </div>{/* fin col derecha */}
       </div>{/* fin card gráfica+pico */}
 
+      {/* ── PACE ── */}
+      {(() => {
+        const MESES_FULL2 = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+        const pad = n => String(n).padStart(2,"0");
+        const hab = datos.hotel?.habitaciones || 30;
+
+        // 6 meses desde el mes actual
+        const filasPace = Array.from({ length: 6 }, (_, i) => {
+          const d    = new Date(hoy.getFullYear(), hoy.getMonth() + i, 1);
+          const a    = d.getFullYear();
+          const m    = d.getMonth() + 1;
+          const key  = `${a}-${pad(m)}`;
+          const keyLY= `${a-1}-${pad(m)}`;
+          const diasMes = new Date(a, m, 0).getDate();
+          const esFuturo = a > hoy.getFullYear() || (a === hoy.getFullYear() && m > hoy.getMonth() + 1);
+
+          // OTB actual
+          const otb = otbPorMes[key] || 0;
+          // LY real (produccion)
+          const lyDatos = (produccion || []).filter(r => {
+            const f = new Date(r.fecha + "T00:00:00");
+            return f.getFullYear() === a-1 && f.getMonth()+1 === m;
+          });
+          const lyHabOcu = lyDatos.reduce((s,r) => s + (r.hab_ocupadas||0), 0);
+          const lyHabDis = lyDatos.reduce((s,r) => s + (r.hab_disponibles||0), 0);
+          const lyOcc    = lyHabDis > 0 ? (lyHabOcu / lyHabDis * 100) : null;
+          const lyRevHab = lyDatos.reduce((s,r) => s + (r.revenue_hab||0), 0);
+          const lyAdr    = lyHabOcu > 0 ? (lyRevHab / lyHabOcu) : null;
+
+          // Presupuesto
+          const pp = (presupuesto || []).find(p => p.anio === a && p.mes === m);
+          const ppOcc = pp?.occ_ppto || null; // ya en %
+          const ppAdr = pp?.adr_ppto || null;
+
+          // OCC OTB estimada (reservas / (hab * días))
+          const otbOcc = hab > 0 ? (otb / (hab * diasMes) * 100) : null;
+
+          // Diferencias
+          const diffLY   = lyOcc != null && otbOcc != null ? (otbOcc - lyOcc).toFixed(1) : null;
+          const diffPpto = ppOcc != null && otbOcc != null ? (otbOcc - ppOcc).toFixed(1) : null;
+
+          return {
+            label: MESES[d.getMonth()] + " " + a,
+            esFuturo,
+            otb,
+            otbOcc: otbOcc != null ? otbOcc.toFixed(1) : null,
+            lyOcc:  lyOcc  != null ? lyOcc.toFixed(1)  : null,
+            lyAdr:  lyAdr  != null ? Math.round(lyAdr) : null,
+            ppOcc:  ppOcc  != null ? ppOcc.toFixed(1)  : null,
+            ppAdr:  ppAdr  != null ? Math.round(ppAdr) : null,
+            diffLY,
+            diffPpto,
+          };
+        });
+
+        const hayPace = filasPace.some(f => f.otb > 0 || f.lyOcc || f.ppOcc);
+        if (!hayPace) return null;
+
+        const colorDiff = v => v == null ? C.textLight : parseFloat(v) >= 0 ? "#2ECC71" : "#E74C3C";
+        const fmtDiff   = v => v == null ? "—" : `${parseFloat(v)>=0?"+":""}${v}pp`;
+
+        return (
+          <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:12, overflow:"hidden" }}>
+            <div style={{ padding:"18px 24px 12px", borderBottom:`1px solid ${C.border}`, display:"flex", alignItems:"baseline", gap:10 }}>
+              <h3 style={{ fontFamily:"'DM Sans',sans-serif", fontSize:16, fontWeight:700, color:C.text, margin:0 }}>Pace — Próximos 6 meses</h3>
+              <span style={{ fontSize:11, color:C.textLight }}>OCC en cartera vs Presupuesto y Año Anterior</span>
+            </div>
+            <div style={{ overflowX:"auto" }}>
+              <table style={{ width:"100%", borderCollapse:"collapse", fontSize:12 }}>
+                <thead>
+                  <tr style={{ background:C.bg }}>
+                    <th style={{ padding:"9px 16px", textAlign:"left",   color:C.textLight, fontWeight:600, fontSize:11, textTransform:"uppercase", letterSpacing:0.8, whiteSpace:"nowrap" }}>Mes</th>
+                    <th style={{ padding:"9px 12px", textAlign:"right",  color:C.textLight, fontWeight:600, fontSize:11, textTransform:"uppercase", letterSpacing:0.8 }}>OTB Res.</th>
+                    <th style={{ padding:"9px 12px", textAlign:"right",  color:"#B8860B",   fontWeight:700, fontSize:11, textTransform:"uppercase", letterSpacing:0.8 }}>OCC OTB</th>
+                    <th style={{ padding:"9px 12px", textAlign:"right",  color:C.textLight, fontWeight:600, fontSize:11, textTransform:"uppercase", letterSpacing:0.8 }}>OCC LY</th>
+                    <th style={{ padding:"9px 12px", textAlign:"right",  color:C.textLight, fontWeight:600, fontSize:11, textTransform:"uppercase", letterSpacing:0.8 }}>ADR LY</th>
+                    <th style={{ padding:"9px 12px", textAlign:"right",  color:C.textLight, fontWeight:600, fontSize:11, textTransform:"uppercase", letterSpacing:0.8 }}>OCC Ppto</th>
+                    <th style={{ padding:"9px 12px", textAlign:"right",  color:C.textLight, fontWeight:600, fontSize:11, textTransform:"uppercase", letterSpacing:0.8 }}>ADR Ppto</th>
+                    <th style={{ padding:"9px 12px", textAlign:"right",  color:C.textLight, fontWeight:600, fontSize:11, textTransform:"uppercase", letterSpacing:0.8 }}>vs LY</th>
+                    <th style={{ padding:"9px 16px", textAlign:"right",  color:C.textLight, fontWeight:600, fontSize:11, textTransform:"uppercase", letterSpacing:0.8 }}>vs Ppto</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filasPace.map((f, i) => (
+                    <tr key={i} style={{ borderTop:`1px solid ${C.border}`, background: i===0 ? C.accentLight : "transparent" }}>
+                      <td style={{ padding:"10px 16px", fontWeight:600, color:C.text, whiteSpace:"nowrap" }}>
+                        {f.label}
+                        {f.esFuturo && <span style={{ marginLeft:6, fontSize:9, background:"#2C3E7A22", color:"#7A9CC8", borderRadius:3, padding:"1px 5px", fontWeight:700 }}>OTB</span>}
+                      </td>
+                      <td style={{ padding:"10px 12px", textAlign:"right", color:C.textMid }}>{f.otb > 0 ? f.otb : "—"}</td>
+                      <td style={{ padding:"10px 12px", textAlign:"right", fontWeight:700, color:"#B8860B" }}>{f.otbOcc != null ? `${f.otbOcc}%` : "—"}</td>
+                      <td style={{ padding:"10px 12px", textAlign:"right", color:C.textMid }}>{f.lyOcc  != null ? `${f.lyOcc}%`  : "—"}</td>
+                      <td style={{ padding:"10px 12px", textAlign:"right", color:C.textMid }}>{f.lyAdr  != null ? `€${f.lyAdr}`  : "—"}</td>
+                      <td style={{ padding:"10px 12px", textAlign:"right", color:C.textMid }}>{f.ppOcc  != null ? `${f.ppOcc}%`  : "—"}</td>
+                      <td style={{ padding:"10px 12px", textAlign:"right", color:C.textMid }}>{f.ppAdr  != null ? `€${f.ppAdr}`  : "—"}</td>
+                      <td style={{ padding:"10px 12px", textAlign:"right", fontWeight:700, color:colorDiff(f.diffLY)   }}>{fmtDiff(f.diffLY)}</td>
+                      <td style={{ padding:"10px 16px", textAlign:"right", fontWeight:700, color:colorDiff(f.diffPpto) }}>{fmtDiff(f.diffPpto)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        );
+      })()}
+
     </div>
   );
 }
