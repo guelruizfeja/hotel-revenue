@@ -94,15 +94,14 @@ function KpiModal({ kpi, datos, mes, anio, onClose }) {
     };
   };
 
-  const refDateMP = new Date(refDate); refDateMP.setMonth(refDateMP.getMonth()-1);
-  const desde30MP = new Date(desde30); desde30MP.setMonth(desde30MP.getMonth()-1);
+  const mesPrevIdx = mes === 0 ? 11 : mes - 1;
+  const anioPrevModal = mes === 0 ? anio - 1 : anio;
   const diasMP = todasProd
-    .filter(d => d.fecha >= desde30MP.toISOString().slice(0,10) && d.fecha <= refDateMP.toISOString().slice(0,10))
+    .filter(d => { const f=new Date(d.fecha+"T00:00:00"); return f.getMonth()===mesPrevIdx && f.getFullYear()===anioPrevModal; })
     .map(mapProd);
 
-  const mesPrevIdx = mes === 0 ? 11 : mes - 1;
   const diasComp  = diasMP;
-  const compLabel = `últimos 30 días`;
+  const compLabel = MESES_FULL[mesPrevIdx];
 
   const ppto = (presupuesto||[]).find(p=>p.mes===mes+1&&p.anio===anio);
 
