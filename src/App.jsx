@@ -1117,8 +1117,8 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
             <Card style={{ display:"flex", flexDirection:"column" }}>
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
                 <div>
-                  <p style={{ fontFamily:"'Playfair Display',serif", fontWeight:700, fontSize:16, color:C.text, marginBottom:2 }}>Ocupación mensual</p>
-                  <p style={{ fontSize:11, color:C.textLight }}>Haz clic en un mes para ver el detalle diario</p>
+                  <p style={{ fontFamily:"'Playfair Display',serif", fontWeight:700, fontSize:20, color:C.text, marginBottom:2 }}>Ocupación mensual</p>
+                  <p style={{ fontSize:13, color:C.textMid }}>Haz clic en un mes para ver el detalle diario</p>
                 </div>
                 {hmMesSel!=null && (
                   <button onClick={()=>setHmMesSel(null)} style={{ fontSize:11, color:C.accent, background:"none", border:`1px solid ${C.accent}`, borderRadius:6, padding:"3px 10px", cursor:"pointer" }}>← Volver</button>
@@ -1185,8 +1185,8 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
             {/* ── GRÁFICAS DERECHA ── */}
             <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
               <Card>
-                <p style={{ fontFamily:"'Playfair Display',serif", fontWeight:700, fontSize:14, color:C.text, marginBottom:2 }}>ADR & Ocupación</p>
-                <p style={{ fontSize:10, color:C.textLight, marginBottom:12 }}>Evolución mensual {anio}</p>
+                <p style={{ fontFamily:"'Playfair Display',serif", fontWeight:700, fontSize:18, color:C.text, marginBottom:2 }}>ADR & Ocupación</p>
+                <p style={{ fontSize:12, color:C.textMid, marginBottom:12 }}>Evolución mensual {anio}</p>
                 <ResponsiveContainer width="100%" height={160}>
                   <ComposedChart data={porMes} barSize={10}>
                     <CartesianGrid strokeDasharray="3 3" stroke={C.border} vertical={false}/>
@@ -1201,7 +1201,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
               </Card>
               <Card>
                 <p style={{ fontFamily:"'Playfair Display',serif", fontWeight:700, fontSize:14, color:C.text, marginBottom:2 }}>RevPAR — {anio}</p>
-                <p style={{ fontSize:10, color:C.textLight, marginBottom:12 }}>RevPAR vs TRevPAR (€/hab)</p>
+                <p style={{ fontSize:12, color:C.textMid, marginBottom:12 }}>RevPAR vs TRevPAR (€/hab)</p>
                 <ResponsiveContainer width="100%" height={160}>
                   <AreaChart data={porMes}>
                     <defs>
