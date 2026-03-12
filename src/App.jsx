@@ -1835,6 +1835,7 @@ function BudgetView({ datos, anio: anioProp }) {
 
   const aniosDisponibles = [...new Set((presupuesto || []).map(p => p.anio))].sort();
   const [anio, setAnio] = useState(() => aniosDisponibles.includes(anioProp) ? anioProp : (aniosDisponibles[aniosDisponibles.length - 1] || anioProp));
+  const [kpiChart, setKpiChart] = useState("revenue");
 
   if (!presupuesto || presupuesto.length === 0) {
     return <EmptyState mensaje="Importa tu plantilla Excel con los datos de la hoja 💰 Presupuesto para ver el análisis aquí" />;
@@ -1928,60 +1929,75 @@ function BudgetView({ datos, anio: anioProp }) {
     );
   };
 
+  const kpiOpts = [
+    { key: "revenue", label: "Revenue Total" },
+    { key: "adr",     label: "ADR" },
+    { key: "revpar",  label: "RevPAR" },
+  ];
+
+  const chartUnificado = filas.map(f => ({
+    mes: f.mes,
+    Ppto: kpiChart==="revenue" ? (f.rev_total_ppto ? Math.round(f.rev_total_ppto/1000) : null)
+         : kpiChart==="adr"     ? f.adr_ppto
+         :                        f.revpar_ppto,
+    Real: kpiChart==="revenue" ? (f.rev_total_real ? Math.round(f.rev_total_real/1000) : null)
+         : kpiChart==="adr"     ? f.adr_real
+         :                        f.revpar_real,
+  }));
+
+  const chartUnit = kpiChart==="revenue" ? "k€" : "€";
+  const chartTitle = kpiChart==="revenue" ? "Revenue Total — Ppto. vs Real"
+                   : kpiChart==="adr"     ? "ADR — Ppto. vs Real"
+                   :                        "RevPAR — Ppto. vs Real";
+
   return (
-    <div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 28 }}>
-        <div>
-          <h2 style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 20, fontWeight: 700, color: C.text, letterSpacing: -0.3 }}>Presupuesto vs Real</h2>
-          <p style={{ fontSize: 12, color: C.textLight, marginTop: 4 }}>Seguimiento del cumplimiento presupuestario · {anio}</p>
-        </div>
-        {aniosDisponibles.length > 1 && (
-          <select value={anio} onChange={e => setAnio(parseInt(e.target.value))} style={{ padding: "6px 10px", borderRadius: 6, border: `1px solid ${C.border}`, fontSize: 12, fontWeight: 600, color: C.text, background: C.bgCard, cursor: "pointer", fontFamily: "'DM Sans', sans-serif", outline: "none", letterSpacing: 0.2 }}>
+    <div style={{ display:"flex", flexDirection:"column", gap:20 }}>
+
+      {/* Selector año */}
+      {aniosDisponibles.length > 1 && (
+        <div style={{ display:"flex", justifyContent:"flex-end" }}>
+          <select value={anio} onChange={e => setAnio(parseInt(e.target.value))} style={{ padding: "6px 10px", borderRadius: 6, border: `1px solid ${C.border}`, fontSize: 12, fontWeight: 600, color: C.text, background: C.bgCard, cursor: "pointer", fontFamily: "'DM Sans', sans-serif", outline: "none" }}>
             {aniosDisponibles.map(a => <option key={a} value={a}>{a}</option>)}
           </select>
-        )}
-      </div>
+        </div>
+      )}
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 14, marginBottom: 24 }}>
-        <KpiCard accentColor="#1A7A3C" label="Revenue Total Ppto." value={`€${Math.round(totalRevPpto).toLocaleString("es-ES")}`} change="Año completo" sub="objetivo anual" up={true} i={0} />
-        <KpiCard accentColor="#1A7A3C" label="Revenue Real (YTD)" value={`€${Math.round(totalRevReal).toLocaleString("es-ES")}`} change={totalRevDevPct != null ? `${totalRevDevPct >= 0 ? "+" : ""}${totalRevDevPct}%` : "—"} sub="vs presupuesto" up={totalRevDev >= 0} i={1} />
-        <KpiCard accentColor="#1A7A3C" label="ADR Medio Ppto." value={`€${mediaAdrPpto}`} change={mediaAdrReal != null ? `Real: €${mediaAdrReal}` : "Sin real"} sub="precio medio objetivo" up={mediaAdrReal == null || mediaAdrReal >= mediaAdrPpto} i={2} />
-        <KpiCard accentColor="#1A7A3C" label="RevPAR Medio Ppto." value={`€${mediaRevparPpto}`} change={mediaRevparReal != null ? `Real: €${mediaRevparReal}` : "Sin real"} sub="por hab disponible" up={mediaRevparReal == null || mediaRevparReal >= mediaRevparPpto} i={3} />
-      </div>
-
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
-        <Card>
-          <p style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700, fontSize: 16, color: C.text, marginBottom: 4 }}>ADR — Ppto. vs Real</p>
-          <p style={{ fontSize: 11, color: C.textLight, marginBottom: 18 }}>€ precio medio por habitación</p>
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={chartData} barSize={14} barGap={3}>
-              <CartesianGrid strokeDasharray="3 3" stroke={C.border} vertical={false} />
-              <XAxis dataKey="mes" tick={{ fill: C.textLight, fontSize: 10 }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fill: C.textLight, fontSize: 11 }} axisLine={false} tickLine={false} unit="€" />
-              <Tooltip content={<CustomTooltip />} />
-              <Legend wrapperStyle={{ fontSize: 11, color: C.textMid, paddingTop: 8 }} />
-              <Bar dataKey="ADR Ppto" fill="#2E9C5588" radius={[3,3,0,0]} />
-              <Bar dataKey="ADR Real" fill="#1A7A3C" radius={[3,3,0,0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </Card>
-
-        <Card>
-          <p style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700, fontSize: 16, color: C.text, marginBottom: 4 }}>Revenue Total — Ppto. vs Real</p>
-          <p style={{ fontSize: 11, color: C.textLight, marginBottom: 18 }}>Miles de € por mes</p>
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={chartRevTotal} barSize={14} barGap={3}>
-              <CartesianGrid strokeDasharray="3 3" stroke={C.border} vertical={false} />
-              <XAxis dataKey="mes" tick={{ fill: C.textLight, fontSize: 10 }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fill: C.textLight, fontSize: 11 }} axisLine={false} tickLine={false} unit="k" />
-              <Tooltip content={<CustomTooltip />} />
-              <Legend wrapperStyle={{ fontSize: 11, color: C.textMid, paddingTop: 8 }} />
-              <Bar dataKey="Rev. Ppto (k€)" fill="#2E9C5588" radius={[3,3,0,0]} />
-              <Bar dataKey="Rev. Real (k€)" fill="#1A7A3C" radius={[3,3,0,0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </Card>
-      </div>
+      {/* Gráfica única con selector KPI */}
+      <Card>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:18 }}>
+          <div>
+            <p style={{ fontFamily:"'Playfair Display',serif", fontWeight:700, fontSize:17, color:C.text }}>{chartTitle}</p>
+            <p style={{ fontSize:11, color:C.textLight, marginTop:2 }}>Ppto. vs Real · {anio}</p>
+          </div>
+          <div style={{ display:"flex", gap:6 }}>
+            {kpiOpts.map(o => (
+              <button key={o.key} onClick={()=>setKpiChart(o.key)}
+                style={{ padding:"5px 14px", borderRadius:7, border:`1.5px solid ${kpiChart===o.key?"#1A7A3C":C.border}`, background: kpiChart===o.key?"#1A7A3C18":"transparent", color: kpiChart===o.key?"#1A7A3C":C.textLight, fontSize:12, fontWeight: kpiChart===o.key?700:400, cursor:"pointer", fontFamily:"'DM Sans',sans-serif", transition:"all 0.15s" }}>
+                {o.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <ResponsiveContainer width="100%" height={260}>
+          <BarChart data={chartUnificado} barSize={16} barGap={4}>
+            <CartesianGrid strokeDasharray="3 3" stroke={C.border} vertical={false}/>
+            <XAxis dataKey="mes" tick={{fill:C.textLight, fontSize:10}} axisLine={false} tickLine={false}/>
+            <YAxis tick={{fill:C.textLight, fontSize:11}} axisLine={false} tickLine={false} unit={chartUnit}/>
+            <Tooltip
+              formatter={(val, name) => {
+                if (val == null) return ["—", name];
+                const num = kpiChart==="revenue" ? Math.round(val*1000) : Math.round(val);
+                return [`€${num.toLocaleString("es-ES")}`, name];
+              }}
+              contentStyle={{background:"#fff", border:`1px solid ${C.border}`, borderRadius:8, fontSize:12}}
+              labelStyle={{color:C.accent, fontWeight:700}}
+            />
+            <Legend wrapperStyle={{fontSize:11, color:C.textMid, paddingTop:8}}/>
+            <Bar dataKey="Ppto" fill="#2E9C5588" radius={[3,3,0,0]}/>
+            <Bar dataKey="Real" fill="#1A7A3C" radius={[3,3,0,0]}/>
+          </BarChart>
+        </ResponsiveContainer>
+      </Card>
 
       <Card>
         <p style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700, fontSize: 16, color: C.text, marginBottom: 16 }}>Detalle mensual</p>
