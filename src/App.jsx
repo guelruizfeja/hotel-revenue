@@ -7,7 +7,7 @@ import {
 } from "recharts";
 
 const C = {
-  bg: "#FDFDFD", bgCard: "#FFFFFF", bgDeep: "#111111",
+  bg: "#FDFDFD", bgCard: "#FFFFFF", bgDeep: "#0A2540",
   accent: "#004B87", accentLight: "#E8F0F9", accentDark: "#003366",
   text: "#1A1A1A", textMid: "#555555", textLight: "#888888",
   border: "#E0E0E0", green: "#009F4D", greenLight: "#E6F7EE",
@@ -2229,7 +2229,7 @@ export default function App() {
   if (!session) return <AuthScreen />;
 
   return (
-    <div style={{ fontFamily: "'DM Sans', sans-serif", background: C.bg, minHeight: "100vh", display: "flex", width: "100vw", overflow: "hidden" }}>
+    <div style={{ fontFamily: "'DM Sans', sans-serif", background: C.bg, minHeight: "100vh", display: "flex", flexDirection: "column", width: "100vw", overflow: "hidden" }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap');
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -2237,58 +2237,43 @@ export default function App() {
         ::-webkit-scrollbar-track { background: ${C.bg}; }
         ::-webkit-scrollbar-thumb { background: ${C.accentLight}; border-radius: 3px; }
         @keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
-        
       `}</style>
 
-      {/* Sidebar */}
-      <div style={{ width: sidebarOpen ? 220 : 60, flexShrink: 0, minHeight: "100vh", background: C.bgDeep, display: "flex", flexDirection: "column", position: "sticky", top: 0, height: "100vh", transition: "width 0.25s ease", overflow: "hidden" }}>
-        <div style={{ padding: sidebarOpen ? "24px 20px 20px" : "20px 12px", borderBottom: "1px solid #FFFFFF11", display: "flex", alignItems: "center", justifyContent: sidebarOpen ? "space-between" : "center" }}>
-          {sidebarOpen && (
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <div style={{ width: 36, height: 36, background: "rgba(255,255,255,0.15)", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: "#FFFFFF", fontFamily: "'DM Sans', sans-serif", letterSpacing: 1, flexShrink: 0 }}>RM</div>
-              <div>
-                <p style={{ fontFamily: "'DM Sans', sans-serif", color: "#FFFFFF", fontWeight: 700, fontSize: 15, letterSpacing: 0.3, whiteSpace: "nowrap" }}>FastRev</p>
-                <p style={{ fontSize: 10, color: "rgba(255,255,255,0.5)", whiteSpace: "nowrap" }}>Hotel Intelligence</p>
-              </div>
-            </div>
-          )}
-          <button onClick={() => setSidebarOpen(o => !o)} style={{ background: "rgba(255,255,255,0.08)", border: "none", borderRadius: 8, width: 32, height: 32, cursor: "pointer", color: "rgba(255,255,255,0.6)", fontSize: 16, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "background 0.15s" }}
-            onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.18)"}
-            onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,0.08)"}>
-            <span style={{ display:"flex", flexDirection:"column", gap:4, alignItems:"center", justifyContent:"center" }}>
-              <span style={{ width:16, height:2, background:"rgba(255,255,255,0.7)", borderRadius:2, display:"block" }}/>
-              <span style={{ width:16, height:2, background:"rgba(255,255,255,0.7)", borderRadius:2, display:"block" }}/>
-              <span style={{ width:16, height:2, background:"rgba(255,255,255,0.7)", borderRadius:2, display:"block" }}/>
-            </span>
-          </button>
-        </div>
-        <nav style={{ flex: 1, padding: "16px 10px" }}>
+      {/* Topbar */}
+      <header style={{ background: C.bg, height: 52, flexShrink: 0, display: "flex", alignItems: "center", padding: "0 32px", gap: 8, position: "sticky", top: 0, zIndex: 100, borderBottom: `1px solid ${C.border}` }}>
+        {/* Logo */}
+        <span style={{ fontFamily: "'Playfair Display', serif", color: C.text, fontWeight: 800, fontSize: 17, letterSpacing: -0.3, marginRight: 24 }}>FastRev</span>
+
+        {/* Nav links */}
+        <nav style={{ display: "flex", alignItems: "center", gap: 2, flex: 1 }}>
           {NAV.map(n => {
-              const navColor = n.key==="budget" ? "#1A7A3C" : n.key==="pickup" ? "#B8860B" : C.accent;
-              const isActive = view===n.key;
-              return (
-                <button key={n.key} onClick={() => { setView(n.key); setMesDetalle(null); }}
-                  title={!sidebarOpen ? n.label : ""}
-                  style={{ width: "100%", display: "flex", alignItems: "center", gap: sidebarOpen ? 10 : 0, justifyContent: sidebarOpen ? "flex-start" : "center", padding: sidebarOpen ? "10px 12px" : "10px 0", borderRadius: 8, border: "none", cursor: "pointer", background: isActive ? navColor : "transparent", color: isActive ? "#fff" : "#A8998A", fontSize: 13, fontWeight: isActive ? 600 : 400, fontFamily: "'DM Sans', sans-serif", marginBottom: 2, textAlign: "left", transition: "all 0.15s", overflow: "hidden" }}
-                  onMouseEnter={e=>{ if(!isActive){ e.currentTarget.style.background=navColor+"55"; e.currentTarget.style.color="#fff"; } }}
-                  onMouseLeave={e=>{ e.currentTarget.style.background=isActive ? navColor : "transparent"; e.currentTarget.style.color=isActive ? "#fff" : "#A8998A"; }}>
-                  <span style={{ fontSize: 16, flexShrink: 0 }}>{n.icon}</span>
-                  {sidebarOpen && <span style={{ whiteSpace: "nowrap" }}>{n.label}</span>}
-                </button>
-              );
-            })}
+            const navColor = n.key==="budget" ? "#1A7A3C" : n.key==="pickup" ? "#B8860B" : C.accent;
+            const isActive = view===n.key;
+            return (
+              <button key={n.key} onClick={() => { setView(n.key); setMesDetalle(null); }}
+                style={{ padding: "6px 16px", borderRadius: 7, border: "none", cursor: "pointer", background: isActive ? navColor+"18" : "transparent", color: isActive ? navColor : C.textLight, fontSize: 13, fontWeight: isActive ? 700 : 400, fontFamily: "'DM Sans', sans-serif", transition: "all 0.15s", whiteSpace: "nowrap", outline: isActive ? `1.5px solid ${navColor}44` : "1.5px solid transparent" }}
+                onMouseEnter={e=>{ if(!isActive){ e.currentTarget.style.color=C.text; } }}
+                onMouseLeave={e=>{ e.currentTarget.style.color=isActive?navColor:C.textLight; }}>
+                {n.label}
+              </button>
+            );
+          })}
         </nav>
-        <div style={{ padding: sidebarOpen ? "16px 12px" : "16px 10px", borderTop: "1px solid #FFFFFF11" }}>
-          {sidebarOpen && <p style={{ fontSize: 11, color: "#FFFFFF44", marginBottom: 8, paddingLeft: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{session.user.email}</p>}
-          <button onClick={handleLogout} title={!sidebarOpen ? "Cerrar sesión" : ""}
-            style={{ width: "100%", padding: "10px", borderRadius: 8, border: "1px solid #FFFFFF22", background: "transparent", color: "#A8998A", cursor: "pointer", fontSize: sidebarOpen ? 12 : 16, fontFamily: "'DM Sans', sans-serif", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            {sidebarOpen ? "Cerrar sesión" : "↩"}
+
+        {/* Email + logout */}
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginLeft: "auto" }}>
+          <span style={{ fontSize: 11, color: C.textLight, maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{session.user.email}</span>
+          <button onClick={handleLogout}
+            style={{ padding: "5px 12px", borderRadius: 7, border: `1px solid ${C.border}`, background: "transparent", color: C.textLight, cursor: "pointer", fontSize: 12, fontFamily: "'DM Sans', sans-serif", transition: "all 0.15s" }}
+            onMouseEnter={e=>{ e.currentTarget.style.color=C.text; e.currentTarget.style.borderColor=C.textMid; }}
+            onMouseLeave={e=>{ e.currentTarget.style.color=C.textLight; e.currentTarget.style.borderColor=C.border; }}>
+            Salir
           </button>
         </div>
-      </div>
+      </header>
 
       {/* Main */}
-      <main style={{ flex: 1, minWidth: 0, padding: "28px 32px", overflowY: "auto", height: "100vh" }}>
+      <main style={{ flex: 1, minWidth: 0, padding: "28px 32px", overflowY: "auto", height: "calc(100vh - 56px)" }}>
         {view === "dashboard" && (
         <div style={{ marginBottom: 14 }}>
           <p style={{ fontSize: 22, fontWeight: 800, color: C.text, fontFamily: "'DM Sans',sans-serif", letterSpacing: -0.5 }}>
