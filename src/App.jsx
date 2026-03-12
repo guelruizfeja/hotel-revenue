@@ -583,7 +583,7 @@ function ImportarExcel({ onClose, session, onImportado }) {
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
           <div>
             <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, fontWeight: 700, color: "#1C1814" }}>Importar datos</h2>
-            <p style={{ fontSize: 12, color: "#A8998A", marginTop: 4 }}>Sube tu plantilla Excel de RevManager</p>
+            <p style={{ fontSize: 12, color: "#A8998A", marginTop: 4 }}>Sube tu plantilla Excel de FastRev</p>
           </div>
           <button onClick={onClose} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: "#A8998A" }}>✕</button>
         </div>
@@ -606,7 +606,7 @@ function ImportarExcel({ onClose, session, onImportado }) {
             <div onClick={() => document.getElementById("excel-input").click()} style={{ border: "2px dashed #E8E0D5", borderRadius: 8, padding: "40px 20px", textAlign: "center", cursor: "pointer", background: "#F7F3EE", marginBottom: 16 }}>
               <div style={{ fontSize: 40, marginBottom: 12 }}>📊</div>
               <p style={{ fontWeight: 600, color: "#1C1814", marginBottom: 6 }}>{loading ? "Procesando..." : "Haz clic para seleccionar el archivo"}</p>
-              <p style={{ fontSize: 12, color: "#A8998A" }}>Formato .xlsx · Plantilla RevManager</p>
+              <p style={{ fontSize: 12, color: "#A8998A" }}>Formato .xlsx · Plantilla FastRev</p>
               <input id="excel-input" type="file" accept=".xlsx" style={{ display: "none" }} onChange={e => e.target.files[0] && procesarExcel(e.target.files[0])} />
             </div>
             {error && <div style={{ background: "#FDECEA", color: "#C0392B", padding: "12px 16px", borderRadius: 8, fontSize: 13, marginBottom: 12 }}>⚠️ {error}</div>}
@@ -953,7 +953,7 @@ async function generarReportePDF(datos, mes, anio, hotelNombre) {
   for(let i=1;i<=pages;i++){
     doc.setPage(i);
     doc.setFontSize(8); doc.setTextColor(...gris);
-    doc.text(`${hotelNombre||"RevManager"} · Informe ${MESES_FULL[mes]} ${anio} · Página ${i} de ${pages}`, W/2, 292, {align:"center"});
+    doc.text(`${hotelNombre||"FastRev"} · Informe ${MESES_FULL[mes]} ${anio} · Página ${i} de ${pages}`, W/2, 292, {align:"center"});
   }
 
   doc.save(`Informe_${MESES_FULL[mes]}_${anio}.pdf`);
@@ -2076,7 +2076,7 @@ function AuthScreen() {
       <div style={{ width: 420, background: C.bgCard, borderRadius: 20, padding: "40px 36px", boxShadow: "0 32px 80px rgba(0,0,0,0.4)", animation: "fadeUp 0.5s ease both" }}>
         <div style={{ textAlign: "center", marginBottom: 32 }}>
           <div style={{ width: 52, height: 52, background: C.accent, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, margin: "0 auto 14px" }}>🏨</div>
-          <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: 24, fontWeight: 800, color: C.text }}>RevManager</h1>
+          <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: 24, fontWeight: 800, color: C.text }}>FastRev</h1>
           <p style={{ fontSize: 12, color: C.textLight, marginTop: 4 }}>Revenue Management para hoteles independientes</p>
         </div>
         <div style={{ display: "flex", background: C.bg, borderRadius: 10, padding: 4, marginBottom: 24 }}>
@@ -2247,7 +2247,7 @@ export default function App() {
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <div style={{ width: 36, height: 36, background: "rgba(255,255,255,0.15)", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: "#FFFFFF", fontFamily: "'DM Sans', sans-serif", letterSpacing: 1, flexShrink: 0 }}>RM</div>
               <div>
-                <p style={{ fontFamily: "'DM Sans', sans-serif", color: "#FFFFFF", fontWeight: 700, fontSize: 15, letterSpacing: 0.3, whiteSpace: "nowrap" }}>RevManager</p>
+                <p style={{ fontFamily: "'DM Sans', sans-serif", color: "#FFFFFF", fontWeight: 700, fontSize: 15, letterSpacing: 0.3, whiteSpace: "nowrap" }}>FastRev</p>
                 <p style={{ fontSize: 10, color: "rgba(255,255,255,0.5)", whiteSpace: "nowrap" }}>Hotel Intelligence</p>
               </div>
             </div>
@@ -2311,7 +2311,7 @@ export default function App() {
                 </svg>
               </div>
               <div>
-                <p style={{ fontSize: 15, fontWeight: 800, color: C.text, fontFamily: "'DM Sans',sans-serif", letterSpacing: -0.3 }}>RevManager</p>
+                <p style={{ fontSize: 15, fontWeight: 800, color: C.text, fontFamily: "'DM Sans',sans-serif", letterSpacing: -0.3 }}>FastRev</p>
                 <p style={{ fontSize: 10, color: C.textLight, letterSpacing: 1, textTransform: "uppercase" }}>Hotel Intelligence</p>
               </div>
             </div>
