@@ -20,14 +20,21 @@ const MESES_FULL = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Ag
 
 const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null;
+  const OCC_NAMES = ["Ocupación","occ","OCC"];
   return (
     <div style={{ background: "#fff", borderRadius: 8, padding: "10px 14px", fontSize: 12, color: C.text, border: `1px solid ${C.border}`, boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}>
-      <p style={{ color: C.accent, fontWeight: 700, marginBottom: 6 }}>{payload[0]?.payload?.fecha || label}</p>
-      {payload.map((p, i) => (
-        <p key={i} style={{ color: C.textMid, margin: "2px 0" }}>
-          {p.name}: <b style={{ color: C.text }}>{typeof p.value === 'number' ? `${Math.round(p.value).toLocaleString("es-ES")}€` : p.value}</b>
-        </p>
-      ))}
+      <p style={{ color: C.accent, fontWeight: 700, marginBottom: 6 }}>{payload[0]?.payload?.mesNombre || payload[0]?.payload?.fecha || label}</p>
+      {payload.map((p, i) => {
+        const isOcc = OCC_NAMES.includes(p.name);
+        const val = typeof p.value === 'number'
+          ? isOcc ? `${Math.round(p.value)}%` : `${Math.round(p.value).toLocaleString("es-ES")}€`
+          : p.value;
+        return (
+          <p key={i} style={{ color: C.textMid, margin: "2px 0" }}>
+            {p.name}: <b style={{ color: C.text }}>{val}</b>
+          </p>
+        );
+      })}
     </div>
   );
 };
@@ -997,7 +1004,8 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
     const revFnb   = d.reduce((a, r) => a + (r.revenue_fnb || 0), 0);
     const revOtros = d.reduce((a, r) => a + (r.revenue_otros || 0), 0);
     return {
-      mes: MESES_FULL[mIdx],
+      mes: MESES_CORTO[mIdx],
+      mesNombre: MESES_FULL[mIdx],
       mesIdx: mIdx,
       anioIdx: aIdx,
       occ:     habDis > 0 ? Math.round(habOcu / habDis * 100) : 0,
@@ -1224,7 +1232,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
                 <ResponsiveContainer width="100%" height={160}>
                   <ComposedChart data={porMes} barSize={10}>
                     <CartesianGrid strokeDasharray="3 3" stroke={C.border} vertical={false}/>
-                    <XAxis dataKey="mes" tick={{fill:C.textLight,fontSize:9}} axisLine={false} tickLine={false}/>
+                    <XAxis dataKey="mes" axisLine={false} tickLine={false} height={16} tick={(props) => { const {x,y,payload} = props; if(payload.value!=="Ene") return null; return <text x={x} y={y+10} fill={C.textLight} fontSize={9} textAnchor="middle">{payload.index!==undefined ? porMes.find(d=>d.mes==="Ene")?.anioIdx || "" : ""}</text>; }}/>
                     <YAxis yAxisId="left"  tick={{fill:C.textLight,fontSize:9}} axisLine={false} tickLine={false} unit="%" domain={[0,100]}/>
                     <YAxis yAxisId="right" orientation="right" tick={{fill:C.textLight,fontSize:9}} axisLine={false} tickLine={false} unit="€"/>
                     <Tooltip content={<CustomTooltip/>}/>
@@ -1234,8 +1242,8 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
                 </ResponsiveContainer>
               </Card>
               <Card>
-                <p style={{ fontFamily:"'Playfair Display',serif", fontWeight:700, fontSize:18, color:C.text, marginBottom:2 }}>RevPAR — {anio}</p>
-                <p style={{ fontSize:13, color:C.textMid, marginBottom:12 }}>RevPAR vs TRevPAR (€/hab)</p>
+                <p style={{ fontFamily:"'Playfair Display',serif", fontWeight:700, fontSize:18, color:C.text, marginBottom:2 }}>RevPAR</p>
+                <p style={{ fontSize:13, color:C.textMid, marginBottom:12 }}>Evolución mensual (€/hab)</p>
                 <ResponsiveContainer width="100%" height={160}>
                   <AreaChart data={porMes}>
                     <defs>
@@ -1245,7 +1253,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke={C.border}/>
-                    <XAxis dataKey="mes" tick={{fill:C.textLight,fontSize:9}} axisLine={false} tickLine={false}/>
+                    <XAxis dataKey="mes" axisLine={false} tickLine={false} height={16} tick={(props) => { const {x,y,payload} = props; if(payload.value!=="Ene") return null; return <text x={x} y={y+10} fill={C.textLight} fontSize={9} textAnchor="middle">{porMes.find(d=>d.mes==="Ene")?.anioIdx || ""}</text>; }}/>
                     <YAxis tick={{fill:C.textLight,fontSize:9}} axisLine={false} tickLine={false} unit="€"/>
                     <Tooltip content={<CustomTooltip/>}/>
                     <Area type="monotone" dataKey="revpar"  name="RevPAR"  stroke={C.accent} strokeWidth={2} fill="url(#gRevpar2)" dot={{fill:C.accent,r:2}} activeDot={{r:3}}/>
@@ -2186,8 +2194,8 @@ export default function App() {
 
   const [refreshKey, setRefreshKey] = useState(0);
 
-  const CACHE_KEY = "fr_datos_cache";
-  const CACHE_TS_KEY = "fr_datos_ts";
+  const CACHE_KEY = "fr_datos_cache_v3";
+  const CACHE_TS_KEY = "fr_datos_ts_v3";
 
   const cargarDatos = async (forzar = false) => {
     // Si no forzamos, intentar usar caché
