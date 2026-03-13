@@ -2151,7 +2151,7 @@ const NAV = [
 export default function App() {
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [view, setView] = useState("dashboard");
+  const [view, setView] = useState(() => localStorage.getItem("fr_view") || "dashboard");
 
   const hoy = new Date();
   const [mesSel,  setMesSel]  = useState(() => { const v = localStorage.getItem("rm_mes");  return v !== null ? parseInt(v) : hoy.getMonth(); });
@@ -2159,6 +2159,15 @@ export default function App() {
   const [importar, setImportar] = useState(false);
   const [datos, setDatos] = useState({ produccion: [], presupuesto: [] });
   const [cargandoDatos, setCargandoDatos] = useState(false);
+
+  // Restaurar scroll al montar
+  useEffect(() => {
+    const saved = localStorage.getItem("fr_scroll");
+    if (saved) {
+      const el = document.getElementById("main-scroll");
+      if (el) el.scrollTop = parseInt(saved);
+    }
+  }, [datos.produccion?.length]); // restaurar cuando los datos ya están cargados
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -2172,12 +2181,36 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (session) cargarDatos();
+    if (session) cargarDatos(false);
   }, [session]);
 
   const [refreshKey, setRefreshKey] = useState(0);
 
-  const cargarDatos = async () => {
+  const CACHE_KEY = "fr_datos_cache";
+  const CACHE_TS_KEY = "fr_datos_ts";
+
+  const cargarDatos = async (forzar = false) => {
+    // Si no forzamos, intentar usar caché
+    if (!forzar) {
+      try {
+        const cached = localStorage.getItem(CACHE_KEY);
+        const ts = localStorage.getItem(CACHE_TS_KEY);
+        if (cached && ts) {
+          const parsed = JSON.parse(cached);
+          parsed.session = session;
+          setDatos(parsed);
+          setCargandoDatos(false);
+          // Restaurar scroll después de pintar
+          setTimeout(() => {
+            const el = document.getElementById("main-scroll");
+            const scroll = localStorage.getItem("fr_scroll");
+            if (el && scroll) el.scrollTop = parseInt(scroll);
+          }, 50);
+          return;
+        }
+      } catch(_) {}
+    }
+
     setCargandoDatos(true);
     const [{ data: produccion }, { data: presupuesto }, { data: hotelData }] = await Promise.all([
       supabase.from("produccion_diaria").select("*").eq("hotel_id", session.user.id).order("fecha"),
@@ -2187,7 +2220,6 @@ export default function App() {
     // Pickup separado — carga en paralelo para máxima velocidad
     let pickupEntries = [];
     try {
-      // Primera llamada para saber el total
       const { data: pe0, count } = await supabase.from("pickup_entries")
         .select("fecha_llegada, fecha_pickup, canal, num_reservas", { count: "exact" })
         .eq("hotel_id", session.user.id)
@@ -2196,7 +2228,6 @@ export default function App() {
         const total = count || pe0.length;
         const PAGINA = 1000;
         const paginas = Math.ceil(total / PAGINA);
-        // Lanzar el resto en paralelo
         const resto = paginas > 1
           ? await Promise.all(
               Array.from({ length: paginas - 1 }, (_, i) =>
@@ -2211,15 +2242,30 @@ export default function App() {
         pickupEntries = [...pe0, ...resto.flat()];
       }
     } catch(_) {}
-    setDatos({
+
+    const nuevoDatos = {
       produccion: produccion || [],
       presupuesto: presupuesto || [],
       pickupEntries,
       hotel: hotelData,
-      session,
-    });
+    };
+
+    // Guardar en caché
+    try {
+      localStorage.setItem(CACHE_KEY, JSON.stringify(nuevoDatos));
+      localStorage.setItem(CACHE_TS_KEY, Date.now().toString());
+    } catch(_) {}
+
+    setDatos({ ...nuevoDatos, session });
     setCargandoDatos(false);
     setRefreshKey(k => k + 1);
+
+    // Restaurar scroll
+    setTimeout(() => {
+      const el = document.getElementById("main-scroll");
+      const scroll = localStorage.getItem("fr_scroll");
+      if (el && scroll) el.scrollTop = parseInt(scroll);
+    }, 50);
   };
 
   const handleLogout = async () => { await supabase.auth.signOut(); };
@@ -2266,7 +2312,7 @@ export default function App() {
             const navColor = n.key==="budget" ? "#1A7A3C" : n.key==="pickup" ? "#B8860B" : C.accent;
             const isActive = view===n.key;
             return (
-              <button key={n.key} onClick={() => { setView(n.key); setMesDetalle(null); }}
+              <button key={n.key} onClick={() => { setView(n.key); setMesDetalle(null); localStorage.setItem("fr_view", n.key); }}
                 style={{ padding: "6px 16px", borderRadius: 7, border: "none", cursor: "pointer", background: isActive ? navColor+"18" : "transparent", color: isActive ? navColor : C.textLight, fontSize: 13, fontWeight: isActive ? 700 : 400, fontFamily: "'DM Sans', sans-serif", transition: "all 0.15s", whiteSpace: "nowrap", outline: isActive ? `1.5px solid ${navColor}44` : "1.5px solid transparent" }}
                 onMouseEnter={e=>{ if(!isActive){ e.currentTarget.style.color=C.text; } }}
                 onMouseLeave={e=>{ e.currentTarget.style.color=isActive?navColor:C.textLight; }}>
@@ -2289,7 +2335,7 @@ export default function App() {
       </header>
 
       {/* Main */}
-      <main style={{ flex: 1, minWidth: 0, padding: "28px 32px", overflowY: "auto", height: "calc(100vh - 56px)" }}>
+      <main id="main-scroll" onScroll={e => localStorage.setItem("fr_scroll", e.currentTarget.scrollTop)} style={{ flex: 1, minWidth: 0, padding: "28px 32px", overflowY: "auto", height: "calc(100vh - 56px)" }}>
         {view === "dashboard" && (
         <div style={{ marginBottom: 14 }}>
           <p style={{ fontSize: 22, fontWeight: 800, color: C.text, fontFamily: "'DM Sans',sans-serif", letterSpacing: -0.5 }}>
@@ -2352,7 +2398,7 @@ export default function App() {
         )}
       </main>
 
-      {importar && <ImportarExcel onClose={() => setImportar(false)} session={session} onImportado={cargarDatos} />}
+      {importar && <ImportarExcel onClose={() => setImportar(false)} session={session} onImportado={() => { localStorage.removeItem("fr_datos_cache"); localStorage.removeItem("fr_datos_ts"); localStorage.removeItem("fr_scroll"); cargarDatos(true); }} />}
     </div>
   );
 }
