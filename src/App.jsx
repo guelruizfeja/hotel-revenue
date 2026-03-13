@@ -507,12 +507,27 @@ function ImportarExcel({ onClose, session, onImportado }) {
         const rowsBu = XLSX.utils.sheet_to_json(wsBu, { header: 1 });
         const MESES_PPTO = ["Enero","Febrero","Marzo","Abril","Mayo","Junio",
                             "Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
-        const anioImportPpto = parseInt(produccionRows[0]?.fecha?.slice(0,4)) || new Date().getFullYear();
-        let startRow = null;
+        // Buscar todos los bloques: una celda con un número de 4 dígitos (año) seguida de "Enero"
+        const aniosEnProd = produccionRows.map(r => parseInt(r.fecha.slice(0,4))).filter(Boolean);
+        let bloques = []; // [{anio, startRow}]
         for (let r = 0; r < rowsBu.length; r++) {
-          if (rowsBu[r]?.[0] === "Enero") { startRow = r; break; }
+          const v = rowsBu[r]?.[0];
+          const asNum = parseInt(v);
+          if (asNum >= 2020 && asNum <= 2035) {
+            // Buscar "Enero" en las siguientes filas
+            for (let s = r+1; s <= r+5; s++) {
+              if (rowsBu[s]?.[0] === "Enero") { bloques.push({ anio: asNum, startRow: s }); break; }
+            }
+          }
         }
-        if (startRow !== null) {
+        // Si no hay bloques con año explícito, usar método antiguo con año más reciente de producción
+        if (bloques.length === 0) {
+          const anioFallback = aniosEnProd.length > 0 ? Math.max(...aniosEnProd) : new Date().getFullYear();
+          for (let r = 0; r < rowsBu.length; r++) {
+            if (rowsBu[r]?.[0] === "Enero") { bloques.push({ anio: anioFallback, startRow: r }); break; }
+          }
+        }
+        for (const { anio: anioBloque, startRow } of bloques) {
           for (let i = 0; i < 12; i++) {
             const row = rowsBu[startRow + i];
             if (!row || !MESES_PPTO.includes(row[0])) continue;
@@ -523,7 +538,7 @@ function ImportarExcel({ onClose, session, onImportado }) {
             if (!occ_ppto && !adr_ppto && !revpar_ppto && !rev_total_ppto) continue;
             presupuestoRows.push({
               hotel_id: session.user.id,
-              anio: anioImportPpto,
+              anio: anioBloque,
               mes: i + 1,
               occ_ppto:       occ_ppto       ? Math.round(occ_ppto * 1000) / 10 : null,
               adr_ppto:       adr_ppto       ? Math.round(adr_ppto * 100) / 100 : null,
@@ -1362,7 +1377,7 @@ function PickupView({ datos }) {
 
   // ── Colores gráfica: tonos dorados ──
   const COL_OTB  = "#B8860B";  // dorado oscuro
-  const COL_PPTO = "#DAA520";  // dorado medio
+  const COL_PPTO = "#B8860B";  // dorado medio
   const COL_LY   = "#F5D78E";  // dorado claro
 
   // ── Calcular máximo para escala ──
@@ -1407,7 +1422,7 @@ function PickupView({ datos }) {
   });
 
   const CANAL_COLORS = {
-    "Booking.com": "#003580", "Expedia": "#FFD700", "Directo Web": "#1A7A3C",
+    "Booking.com": "#003580", "Expedia": "#B8860B", "Directo Web": "#1A7A3C",
     "Teléfono": "#B8860B", "Agencia": "#6B4C9A", "Directo": "#1A7A3C"
   };
 
@@ -1810,7 +1825,7 @@ function PickupView({ datos }) {
                   contentStyle={{background:C.bgCard, border:`1px solid ${C.border}`, borderRadius:8, fontSize:12}}/>
                 <Legend wrapperStyle={{fontSize:11, color:C.textMid, paddingTop:8}}/>
                 <Bar yAxisId="left" dataKey="revEst" name="Rev. Estimado" fill="#B8860B" radius={[4,4,0,0]} fillOpacity={0.85}/>
-                <Line yAxisId="right" dataKey="occEst" name="OCC Est." type="monotone" stroke="#DAA520" strokeWidth={2.5} dot={{fill:"#DAA520", r:4}} strokeDasharray="5 3"/>
+                <Line yAxisId="right" dataKey="occEst" name="OCC Est." type="monotone" stroke="#B8860B" strokeWidth={2.5} dot={{fill:"#B8860B", r:4}} strokeDasharray="5 3"/>
               </ComposedChart>
             </ResponsiveContainer>
             </div>
