@@ -373,6 +373,113 @@ function PeriodSelector({ mes, anio, onChange }) {
   );
 }
 
+
+function calcularAlertas(datos, mes, anio) {
+  const alertas = [];
+  const { produccion, presupuesto, pickupEntries } = datos;
+  const hoy = new Date();
+
+  if (!produccion || produccion.length === 0) return alertas;
+
+  // ── Pickup de ayer ──
+  const ayer = new Date(hoy); ayer.setDate(hoy.getDate() - 1);
+  const ayerStr = `${ayer.getFullYear()}-${String(ayer.getMonth()+1).padStart(2,"0")}-${String(ayer.getDate()).padStart(2,"0")}`;
+  const pickupAyer = (pickupEntries||[]).filter(e => String(e.fecha_pickup||"").slice(0,10) === ayerStr);
+  const totalAyer = pickupAyer.reduce((a,e) => a + (e.num_reservas||1), 0);
+
+  // Media de pickup de los últimos 30 días
+  const hace30 = new Date(hoy); hace30.setDate(hoy.getDate() - 30);
+  const pickup30 = (pickupEntries||[]).filter(e => {
+    const d = new Date(String(e.fecha_pickup||"").slice(0,10)+"T00:00:00");
+    return d >= hace30 && d < ayer;
+  });
+  const diasConPickup = [...new Set(pickup30.map(e => String(e.fecha_pickup||"").slice(0,10)))].length || 1;
+  const mediaPickupDia = pickup30.reduce((a,e) => a+(e.num_reservas||1), 0) / diasConPickup;
+
+  if (totalAyer === 0 && mediaPickupDia > 1) {
+    alertas.push({ tipo: "rojo", icono: "📭", titulo: "Sin pickup ayer", desc: `No se captó ninguna reserva ayer. La media diaria es ${mediaPickupDia.toFixed(1)} reservas.` });
+  } else if (totalAyer > 0 && mediaPickupDia > 0 && totalAyer >= mediaPickupDia * 2) {
+    alertas.push({ tipo: "verde", icono: "🚀", titulo: "Pickup excepcional", desc: `Ayer se captaron ${totalAyer} reservas, el doble de la media diaria (${mediaPickupDia.toFixed(1)}).` });
+  }
+
+  // ── Ocupación vs presupuesto ──
+  const datosMes = produccion.filter(d => {
+    const f = new Date(d.fecha+"T00:00:00");
+    return f.getMonth() === mes && f.getFullYear() === anio;
+  });
+  if (datosMes.length > 0) {
+    const habOcu = datosMes.reduce((a,d) => a+(d.hab_ocupadas||0), 0);
+    const habDis = datosMes.reduce((a,d) => a+(d.hab_disponibles||0), 0);
+    const occReal = habDis > 0 ? habOcu/habDis*100 : 0;
+    const ppto = (presupuesto||[]).find(p => p.mes===mes+1 && p.anio===anio);
+
+    if (ppto?.occ_ppto) {
+      const diff = occReal - ppto.occ_ppto;
+      if (diff <= -10) alertas.push({ tipo: "rojo", icono: "📉", titulo: "Ocupación por debajo del presupuesto", desc: `${Math.abs(diff).toFixed(1)}% por debajo del objetivo (${ppto.occ_ppto.toFixed(1)}% ppto vs ${occReal.toFixed(1)}% real).` });
+      else if (diff >= 5) alertas.push({ tipo: "verde", icono: "🎯", titulo: "Ocupación por encima del presupuesto", desc: `+${diff.toFixed(1)}% sobre el objetivo. Real: ${occReal.toFixed(1)}% vs ${ppto.occ_ppto.toFixed(1)}% ppto.` });
+    }
+
+    // ── Revenue vs presupuesto ──
+    if (ppto?.rev_total_ppto) {
+      const revReal = datosMes.reduce((a,d) => a+(d.revenue_total||0), 0);
+      const diffRev = ((revReal - ppto.rev_total_ppto) / ppto.rev_total_ppto * 100);
+      if (diffRev <= -15) alertas.push({ tipo: "rojo", icono: "💸", titulo: "Revenue muy por debajo del presupuesto", desc: `${Math.abs(diffRev).toFixed(1)}% por debajo del objetivo mensual.` });
+      else if (diffRev >= 10) alertas.push({ tipo: "verde", icono: "💰", titulo: "Revenue por encima del presupuesto", desc: `+${diffRev.toFixed(1)}% sobre el objetivo mensual. ¡Buen trabajo!` });
+    }
+
+    // ── ADR vs año anterior ──
+    const mesAnterior = produccion.filter(d => {
+      const f = new Date(d.fecha+"T00:00:00");
+      return f.getMonth() === mes && f.getFullYear() === anio - 1;
+    });
+    if (mesAnterior.length > 0) {
+      const adrReal = habOcu > 0 ? datosMes.reduce((a,d)=>a+(d.revenue_hab||0),0)/habOcu : 0;
+      const habOcuLY = mesAnterior.reduce((a,d)=>a+(d.hab_ocupadas||0),0);
+      const adrLY = habOcuLY > 0 ? mesAnterior.reduce((a,d)=>a+(d.revenue_hab||0),0)/habOcuLY : 0;
+      if (adrLY > 0 && adrReal < adrLY * 0.93) {
+        alertas.push({ tipo: "amarillo", icono: "⚠️", titulo: "ADR por debajo del año anterior", desc: `ADR actual €${Math.round(adrReal)} vs €${Math.round(adrLY)} del año pasado (-${((adrLY-adrReal)/adrLY*100).toFixed(1)}%).` });
+      }
+    }
+  }
+
+  // ── Datos desactualizados ──
+  const ultimaFecha = produccion.map(d => new Date(d.fecha+"T00:00:00")).sort((a,b)=>b-a)[0];
+  if (ultimaFecha) {
+    const diasSinDatos = Math.floor((hoy - ultimaFecha) / (1000*60*60*24));
+    if (diasSinDatos >= 3) alertas.push({ tipo: "amarillo", icono: "🕐", titulo: "Datos desactualizados", desc: `El último dato importado es del ${ultimaFecha.toLocaleDateString("es-ES")}. Han pasado ${diasSinDatos} días.` });
+  }
+
+  return alertas;
+}
+
+function AlertasPanel({ alertas, onClose }) {
+  if (alertas.length === 0) return (
+    <div style={{ position:"absolute", top:54, right:0, width:340, background:C.bgCard, border:`1px solid ${C.border}`, borderRadius:12, boxShadow:"0 8px 32px rgba(0,0,0,0.12)", zIndex:200, padding:20 }}>
+      <p style={{ fontSize:13, color:C.textMid, textAlign:"center" }}>✅ Todo en orden, sin alertas activas</p>
+    </div>
+  );
+  const colores = { rojo:{ bg:"#FDECEA", border:"#D32F2F", text:"#D32F2F" }, amarillo:{ bg:"#FFF8E1", border:"#F9A825", text:"#E65100" }, verde:{ bg:"#E6F7EE", border:"#1A7A3C", text:"#1A7A3C" } };
+  return (
+    <div style={{ position:"absolute", top:54, right:0, width:360, background:C.bgCard, border:`1px solid ${C.border}`, borderRadius:12, boxShadow:"0 8px 32px rgba(0,0,0,0.12)", zIndex:200, overflow:"hidden" }}>
+      <div style={{ padding:"14px 16px", borderBottom:`1px solid ${C.border}`, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+        <p style={{ fontSize:13, fontWeight:700, color:C.text }}>Alertas <span style={{ background:C.accent, color:"#fff", borderRadius:10, padding:"1px 7px", fontSize:11, marginLeft:6 }}>{alertas.length}</span></p>
+        <button onClick={onClose} style={{ background:"none", border:"none", cursor:"pointer", color:C.textLight, fontSize:16 }}>✕</button>
+      </div>
+      <div style={{ maxHeight:380, overflowY:"auto" }}>
+        {alertas.map((a, i) => {
+          const c = colores[a.tipo] || colores.amarillo;
+          return (
+            <div key={i} style={{ padding:"12px 16px", borderBottom:`1px solid ${C.border}`, borderLeft:`3px solid ${c.border}`, background: i%2===0 ? C.bg : C.bgCard }}>
+              <p style={{ fontSize:12, fontWeight:700, color:c.text, marginBottom:3 }}>{a.icono} {a.titulo}</p>
+              <p style={{ fontSize:11, color:C.textMid, lineHeight:1.5 }}>{a.desc}</p>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function LoadingSpinner() {
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: 60 }}>
@@ -2303,6 +2410,7 @@ export default function App() {
 
   const [mesDetalle, setMesDetalle] = useState(null);
   const [generandoPDF, setGenerandoPDF] = useState(false);
+  const [mostrarAlertas, setMostrarAlertas] = useState(false);
   const [kpiModal, setKpiModal] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -2355,6 +2463,14 @@ export default function App() {
 
         {/* Botones + Email + logout */}
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginLeft: "auto" }}>
+          {(() => { const alertas = calcularAlertas(datos, mesSel, anioSel); const n = alertas.length; return (
+            <div style={{ position:"relative" }}>
+              <button onClick={() => setMostrarAlertas(v=>!v)} style={{ background:"none", border:`1px solid ${n>0?C.red:C.border}`, borderRadius:7, padding:"5px 10px", cursor:"pointer", color:n>0?C.red:C.textLight, fontSize:13, position:"relative" }} title="Alertas">
+                🔔{n > 0 && <span style={{ position:"absolute", top:-4, right:-4, background:C.red, color:"#fff", borderRadius:"50%", width:16, height:16, fontSize:9, fontWeight:700, display:"flex", alignItems:"center", justifyContent:"center" }}>{n}</span>}
+              </button>
+              {mostrarAlertas && <AlertasPanel alertas={alertas} onClose={()=>setMostrarAlertas(false)} />}
+            </div>
+          ); })()}
           <button onClick={() => setImportar(true)} style={{ background: C.accent, color: "#fff", border: "none", borderRadius: 7, padding: "5px 12px", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "'DM Sans',sans-serif" }}>
             📊 Importar
           </button>
