@@ -719,6 +719,7 @@ function ImportarExcel({ onClose, session, onImportado }) {
     setLoading(false);
   };
 
+
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
       <div style={{ background: "#fff", borderRadius: 10, padding: "36px 40px", width: 480, boxShadow: "0 24px 60px rgba(0,0,0,0.3)", fontFamily: "'DM Sans', sans-serif" }}>
@@ -745,7 +746,7 @@ function ImportarExcel({ onClose, session, onImportado }) {
                 🗑️ Vaciar todos los datos importados
               </button>
             )}
-            <div onClick={() => document.getElementById("excel-input").click()} style={{ border: "2px dashed #E8E0D5", borderRadius: 8, padding: "40px 20px", textAlign: "center", cursor: "pointer", background: "#F7F3EE", marginBottom: 16 }}>
+<div onClick={() => document.getElementById("excel-input").click()} style={{ border: "2px dashed #E8E0D5", borderRadius: 8, padding: "40px 20px", textAlign: "center", cursor: "pointer", background: "#F7F3EE", marginBottom: 16 }}>
               <div style={{ fontSize: 40, marginBottom: 12 }}>📊</div>
               <p style={{ fontWeight: 600, color: "#1C1814", marginBottom: 6 }}>{loading ? "Procesando..." : "Haz clic para seleccionar el archivo"}</p>
               <p style={{ fontSize: 12, color: "#A8998A" }}>Formato .xlsx · Plantilla FastRev</p>
