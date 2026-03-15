@@ -446,7 +446,7 @@ function calcularAlertas(datos, mes, anio) {
   const ultimaFecha = produccion.map(d => new Date(d.fecha+"T00:00:00")).sort((a,b)=>b-a)[0];
   if (ultimaFecha) {
     const diasSinDatos = Math.floor((hoy - ultimaFecha) / (1000*60*60*24));
-    if (diasSinDatos >= 3) alertas.push({ tipo: "amarillo", icono: "🕐", titulo: "Datos desactualizados", desc: `El último dato importado es del ${ultimaFecha.toLocaleDateString("es-ES")}. Han pasado ${diasSinDatos} días.`, accion: "importar" });
+    if (diasSinDatos >= 1) alertas.push({ tipo: "amarillo", icono: "🕐", titulo: "Datos desactualizados", desc: `El último dato importado es del ${ultimaFecha.toLocaleDateString("es-ES")}. Importa los datos de ayer.`, accion: "importar" });
   }
 
   return alertas;
