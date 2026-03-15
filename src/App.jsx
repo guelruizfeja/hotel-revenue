@@ -397,9 +397,9 @@ function calcularAlertas(datos, mes, anio) {
   const mediaPickupDia = pickup30.reduce((a,e) => a+(e.num_reservas||1), 0) / diasConPickup;
 
   if (totalAyer === 0 && mediaPickupDia > 1) {
-    alertas.push({ tipo: "rojo", icono: "📭", titulo: "Sin pickup ayer", desc: `No se captó ninguna reserva ayer. La media diaria es ${mediaPickupDia.toFixed(1)} reservas.` });
+    alertas.push({ tipo: "rojo", icono: "📭", titulo: "Sin pickup ayer", desc: `No se captó ninguna reserva ayer. La media diaria es ${mediaPickupDia.toFixed(1)} reservas.`, accion: "pickup" });
   } else if (totalAyer > 0 && mediaPickupDia > 0 && totalAyer >= mediaPickupDia * 2) {
-    alertas.push({ tipo: "verde", icono: "🚀", titulo: "Pickup excepcional", desc: `Ayer se captaron ${totalAyer} reservas, el doble de la media diaria (${mediaPickupDia.toFixed(1)}).` });
+    alertas.push({ tipo: "verde", icono: "🚀", titulo: "Pickup excepcional", desc: `Ayer se captaron ${totalAyer} reservas, el doble de la media diaria (${mediaPickupDia.toFixed(1)}).`, accion: "pickup" });
   }
 
   // ── Ocupación vs presupuesto ──
@@ -415,16 +415,16 @@ function calcularAlertas(datos, mes, anio) {
 
     if (ppto?.occ_ppto) {
       const diff = occReal - ppto.occ_ppto;
-      if (diff <= -10) alertas.push({ tipo: "rojo", icono: "📉", titulo: "Ocupación por debajo del presupuesto", desc: `${Math.abs(diff).toFixed(1)}% por debajo del objetivo (${ppto.occ_ppto.toFixed(1)}% ppto vs ${occReal.toFixed(1)}% real).` });
-      else if (diff >= 5) alertas.push({ tipo: "verde", icono: "🎯", titulo: "Ocupación por encima del presupuesto", desc: `+${diff.toFixed(1)}% sobre el objetivo. Real: ${occReal.toFixed(1)}% vs ${ppto.occ_ppto.toFixed(1)}% ppto.` });
+      if (diff <= -10) alertas.push({ tipo: "rojo", icono: "📉", titulo: "Ocupación por debajo del presupuesto", desc: `${Math.abs(diff).toFixed(1)}% por debajo del objetivo (${ppto.occ_ppto.toFixed(1)}% ppto vs ${occReal.toFixed(1)}% real).`, accion: "kpi:Ocupación" });
+      else if (diff >= 5) alertas.push({ tipo: "verde", icono: "🎯", titulo: "Ocupación por encima del presupuesto", desc: `+${diff.toFixed(1)}% sobre el objetivo. Real: ${occReal.toFixed(1)}% vs ${ppto.occ_ppto.toFixed(1)}% ppto.`, accion: "kpi:Ocupación" });
     }
 
     // ── Revenue vs presupuesto ──
     if (ppto?.rev_total_ppto) {
       const revReal = datosMes.reduce((a,d) => a+(d.revenue_total||0), 0);
       const diffRev = ((revReal - ppto.rev_total_ppto) / ppto.rev_total_ppto * 100);
-      if (diffRev <= -15) alertas.push({ tipo: "rojo", icono: "💸", titulo: "Revenue muy por debajo del presupuesto", desc: `${Math.abs(diffRev).toFixed(1)}% por debajo del objetivo mensual.` });
-      else if (diffRev >= 10) alertas.push({ tipo: "verde", icono: "💰", titulo: "Revenue por encima del presupuesto", desc: `+${diffRev.toFixed(1)}% sobre el objetivo mensual. ¡Buen trabajo!` });
+      if (diffRev <= -15) alertas.push({ tipo: "rojo", icono: "💸", titulo: "Revenue muy por debajo del presupuesto", desc: `${Math.abs(diffRev).toFixed(1)}% por debajo del objetivo mensual.`, accion: "kpi:Revenue Total" });
+      else if (diffRev >= 10) alertas.push({ tipo: "verde", icono: "💰", titulo: "Revenue por encima del presupuesto", desc: `+${diffRev.toFixed(1)}% sobre el objetivo mensual. ¡Buen trabajo!`, accion: "kpi:Revenue Total" });
     }
 
     // ── ADR vs año anterior ──
@@ -437,7 +437,7 @@ function calcularAlertas(datos, mes, anio) {
       const habOcuLY = mesAnterior.reduce((a,d)=>a+(d.hab_ocupadas||0),0);
       const adrLY = habOcuLY > 0 ? mesAnterior.reduce((a,d)=>a+(d.revenue_hab||0),0)/habOcuLY : 0;
       if (adrLY > 0 && adrReal < adrLY * 0.93) {
-        alertas.push({ tipo: "amarillo", icono: "⚠️", titulo: "ADR por debajo del año anterior", desc: `ADR actual €${Math.round(adrReal)} vs €${Math.round(adrLY)} del año pasado (-${((adrLY-adrReal)/adrLY*100).toFixed(1)}%).` });
+        alertas.push({ tipo: "amarillo", icono: "⚠️", titulo: "ADR por debajo del año anterior", desc: `ADR actual €${Math.round(adrReal)} vs €${Math.round(adrLY)} del año pasado (-${((adrLY-adrReal)/adrLY*100).toFixed(1)}%).`, accion: "kpi:ADR" });
       }
     }
   }
@@ -446,19 +446,26 @@ function calcularAlertas(datos, mes, anio) {
   const ultimaFecha = produccion.map(d => new Date(d.fecha+"T00:00:00")).sort((a,b)=>b-a)[0];
   if (ultimaFecha) {
     const diasSinDatos = Math.floor((hoy - ultimaFecha) / (1000*60*60*24));
-    if (diasSinDatos >= 3) alertas.push({ tipo: "amarillo", icono: "🕐", titulo: "Datos desactualizados", desc: `El último dato importado es del ${ultimaFecha.toLocaleDateString("es-ES")}. Han pasado ${diasSinDatos} días.` });
+    if (diasSinDatos >= 3) alertas.push({ tipo: "amarillo", icono: "🕐", titulo: "Datos desactualizados", desc: `El último dato importado es del ${ultimaFecha.toLocaleDateString("es-ES")}. Han pasado ${diasSinDatos} días.`, accion: "importar" });
   }
 
   return alertas;
 }
 
-function AlertasPanel({ alertas, onClose }) {
+function AlertasPanel({ alertas, onClose, onNavegar }) {
   if (alertas.length === 0) return (
     <div style={{ position:"absolute", top:54, right:0, width:340, background:C.bgCard, border:`1px solid ${C.border}`, borderRadius:12, boxShadow:"0 8px 32px rgba(0,0,0,0.12)", zIndex:200, padding:20 }}>
       <p style={{ fontSize:13, color:C.textMid, textAlign:"center" }}>✅ Todo en orden, sin alertas activas</p>
     </div>
   );
   const colores = { rojo:{ bg:"#FDECEA", border:"#D32F2F", text:"#D32F2F" }, amarillo:{ bg:"#FFF8E1", border:"#F9A825", text:"#E65100" }, verde:{ bg:"#E6F7EE", border:"#1A7A3C", text:"#1A7A3C" } };
+  const labelAccion = (accion) => {
+    if (!accion) return null;
+    if (accion === "pickup") return "→ Ver Pickup";
+    if (accion === "importar") return "→ Importar datos";
+    if (accion.startsWith("kpi:")) return `→ Ver ${accion.split(":")[1]}`;
+    return "→ Ver más";
+  };
   return (
     <div style={{ position:"absolute", top:54, right:0, width:360, background:C.bgCard, border:`1px solid ${C.border}`, borderRadius:12, boxShadow:"0 8px 32px rgba(0,0,0,0.12)", zIndex:200, overflow:"hidden" }}>
       <div style={{ padding:"14px 16px", borderBottom:`1px solid ${C.border}`, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
@@ -468,10 +475,15 @@ function AlertasPanel({ alertas, onClose }) {
       <div style={{ maxHeight:380, overflowY:"auto" }}>
         {alertas.map((a, i) => {
           const c = colores[a.tipo] || colores.amarillo;
+          const label = labelAccion(a.accion);
           return (
-            <div key={i} style={{ padding:"12px 16px", borderBottom:`1px solid ${C.border}`, borderLeft:`3px solid ${c.border}`, background: i%2===0 ? C.bg : C.bgCard }}>
+            <div key={i} onClick={() => { if(a.accion) { onNavegar(a.accion); onClose(); } }}
+              style={{ padding:"12px 16px", borderBottom:`1px solid ${C.border}`, borderLeft:`3px solid ${c.border}`, background: i%2===0 ? C.bg : C.bgCard, cursor: a.accion ? "pointer" : "default", transition:"background 0.1s" }}
+              onMouseEnter={e => { if(a.accion) e.currentTarget.style.background = C.accentLight; }}
+              onMouseLeave={e => { e.currentTarget.style.background = i%2===0 ? C.bg : C.bgCard; }}>
               <p style={{ fontSize:12, fontWeight:700, color:c.text, marginBottom:3 }}>{a.icono} {a.titulo}</p>
               <p style={{ fontSize:11, color:C.textMid, lineHeight:1.5 }}>{a.desc}</p>
+              {label && <p style={{ fontSize:10, color:C.accent, fontWeight:600, marginTop:5 }}>{label}</p>}
             </div>
           );
         })}
@@ -1090,9 +1102,12 @@ async function generarReportePDF(datos, mes, anio, hotelNombre) {
 }
 
 // ─── DASHBOARD VIEW ───────────────────────────────────────────────
-function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, setKpiModal }) {
+function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, setKpiModal, kpiModalExterno, onKpiModalExternoHandled }) {
   const { produccion } = datos;
   const [hmMesSel, setHmMesSel] = useState(null);
+  useEffect(() => {
+    if (kpiModalExterno) { setKpiModal(kpiModalExterno); onKpiModalExternoHandled && onKpiModalExternoHandled(); }
+  }, [kpiModalExterno]);
 
   if (!produccion || produccion.length === 0) return <EmptyState />;
 
@@ -2411,11 +2426,12 @@ export default function App() {
   const [mesDetalle, setMesDetalle] = useState(null);
   const [generandoPDF, setGenerandoPDF] = useState(false);
   const [mostrarAlertas, setMostrarAlertas] = useState(false);
+  const [kpiModalApp, setKpiModalApp] = useState(null);
   const [kpiModal, setKpiModal] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const views = {
-    dashboard: (props) => <DashboardView {...props} onMesDetalle={(m, a) => setMesDetalle({ mes: m, anio: a })} kpiModal={kpiModal} setKpiModal={setKpiModal} />,
+    dashboard: (props) => <DashboardView {...props} onMesDetalle={(m, a) => setMesDetalle({ mes: m, anio: a })} kpiModal={kpiModal} setKpiModal={setKpiModal} kpiModalExterno={kpiModalApp} onKpiModalExternoHandled={() => setKpiModalApp(null)} />,
     pickup:    (props) => <PickupView    {...props} />,
     budget:    (props) => <BudgetView    {...props} />,
   };
@@ -2468,7 +2484,11 @@ export default function App() {
               <button onClick={() => setMostrarAlertas(v=>!v)} style={{ background:"none", border:`1px solid ${n>0?C.red:C.border}`, borderRadius:7, padding:"5px 10px", cursor:"pointer", color:n>0?C.red:C.textLight, fontSize:13, position:"relative" }} title="Alertas">
                 🔔{n > 0 && <span style={{ position:"absolute", top:-4, right:-4, background:C.red, color:"#fff", borderRadius:"50%", width:16, height:16, fontSize:9, fontWeight:700, display:"flex", alignItems:"center", justifyContent:"center" }}>{n}</span>}
               </button>
-              {mostrarAlertas && <AlertasPanel alertas={alertas} onClose={()=>setMostrarAlertas(false)} />}
+              {mostrarAlertas && <AlertasPanel alertas={alertas} onClose={()=>setMostrarAlertas(false)} onNavegar={(accion) => {
+                if (accion === "pickup") { setView("pickup"); localStorage.setItem("fr_view","pickup"); }
+                else if (accion === "importar") { setImportar(true); }
+                else if (accion.startsWith("kpi:")) { setView("dashboard"); setKpiModalApp(accion.split(":")[1]); }
+              }} />}
             </div>
           ); })()}
           <button onClick={() => setImportar(true)} style={{ background: C.accent, color: "#fff", border: "none", borderRadius: 7, padding: "5px 12px", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "'DM Sans',sans-serif" }}>
