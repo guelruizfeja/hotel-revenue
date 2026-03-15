@@ -2302,6 +2302,56 @@ const NAV = [
   { key: "budget",     icon: "💰", label: "Presupuesto" },
 ];
 
+
+function PantallaSubscripcion({ session, onPagar }) {
+  const [cargando, setCargando] = useState(false);
+
+  const iniciarPago = async () => {
+    setCargando(true);
+    try {
+      const res = await fetch("/api/create-checkout-session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_id: session.user.id, email: session.user.email }),
+      });
+      const { url, error } = await res.json();
+      if (error) throw new Error(error);
+      window.location.href = url;
+    } catch(e) {
+      alert("Error al iniciar el pago: " + e.message);
+    }
+    setCargando(false);
+  };
+
+  return (
+    <div style={{ minHeight:"100vh", background:C.bg, display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'DM Sans',sans-serif" }}>
+      <div style={{ width:460, background:C.bgCard, borderRadius:20, padding:"48px 40px", boxShadow:"0 32px 80px rgba(0,0,0,0.1)", textAlign:"center" }}>
+        <img src={LOGO_B64} alt="FastRev" style={{ height:52, marginBottom:24 }} />
+        <h1 style={{ fontFamily:"'Playfair Display',serif", fontSize:26, fontWeight:800, color:C.text, marginBottom:10 }}>Empieza gratis 30 días</h1>
+        <p style={{ fontSize:14, color:C.textMid, lineHeight:1.7, marginBottom:32 }}>
+          Acceso completo a FastRev durante 30 días sin coste.<br/>
+          Después, solo <strong>€49/mes</strong> + IVA. Cancela cuando quieras.
+        </p>
+        <div style={{ background:C.bg, borderRadius:12, padding:"20px 24px", marginBottom:28, textAlign:"left" }}>
+          {["Dashboard con KPIs en tiempo real","Análisis de pickup y forecast","Presupuesto vs real mensual","Informes PDF mensuales","Alertas automáticas"].map((f,i) => (
+            <div key={i} style={{ display:"flex", alignItems:"center", gap:10, marginBottom: i<4?10:0 }}>
+              <span style={{ color:C.green, fontWeight:700, fontSize:14 }}>✓</span>
+              <span style={{ fontSize:13, color:C.text }}>{f}</span>
+            </div>
+          ))}
+        </div>
+        <button onClick={iniciarPago} disabled={cargando}
+          style={{ width:"100%", padding:"14px", borderRadius:10, border:"none", background:C.accent, color:"#fff", fontSize:15, fontWeight:700, cursor:cargando?"not-allowed":"pointer", fontFamily:"'DM Sans',sans-serif", marginBottom:12 }}>
+          {cargando ? "Redirigiendo..." : "Empezar prueba gratuita →"}
+        </button>
+        <button onClick={() => supabase.auth.signOut()} style={{ background:"none", border:"none", color:C.textLight, fontSize:12, cursor:"pointer" }}>
+          Cerrar sesión
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -2311,6 +2361,8 @@ export default function App() {
   const [mesSel,  setMesSel]  = useState(() => { const v = localStorage.getItem("rm_mes");  return v !== null ? parseInt(v) : hoy.getMonth(); });
   const [anioSel, setAnioSel] = useState(() => { const v = localStorage.getItem("rm_anio"); return v !== null ? parseInt(v) : hoy.getFullYear(); });
   const [importar, setImportar] = useState(false);
+  const [suscripcion, setSuscripcion] = useState(null);
+  const [cargandoSub, setCargandoSub] = useState(true);
   const [datos, setDatos] = useState({ produccion: [], presupuesto: [] });
   const [cargandoDatos, setCargandoDatos] = useState(false);
 
@@ -2329,13 +2381,41 @@ export default function App() {
       setLoading(false);
     });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      // Si cambia el usuario, limpiar caché
+      if (session) {
+        const cachedUserId = localStorage.getItem("fr_user_id");
+        if (cachedUserId && cachedUserId !== session.user.id) {
+          localStorage.removeItem("fr_datos_cache_v3");
+          localStorage.removeItem("fr_datos_ts_v3");
+          localStorage.removeItem("fr_scroll");
+          localStorage.removeItem("fr_view");
+        }
+        localStorage.setItem("fr_user_id", session.user.id);
+      }
       setSession(session);
     });
     return () => subscription.unsubscribe();
   }, []);
 
   useEffect(() => {
-    if (session) cargarDatos(false);
+    if (session) {
+      cargarDatos(false);
+      // Cargar suscripción
+      supabase.from("suscripciones").select("*").eq("user_id", session.user.id).maybeSingle()
+        .then(({ data, error }) => {
+          console.log("[Sub]", data, error);
+          setSuscripcion(data || null);
+          setCargandoSub(false);
+        }).catch(() => { setSuscripcion(null); setCargandoSub(false); });
+      // Verificar pago=ok en URL
+      if (window.location.search.includes("pago=ok")) {
+        setTimeout(() => {
+          supabase.from("suscripciones").select("*").eq("user_id", session.user.id).maybeSingle()
+            .then(({ data }) => { setSuscripcion(data); });
+        }, 2000);
+        window.history.replaceState({}, "", window.location.pathname);
+      }
+    }
   }, [session]);
 
   const [refreshKey, setRefreshKey] = useState(0);
@@ -2445,6 +2525,7 @@ export default function App() {
   );
 
   if (!session) return <AuthScreen />;
+  if (!cargandoSub && (!suscripcion || suscripcion.estado === "cancelada")) return <PantallaSubscripcion session={session} />;
 
   return (
     <div style={{ fontFamily: "'DM Sans', sans-serif", background: C.bg, minHeight: "100vh" }}>
