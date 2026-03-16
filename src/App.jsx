@@ -1245,6 +1245,7 @@ async function generarReportePDF(datos, mes, anio, hotelNombre) {
 function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, setKpiModal, kpiModalExterno, onKpiModalExternoHandled }) {
   const { produccion } = datos;
   const [hmMesSel, setHmMesSel] = useState(null);
+  const [metricaSel, setMetricaSel] = useState("adr_occ");
   useEffect(() => {
     if (kpiModalExterno) { setKpiModal(kpiModalExterno); onKpiModalExternoHandled && onKpiModalExternoHandled(); }
   }, [kpiModalExterno]);
@@ -1510,44 +1511,66 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
               )}
             </Card>
 
-            {/* ── GRÁFICAS DERECHA ── */}
-            <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
-              <Card>
-                <p style={{ fontFamily:"'Playfair Display',serif", fontWeight:700, fontSize:18, color:C.text, marginBottom:2 }}>ADR & Ocupación</p>
-                <p style={{ fontSize:12, color:C.textMid, marginBottom:12 }}>Evolución mensual {anio}</p>
-                <ResponsiveContainer width="100%" height={160}>
-                  <ComposedChart data={porMes} barSize={10}>
-                    <CartesianGrid strokeDasharray="3 3" stroke={C.border} vertical={false}/>
-                    <XAxis dataKey="mes" axisLine={false} tickLine={false} height={16} tick={(props) => { const {x,y,payload} = props; if(payload.value!=="Ene") return null; return <text x={x} y={y+10} fill={C.textLight} fontSize={9} textAnchor="middle">{payload.index!==undefined ? porMes.find(d=>d.mes==="Ene")?.anioIdx || "" : ""}</text>; }}/>
-                    <YAxis yAxisId="left"  tick={{fill:C.textLight,fontSize:9}} axisLine={false} tickLine={false} unit="%" domain={[0,100]}/>
-                    <YAxis yAxisId="right" orientation="right" tick={{fill:C.textLight,fontSize:9}} axisLine={false} tickLine={false} unit="€"/>
-                    <Tooltip content={<CustomTooltip/>}/>
-                    <Bar  yAxisId="left"  dataKey="occ"  name="Ocupación" fill={C.accent} radius={[2,2,0,0]} fillOpacity={0.8}/>
-                    <Line yAxisId="right" dataKey="adr"  name="ADR" type="monotone" stroke="#E85D04" strokeWidth={2} dot={false}/>
-                  </ComposedChart>
-                </ResponsiveContainer>
-              </Card>
-              <Card>
-                <p style={{ fontFamily:"'Playfair Display',serif", fontWeight:700, fontSize:18, color:C.text, marginBottom:2 }}>RevPAR</p>
-                <p style={{ fontSize:13, color:C.textMid, marginBottom:12 }}>Evolución mensual (€/hab)</p>
-                <ResponsiveContainer width="100%" height={160}>
-                  <AreaChart data={porMes}>
-                    <defs>
-                      <linearGradient id="gRevpar2" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%"  stopColor={C.accent} stopOpacity={0.15}/>
-                        <stop offset="95%" stopColor={C.accent} stopOpacity={0}/>
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke={C.border}/>
-                    <XAxis dataKey="mes" axisLine={false} tickLine={false} height={16} tick={(props) => { const {x,y,payload} = props; if(payload.value!=="Ene") return null; return <text x={x} y={y+10} fill={C.textLight} fontSize={9} textAnchor="middle">{porMes.find(d=>d.mes==="Ene")?.anioIdx || ""}</text>; }}/>
-                    <YAxis tick={{fill:C.textLight,fontSize:9}} axisLine={false} tickLine={false} unit="€"/>
-                    <Tooltip content={<CustomTooltip/>}/>
-                    <Area type="monotone" dataKey="revpar"  name="RevPAR"  stroke={C.accent} strokeWidth={2} fill="url(#gRevpar2)" dot={{fill:C.accent,r:2}} activeDot={{r:3}}/>
-                    <Line type="monotone" dataKey="trevpar" name="TRevPAR" stroke="#E85D04" strokeWidth={1.5} dot={false} strokeDasharray="5 4"/>
-                  </AreaChart>
-                </ResponsiveContainer>
-              </Card>
-            </div>
+            {/* ── GRÁFICA DERECHA UNIFICADA ── */}
+            {(() => {
+              const metricas = [
+                { key:"adr_occ", label:"ADR & Ocupación" },
+                { key:"revpar",  label:"RevPAR" },
+                { key:"trevpar", label:"TRevPAR" },
+              ];
+              const xTick = (props) => {
+                const {x,y,payload} = props;
+                if(payload.value!=="Ene") return null;
+                return <text x={x} y={y+10} fill={C.textLight} fontSize={9} textAnchor="middle">{porMes.find(d=>d.mes==="Ene")?.anioIdx||""}</text>;
+              };
+              return (
+                <Card style={{ display:"flex", flexDirection:"column", height:"100%", minHeight:360 }}>
+                  <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16 }}>
+                    <p style={{ fontFamily:"'Playfair Display',serif", fontWeight:700, fontSize:18, color:C.text }}>
+                      {metricas.find(m=>m.key===metricaSel)?.label}
+                    </p>
+                    <div style={{ display:"flex", gap:4 }}>
+                      {metricas.map(m => (
+                        <button key={m.key} onClick={()=>setMetricaSel(m.key)}
+                          style={{ padding:"4px 10px", borderRadius:6, border:`1px solid ${metricaSel===m.key?C.accent:C.border}`, background:metricaSel===m.key?C.accentLight:"transparent", color:metricaSel===m.key?C.accent:C.textLight, fontSize:10, fontWeight:metricaSel===m.key?600:400, cursor:"pointer", fontFamily:"'DM Sans',sans-serif", transition:"all 0.15s" }}>
+                          {m.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <p style={{ fontSize:12, color:C.textMid, marginBottom:12 }}>Evolución mensual {anio}</p>
+                  <div style={{ flex:1, minHeight:300 }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      {metricaSel === "adr_occ" ? (
+                        <ComposedChart data={porMes} barSize={10}>
+                          <CartesianGrid strokeDasharray="3 3" stroke={C.border} vertical={false}/>
+                          <XAxis dataKey="mes" axisLine={false} tickLine={false} height={16} tick={xTick}/>
+                          <YAxis yAxisId="left"  tick={{fill:C.textLight,fontSize:9}} axisLine={false} tickLine={false} unit="%" domain={[0,100]}/>
+                          <YAxis yAxisId="right" orientation="right" tick={{fill:C.textLight,fontSize:9}} axisLine={false} tickLine={false} unit="€"/>
+                          <Tooltip content={<CustomTooltip/>}/>
+                          <Bar  yAxisId="left"  dataKey="occ" name="Ocupación" fill={C.accent} radius={[2,2,0,0]} fillOpacity={0.8}/>
+                          <Line yAxisId="right" dataKey="adr" name="ADR" type="monotone" stroke="#E85D04" strokeWidth={2} dot={false}/>
+                        </ComposedChart>
+                      ) : (
+                        <AreaChart data={porMes}>
+                          <defs>
+                            <linearGradient id="gMetrica" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="5%"  stopColor={C.accent} stopOpacity={0.15}/>
+                              <stop offset="95%" stopColor={C.accent} stopOpacity={0}/>
+                            </linearGradient>
+                          </defs>
+                          <CartesianGrid strokeDasharray="3 3" stroke={C.border} vertical={false}/>
+                          <XAxis dataKey="mes" axisLine={false} tickLine={false} height={16} tick={xTick}/>
+                          <YAxis tick={{fill:C.textLight,fontSize:9}} axisLine={false} tickLine={false} unit="€"/>
+                          <Tooltip content={<CustomTooltip/>}/>
+                          <Area type="monotone" dataKey={metricaSel} name={metricaSel==="revpar"?"RevPAR":"TRevPAR"} stroke={C.accent} strokeWidth={2} fill="url(#gMetrica)" dot={{fill:C.accent,r:2}} activeDot={{r:3}}/>
+                        </AreaChart>
+                      )}
+                    </ResponsiveContainer>
+                  </div>
+                </Card>
+              );
+            })()}
 
           </div>
         );
