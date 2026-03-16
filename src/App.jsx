@@ -875,6 +875,8 @@ function MonthDetailView({ datos, mes, anio, onBack }) {
 
 
 // ─── PDF REPORT ──────────────────────────────────────────────────
+
+
 async function generarReportePDF(datos, mes, anio, hotelNombre) {
   const MESES_FULL = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
   const MESES_C    = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
@@ -1051,7 +1053,7 @@ async function generarReportePDF(datos, mes, anio, hotelNombre) {
   doc.text(lines, M+4, y+6);
   y += lines.length*4.5+14;
 
-  checkY(20); addPage();
+  checkY(60);
   doc.setTextColor(...azul); doc.setFontSize(13); doc.setFont("helvetica","bold");
   doc.text("Resumen Últimos 12 Meses", M, y); y+=6;
   doc.setDrawColor(...grisCl); doc.line(M,y,W-M,y); y+=3;
@@ -1091,6 +1093,143 @@ async function generarReportePDF(datos, mes, anio, hotelNombre) {
       }
     }
   });
+
+  // ── GRÁFICA OCUPACIÓN DIARIA (barras) ──
+  addPage();
+  doc.setTextColor(...azul); doc.setFontSize(13); doc.setFont("helvetica","bold");
+  doc.text(`Evolución Diaria — Ocupación & ADR`, M, y); y+=6;
+  doc.setDrawColor(...grisCl); doc.line(M,y,W-M,y); y+=6;
+
+  if(diasMes.length > 0) {
+    const chartW = W-M*2;
+    const chartH = 45;
+    const barW = Math.min(6, chartW/diasMes.length - 1);
+    const gap = chartW/diasMes.length;
+    const maxOcc = 100;
+    const maxAdr = Math.max(...diasMes.map(d=>d.adr)) * 1.15;
+
+    // Fondo gráfica
+    doc.setFillColor(248,250,253);
+    doc.rect(M, y, chartW, chartH, "F");
+    doc.setDrawColor(...grisCl);
+    doc.rect(M, y, chartW, chartH, "S");
+
+    // Líneas guía horizontales
+    [25,50,75,100].forEach(pct => {
+      const ly = y + chartH - (pct/maxOcc)*chartH;
+      doc.setDrawColor(220,220,220); doc.setLineWidth(0.1);
+      doc.line(M, ly, M+chartW, ly);
+      doc.setTextColor(...gris); doc.setFontSize(5);
+      doc.text(pct+"%", M-4, ly+1, {align:"right"});
+    });
+
+    // Barras ocupación
+    diasMes.forEach((d,i) => {
+      const bx = M + i*gap + gap/2 - barW/2;
+      const bh = (parseFloat(d.occ)/maxOcc) * chartH;
+      const by = y + chartH - bh;
+      const color = parseFloat(d.occ)>=80 ? verde : parseFloat(d.occ)<50 ? rojo : azul;
+      doc.setFillColor(...color);
+      doc.rect(bx, by, barW, bh, "F");
+    });
+
+    // Línea ADR
+    doc.setDrawColor(232,93,4); doc.setLineWidth(0.6);
+    diasMes.forEach((d,i) => {
+      if(i===0) return;
+      const x1 = M + (i-1)*gap + gap/2;
+      const x2 = M + i*gap + gap/2;
+      const y1 = y + chartH - (diasMes[i-1].adr/maxAdr)*chartH;
+      const y2 = y + chartH - (d.adr/maxAdr)*chartH;
+      doc.line(x1, y1, x2, y2);
+    });
+
+    // Eje X días
+    doc.setTextColor(...gris); doc.setFontSize(5);
+    diasMes.forEach((d,i) => {
+      if(i%5===0 || i===diasMes.length-1) {
+        doc.text(String(d.dia), M+i*gap+gap/2, y+chartH+4, {align:"center"});
+      }
+    });
+
+    // Leyenda
+    doc.setFillColor(...azul); doc.rect(M, y+chartH+7, 8, 3, "F");
+    doc.setTextColor(...negro); doc.setFontSize(7);
+    doc.text("Ocupación %", M+10, y+chartH+10);
+    doc.setDrawColor(232,93,4); doc.setLineWidth(0.8);
+    doc.line(M+45, y+chartH+8.5, M+53, y+chartH+8.5);
+    doc.text("ADR €", M+55, y+chartH+10);
+
+    y += chartH + 18;
+  }
+
+  // ── GRÁFICA OCUPACIÓN POR DÍA DE SEMANA ──
+  checkY(65);
+  doc.setTextColor(...azul); doc.setFontSize(13); doc.setFont("helvetica","bold");
+  doc.text("Ocupación Media por Día de Semana", M, y); y+=6;
+  doc.setDrawColor(...grisCl); doc.line(M,y,W-M,y); y+=6;
+
+  if(diasMes.length > 0) {
+    const diasSem = ["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"];
+    const ocpSem = diasSem.map(ds => {
+      const dias = diasMes.filter(d=>d.sem===ds);
+      return dias.length>0 ? dias.reduce((a,d)=>a+parseFloat(d.occ),0)/dias.length : 0;
+    });
+    const chartW = W-M*2;
+    const chartH = 35;
+    const barW = 18;
+    const gap = chartW/7;
+
+    doc.setFillColor(248,250,253);
+    doc.rect(M, y, chartW, chartH, "F");
+    doc.setDrawColor(...grisCl); doc.rect(M, y, chartW, chartH, "S");
+
+    ocpSem.forEach((occ,i) => {
+      const bx = M + i*gap + gap/2 - barW/2;
+      const bh = (occ/100)*chartH;
+      const by = y + chartH - bh;
+      const color = occ>=80 ? verde : occ<50 ? rojo : azul;
+      doc.setFillColor(...color);
+      doc.rect(bx, by, barW, bh, "F");
+      doc.setTextColor(...negro); doc.setFontSize(7); doc.setFont("helvetica","bold");
+      if(occ>0) doc.text(occ.toFixed(0)+"%", bx+barW/2, by-1.5, {align:"center"});
+      doc.setFont("helvetica","normal"); doc.setTextColor(...gris); doc.setFontSize(8);
+      doc.text(diasSem[i], bx+barW/2, y+chartH+5, {align:"center"});
+    });
+    y += chartH + 14;
+  }
+
+  // ── DISTRIBUCIÓN REVENUE ──
+  checkY(45);
+  doc.setTextColor(...azul); doc.setFontSize(13); doc.setFont("helvetica","bold");
+  doc.text("Distribución del Revenue", M, y); y+=6;
+  doc.setDrawColor(...grisCl); doc.line(M,y,W-M,y); y+=4;
+
+  const revComponents = [
+    { label:"Revenue Habitaciones", value:mesAct.revH, color:azul },
+    { label:"Revenue F&B", value:mesAct.revFnb, color:[0,159,77] },
+    { label:"Revenue Otros", value:mesAct.revOt, color:[232,93,4] },
+  ].filter(r=>r.value>0);
+
+  if(revComponents.length>0) {
+    const total = revComponents.reduce((a,r)=>a+r.value,0);
+    const barTotalW = W-M*2;
+    let bx = M;
+    revComponents.forEach(r => {
+      const bw = (r.value/total)*barTotalW;
+      doc.setFillColor(...r.color);
+      doc.rect(bx, y, bw, 10, "F");
+      bx += bw;
+    });
+    y += 13;
+    revComponents.forEach((r,i) => {
+      const pct = (r.value/total*100).toFixed(1);
+      doc.setFillColor(...r.color); doc.rect(M+i*65, y, 8, 4, "F");
+      doc.setTextColor(...negro); doc.setFontSize(8);
+      doc.text(`${r.label}: €${Math.round(r.value).toLocaleString("es-ES")} (${pct}%)`, M+i*65+10, y+3.5);
+    });
+    y += 12;
+  }
 
   const pages = doc.internal.getNumberOfPages();
   for(let i=1;i<=pages;i++){
@@ -2576,15 +2715,16 @@ export default function App() {
           <button onClick={() => setImportar(true)} style={{ background: C.accent, color: "#fff", border: "none", borderRadius: 7, padding: "5px 12px", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "'DM Sans',sans-serif" }}>
             📊 Importar
           </button>
-          {view === "dashboard" && (
+          {view === "dashboard" && (<>
             <button
               onClick={async()=>{ setGenerandoPDF(true); await generarReportePDF(datos,mesSel,anioSel,datos.hotel?.nombre||"Mi Hotel"); setGenerandoPDF(false); }}
               disabled={generandoPDF}
               style={{ background: "transparent", color: C.accent, border: `1px solid ${C.accent}`, borderRadius: 7, padding: "5px 12px", fontSize: 11, fontWeight: 600, cursor: generandoPDF?"not-allowed":"pointer", fontFamily: "'DM Sans',sans-serif" }}
             >
-              {generandoPDF ? "⏳" : "📄 Informe mensual"}
+              {generandoPDF ? "Generando..." : "Informe mensual"}
             </button>
-          )}
+
+          </>)}
           <span style={{ fontSize: 11, color: C.textLight, maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{session.user.email}</span>
           <button onClick={handleLogout}
             style={{ padding: "5px 12px", borderRadius: 7, border: `1px solid ${C.border}`, background: "transparent", color: C.textLight, cursor: "pointer", fontSize: 12, fontFamily: "'DM Sans', sans-serif", transition: "all 0.15s" }}
