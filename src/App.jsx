@@ -2646,6 +2646,8 @@ export default function App() {
   const [mesDetalle, setMesDetalle] = useState(null);
   const [generandoPDF, setGenerandoPDF] = useState(false);
   const [mostrarAlertas, setMostrarAlertas] = useState(false);
+  const [mostrarPerfil, setMostrarPerfil] = useState(false);
+  const [perfilSeccion, setPerfilSeccion] = useState(null); // null | "suscripcion" | "extranets"
   const [kpiModalApp, setKpiModalApp] = useState(null);
   const [kpiModal, setKpiModal] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -2725,13 +2727,44 @@ export default function App() {
             </button>
 
           </>)}
-          <span style={{ fontSize: 11, color: C.textLight, maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{session.user.email}</span>
-          <button onClick={handleLogout}
-            style={{ padding: "5px 12px", borderRadius: 7, border: `1px solid ${C.border}`, background: "transparent", color: C.textLight, cursor: "pointer", fontSize: 12, fontFamily: "'DM Sans', sans-serif", transition: "all 0.15s" }}
-            onMouseEnter={e=>{ e.currentTarget.style.color=C.text; e.currentTarget.style.borderColor=C.textMid; }}
-            onMouseLeave={e=>{ e.currentTarget.style.color=C.textLight; e.currentTarget.style.borderColor=C.border; }}>
-            Salir
-          </button>
+          {/* Menú Mi Perfil */}
+          <div style={{ position:"relative" }}>
+            <button onClick={() => setMostrarPerfil(v=>!v)}
+              style={{ display:"flex", alignItems:"center", gap:6, padding:"5px 12px", borderRadius:7, border:`1px solid ${C.border}`, background:"transparent", color:C.text, cursor:"pointer", fontSize:12, fontWeight:600, fontFamily:"'DM Sans',sans-serif", transition:"all 0.15s" }}>
+              <span style={{ width:24, height:24, borderRadius:"50%", background:C.accent, color:"#fff", fontSize:11, fontWeight:700, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                {session.user.email[0].toUpperCase()}
+              </span>
+              Mi perfil
+              <span style={{ fontSize:9, color:C.textLight }}>▾</span>
+            </button>
+            {mostrarPerfil && (
+              <div style={{ position:"absolute", top:38, right:0, width:260, background:C.bgCard, border:`1px solid ${C.border}`, borderRadius:12, boxShadow:"0 8px 32px rgba(0,0,0,0.12)", zIndex:200, overflow:"hidden" }}>
+                {/* Email */}
+                <div style={{ padding:"12px 16px", borderBottom:`1px solid ${C.border}`, background:C.bg }}>
+                  <p style={{ fontSize:11, color:C.textLight, marginBottom:2 }}>Conectado como</p>
+                  <p style={{ fontSize:12, fontWeight:600, color:C.text, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{session.user.email}</p>
+                </div>
+                {/* Opciones */}
+                {[
+                  { label:"Gestión de suscripción", icon:"💳", key:"suscripcion" },
+                  { label:"Extranets", icon:"🔗", key:"extranets" },
+                ].map(op => (
+                  <button key={op.key} onClick={() => { setPerfilSeccion(op.key); setMostrarPerfil(false); }}
+                    style={{ width:"100%", display:"flex", alignItems:"center", gap:10, padding:"11px 16px", background:"transparent", border:"none", borderBottom:`1px solid ${C.border}`, cursor:"pointer", fontSize:13, color:C.text, fontFamily:"'DM Sans',sans-serif", textAlign:"left" }}
+                    onMouseEnter={e=>e.currentTarget.style.background=C.accentLight}
+                    onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                    <span>{op.icon}</span>{op.label}
+                  </button>
+                ))}
+                <button onClick={handleLogout}
+                  style={{ width:"100%", display:"flex", alignItems:"center", gap:10, padding:"11px 16px", background:"transparent", border:"none", cursor:"pointer", fontSize:13, color:C.red, fontFamily:"'DM Sans',sans-serif", textAlign:"left" }}
+                  onMouseEnter={e=>e.currentTarget.style.background="#FDECEA"}
+                  onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                  <span>🚪</span>Cerrar sesión
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div></header>
 
@@ -2746,6 +2779,81 @@ export default function App() {
         )}
       </main>
 
+
+      {/* Modal Suscripción */}
+      {perfilSeccion === "suscripcion" && (
+        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:1000 }}>
+          <div style={{ background:C.bgCard, borderRadius:16, padding:"36px 40px", width:440, boxShadow:"0 24px 60px rgba(0,0,0,0.2)", fontFamily:"'DM Sans',sans-serif" }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:24 }}>
+              <h2 style={{ fontFamily:"'Playfair Display',serif", fontSize:20, fontWeight:700, color:C.text }}>Gestión de suscripción</h2>
+              <button onClick={()=>setPerfilSeccion(null)} style={{ background:"none", border:"none", fontSize:20, cursor:"pointer", color:C.textLight }}>✕</button>
+            </div>
+            <div style={{ background:C.bg, borderRadius:10, padding:"16px 20px", marginBottom:20 }}>
+              <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
+                <span style={{ fontSize:12, color:C.textMid }}>Plan</span>
+                <span style={{ fontSize:12, fontWeight:700, color:C.text, textTransform:"capitalize" }}>{suscripcion?.plan || "—"}</span>
+              </div>
+              <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
+                <span style={{ fontSize:12, color:C.textMid }}>Estado</span>
+                <span style={{ fontSize:12, fontWeight:700, color: suscripcion?.estado==="activa"||suscripcion?.estado==="trial" ? C.green : C.red }}>
+                  {suscripcion?.estado === "trial" ? "Periodo de prueba" : suscripcion?.estado === "activa" ? "Activa" : suscripcion?.estado || "—"}
+                </span>
+              </div>
+              {suscripcion?.trial_end && suscripcion.estado === "trial" && (
+                <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
+                  <span style={{ fontSize:12, color:C.textMid }}>Prueba hasta</span>
+                  <span style={{ fontSize:12, fontWeight:700, color:C.text }}>{new Date(suscripcion.trial_end).toLocaleDateString("es-ES")}</span>
+                </div>
+              )}
+              {suscripcion?.periodo_fin && suscripcion.estado === "activa" && (
+                <div style={{ display:"flex", justifyContent:"space-between" }}>
+                  <span style={{ fontSize:12, color:C.textMid }}>Próxima renovación</span>
+                  <span style={{ fontSize:12, fontWeight:700, color:C.text }}>{new Date(suscripcion.periodo_fin).toLocaleDateString("es-ES")}</span>
+                </div>
+              )}
+            </div>
+            <div style={{ background:C.accentLight, borderRadius:10, padding:"12px 16px", marginBottom:20, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+              <div>
+                <p style={{ fontSize:13, fontWeight:700, color:C.accent }}>FastRevenue Básico</p>
+                <p style={{ fontSize:11, color:C.textMid }}>€49/mes + IVA</p>
+              </div>
+              <span style={{ fontSize:11, fontWeight:600, color:C.green, background:C.greenLight, padding:"3px 10px", borderRadius:20 }}>Activo</span>
+            </div>
+            <p style={{ fontSize:11, color:C.textLight, textAlign:"center", marginBottom:16 }}>Para cancelar tu suscripción contacta con soporte</p>
+            <a href="mailto:soporte@fastrevenue.app" style={{ display:"block", textAlign:"center", fontSize:12, color:C.accent, fontWeight:600 }}>soporte@fastrevenue.app</a>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Extranets */}
+      {perfilSeccion === "extranets" && (
+        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:1000 }}>
+          <div style={{ background:C.bgCard, borderRadius:16, padding:"36px 40px", width:480, boxShadow:"0 24px 60px rgba(0,0,0,0.2)", fontFamily:"'DM Sans',sans-serif" }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
+              <h2 style={{ fontFamily:"'Playfair Display',serif", fontSize:20, fontWeight:700, color:C.text }}>Extranets</h2>
+              <button onClick={()=>setPerfilSeccion(null)} style={{ background:"none", border:"none", fontSize:20, cursor:"pointer", color:C.textLight }}>✕</button>
+            </div>
+            <p style={{ fontSize:12, color:C.textMid, marginBottom:24 }}>Accede directamente a la extranet de cada canal</p>
+            {[
+              { nombre:"Brand Web", desc:"Motor de reservas directo", url:"#", logo:"🌐", color:"#004B87" },
+              { nombre:"Booking.com", desc:"Extranet de Booking.com", url:"https://admin.booking.com", logo:"🔵", color:"#003580" },
+              { nombre:"Expedia", desc:"Extranet de Expedia Group", url:"https://www.expediapartnercentral.com", logo:"🟡", color:"#FFD700" },
+            ].map((ex, i) => (
+              <a key={i} href={ex.url} target={ex.url==="#"?"_self":"_blank"} rel="noreferrer"
+                style={{ display:"flex", alignItems:"center", gap:14, padding:"14px 16px", borderRadius:10, border:`1px solid ${C.border}`, marginBottom:10, textDecoration:"none", background:C.bg, transition:"all 0.15s" }}
+                onMouseEnter={e=>{ e.currentTarget.style.background=C.accentLight; e.currentTarget.style.borderColor=C.accent; }}
+                onMouseLeave={e=>{ e.currentTarget.style.background=C.bg; e.currentTarget.style.borderColor=C.border; }}>
+                <div style={{ width:40, height:40, borderRadius:8, background:ex.color+"18", display:"flex", alignItems:"center", justifyContent:"center", fontSize:22, flexShrink:0 }}>{ex.logo}</div>
+                <div style={{ flex:1 }}>
+                  <p style={{ fontSize:13, fontWeight:700, color:C.text, marginBottom:2 }}>{ex.nombre}</p>
+                  <p style={{ fontSize:11, color:C.textMid }}>{ex.desc}</p>
+                </div>
+                <span style={{ fontSize:11, color:C.textLight }}>→</span>
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
       {importar && <ImportarExcel onClose={() => setImportar(false)} session={session} onImportado={() => { localStorage.removeItem("fr_datos_cache"); localStorage.removeItem("fr_datos_ts"); localStorage.removeItem("fr_scroll"); cargarDatos(true); }} />}
     </div>
   );
