@@ -2721,7 +2721,7 @@ export default function App() {
             <button
               onClick={async()=>{ setGenerandoPDF(true); await generarReportePDF(datos,mesSel,anioSel,datos.hotel?.nombre||"Mi Hotel"); setGenerandoPDF(false); }}
               disabled={generandoPDF}
-              style={{ background: "transparent", color: C.accent, border: `1px solid ${C.accent}`, borderRadius: 7, padding: "5px 12px", fontSize: 11, fontWeight: 600, cursor: generandoPDF?"not-allowed":"pointer", fontFamily: "'DM Sans',sans-serif" }}
+              style={{ background: "transparent", color: C.textMid, border: `1px solid ${C.border}`, borderRadius: 7, padding: "5px 14px", fontSize: 11, fontWeight: 500, cursor: generandoPDF?"not-allowed":"pointer", fontFamily: "'DM Sans',sans-serif", letterSpacing: 0.2 }}
             >
               {generandoPDF ? "Generando..." : "Informe mensual"}
             </button>
@@ -2730,37 +2730,36 @@ export default function App() {
           {/* Menú Mi Perfil */}
           <div style={{ position:"relative" }}>
             <button onClick={() => setMostrarPerfil(v=>!v)}
-              style={{ display:"flex", alignItems:"center", gap:6, padding:"5px 12px", borderRadius:7, border:`1px solid ${C.border}`, background:"transparent", color:C.text, cursor:"pointer", fontSize:12, fontWeight:600, fontFamily:"'DM Sans',sans-serif", transition:"all 0.15s" }}>
-              <span style={{ width:24, height:24, borderRadius:"50%", background:C.accent, color:"#fff", fontSize:11, fontWeight:700, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+              style={{ display:"flex", alignItems:"center", gap:8, padding:"5px 12px", borderRadius:7, border:`1px solid ${C.border}`, background:"transparent", color:C.text, cursor:"pointer", fontSize:12, fontWeight:500, fontFamily:"'DM Sans',sans-serif", transition:"all 0.15s", letterSpacing:0.2 }}>
+              <span style={{ width:26, height:26, borderRadius:"50%", background:C.accent, color:"#fff", fontSize:11, fontWeight:700, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
                 {session.user.email[0].toUpperCase()}
               </span>
               Mi perfil
-              <span style={{ fontSize:9, color:C.textLight }}>▾</span>
             </button>
             {mostrarPerfil && (
-              <div style={{ position:"absolute", top:38, right:0, width:260, background:C.bgCard, border:`1px solid ${C.border}`, borderRadius:12, boxShadow:"0 8px 32px rgba(0,0,0,0.12)", zIndex:200, overflow:"hidden" }}>
+              <div style={{ position:"absolute", top:42, right:0, width:240, background:C.bgCard, border:`1px solid ${C.border}`, borderRadius:10, boxShadow:"0 4px 24px rgba(0,0,0,0.08)", zIndex:200, overflow:"hidden" }}>
                 {/* Email */}
-                <div style={{ padding:"12px 16px", borderBottom:`1px solid ${C.border}`, background:C.bg }}>
+                <div style={{ padding:"10px 16px", borderBottom:`1px solid ${C.border}`, background:C.bg }}>
                   <p style={{ fontSize:11, color:C.textLight, marginBottom:2 }}>Conectado como</p>
                   <p style={{ fontSize:12, fontWeight:600, color:C.text, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{session.user.email}</p>
                 </div>
                 {/* Opciones */}
                 {[
-                  { label:"Gestión de suscripción", icon:"💳", key:"suscripcion" },
-                  { label:"Extranets", icon:"🔗", key:"extranets" },
+                  { label:"Suscripción", key:"suscripcion" },
+                  { label:"Extranets", key:"extranets" },
                 ].map(op => (
                   <button key={op.key} onClick={() => { setPerfilSeccion(op.key); setMostrarPerfil(false); }}
-                    style={{ width:"100%", display:"flex", alignItems:"center", gap:10, padding:"11px 16px", background:"transparent", border:"none", borderBottom:`1px solid ${C.border}`, cursor:"pointer", fontSize:13, color:C.text, fontFamily:"'DM Sans',sans-serif", textAlign:"left" }}
-                    onMouseEnter={e=>e.currentTarget.style.background=C.accentLight}
+                    style={{ width:"100%", display:"flex", alignItems:"center", padding:"10px 16px", background:"transparent", border:"none", borderBottom:`1px solid ${C.border}`, cursor:"pointer", fontSize:12, color:C.text, fontFamily:"'DM Sans',sans-serif", textAlign:"left", letterSpacing:0.2 }}
+                    onMouseEnter={e=>e.currentTarget.style.background=C.bg}
                     onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
-                    <span>{op.icon}</span>{op.label}
+                    {op.label}
                   </button>
                 ))}
                 <button onClick={handleLogout}
-                  style={{ width:"100%", display:"flex", alignItems:"center", gap:10, padding:"11px 16px", background:"transparent", border:"none", cursor:"pointer", fontSize:13, color:C.red, fontFamily:"'DM Sans',sans-serif", textAlign:"left" }}
-                  onMouseEnter={e=>e.currentTarget.style.background="#FDECEA"}
+                  style={{ width:"100%", display:"flex", alignItems:"center", padding:"10px 16px", background:"transparent", border:"none", cursor:"pointer", fontSize:12, color:C.red, fontFamily:"'DM Sans',sans-serif", textAlign:"left", letterSpacing:0.2 }}
+                  onMouseEnter={e=>e.currentTarget.style.background=C.redLight}
                   onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
-                  <span>🚪</span>Cerrar sesión
+                  Cerrar sesión
                 </button>
               </div>
             )}
