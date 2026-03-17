@@ -2740,16 +2740,7 @@ export default function App() {
           <button onClick={() => setImportar(true)} style={{ background: C.accent, color: "#fff", border: "none", borderRadius: 7, padding: "5px 12px", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "'DM Sans',sans-serif" }}>
             📊 Importar
           </button>
-          {view === "dashboard" && (<>
-            <button
-              onClick={async()=>{ setGenerandoPDF(true); await generarReportePDF(datos,mesSel,anioSel,datos.hotel?.nombre||"Mi Hotel"); setGenerandoPDF(false); }}
-              disabled={generandoPDF}
-              style={{ background: "transparent", color: C.textMid, border: `1px solid ${C.border}`, borderRadius: 7, padding: "5px 14px", fontSize: 11, fontWeight: 500, cursor: generandoPDF?"not-allowed":"pointer", fontFamily: "'DM Sans',sans-serif", letterSpacing: 0.2 }}
-            >
-              {generandoPDF ? "Generando..." : "Informe mensual"}
-            </button>
 
-          </>)}
           {/* Menú Mi Perfil */}
           <div style={{ position:"relative" }}>
             <button onClick={() => setMostrarPerfil(v=>!v)}
@@ -2770,12 +2761,23 @@ export default function App() {
                 {[
                   { label:"Suscripción", key:"suscripcion" },
                   { label:"Extranets", key:"extranets" },
+                  { label:"Informe mensual", key:"informe" },
                 ].map(op => (
-                  <button key={op.key} onClick={() => { setPerfilSeccion(op.key); setMostrarPerfil(false); }}
+                  <button key={op.key} onClick={async () => {
+                      if (op.key === "informe") {
+                        setMostrarPerfil(false);
+                        setGenerandoPDF(true);
+                        await generarReportePDF(datos, mesSel, anioSel, datos.hotel?.nombre||"Mi Hotel");
+                        setGenerandoPDF(false);
+                      } else {
+                        setPerfilSeccion(op.key);
+                        setMostrarPerfil(false);
+                      }
+                    }}
                     style={{ width:"100%", display:"flex", alignItems:"center", padding:"10px 16px", background:"transparent", border:"none", borderBottom:`1px solid ${C.border}`, cursor:"pointer", fontSize:12, color:C.text, fontFamily:"'DM Sans',sans-serif", textAlign:"left", letterSpacing:0.2 }}
                     onMouseEnter={e=>e.currentTarget.style.background=C.bg}
                     onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
-                    {op.label}
+                    {op.key === "informe" && generandoPDF ? "Generando..." : op.label}
                   </button>
                 ))}
                 <button onClick={handleLogout}
