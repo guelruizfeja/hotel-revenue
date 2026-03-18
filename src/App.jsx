@@ -1765,29 +1765,34 @@ function PickupView({ datos }) {
               </div>
             </div>
 
-            {/* Por canal */}
+            {/* Por canal — Pie chart */}
             <div>
               <p style={{ fontSize:11, fontWeight:700, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:10 }}>Por canal</p>
-              <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
-                {Object.entries(ayerPorCanal).sort((a,b)=>b[1]-a[1]).map(([canal, nr]) => {
-                  const pct = ayerTotal > 0 ? nr/ayerTotal : 0;
-                  const col = CANAL_COLORS[canal] || C.accent;
-                  return (
-                    <div key={canal}>
-                      <div style={{ display:"flex", justifyContent:"space-between", marginBottom:3 }}>
-                        <span style={{ fontSize:12, color:C.textMid, fontWeight:500 }}>{canal}</span>
-                        <div style={{ display:"flex", gap:6, alignItems:"center" }}>
-                          <span style={{ fontSize:11, color:C.textLight }}>{Math.round(pct*100)}%</span>
-                          <span style={{ fontSize:12, fontWeight:700, color:col }}>{nr}</span>
+              {Object.keys(ayerPorCanal).length > 0 ? (() => {
+                const pieData = Object.entries(ayerPorCanal).sort((a,b)=>b[1]-a[1]).map(([canal, nr]) => ({
+                  name: canal, value: nr, color: CANAL_COLORS[canal] || C.accent
+                }));
+                return (
+                  <div style={{ display:"flex", alignItems:"center", gap:16 }}>
+                    <PieChart width={110} height={110}>
+                      <Pie data={pieData} cx={50} cy={50} innerRadius={28} outerRadius={50}
+                        dataKey="value" startAngle={90} endAngle={-270} paddingAngle={2}>
+                        {pieData.map((entry, i) => <Cell key={i} fill={entry.color} stroke="none"/>)}
+                      </Pie>
+                    </PieChart>
+                    <div style={{ display:"flex", flexDirection:"column", gap:6, flex:1 }}>
+                      {pieData.map((entry, i) => (
+                        <div key={i} style={{ display:"flex", alignItems:"center", gap:7 }}>
+                          <div style={{ width:8, height:8, borderRadius:"50%", background:entry.color, flexShrink:0 }}/>
+                          <span style={{ fontSize:11, color:C.textMid, flex:1 }}>{entry.name}</span>
+                          <span style={{ fontSize:11, color:C.textLight }}>{Math.round(entry.value/ayerTotal*100)}%</span>
+                          <span style={{ fontSize:11, fontWeight:700, color:entry.color }}>{entry.value}</span>
                         </div>
-                      </div>
-                      <div style={{ height:6, borderRadius:3, background:C.border }}>
-                        <div style={{ height:6, borderRadius:3, background:col, width:`${pct*100}%`, transition:"width 0.4s" }}/>
-                      </div>
+                      ))}
                     </div>
-                  );
-                })}
-              </div>
+                  </div>
+                );
+              })() : <p style={{ fontSize:12, color:C.textLight }}>Sin datos</p>}
             </div>
 
           </div>
