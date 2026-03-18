@@ -1717,8 +1717,8 @@ function PickupView({ datos }) {
   });
 
   const CANAL_COLORS = {
-    "Booking.com": "#003580", "Expedia": "#B8860B", "Directo Web": "#1A7A3C",
-    "Teléfono": "#B8860B", "Agencia": "#6B4C9A", "Directo": "#1A7A3C"
+    "Booking.com": "#0052CC", "Expedia": "#FF6B00", "Directo Web": "#111111",
+    "Directo": "#111111", "Teléfono": "#059669", "Agencia": "#7C3AED"
   };
 
   return (
