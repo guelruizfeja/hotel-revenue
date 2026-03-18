@@ -1435,14 +1435,14 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
         })() : [];
 
         return (
-          <div style={{ display:"grid", gridTemplateColumns:"minmax(0,3fr) minmax(0,2fr)", gap:16, marginBottom:16 }}>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16, marginBottom:16 }}>
 
             {/* ── HEATMAP ── */}
             <Card style={{ display:"flex", flexDirection:"column" }}>
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
                 <div>
                   <p style={{ fontFamily:"'Playfair Display',serif", fontWeight:700, fontSize:20, color:C.text, marginBottom:2 }}>Ocupación mensual</p>
-                  <p style={{ fontSize:13, color:C.textMid }}>Haz clic en un mes para ver el detalle diario</p>
+                  
                 </div>
                 {hmMesSel!=null && (
                   <button onClick={()=>setHmMesSel(null)} style={{ fontSize:11, color:C.accent, background:"none", border:`1px solid ${C.accent}`, borderRadius:6, padding:"3px 10px", cursor:"pointer" }}>← Volver</button>
@@ -1510,8 +1510,6 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
             {(() => {
               const metricas = [
                 { key:"adr_occ", label:"ADR & Ocupación" },
-                { key:"revpar",  label:"RevPAR" },
-                { key:"trevpar", label:"TRevPAR" },
               ];
               const xTick = (props) => {
                 const {x,y,payload} = props;
@@ -1533,18 +1531,18 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
                       ))}
                     </div>
                   </div>
-                  <p style={{ fontSize:12, color:C.textMid, marginBottom:12 }}>Evolución mensual {anio}</p>
+                  
                   <div style={{ flex:1, minHeight:300 }}>
                     <ResponsiveContainer width="100%" height="100%">
                       {metricaSel === "adr_occ" ? (
                         <ComposedChart data={porMes} barSize={10}>
                           <CartesianGrid strokeDasharray="3 3" stroke={C.border} vertical={false}/>
-                          <XAxis dataKey="mes" axisLine={false} tickLine={false} height={16} tick={xTick}/>
+                          <XAxis dataKey="mes" axisLine={false} tickLine={false} height={18} interval={0} tick={{fill:C.textLight, fontSize:8}}/>
                           <YAxis yAxisId="left"  tick={{fill:C.textLight,fontSize:9}} axisLine={false} tickLine={false} unit="%" domain={[0,100]}/>
                           <YAxis yAxisId="right" orientation="right" tick={{fill:C.textLight,fontSize:9}} axisLine={false} tickLine={false} unit="€"/>
                           <Tooltip content={<CustomTooltip/>}/>
                           <Bar  yAxisId="left"  dataKey="occ" name="Ocupación" fill={C.accent} radius={[2,2,0,0]} fillOpacity={0.8}/>
-                          <Line yAxisId="right" dataKey="adr" name="ADR" type="monotone" stroke="#E85D04" strokeWidth={2} dot={false}/>
+                          <Line yAxisId="right" dataKey="adr" name="ADR" type="monotone" stroke="#E85D04" strokeWidth={2} dot={{fill:"#E85D04", r:3, strokeWidth:0}} activeDot={{r:4}}/>
                         </ComposedChart>
                       ) : (
                         <AreaChart data={porMes}>
@@ -1555,7 +1553,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
                             </linearGradient>
                           </defs>
                           <CartesianGrid strokeDasharray="3 3" stroke={C.border} vertical={false}/>
-                          <XAxis dataKey="mes" axisLine={false} tickLine={false} height={16} tick={xTick}/>
+                          <XAxis dataKey="mes" axisLine={false} tickLine={false} height={18} interval={0} tick={{fill:C.textLight, fontSize:8}}/>
                           <YAxis tick={{fill:C.textLight,fontSize:9}} axisLine={false} tickLine={false} unit="€"/>
                           <Tooltip content={<CustomTooltip/>}/>
                           <Area type="monotone" dataKey={metricaSel} name={metricaSel==="revpar"?"RevPAR":"TRevPAR"} stroke={C.accent} strokeWidth={2} fill="url(#gMetrica)" dot={{fill:C.accent,r:2}} activeDot={{r:3}}/>
