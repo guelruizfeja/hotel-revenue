@@ -399,7 +399,7 @@ function calcularAlertas(datos, mes, anio) {
   if (totalAyer === 0 && mediaPickupDia > 1) {
     alertas.push({ tipo: "rojo", icono: "📭", titulo: "Sin pickup ayer", desc: `No se captó ninguna reserva ayer. La media diaria es ${mediaPickupDia.toFixed(1)} reservas.`, accion: "pickup" });
   } else if (totalAyer > 0 && mediaPickupDia > 0 && totalAyer >= mediaPickupDia * 2) {
-    alertas.push({ tipo: "verde", icono: "🚀", titulo: "Pickup excepcional", desc: `Ayer se captaron ${totalAyer} reservas, el doble de la media diaria (${mediaPickupDia.toFixed(1)}).`, accion: "pickup" });
+    alertas.push({ tipo: "verde", icono: "🚀", titulo: "Pickup excepcional", desc: `Ayer se captaron ${totalAyer} reservas, muy por encima de la media diaria (${mediaPickupDia.toFixed(1)}).`, accion: "pickup" });
   }
 
   // ── Ocupación vs presupuesto ──
@@ -420,12 +420,7 @@ function calcularAlertas(datos, mes, anio) {
     }
 
     // ── Revenue vs presupuesto ──
-    if (ppto?.rev_total_ppto) {
-      const revReal = datosMes.reduce((a,d) => a+(d.revenue_total||0), 0);
-      const diffRev = ((revReal - ppto.rev_total_ppto) / ppto.rev_total_ppto * 100);
-      if (diffRev <= -15) alertas.push({ tipo: "rojo", icono: "💸", titulo: "Revenue muy por debajo del presupuesto", desc: `${Math.abs(diffRev).toFixed(1)}% por debajo del objetivo mensual.`, accion: "kpi:Revenue Total" });
-      else if (diffRev >= 10) alertas.push({ tipo: "verde", icono: "💰", titulo: "Revenue por encima del presupuesto", desc: `+${diffRev.toFixed(1)}% sobre el objetivo mensual. ¡Buen trabajo!`, accion: "kpi:Revenue Total" });
-    }
+
 
     // ── ADR vs año anterior ──
     const mesAnterior = produccion.filter(d => {
@@ -446,7 +441,7 @@ function calcularAlertas(datos, mes, anio) {
   const ultimaFecha = produccion.map(d => new Date(d.fecha+"T00:00:00")).sort((a,b)=>b-a)[0];
   if (ultimaFecha) {
     const diasSinDatos = Math.floor((hoy - ultimaFecha) / (1000*60*60*24));
-    if (diasSinDatos >= 1) alertas.push({ tipo: "amarillo", icono: "🕐", titulo: "Datos desactualizados", desc: `El último dato importado es del ${ultimaFecha.toLocaleDateString("es-ES")}. Importa los datos de ayer.`, accion: "importar" });
+    if (diasSinDatos >= 1) alertas.push({ tipo: "amarillo", icono: "🕐", titulo: "Datos desactualizados", desc: `Importa la plantilla con los últimos datos para mantener el dashboard al día.`, accion: "importar" });
   }
 
   return alertas;
