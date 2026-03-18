@@ -498,7 +498,7 @@ function LoadingSpinner() {
 function EmptyState({ mensaje }) {
   return (
     <div style={{ textAlign: "center", padding: 60 }}>
-      <div style={{ fontSize: 48, marginBottom: 16 }}>📊</div>
+      
       <p style={{ fontFamily: "'Playfair Display', serif", fontSize: 18, fontWeight: 700, color: C.text, marginBottom: 8 }}>Sin datos todavía</p>
       <p style={{ fontSize: 13, color: C.textLight }}>{mensaje || "Importa tu plantilla Excel para ver los datos aquí"}</p>
     </div>
@@ -612,7 +612,6 @@ function ImportarExcel({ onClose, session, onImportado }) {
             num_reservas:  nr || 1,
           });
         }
-        console.log(`[ImportPickup] filas parseadas: ${pickupRows.length}`);
       }
 
       // ── Presupuesto — col[0]=Mes, col[1]=OCC(decimal), col[4]=ADR, col[7]=RevPAR, col[10]=RevTotal ──
@@ -742,7 +741,7 @@ function ImportarExcel({ onClose, session, onImportado }) {
               </button>
             )}
 <div onClick={() => document.getElementById("excel-input").click()} style={{ border: "2px dashed #E8E0D5", borderRadius: 8, padding: "40px 20px", textAlign: "center", cursor: "pointer", background: "#F7F3EE", marginBottom: 16 }}>
-              <div style={{ fontSize: 40, marginBottom: 12 }}>📊</div>
+              
               <p style={{ fontWeight: 600, color: "#1C1814", marginBottom: 6 }}>{loading ? "Procesando..." : "Haz clic para seleccionar el archivo"}</p>
               <p style={{ fontSize: 12, color: "#A8998A" }}>Formato .xlsx · Plantilla FastRev</p>
               <input id="excel-input" type="file" accept=".xlsx" style={{ display: "none" }} onChange={e => e.target.files[0] && procesarExcel(e.target.files[0])} />
@@ -1387,11 +1386,19 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
           });
           const habOcu = d.reduce((a,r)=>a+(r.hab_ocupadas||0),0);
           const habDis = d.reduce((a,r)=>a+(r.hab_disponibles||0),0);
-          if (habDis>0) return { label, mi, occ: habOcu/habDis*100, esOtb: false };
+          // Año anterior
+          const dLY = produccion.filter(r => {
+            const f = new Date(r.fecha+"T00:00:00");
+            return f.getMonth()===mi && f.getFullYear()===anio-1;
+          });
+          const habOcuLY = dLY.reduce((a,r)=>a+(r.hab_ocupadas||0),0);
+          const habDisLY = dLY.reduce((a,r)=>a+(r.hab_disponibles||0),0);
+          const occLY = habDisLY>0 ? habOcuLY/habDisLY*100 : null;
+          if (habDis>0) return { label, mi, occ: habOcu/habDis*100, occLY, esOtb: false };
           // Mes futuro: sumar reservas OTB del pickup
           const mesStr = `${anio}-${_pad(mi+1)}`;
           const primerDia = `${mesStr}-01`;
-          if (primerDia <= _hoyStr) return { label, mi, occ: null, esOtb: false };
+          if (primerDia <= _hoyStr) return { label, mi, occ: null, occLY, esOtb: false };
           const diasMes = new Date(anio, mi+1, 0).getDate();
           const habH = datos.hotel?.habitaciones || 30;
           let totalRes = 0;
@@ -1400,7 +1407,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
             totalRes += otbDia[iso] || 0;
           }
           const occ = habH > 0 ? (totalRes / (habH * diasMes) * 100) : null;
-          return { label, mi, occ: totalRes>0 ? occ : null, esOtb: true };
+          return { label, mi, occ: totalRes>0 ? occ : null, occLY, esOtb: true };
         });
 
         // Color heatmap
@@ -1460,8 +1467,8 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
               {hmMesSel==null ? (
                 /* Vista anual: grid 4x3 */
                 <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gridTemplateRows:"repeat(3,1fr)", gap:8, flex:1 }}>
-                  {occPorMes.map(({label, mi, occ, esOtb})=>(
-                    <div key={mi} onClick={()=>setHmMesSel(mi)} style={{ borderRadius:8, padding:"10px 6px", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", background: occ!=null ? heatColor(occ)+"22" : C.bg, border:`1.5px solid ${occ!=null?heatColor(occ):C.border}`, cursor:"pointer", textAlign:"center", transition:"all 0.15s" }}
+                  {occPorMes.map(({label, mi, occ, occLY, esOtb})=>(
+                    <div key={mi} onClick={()=>setHmMesSel(mi)} title={occ!=null?(occLY!=null?`${label}: ${occ.toFixed(0)}% | LY: ${occLY.toFixed(0)}%`:`${label}: ${occ.toFixed(0)}%`):""} style={{ borderRadius:8, padding:"10px 6px", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", background: occ!=null ? heatColor(occ)+"22" : C.bg, border:`1.5px solid ${occ!=null?heatColor(occ):C.border}`, cursor:"pointer", textAlign:"center", transition:"all 0.15s" }}
                       onMouseEnter={e=>e.currentTarget.style.opacity="0.8"} onMouseLeave={e=>e.currentTarget.style.opacity="1"}>
                       <p style={{ fontSize:9, fontWeight:600, color:C.textLight, textTransform:"uppercase", letterSpacing:0.5, marginBottom:3 }}>{label}</p>
                       {occ!=null
@@ -1469,6 +1476,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
                         : <p style={{ fontSize:12, color:C.border }}>—</p>
                       }
                       {esOtb && occ!=null && <p style={{ fontSize:8, color:"#7A9CC8", fontWeight:700, marginTop:2 }}>OTB</p>}
+                      {!esOtb && occLY!=null && occ!=null && <p style={{ fontSize:8, color:C.textLight, marginTop:2 }}>LY: {occLY.toFixed(0)}%</p>}
                     </div>
                   ))}
                 </div>
@@ -2466,7 +2474,7 @@ function AuthScreen() {
 
 const NAV = [
   { key: "dashboard",  icon: "◈",  label: "Dashboard" },
-  { key: "pickup",     icon: "📊", label: "Pickup" },
+  { key: "pickup", label: "Pickup" },
   { key: "budget",     icon: "💰", label: "Presupuesto" },
 ];
 
@@ -2571,7 +2579,6 @@ export default function App() {
       // Cargar suscripción
       supabase.from("suscripciones").select("*").eq("user_id", session.user.id).maybeSingle()
         .then(({ data, error }) => {
-          console.log("[Sub]", data, error);
           setSuscripcion(data || null);
           setCargandoSub(false);
         }).catch(() => { setSuscripcion(null); setCargandoSub(false); });
@@ -2744,7 +2751,7 @@ export default function App() {
             </div>
           ); })()}
           <button onClick={() => setImportar(true)} style={{ background: C.accent, color: "#fff", border: "none", borderRadius: 7, padding: "5px 12px", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "'DM Sans',sans-serif" }}>
-            📊 Importar
+            Importar
           </button>
 
           {/* Menú Mi Perfil */}
