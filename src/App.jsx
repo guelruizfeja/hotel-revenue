@@ -174,11 +174,31 @@ function KpiModal({ kpi, datos, mes, anio, onClose }) {
           </div>
         </div>
 
-        <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:12, marginBottom:20 }}>
+        {(kpi === "TRevPAR" || kpi === "Revenue Total") ? (() => {
+          const totalHabS  = diasMes.reduce((a,d)=>a+d.revHab,0);
+          const totalFnbS  = diasMes.reduce((a,d)=>a+d.revFnb,0);
+          const totalOtrosS= diasMes.reduce((a,d)=>a+d.revOtros,0);
+          return (
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:12, marginBottom:20 }}>
+              {[
+                { label:"Total del mes", value:`€${Math.round(totalHabS+totalFnbS+totalOtrosS).toLocaleString("es-ES")}` },
+                { label:`Vs ${MESES_FULL[mesPrevIdx]}`, value: varComp!==null ? `${parseFloat(varComp)>=0?"+":""}${varComp}%` : "Sin datos", up: varComp!==null?parseFloat(varComp)>=0:true },
+                { label:"Habitaciones", value:`€${Math.round(totalHabS).toLocaleString("es-ES")}`, color:C.accent },
+                { label:"F&B", value:`€${Math.round(totalFnbS).toLocaleString("es-ES")}`, color:"#E85D04" },
+                { label:"Otros", value:`€${Math.round(totalOtrosS).toLocaleString("es-ES")}`, color:C.green },
+              ].map((k,i)=>(
+                <div key={i} style={{ background:`${C.accent}0f`, borderRadius:8, padding:"16px", borderLeft:`3px solid ${k.color||C.accent}`, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", textAlign:"center" }}>
+                  <p style={{ fontSize:10, color:C.textMid, textTransform:"uppercase", letterSpacing:1.5, marginBottom:6, fontWeight:600 }}>{k.label}</p>
+                  <p style={{ fontSize:22, fontWeight:700, color:k.color||(k.up===false?C.red:k.up===true?C.green:C.text), fontFamily:"'DM Sans',sans-serif" }}>{k.value}</p>
+                </div>
+              ))}
+            </div>
+          );
+        })() : (
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(2,1fr)", gap:12, marginBottom:20 }}>
           {[
             { label:"Media del mes", value:`${kpi==="Ocupación"?mediaActual.toFixed(1):Math.round(mediaActual).toLocaleString("es-ES")}${unit}` },
-            { label: kpi==="TRevPAR" ? `Vs ${MESES_FULL[mesPrevIdx]}` : `Vs ${compLabel}`, value: varComp!==null ? `${parseFloat(varComp)>=0?"+":""}${varComp}%` : "Sin datos", up: varComp!==null?parseFloat(varComp)>=0:true },
-            ...(kpi!=="TRevPAR" ? [{ label:"Vs Presupuesto", value: varPpto!==null ? `${parseFloat(varPpto)>=0?"+":""}${varPpto}%` : "Sin datos ppto", up: varPpto!==null?parseFloat(varPpto)>=0:true }] : []),
+            { label:`Vs ${compLabel}`, value: varComp!==null ? `${parseFloat(varComp)>=0?"+":""}${varComp}%` : "Sin datos", up: varComp!==null?parseFloat(varComp)>=0:true },
           ].map((k,i)=>(
             <div key={i} style={{ background:`${C.accent}0f`, borderRadius:8, padding:"16px", borderLeft:`3px solid ${C.accent}`, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", textAlign:"center" }}>
               <p style={{ fontSize:10, color:C.textMid, textTransform:"uppercase", letterSpacing:1.5, marginBottom:6, fontWeight:600 }}>{k.label}</p>
@@ -186,6 +206,7 @@ function KpiModal({ kpi, datos, mes, anio, onClose }) {
             </div>
           ))}
         </div>
+        )}
 
         <div style={{ marginBottom:16 }}>
           <p style={{ fontSize:12, fontWeight:600, color:C.textMid, marginBottom:10, textTransform:"uppercase", letterSpacing:1 }}>
