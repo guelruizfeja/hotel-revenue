@@ -2719,6 +2719,17 @@ export default function App() {
   const [generandoPDF, setGenerandoPDF] = useState(false);
   const [mostrarAlertas, setMostrarAlertas] = useState(false);
   const [mostrarPerfil, setMostrarPerfil] = useState(false);
+  useEffect(() => {
+    if (!mostrarPerfil && !mostrarAlertas) return;
+    const handler = (e) => {
+      if (!e.target.closest("[data-menu]")) {
+        setMostrarPerfil(false);
+        setMostrarAlertas(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [mostrarPerfil, mostrarAlertas]);
   const [perfilSeccion, setPerfilSeccion] = useState(null); // null | "suscripcion" | "extranets"
   const [kpiModalApp, setKpiModalApp] = useState(null);
   const [kpiModal, setKpiModal] = useState(null);
@@ -2775,7 +2786,7 @@ export default function App() {
         {/* Botones + Email + logout */}
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginLeft: "auto" }}>
           {(() => { const alertas = calcularAlertas(datos, mesSel, anioSel); const n = alertas.length; return (
-            <div style={{ position:"relative" }}>
+            <div data-menu style={{ position:"relative" }}>
               <button onClick={() => setMostrarAlertas(v=>!v)} style={{ background:"none", border:`1px solid ${n>0?C.red:C.border}`, borderRadius:7, padding:"5px 10px", cursor:"pointer", color:n>0?C.red:C.textLight, fontSize:13, position:"relative" }} title="Alertas">
                 🔔{n > 0 && <span style={{ position:"absolute", top:-4, right:-4, background:C.red, color:"#fff", borderRadius:"50%", width:16, height:16, fontSize:9, fontWeight:700, display:"flex", alignItems:"center", justifyContent:"center" }}>{n}</span>}
               </button>
@@ -2791,7 +2802,7 @@ export default function App() {
           </button>
 
           {/* Menú Mi Perfil */}
-          <div style={{ position:"relative" }}>
+          <div data-menu style={{ position:"relative" }}>
             <button onClick={() => setMostrarPerfil(v=>!v)}
               style={{ display:"flex", alignItems:"center", gap:8, padding:"5px 12px", borderRadius:7, border:`1px solid ${C.border}`, background:"transparent", color:C.text, cursor:"pointer", fontSize:12, fontWeight:500, fontFamily:"'DM Sans',sans-serif", transition:"all 0.15s", letterSpacing:0.2 }}>
               <span style={{ width:26, height:26, borderRadius:"50%", background:C.accent, color:"#fff", fontSize:11, fontWeight:700, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
