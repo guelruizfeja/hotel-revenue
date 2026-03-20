@@ -510,6 +510,7 @@ function ImportarExcel({ onClose, session, onImportado }) {
   const [loading, setLoading] = useState(false);
   const [resultado, setResultado] = useState(null);
   const [error, setError] = useState("");
+  const [progreso, setProgreso] = useState("");
   const [vaciando, setVaciando] = useState(false);
   const [confirmVaciar, setConfirmVaciar] = useState(false);
 
@@ -688,11 +689,15 @@ function ImportarExcel({ onClose, session, onImportado }) {
       if (err1) throw new Error("Error al guardar producción: " + err1.message);
 
       if (pickupRows.length > 0) {
-        // Insertar en lotes de 100 para evitar límites
-        for (let i = 0; i < pickupRows.length; i += 100) {
-          const { error: errPu } = await supabase.from("pickup_entries").insert(pickupRows.slice(i, i + 100));
+        const LOTE = 200;
+        const total = pickupRows.length;
+        for (let i = 0; i < total; i += LOTE) {
+          setProgreso(`Guardando pickup... ${Math.min(i+LOTE, total)} de ${total}`);
+          const { error: errPu } = await supabase.from("pickup_entries").insert(pickupRows.slice(i, i + LOTE));
           if (errPu) throw new Error("Error al guardar pickup: " + errPu.message);
+          await new Promise(r => setTimeout(r, 50));
         }
+        setProgreso("");
       }
 
       if (presupuestoRows.length > 0) {
@@ -742,7 +747,7 @@ function ImportarExcel({ onClose, session, onImportado }) {
             )}
 <div onClick={() => document.getElementById("excel-input").click()} style={{ border: "2px dashed #E8E0D5", borderRadius: 8, padding: "40px 20px", textAlign: "center", cursor: "pointer", background: "#F7F3EE", marginBottom: 16 }}>
               
-              <p style={{ fontWeight: 600, color: "#1C1814", marginBottom: 6 }}>{loading ? "Procesando..." : "Haz clic para seleccionar el archivo"}</p>
+              <p style={{ fontWeight: 600, color: "#1C1814", marginBottom: 6 }}>{progreso || (loading ? "Procesando..." : "Haz clic para seleccionar el archivo")}</p>
               <p style={{ fontSize: 12, color: "#A8998A" }}>Formato .xlsx · Plantilla FastRev</p>
               <input id="excel-input" type="file" accept=".xlsx" style={{ display: "none" }} onChange={e => e.target.files[0] && procesarExcel(e.target.files[0])} />
             </div>
@@ -1679,9 +1684,9 @@ function PickupView({ datos }) {
   const aniosDisp = [...new Set([...aniosPickupDisp, ...aniosPptoDisp, anio])].sort();
 
   // ── Colores gráfica: tonos dorados ──
-  const COL_OTB  = "#B8860B";  // dorado oscuro
-  const COL_PPTO = "#B8860B";  // dorado medio
-  const COL_LY   = "#F5D78E";  // dorado claro
+  const COL_OTB  = "#7A5200";  // dorado muy oscuro
+  const COL_PPTO = "#C9973A";  // dorado medio
+  const COL_LY   = "#F0D090";  // dorado muy claro
 
   // ── Calcular máximo para escala ──
   const maxVal = Math.max(
