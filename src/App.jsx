@@ -61,6 +61,8 @@ function KpiModal({ kpi, datos, mes, anio, onClose }) {
   const { produccion, presupuesto } = datos;
   const MESES_FULL = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 
+  const [modoVista, setModoVista] = useState("30dias"); // "30dias" | "mes"
+
   const todasProd = (produccion||[]).sort((a,b)=>new Date(a.fecha)-new Date(b.fecha));
   const ultimaFechaMes = todasProd
     .filter(d => { const f=new Date(d.fecha+"T00:00:00"); return f.getMonth()===mes && f.getFullYear()===anio; })
@@ -71,7 +73,11 @@ function KpiModal({ kpi, datos, mes, anio, onClose }) {
   const refDateStr  = refDate.toISOString().slice(0,10);
 
   const diasMes = todasProd
-    .filter(d => d.fecha >= desde30Str && d.fecha <= refDateStr)
+    .filter(d => {
+      const f=new Date(d.fecha+"T00:00:00");
+      if (modoVista === "mes") return f.getMonth()===mes && f.getFullYear()===anio;
+      return d.fecha >= desde30Str && d.fecha <= refDateStr;
+    })
     .map(d => {
       const f = new Date(d.fecha+"T00:00:00");
       const habDis = d.hab_disponibles||30;
@@ -113,13 +119,18 @@ function KpiModal({ kpi, datos, mes, anio, onClose }) {
 
   const ppto = (presupuesto||[]).find(p=>p.mes===mes+1&&p.anio===anio);
 
+  // Año anterior mismo mes
+  const diasLY = todasProd
+    .filter(d => { const f=new Date(d.fecha+"T00:00:00"); return f.getMonth()===mes && f.getFullYear()===anio-1; })
+    .map(mapProd);
+
   const getChartData = () => {
-    if (kpi==="Ocupación") return diasMes.map((d,i)=>({...d, ly: diasComp[i]?.occ}));
-    if (kpi==="ADR")       return diasMes.map((d,i)=>({...d, ly: diasComp[i]?.adr}));
-    if (kpi==="RevPAR")    return diasMes.map((d,i)=>({...d, ly: diasComp[i]?.revpar}));
-    if (kpi==="TRevPAR")   return diasMes.map(d=>d);
-    if (kpi==="Revenue Total") return diasMes.map(d=>d);
-    return diasMes;
+    const lyField = kpi==="Ocupación"?"occ":kpi==="ADR"?"adr":kpi==="RevPAR"?"revpar":kpi==="TRevPAR"?"trevpar":"revTotal";
+    return diasMes.map((d,i)=>({
+      ...d,
+      mp: diasComp[i]?.[lyField] ?? null,
+      ly: diasLY[i]?.[lyField] ?? null,
+    }));
   };
   const chartData = getChartData();
 
@@ -242,17 +253,38 @@ function KpiModal({ kpi, datos, mes, anio, onClose }) {
               </BarChart>
             </ResponsiveContainer>
             );
-          })() : kpi!=="TRevPAR" ? (
+          })() : kpi!=="TRevPAR" ? (<>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10 }}>
+              <div style={{ display:"flex", gap:6 }}>
+                {[["30dias","Últimos 30 días"],["mes","Mes actual"]].map(([key,label])=>(
+                  <button key={key} onClick={()=>setModoVista(key)}
+                    style={{ padding:"4px 12px", borderRadius:6, border:`1px solid ${modoVista===key?C.accent:C.border}`, background:modoVista===key?C.accentLight:"transparent", color:modoVista===key?C.accent:C.textLight, fontSize:11, fontWeight:modoVista===key?600:400, cursor:"pointer", fontFamily:"'DM Sans',sans-serif" }}>
+                    {label}
+                  </button>
+                ))}
+              </div>
+              <div style={{ display:"flex", gap:12, alignItems:"center" }}>
+                <div style={{ display:"flex", alignItems:"center", gap:5 }}>
+                  <div style={{ width:12, height:10, background:C.accent, borderRadius:2 }}/>
+                  <span style={{ fontSize:10, color:C.textMid }}>Actual</span>
+                </div>
+                <div style={{ display:"flex", alignItems:"center", gap:5 }}>
+                  <div style={{ width:18, height:2, background:"#E85D04", borderRadius:1 }}/>
+                  <span style={{ fontSize:10, color:C.textMid }}>Año anterior</span>
+                </div>
+              </div>
+            </div>
             <ResponsiveContainer width="100%" height={220}>
               <ComposedChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" stroke={C.border} vertical={false}/>
-                <XAxis dataKey="dia" tick={{fill:"#555",fontSize:11,fontWeight:500}} axisLine={false} tickLine={false} interval={4}/>
+                <XAxis dataKey="dia" tick={{fill:"#555",fontSize:11,fontWeight:500}} axisLine={false} tickLine={false} interval={modoVista==="mes"?1:4}/>
                 <YAxis tick={{fill:C.textLight,fontSize:10}} axisLine={false} tickLine={false} unit={unit}/>
                 <Tooltip content={<CustomTooltip/>}/>
-                <Area type="monotone" dataKey={fieldKey} name={kpi} stroke={C.accent} strokeWidth={2} fill={`${C.accent}15`} dot={false}/>
+                <Bar dataKey={fieldKey} name={kpi} fill={C.accent} fillOpacity={0.85} radius={[2,2,0,0]} barSize={modoVista==="mes"?10:6}/>
+                <Line type="monotone" dataKey="ly" name="Año anterior" stroke="#E85D04" strokeWidth={1.5} dot={false} connectNulls/>
               </ComposedChart>
             </ResponsiveContainer>
-          ) : null}
+          </>) : null}
         </div>
 
      </div>
