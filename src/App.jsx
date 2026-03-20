@@ -1337,13 +1337,12 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
     { label: "ADR",           value: `€${adr}`,    ...diff(parseFloat(adr), prevAdr) },
     { label: "RevPAR",        value: `€${revpar}`,  ...diff(parseFloat(revpar), prevRevpar) },
     { label: "TRevPAR",       value: `€${trevpar}`, ...diff(parseFloat(trevpar), prevTrevpar) },
-    { label: "Revenue Total", value: `€${Math.round(totalRevTotal).toLocaleString("es-ES")}`,
+    { label: "Revenue Diario", value: `€${datosMes.length > 0 ? Math.round(totalRevTotal / datosMes.length).toLocaleString("es-ES") : 0}`,
       ...(() => {
-        const pptoRev = (datos.presupuesto||[]).find(p => p.mes===mes+1 && p.anio===anio)?.rev_total_ppto;
-        if (!pptoRev) return diff(totalRevTotal, prevRevTot, true);
-        const diff2 = Math.round(totalRevTotal - pptoRev);
-        if (diff2 >= 0) return { change: `+€${Math.abs(diff2).toLocaleString("es-ES")} sobre ppto`, up: true };
-        return { change: `€${Math.abs(diff2).toLocaleString("es-ES")} para ppto`, up: false };
+        const diasPrev = prevRevTot > 0 ? (datos.produccion||[]).filter(d => { const f=new Date(d.fecha+"T00:00:00"); return f.getMonth()===(mes===0?11:mes-1) && f.getFullYear()===(mes===0?anio-1:anio); }).length : 0;
+        const revDiarioPrev = diasPrev > 0 ? prevRevTot / diasPrev : null;
+        const revDiarioAct  = datosMes.length > 0 ? totalRevTotal / datosMes.length : 0;
+        return diff(revDiarioAct, revDiarioPrev, true);
       })()
     },
   ];
