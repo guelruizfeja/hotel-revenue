@@ -1302,6 +1302,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
   const [insightsVisible, setInsightsVisible] = useState(() => {
     try { const s = localStorage.getItem("fr_insights_visible"); return s === null ? true : s === "true"; } catch(_) { return true; }
   });
+  const [modalDiario, setModalDiario] = useState(null); // {mesIdx, anioIdx}
   const toggleInsights = () => setInsightsVisible(v => {
     try { localStorage.setItem("fr_insights_visible", String(!v)); } catch(_) {}
     return !v;
@@ -1721,14 +1722,12 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
                           <YAxis yAxisId="left"  tick={{fill:C.textLight,fontSize:9}} axisLine={false} tickLine={false} unit="%" domain={[0,100]}/>
                           <YAxis yAxisId="right" orientation="right" tick={{fill:C.textLight,fontSize:9}} axisLine={false} tickLine={false} unit="€"/>
                           <Tooltip content={<CustomTooltip/>}/>
-                          <Bar  yAxisId="left"  dataKey="occ" name="Ocupación" fill={C.accent} radius={[2,2,0,0]} fillOpacity={0.8}/>
-                          <Line yAxisId="right" dataKey="adr" name="ADR" type="monotone" stroke="#E85D04" strokeWidth={2} dot={{fill:"#E85D04", r:3, strokeWidth:0}} activeDot={{r:4}}/>
-                          {(() => {
-                            const pptoMes = presupuesto.filter(p=>p.anio===anio && p.adr_ppto);
-                            if (pptoMes.length === 0) return null;
-                            const mediaAdrPpto = Math.round(pptoMes.reduce((a,p)=>a+(p.adr_ppto||0),0)/pptoMes.length);
-                            return <ReferenceLine yAxisId="right" y={mediaAdrPpto} stroke="#B8860B" strokeDasharray="6 3" strokeWidth={1.5} label={{ value:`Ppto €${mediaAdrPpto}`, position:"insideTopRight", fill:"#B8860B", fontSize:9, fontWeight:600 }}/>;
-                          })()}
+                          <Bar yAxisId="left" dataKey="occ" name="Ocupación" fill={C.accent} radius={[2,2,0,0]} fillOpacity={0.8}
+                            cursor="pointer"
+                            onClick={(data) => { if(data?.mesIdx!=null) setModalDiario({mesIdx:data.mesIdx, anioIdx:data.anioIdx}); }}
+                          />
+                          <Line yAxisId="right" dataKey="adr" name="ADR Real" type="monotone" stroke="#E85D04" strokeWidth={2} dot={{fill:"#E85D04", r:3, strokeWidth:0}} activeDot={{r:4}}/>
+                          <Line yAxisId="right" dataKey="adr_ppto" name="ADR Ppto." type="monotone" stroke="#B8860B" strokeWidth={1.5} strokeDasharray="6 3" dot={false} connectNulls/>
                         </ComposedChart>
                       ) : (
                         <AreaChart data={porMes}>
@@ -1785,6 +1784,67 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
         </div>
       </Card>
       {kpiModal && <KpiModal kpi={kpiModal} datos={datos} mes={mes} anio={anio} onClose={()=>setKpiModal(null)} />}
+
+      {/* ── MODAL DIARIO ADR & OCUPACIÓN ── */}
+      {modalDiario && (() => {
+        const { mesIdx, anioIdx } = modalDiario;
+        const MESES_FULL2 = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+        const pad = n => String(n).padStart(2,"0");
+        const diasData = (datos.produccion||[])
+          .filter(r => {
+            const f = new Date(r.fecha+"T00:00:00");
+            return f.getMonth()===mesIdx && f.getFullYear()===anioIdx;
+          })
+          .sort((a,b)=>new Date(a.fecha)-new Date(b.fecha))
+          .map(r => {
+            const f = new Date(r.fecha+"T00:00:00");
+            const habDis = r.hab_disponibles||30;
+            return {
+              dia: f.getDate(),
+              label: `${f.getDate()}/${f.getMonth()+1}`,
+              occ: habDis>0 ? Math.round(r.hab_ocupadas/habDis*100) : 0,
+              adr: r.hab_ocupadas>0 ? Math.round(r.revenue_hab/r.hab_ocupadas) : 0,
+            };
+          });
+
+        const pptoMes = (datos.presupuesto||[]).find(p=>p.anio===anioIdx && p.mes===mesIdx+1);
+
+        return (
+          <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", zIndex:1000, display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}
+            onClick={()=>setModalDiario(null)}>
+            <div style={{ background:C.bgCard, borderRadius:14, width:"100%", maxWidth:780, maxHeight:"90vh", overflow:"auto", padding:28, boxShadow:"0 20px 60px rgba(0,0,0,0.2)" }}
+              onClick={e=>e.stopPropagation()}>
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20 }}>
+                <div>
+                  <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:2 }}>{MESES_FULL2[mesIdx]} {anioIdx}</p>
+                  <h3 style={{ fontSize:22, fontWeight:800, color:C.text, fontFamily:"'DM Sans',sans-serif", letterSpacing:-0.5 }}>ADR & Ocupación diaria</h3>
+                </div>
+                <button onClick={()=>setModalDiario(null)} style={{ background:"none", border:`1.5px solid ${C.border}`, borderRadius:8, width:34, height:34, cursor:"pointer", fontSize:16, color:C.textMid }}
+                  onMouseEnter={e=>{e.currentTarget.style.background=C.accent;e.currentTarget.style.color="#fff";}}
+                  onMouseLeave={e=>{e.currentTarget.style.background="none";e.currentTarget.style.color=C.textMid;}}>×</button>
+              </div>
+
+              {diasData.length === 0 ? (
+                <p style={{ color:C.textLight, textAlign:"center", padding:40 }}>Sin datos para este mes</p>
+              ) : (
+                <ResponsiveContainer width="100%" height={300}>
+                  <ComposedChart data={diasData} barSize={10}>
+                    <CartesianGrid strokeDasharray="3 3" stroke={C.border} vertical={false}/>
+                    <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{fill:C.textLight, fontSize:9}} interval={Math.floor(diasData.length/8)}/>
+                    <YAxis yAxisId="left"  tick={{fill:C.textLight,fontSize:9}} axisLine={false} tickLine={false} unit="%" domain={[0,100]}/>
+                    <YAxis yAxisId="right" orientation="right" tick={{fill:C.textLight,fontSize:9}} axisLine={false} tickLine={false} unit="€"/>
+                    <Tooltip content={<CustomTooltip/>}/>
+                    <Legend wrapperStyle={{fontSize:11, paddingTop:8}}/>
+                    <Bar yAxisId="left" dataKey="occ" name="Ocupación" fill={C.accent} radius={[2,2,0,0]} fillOpacity={0.85}/>
+                    <Line yAxisId="right" dataKey="adr" name="ADR" type="monotone" stroke="#E85D04" strokeWidth={2} dot={{fill:"#E85D04",r:2,strokeWidth:0}} activeDot={{r:4}}/>
+
+                  </ComposedChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
