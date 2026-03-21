@@ -2772,12 +2772,15 @@ export default function App() {
         ::-webkit-scrollbar-thumb { background: ${C.accentLight}; border-radius: 3px; }
         @keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
         @media (max-width: 640px) {
+          /* Contenedor raíz — evita desbordamiento lateral */
+          html, body, #root { overflow-x: hidden !important; max-width: 100vw !important; }
+          main, #main-scroll { padding: 12px !important; width: 100% !important; overflow-x: hidden !important; box-sizing: border-box !important; }
+
           /* Topbar */
           .topbar-fecha { display: none !important; }
           .topbar-center { left: 50% !important; }
-
-          /* Nav links — texto corto */
           nav button { padding: 4px 8px !important; font-size: 11px !important; }
+          header > div { padding: 0 12px !important; }
 
           /* KPIs 2x2, el último ocupa todo el ancho */
           .kpi-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 10px !important; }
@@ -2790,14 +2793,22 @@ export default function App() {
           /* Cabecera en columna */
           .dash-header { flex-direction: column !important; align-items: flex-start !important; gap: 12px !important; }
 
-          /* Grid heatmap + gráfica en columna */
+          /* Grids en columna */
           .dash-charts-grid { grid-template-columns: 1fr !important; }
 
-          /* Padding general */
-          main, #main-scroll { padding: 12px !important; }
+          /* Todos los grids multi-columna → 1 columna */
+          div[style*="grid-template-columns: 1fr 1fr"] { grid-template-columns: 1fr !important; }
+          div[style*="gridTemplateColumns: "1fr 1fr""] { grid-template-columns: 1fr !important; }
 
-          /* Tablas scroll horizontal */
+          /* Cards y contenedores al 100% */
+          div[style*="max-width"] { max-width: 100% !important; }
+
+          /* Recharts responsive */
+          .recharts-wrapper, .recharts-surface { max-width: 100% !important; }
+
+          /* Tablas con scroll horizontal */
           table { font-size: 11px !important; }
+          div[style*="overflowX"] { overflow-x: auto !important; -webkit-overflow-scrolling: touch !important; }
         }
         @media (max-width: 768px) {
           .topbar-date { display: none !important; }
