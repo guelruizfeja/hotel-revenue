@@ -1487,7 +1487,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
         if (insights.length === 0) return null;
         return (
           <div style={{ marginBottom:20 }}>
-            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom: insightsVisible ? 10 : 0 }}>
+            <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom: insightsVisible ? 10 : 0 }}>
               <p style={{ fontSize:11, fontWeight:700, color:C.textLight, textTransform:"uppercase", letterSpacing:1.5 }}>
                 💡 Insights estratégicos
                 <span style={{ marginLeft:8, background:C.accentLight, color:C.accent, borderRadius:10, padding:"1px 7px", fontSize:10 }}>{insights.length}</span>
