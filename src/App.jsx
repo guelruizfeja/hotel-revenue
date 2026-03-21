@@ -1590,7 +1590,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
                 return <text x={x} y={y+10} fill={C.textLight} fontSize={9} textAnchor="middle">{porMes.find(d=>d.mes==="Ene")?.anioIdx||""}</text>;
               };
               return (
-                <Card style={{ display:"flex", flexDirection:"column", height:"100%", minHeight:360 }}>
+                <Card style={{ display:"flex", flexDirection:"column", minHeight:360 }}>
                   <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16 }}>
                     <p style={{ fontFamily:"'Playfair Display',serif", fontWeight:700, fontSize:18, color:C.text }}>
                       {metricas.find(m=>m.key===metricaSel)?.label}
@@ -1605,8 +1605,8 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
                     </div>
                   </div>
                   
-                  <div style={{ flex:1, minHeight:300 }}>
-                    <ResponsiveContainer width="100%" height={280}>
+                  <div style={{ height:300 }}>
+                    <ResponsiveContainer width="100%" height={300}>
                       {metricaSel === "adr_occ" ? (
                         <ComposedChart data={porMes} barSize={10}>
                           <CartesianGrid strokeDasharray="3 3" stroke={C.border} vertical={false}/>
