@@ -1606,7 +1606,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
                   </div>
                   
                   <div style={{ flex:1, minHeight:300 }}>
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width="100%" height={280}>
                       {metricaSel === "adr_occ" ? (
                         <ComposedChart data={porMes} barSize={10}>
                           <CartesianGrid strokeDasharray="3 3" stroke={C.border} vertical={false}/>
@@ -1880,7 +1880,7 @@ function PickupView({ datos }) {
       </div>
 
       {/* ── GRÁFICA + DÍA MÁS RESERVADO ── */}
-      <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:12, padding:"24px 28px", display:"flex", gap:40 }}>
+      <div className="pickup-chart-row" style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:12, padding:"24px 28px", display:"flex", gap:40 }}>
         {/* Col izquierda: días más reservados */}
         <div style={{ display:"flex", flexDirection:"column", gap:12, minWidth:190, paddingRight:24, borderRight:`1px solid ${C.border}` }}>
           <p style={{ fontSize:11, fontWeight:700, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:4 }}>🏆 Día pico</p>
@@ -2803,8 +2803,16 @@ export default function App() {
           /* Cards y contenedores al 100% */
           div[style*="max-width"] { max-width: 100% !important; }
 
-          /* Recharts responsive */
-          .recharts-wrapper, .recharts-surface { max-width: 100% !important; }
+          /* Recharts — altura fija en móvil para evitar colapso */
+          .recharts-wrapper { width: 100% !important; }
+          .recharts-wrapper svg { width: 100% !important; }
+
+          /* Budget KPIs 3 cards → 1 columna */
+          .budget-kpis { grid-template-columns: 1fr !important; }
+
+          /* Pickup gráfica+pico → columna */
+          .pickup-chart-row { flex-direction: column !important; gap: 16px !important; }
+          .pickup-chart-row > div:first-child { border-right: none !important; border-bottom: 1px solid #E0E0E0 !important; padding-right: 0 !important; padding-bottom: 16px !important; }
 
           /* Tablas con scroll horizontal */
           table { font-size: 11px !important; }
