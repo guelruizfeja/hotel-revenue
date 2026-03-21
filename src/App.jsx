@@ -1507,7 +1507,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
         })() : [];
 
         return (
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16, marginBottom:16 }}>
+          <div className="dash-charts-grid" style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16, marginBottom:16 }}>
 
             {/* ── HEATMAP ── */}
             <Card style={{ display:"flex", flexDirection:"column" }}>
@@ -2772,13 +2772,32 @@ export default function App() {
         ::-webkit-scrollbar-thumb { background: ${C.accentLight}; border-radius: 3px; }
         @keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
         @media (max-width: 640px) {
+          /* Topbar */
           .topbar-fecha { display: none !important; }
           .topbar-center { left: 50% !important; }
+
+          /* Nav links — texto corto */
+          nav button { padding: 4px 8px !important; font-size: 11px !important; }
+
+          /* KPIs 2x2, el último ocupa todo el ancho */
           .kpi-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 10px !important; }
-          .meses-grid { grid-template-columns: repeat(3, 1fr) !important; min-width: unset !important; }
+          .kpi-grid > div:last-child:nth-child(odd) { grid-column: 1 / -1 !important; }
+
+          /* Selector de meses compacto */
+          .meses-grid { grid-template-columns: repeat(4, 1fr) !important; min-width: unset !important; gap: 4px !important; }
+          .meses-grid button { padding: 5px 2px !important; font-size: 10px !important; }
+
+          /* Cabecera en columna */
           .dash-header { flex-direction: column !important; align-items: flex-start !important; gap: 12px !important; }
-          nav > div { padding: 0 16px !important; }
-          main, #main-scroll { padding: 16px !important; }
+
+          /* Grid heatmap + gráfica en columna */
+          .dash-charts-grid { grid-template-columns: 1fr !important; }
+
+          /* Padding general */
+          main, #main-scroll { padding: 12px !important; }
+
+          /* Tablas scroll horizontal */
+          table { font-size: 11px !important; }
         }
         @media (max-width: 768px) {
           .topbar-date { display: none !important; }
