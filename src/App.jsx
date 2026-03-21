@@ -2220,6 +2220,7 @@ function PickupView({ datos }) {
 // ─── BUDGET VIEW ──────────────────────────────────────────────────
 function BudgetView({ datos, anio: anioProp }) {
   const { produccion, presupuesto } = datos;
+  const pickupEntries = datos.pickupEntries || [];
 
   const aniosDisponibles = [...new Set((presupuesto || []).map(p => p.anio))].sort();
   const [anio, setAnio] = useState(() => aniosDisponibles.includes(anioProp) ? anioProp : (aniosDisponibles[aniosDisponibles.length - 1] || anioProp));
@@ -2229,6 +2230,66 @@ function BudgetView({ datos, anio: anioProp }) {
     return <EmptyState mensaje="Importa tu plantilla Excel con los datos de la hoja 💰 Presupuesto para ver el análisis aquí" />;
   }
 
+  const hoy = new Date();
+  const pad = n => String(n).padStart(2, "0");
+  const hoyStr = `${hoy.getFullYear()}-${pad(hoy.getMonth()+1)}-${pad(hoy.getDate())}`;
+
+  // ── FORECAST (OTB + ETP) ──────────────────────────────────────
+  const calcForecastRevenue = (mesIdx, anioF) => {
+    const primerDia = new Date(anioF, mesIdx, 1);
+    const ultimoDia = new Date(anioF, mesIdx + 1, 0);
+    const mesStr    = `${anioF}-${pad(mesIdx + 1)}`;
+    const mesStrLY  = `${anioF - 1}-${pad(mesIdx + 1)}`;
+
+    // Mes ya cerrado → no hay forecast, devuelve null
+    if (ultimoDia < hoy) return null;
+
+    // ADR medio del año anterior para este mes
+    const diasLY = (produccion || []).filter(r => String(r.fecha || "").slice(0, 7) === mesStrLY);
+    const habOcuLY = diasLY.reduce((a, r) => a + (r.hab_ocupadas || 0), 0);
+    const revHabLY = diasLY.reduce((a, r) => a + (r.revenue_hab || 0), 0);
+    const adrLY = habOcuLY > 0 ? revHabLY / habOcuLY : null;
+    if (!adrLY) return null;
+
+    // OTB actual: reservas en pickup con fecha_llegada en este mes y fecha_pickup <= hoy
+    const otbRes = pickupEntries
+      .filter(e => String(e.fecha_llegada || "").slice(0, 7) === mesStr && String(e.fecha_pickup || "").slice(0, 10) <= hoyStr)
+      .reduce((a, e) => a + (e.num_reservas || 1), 0);
+
+    // OTB año anterior en la misma fecha relativa
+    const hoyLY = `${anioF - 1}-${pad(hoy.getMonth() + 1)}-${pad(hoy.getDate())}`;
+    const otbResLY = pickupEntries
+      .filter(e => String(e.fecha_llegada || "").slice(0, 7) === mesStrLY && String(e.fecha_pickup || "").slice(0, 10) <= hoyLY)
+      .reduce((a, e) => a + (e.num_reservas || 1), 0);
+
+    // ETP: pickup del año anterior desde hoy hasta fin de mes, ajustado por pace
+    const finMesLY = `${anioF - 1}-${pad(mesIdx + 1)}-${pad(ultimoDia.getDate())}`;
+    const etpResLY = pickupEntries
+      .filter(e => {
+        const fp = String(e.fecha_pickup || "").slice(0, 10);
+        return String(e.fecha_llegada || "").slice(0, 7) === mesStrLY && fp > hoyLY && fp <= finMesLY;
+      })
+      .reduce((a, e) => a + (e.num_reservas || 1), 0);
+
+    // Factor pace (si este año vamos más rápido, ETP sube proporcionalmente)
+    const paceFactor = otbResLY > 0 ? otbRes / otbResLY : 1;
+    const etpRes = Math.round(etpResLY * paceFactor);
+
+    // Forecast reservas totales = OTB + ETP
+    const forecastRes = otbRes + etpRes;
+
+    // Revenue forecast = reservas * ADR año anterior
+    const forecastRev = Math.round(forecastRes * adrLY);
+
+    // Confianza: % del mes transcurrido
+    const diasMes    = ultimoDia.getDate();
+    const diaActual  = primerDia > hoy ? 0 : Math.min(hoy.getDate(), diasMes);
+    const confianza  = Math.round((diaActual / diasMes) * 100);
+
+    return { forecastRev, otbRes, etpRes, paceFactor: paceFactor.toFixed(2), confianza };
+  };
+
+  // ── REALES POR MES ────────────────────────────────────────────
   const realesPorMes = MESES_FULL.map((_, i) => {
     const d = (produccion || []).filter(r => {
       const f = new Date(r.fecha + "T00:00:00");
@@ -2249,55 +2310,46 @@ function BudgetView({ datos, anio: anioProp }) {
     .filter(p => p.anio === anio)
     .sort((a, b) => a.mes - b.mes)
     .map(p => {
-      const real = realesPorMes[p.mes - 1];
-      const adr_dev       = real.adr_real != null       ? Math.round((real.adr_real - p.adr_ppto) * 100) / 100           : null;
-      const revpar_dev    = real.revpar_real != null     ? Math.round((real.revpar_real - p.revpar_ppto) * 100) / 100       : null;
+      const real      = realesPorMes[p.mes - 1];
+      const fcData    = calcForecastRevenue(p.mes - 1, anio);
+      // Si cerrado → forecast = real; si en curso/futuro → OTB+ETP
+      const ultimoDiaMes = new Date(anio, p.mes, 0);
+      const mesCerrado   = ultimoDiaMes < hoy;
+      const forecast_rev = mesCerrado
+        ? real.rev_total_real
+        : (fcData ? fcData.forecastRev : null);
+      const confianza    = mesCerrado ? 100 : (fcData ? fcData.confianza : null);
+
+      const adr_dev       = real.adr_real != null       ? Math.round((real.adr_real - p.adr_ppto) * 100) / 100     : null;
+      const revpar_dev    = real.revpar_real != null     ? Math.round((real.revpar_real - p.revpar_ppto) * 100) / 100 : null;
       const revtotal_dev  = real.rev_total_real != null  ? real.rev_total_real - p.rev_total_ppto : null;
+      const forecast_dev  = forecast_rev != null && p.rev_total_ppto ? forecast_rev - p.rev_total_ppto : null;
+      const forecast_dev_pct = forecast_dev != null && p.rev_total_ppto > 0 ? ((forecast_dev / p.rev_total_ppto) * 100).toFixed(1) : null;
+
       return {
-        mes:            MESES_CORTO[p.mes - 1],
-        mesIdx:         p.mes - 1,
-        adr_ppto:       p.adr_ppto,
-        adr_real:       real.adr_real,
-        adr_dev,
-        adr_dev_pct:    p.adr_ppto > 0 && adr_dev != null ? ((adr_dev / p.adr_ppto) * 100).toFixed(1) : null,
-        revpar_ppto:    p.revpar_ppto,
-        revpar_real:    real.revpar_real,
-        revpar_dev,
+        mes: MESES_CORTO[p.mes - 1], mesIdx: p.mes - 1,
+        adr_ppto: p.adr_ppto, adr_real: real.adr_real, adr_dev,
+        adr_dev_pct: p.adr_ppto > 0 && adr_dev != null ? ((adr_dev / p.adr_ppto) * 100).toFixed(1) : null,
+        revpar_ppto: p.revpar_ppto, revpar_real: real.revpar_real, revpar_dev,
         revpar_dev_pct: p.revpar_ppto > 0 && revpar_dev != null ? ((revpar_dev / p.revpar_ppto) * 100).toFixed(1) : null,
-        rev_total_ppto: p.rev_total_ppto,
-        rev_total_real: real.rev_total_real,
-        revtotal_dev,
+        rev_total_ppto: p.rev_total_ppto, rev_total_real: real.rev_total_real, revtotal_dev,
         revtotal_dev_pct: p.rev_total_ppto > 0 && revtotal_dev != null ? ((revtotal_dev / p.rev_total_ppto) * 100).toFixed(1) : null,
+        forecast_rev, forecast_dev, forecast_dev_pct, confianza, mesCerrado,
+        otbRes: fcData?.otbRes, etpRes: fcData?.etpRes, paceFactor: fcData?.paceFactor,
       };
     });
 
-  const filasConReal = filas.filter(f => f.adr_real != null || f.revpar_real != null);
+  const filasConReal   = filas.filter(f => f.adr_real != null || f.revpar_real != null);
+  const totalRevPpto   = filas.reduce((a, f) => a + (f.rev_total_ppto || 0), 0);
+  const totalRevReal   = filasConReal.reduce((a, f) => a + (f.rev_total_real || 0), 0);
+  const totalRevDev    = totalRevReal - filasConReal.reduce((a, f) => a + (f.rev_total_ppto || 0), 0);
+  const totalRevDevPct = filasConReal.length > 0 ? ((totalRevDev / filasConReal.reduce((a,f)=>a+(f.rev_total_ppto||0),0))*100).toFixed(1) : null;
+  const totalForecast  = filas.reduce((a, f) => a + (f.forecast_rev || 0), 0);
 
-  const totalRevPpto  = filas.reduce((a, f) => a + (f.rev_total_ppto || 0), 0);
-  const totalRevReal  = filasConReal.reduce((a, f) => a + (f.rev_total_real || 0), 0);
-  const totalRevDev   = totalRevReal - filasConReal.reduce((a, f) => a + (f.rev_total_ppto || 0), 0);
-  const totalRevDevPct = filasConReal.length > 0
-    ? ((totalRevDev / filasConReal.reduce((a,f) => a + (f.rev_total_ppto||0), 0)) * 100).toFixed(1)
-    : null;
-
-  const mediaAdrPpto  = filas.length > 0 ? Math.round(filas.reduce((a,f) => a+(f.adr_ppto||0),0)/filas.length) : 0;
-  const mediaAdrReal  = filasConReal.length > 0 ? Math.round(filasConReal.reduce((a,f) => a+(f.adr_real||0),0)/filasConReal.length) : null;
-  const mediaRevparPpto = filas.length > 0 ? Math.round(filas.reduce((a,f) => a+(f.revpar_ppto||0),0)/filas.length) : 0;
-  const mediaRevparReal = filasConReal.length > 0 ? Math.round(filasConReal.reduce((a,f) => a+(f.revpar_real||0),0)/filasConReal.length) : null;
-
-  const chartData = filas.map(f => ({
-    mes:          f.mes,
-    "RevPAR Ppto": f.revpar_ppto,
-    "RevPAR Real": f.revpar_real,
-    "ADR Ppto":   f.adr_ppto,
-    "ADR Real":   f.adr_real,
-  }));
-
-  const chartRevTotal = filas.map(f => ({
-    mes:              f.mes,
-    "Rev. Ppto (k€)": f.rev_total_ppto ? Math.round(f.rev_total_ppto / 1000) : null,
-    "Rev. Real (k€)": f.rev_total_real ? Math.round(f.rev_total_real / 1000) : null,
-  }));
+  const mediaAdrPpto    = filas.length > 0 ? Math.round(filas.reduce((a,f)=>a+(f.adr_ppto||0),0)/filas.length) : 0;
+  const mediaAdrReal    = filasConReal.length > 0 ? Math.round(filasConReal.reduce((a,f)=>a+(f.adr_real||0),0)/filasConReal.length) : null;
+  const mediaRevparPpto = filas.length > 0 ? Math.round(filas.reduce((a,f)=>a+(f.revpar_ppto||0),0)/filas.length) : 0;
+  const mediaRevparReal = filasConReal.length > 0 ? Math.round(filasConReal.reduce((a,f)=>a+(f.revpar_real||0),0)/filasConReal.length) : null;
 
   const DevBadge = ({ val, pct }) => {
     if (val == null) return <span style={{ color: C.textLight, fontSize: 11 }}>—</span>;
@@ -2317,6 +2369,17 @@ function BudgetView({ datos, anio: anioProp }) {
     );
   };
 
+  const ConfianzaBadge = ({ pct, cerrado }) => {
+    if (pct == null) return null;
+    if (cerrado) return <span style={{ fontSize: 9, color: C.green, fontWeight: 600 }}>✓ Real</span>;
+    const color = pct >= 70 ? C.green : pct >= 40 ? "#E85D04" : C.textLight;
+    return (
+      <span style={{ fontSize: 9, color, fontWeight: 600, display: "block", marginTop: 2 }}>
+        {pct}% confianza
+      </span>
+    );
+  };
+
   const kpiOpts = [
     { key: "revenue", label: "Revenue Total" },
     { key: "adr",     label: "ADR" },
@@ -2326,48 +2389,63 @@ function BudgetView({ datos, anio: anioProp }) {
   const chartUnificado = filas.map(f => ({
     mes: f.mes,
     Ppto: kpiChart==="revenue" ? (f.rev_total_ppto ? Math.round(f.rev_total_ppto/1000) : null)
-         : kpiChart==="adr"     ? f.adr_ppto
-         :                        f.revpar_ppto,
+         : kpiChart==="adr"     ? f.adr_ppto : f.revpar_ppto,
     Real: kpiChart==="revenue" ? (f.rev_total_real ? Math.round(f.rev_total_real/1000) : null)
-         : kpiChart==="adr"     ? f.adr_real
-         :                        f.revpar_real,
+         : kpiChart==="adr"     ? f.adr_real : f.revpar_real,
+    Forecast: kpiChart==="revenue" && !f.mesCerrado && f.forecast_rev
+      ? Math.round(f.forecast_rev / 1000) : null,
   }));
 
-  const chartUnit = kpiChart==="revenue" ? "k€" : "€";
-  const chartTitle = kpiChart==="revenue" ? "Revenue Total — Ppto. vs Real"
-                   : kpiChart==="adr"     ? "ADR — Ppto. vs Real"
-                   :                        "RevPAR — Ppto. vs Real";
+  const chartUnit  = kpiChart==="revenue" ? "k€" : "€";
+  const chartTitle = kpiChart==="revenue" ? "Revenue Total — Ppto. vs Real vs Forecast"
+                   : kpiChart==="adr"     ? "ADR — Ppto. vs Real" : "RevPAR — Ppto. vs Real";
 
   return (
     <div style={{ display:"flex", flexDirection:"column", gap:20 }}>
 
+      {/* KPIs forecast resumen */}
+      {totalForecast > 0 && (
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:14 }}>
+          {[
+            { label:"Revenue Real YTD",     value:`€${Math.round(totalRevReal).toLocaleString("es-ES")}`,    color:C.green },
+            { label:"Forecast Cierre Año",  value:`€${Math.round(totalForecast).toLocaleString("es-ES")}`,   color:"#B8860B" },
+            { label:"Presupuesto Año",       value:`€${Math.round(totalRevPpto).toLocaleString("es-ES")}`,   color:C.accent },
+          ].map((k,i) => (
+            <div key={i} style={{ background:C.bgCard, border:`1px solid ${C.border}`, borderRadius:10, padding:"16px 20px", borderLeft:`3px solid ${k.color}` }}>
+              <p style={{ fontSize:10, color:C.textLight, textTransform:"uppercase", letterSpacing:1.5, marginBottom:6, fontWeight:600 }}>{k.label}</p>
+              <p style={{ fontSize:22, fontWeight:700, color:k.color, fontFamily:"'DM Sans',sans-serif" }}>{k.value}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Selector año */}
       {aniosDisponibles.length > 1 && (
         <div style={{ display:"flex", justifyContent:"flex-end" }}>
-          <select value={anio} onChange={e => setAnio(parseInt(e.target.value))} style={{ padding: "6px 10px", borderRadius: 6, border: `1px solid ${C.border}`, fontSize: 12, fontWeight: 600, color: C.text, background: C.bgCard, cursor: "pointer", fontFamily: "'DM Sans', sans-serif", outline: "none" }}>
+          <select value={anio} onChange={e => setAnio(parseInt(e.target.value))} style={{ padding:"6px 10px", borderRadius:6, border:`1px solid ${C.border}`, fontSize:12, fontWeight:600, color:C.text, background:C.bgCard, cursor:"pointer", fontFamily:"'DM Sans',sans-serif", outline:"none" }}>
             {aniosDisponibles.map(a => <option key={a} value={a}>{a}</option>)}
           </select>
         </div>
       )}
 
-      {/* Gráfica única con selector KPI */}
+      {/* Gráfica */}
       <Card>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:18 }}>
           <div>
             <p style={{ fontFamily:"'Playfair Display',serif", fontWeight:700, fontSize:17, color:C.text }}>{chartTitle}</p>
-            <p style={{ fontSize:11, color:C.textLight, marginTop:2 }}>Ppto. vs Real · {anio}</p>
+            <p style={{ fontSize:11, color:C.textLight, marginTop:2 }}>Ppto. vs Real vs Forecast · {anio}</p>
           </div>
           <div style={{ display:"flex", gap:6 }}>
             {kpiOpts.map(o => (
               <button key={o.key} onClick={()=>setKpiChart(o.key)}
-                style={{ padding:"5px 14px", borderRadius:7, border:`1.5px solid ${kpiChart===o.key?"#1A7A3C":C.border}`, background: kpiChart===o.key?"#1A7A3C18":"transparent", color: kpiChart===o.key?"#1A7A3C":C.textLight, fontSize:12, fontWeight: kpiChart===o.key?700:400, cursor:"pointer", fontFamily:"'DM Sans',sans-serif", transition:"all 0.15s" }}>
+                style={{ padding:"5px 14px", borderRadius:7, border:`1.5px solid ${kpiChart===o.key?"#1A7A3C":C.border}`, background:kpiChart===o.key?"#1A7A3C18":"transparent", color:kpiChart===o.key?"#1A7A3C":C.textLight, fontSize:12, fontWeight:kpiChart===o.key?700:400, cursor:"pointer", fontFamily:"'DM Sans',sans-serif", transition:"all 0.15s" }}>
                 {o.label}
               </button>
             ))}
           </div>
         </div>
         <ResponsiveContainer width="100%" height={260}>
-          <BarChart data={chartUnificado} barSize={16} barGap={4}>
+          <BarChart data={chartUnificado} barSize={14} barGap={3}>
             <CartesianGrid strokeDasharray="3 3" stroke={C.border} vertical={false}/>
             <XAxis dataKey="mes" tick={{fill:C.textLight, fontSize:10}} axisLine={false} tickLine={false}/>
             <YAxis tick={{fill:C.textLight, fontSize:11}} axisLine={false} tickLine={false} unit={chartUnit}/>
@@ -2381,55 +2459,70 @@ function BudgetView({ datos, anio: anioProp }) {
               labelStyle={{color:C.accent, fontWeight:700}}
             />
             <Legend wrapperStyle={{fontSize:11, color:C.textMid, paddingTop:8}}/>
-            <Bar dataKey="Ppto" fill="#2E9C5588" radius={[3,3,0,0]}/>
-            <Bar dataKey="Real" fill="#1A7A3C" radius={[3,3,0,0]}/>
+            <Bar dataKey="Ppto"     fill="#2E9C5588" radius={[3,3,0,0]}/>
+            <Bar dataKey="Real"     fill="#1A7A3C"   radius={[3,3,0,0]}/>
+            <Bar dataKey="Forecast" fill="#B8860B88" radius={[3,3,0,0]} strokeDasharray="4 2"/>
           </BarChart>
         </ResponsiveContainer>
       </Card>
 
+      {/* Tabla detalle */}
       <Card>
-        <p style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700, fontSize: 16, color: C.text, marginBottom: 16 }}>Detalle mensual</p>
-        <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+        <p style={{ fontFamily:"'Playfair Display',serif", fontWeight:700, fontSize:16, color:C.text, marginBottom:16 }}>Detalle mensual</p>
+        <div style={{ overflowX:"auto" }}>
+          <table style={{ width:"100%", borderCollapse:"collapse", fontSize:12 }}>
             <thead>
-              <tr style={{ borderBottom: `2px solid ${C.border}` }}>
-                <th style={{ padding: "8px 12px", textAlign: "left",  fontSize: 10, color: C.textLight, textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600 }}>Mes</th>
-                <th style={{ padding: "8px 8px",  textAlign: "right", fontSize: 10, color: C.textLight, textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600 }}>ADR Ppto.</th>
-                <th style={{ padding: "8px 8px",  textAlign: "right", fontSize: 10, color: C.textLight, textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600 }}>ADR Real</th>
-                <th style={{ padding: "8px 8px",  textAlign: "right", fontSize: 10, color: C.textLight, textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600 }}>Desv. ADR</th>
-                <th style={{ padding: "8px 8px",  textAlign: "right", fontSize: 10, color: C.textLight, textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600 }}>RevPAR Ppto.</th>
-                <th style={{ padding: "8px 8px",  textAlign: "right", fontSize: 10, color: C.textLight, textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600 }}>RevPAR Real</th>
-                <th style={{ padding: "8px 8px",  textAlign: "right", fontSize: 10, color: C.textLight, textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600 }}>Desv. RevPAR</th>
-                <th style={{ padding: "8px 8px",  textAlign: "right", fontSize: 10, color: C.textLight, textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600 }}>Rev. Total Ppto.</th>
-                <th style={{ padding: "8px 8px",  textAlign: "right", fontSize: 10, color: C.textLight, textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600 }}>Rev. Total Real</th>
-                <th style={{ padding: "8px 8px",  textAlign: "right", fontSize: 10, color: C.textLight, textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600 }}>Desv. Rev. Total</th>
+              <tr style={{ borderBottom:`2px solid ${C.border}` }}>
+                {["Mes","ADR Ppto.","ADR Real","Desv. ADR","RevPAR Ppto.","RevPAR Real","Desv. RevPAR","Rev. Ppto.","Rev. Real","Desv. Rev.","Forecast Cierre"].map((h,hi) => (
+                  <th key={h} style={{ padding:"8px 8px", textAlign: hi===0?"left":"right", fontSize:10, color: h==="Forecast Cierre"?"#B8860B":C.textLight, textTransform:"uppercase", letterSpacing:"1px", fontWeight:600 }}>{h}</th>
+                ))}
               </tr>
             </thead>
             <tbody>
-              {filas.map((f, i) => (
-                <tr key={i} style={{ borderBottom: `1px solid ${C.border}`, background: i % 2 === 0 ? "#FAFAFA" : C.bgCard }}>
-                  <td style={{ padding: "10px 12px", fontWeight: 600, color: C.text }}>{f.mes}</td>
-                  <td style={{ padding: "10px 8px", textAlign: "right", color: C.textMid }}>€{f.adr_ppto}</td>
-                  <td style={{ padding: "10px 8px", textAlign: "right", color: C.text, fontWeight: f.adr_real ? 600 : 400 }}>{f.adr_real != null ? `€${f.adr_real}` : "—"}</td>
-                  <td style={{ padding: "10px 8px", textAlign: "right" }}><DevBadge val={f.adr_dev} pct={f.adr_dev_pct} /></td>
-                  <td style={{ padding: "10px 8px", textAlign: "right", color: C.textMid }}>€{f.revpar_ppto}</td>
-                  <td style={{ padding: "10px 8px", textAlign: "right", color: "#1A7A3C", fontWeight: f.revpar_real ? 600 : 400 }}>{f.revpar_real != null ? `€${f.revpar_real}` : "—"}</td>
-                  <td style={{ padding: "10px 8px", textAlign: "right" }}><DevBadge val={f.revpar_dev} pct={f.revpar_dev_pct} /></td>
-                  <td style={{ padding: "10px 8px", textAlign: "right", color: C.textMid }}>€{f.rev_total_ppto?.toLocaleString("es-ES")}</td>
-                  <td style={{ padding: "10px 8px", textAlign: "right", color: "#1A7A3C", fontWeight: f.rev_total_real ? 600 : 400 }}>{f.rev_total_real != null ? `€${f.rev_total_real.toLocaleString("es-ES")}` : "—"}</td>
-                  <td style={{ padding: "10px 8px", textAlign: "right" }}><DevBadge val={f.revtotal_dev} pct={f.revtotal_dev_pct} /></td>
-                </tr>
-              ))}
+              {filas.map((f, i) => {
+                const esFuturo = !f.mesCerrado && f.rev_total_real == null;
+                const esEnCurso = !f.mesCerrado && f.rev_total_real != null;
+                return (
+                  <tr key={i} style={{ borderBottom:`1px solid ${C.border}`, background: i%2===0?"#FAFAFA":C.bgCard }}>
+                    <td style={{ padding:"10px 12px", fontWeight:600, color:C.text }}>{f.mes}</td>
+                    <td style={{ padding:"10px 8px", textAlign:"right", color:C.textMid }}>€{f.adr_ppto}</td>
+                    <td style={{ padding:"10px 8px", textAlign:"right", color:C.text, fontWeight:f.adr_real?600:400 }}>{f.adr_real!=null?`€${f.adr_real}`:"—"}</td>
+                    <td style={{ padding:"10px 8px", textAlign:"right" }}><DevBadge val={f.adr_dev} pct={f.adr_dev_pct}/></td>
+                    <td style={{ padding:"10px 8px", textAlign:"right", color:C.textMid }}>€{f.revpar_ppto}</td>
+                    <td style={{ padding:"10px 8px", textAlign:"right", color:"#1A7A3C", fontWeight:f.revpar_real?600:400 }}>{f.revpar_real!=null?`€${f.revpar_real}`:"—"}</td>
+                    <td style={{ padding:"10px 8px", textAlign:"right" }}><DevBadge val={f.revpar_dev} pct={f.revpar_dev_pct}/></td>
+                    <td style={{ padding:"10px 8px", textAlign:"right", color:C.textMid }}>€{f.rev_total_ppto?.toLocaleString("es-ES")}</td>
+                    <td style={{ padding:"10px 8px", textAlign:"right", color:"#1A7A3C", fontWeight:f.rev_total_real?600:400 }}>{f.rev_total_real!=null?`€${f.rev_total_real.toLocaleString("es-ES")}`:"—"}</td>
+                    <td style={{ padding:"10px 8px", textAlign:"right" }}><DevBadge val={f.revtotal_dev} pct={f.revtotal_dev_pct}/></td>
+                    <td style={{ padding:"10px 8px", textAlign:"right", background: f.mesCerrado?"transparent":"#FFF8E7", borderLeft:`2px solid ${f.forecast_rev?"#B8860B44":"transparent"}` }}>
+                      {f.forecast_rev != null ? (
+                        <div>
+                          <span style={{ fontSize:13, fontWeight:700, color:"#B8860B" }}>€{Math.round(f.forecast_rev).toLocaleString("es-ES")}</span>
+                          {f.forecast_dev != null && (
+                            <span style={{ fontSize:9, color:f.forecast_dev>=0?C.green:C.red, fontWeight:600, display:"block" }}>
+                              {f.forecast_dev>=0?"+":""}{(f.forecast_dev/1000).toFixed(1)}k vs ppto
+                            </span>
+                          )}
+                          <ConfianzaBadge pct={f.confianza} cerrado={f.mesCerrado}/>
+                        </div>
+                      ) : "—"}
+                    </td>
+                  </tr>
+                );
+              })}
               {filasConReal.length > 0 && (
-                <tr style={{ borderTop: `2px solid ${C.border}`, background: "#E8F5EE", fontWeight: 700 }}>
-                  <td style={{ padding: "10px 12px", color: C.text, fontWeight: 700 }}>TOTAL YTD</td>
-                  <td colSpan={2} style={{ padding: "10px 8px", textAlign: "right", color: C.textMid, fontSize: 11 }}>Ppto: €{mediaAdrPpto} media</td>
-                  <td style={{ padding: "10px 8px", textAlign: "right" }}><DevBadge val={mediaAdrReal != null ? mediaAdrReal - mediaAdrPpto : null} pct={mediaAdrReal != null ? (((mediaAdrReal - mediaAdrPpto)/mediaAdrPpto)*100).toFixed(1) : null} /></td>
-                  <td colSpan={2} style={{ padding: "10px 8px", textAlign: "right", color: C.textMid, fontSize: 11 }}>Ppto: €{mediaRevparPpto} media</td>
-                  <td style={{ padding: "10px 8px", textAlign: "right" }}><DevBadge val={mediaRevparReal != null ? mediaRevparReal - mediaRevparPpto : null} pct={mediaRevparReal != null ? (((mediaRevparReal - mediaRevparPpto)/mediaRevparPpto)*100).toFixed(1) : null} /></td>
-                  <td style={{ padding: "10px 8px", textAlign: "right", color: C.textMid, fontSize: 11 }}>€{Math.round(filasConReal.reduce((a,f)=>a+(f.rev_total_ppto||0),0)).toLocaleString("es-ES")}</td>
-                  <td style={{ padding: "10px 8px", textAlign: "right", color: "#1A7A3C" }}>€{Math.round(totalRevReal).toLocaleString("es-ES")}</td>
-                  <td style={{ padding: "10px 8px", textAlign: "right" }}><DevBadge val={Math.round(totalRevDev)} pct={totalRevDevPct} /></td>
+                <tr style={{ borderTop:`2px solid ${C.border}`, background:"#E8F5EE", fontWeight:700 }}>
+                  <td style={{ padding:"10px 12px", color:C.text, fontWeight:700 }}>TOTAL YTD</td>
+                  <td colSpan={2} style={{ padding:"10px 8px", textAlign:"right", color:C.textMid, fontSize:11 }}>Ppto: €{mediaAdrPpto} media</td>
+                  <td style={{ padding:"10px 8px", textAlign:"right" }}><DevBadge val={mediaAdrReal!=null?mediaAdrReal-mediaAdrPpto:null} pct={mediaAdrReal!=null?(((mediaAdrReal-mediaAdrPpto)/mediaAdrPpto)*100).toFixed(1):null}/></td>
+                  <td colSpan={2} style={{ padding:"10px 8px", textAlign:"right", color:C.textMid, fontSize:11 }}>Ppto: €{mediaRevparPpto} media</td>
+                  <td style={{ padding:"10px 8px", textAlign:"right" }}><DevBadge val={mediaRevparReal!=null?mediaRevparReal-mediaRevparPpto:null} pct={mediaRevparReal!=null?(((mediaRevparReal-mediaRevparPpto)/mediaRevparPpto)*100).toFixed(1):null}/></td>
+                  <td style={{ padding:"10px 8px", textAlign:"right", color:C.textMid, fontSize:11 }}>€{Math.round(filasConReal.reduce((a,f)=>a+(f.rev_total_ppto||0),0)).toLocaleString("es-ES")}</td>
+                  <td style={{ padding:"10px 8px", textAlign:"right", color:"#1A7A3C" }}>€{Math.round(totalRevReal).toLocaleString("es-ES")}</td>
+                  <td style={{ padding:"10px 8px", textAlign:"right" }}><DevBadge val={Math.round(totalRevDev)} pct={totalRevDevPct}/></td>
+                  <td style={{ padding:"10px 8px", textAlign:"right", background:"#FFF8E7", borderLeft:"2px solid #B8860B44" }}>
+                    {totalForecast > 0 && <span style={{ fontSize:13, fontWeight:700, color:"#B8860B" }}>€{Math.round(totalForecast).toLocaleString("es-ES")}</span>}
+                  </td>
                 </tr>
               )}
             </tbody>
