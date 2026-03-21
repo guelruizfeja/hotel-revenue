@@ -337,7 +337,7 @@ function KpiCard({ label, value, change, sub, up, i, onClick, accentColor }) {
     }}>
       <div style={{ display: "none" }} />
       <p style={{ fontSize: 12, color: C.textMid, textTransform: "uppercase", letterSpacing: "1.5px", fontWeight: 700 }}>{label}</p>
-      <p style={{ fontSize: 30, fontWeight: 700, fontFamily: "'DM Sans', sans-serif", color: C.text, margin: "10px 0 6px", letterSpacing: "-1px", lineHeight: 1 }}>{value}</p>
+      <p style={{ fontSize: "clamp(22px,5vw,30px)", fontWeight: 700, fontFamily: "'DM Sans', sans-serif", color: C.text, margin: "8px 0 6px", letterSpacing: "-1px", lineHeight: 1 }}>{value}</p>
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
         <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 4, background: up ? C.greenLight : C.redLight, color: up ? C.green : C.red }}>{change}</span>
         <span style={{ fontSize: 11, color: C.textLight }}>{sub}</span>
@@ -371,7 +371,7 @@ function PeriodSelectorInline({ mes, anio, onChange, aniosDisponibles }) {
         <p style={{ fontSize:13, fontWeight:700, color:C.text, fontFamily:"'DM Sans',sans-serif", minWidth:36, textAlign:"center" }}>{anio}</p>
         <button onClick={anioSiguiente} style={btnFlecha(puedeSiguiente)}>›</button>
       </div>
-      <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:6, minWidth:260 }}>
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:4 }}>
         {MESES_C.map((m, i) => {
           const futuro = anio === anioMax && i > hoy.getMonth();
           const activo = i === mes;
@@ -379,7 +379,7 @@ function PeriodSelectorInline({ mes, anio, onChange, aniosDisponibles }) {
           return (
             <button key={i} onClick={() => !futuro && onChange(i, anio)}
               style={{
-                padding: "6px 10px",
+                padding: "5px 4px",
                 borderRadius: 6,
                 border: esHoyMes && !activo ? `1.5px solid ${C.accent}66` : `1px solid ${activo?C.accent:C.border}`,
                 background: activo ? C.accent : "transparent",
@@ -1403,7 +1403,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
   return (
     <div>
       {/* ── CABECERA MES ACTIVO ── */}
-      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16, paddingBottom:14, borderBottom:`1px solid ${C.border}` }}>
+      <div className="dash-header" style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16, paddingBottom:14, borderBottom:`1px solid ${C.border}` }}>
         <div>
           <p style={{ fontSize:22, fontWeight:800, color:C.text, fontFamily:"'DM Sans',sans-serif", letterSpacing:-0.5, marginBottom:2 }}>
             Bienvenido, <span style={{ color:C.accent }}>{datos.hotel?.nombre || "Mi Hotel"}</span>
@@ -1418,7 +1418,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
         <PeriodSelectorInline mes={mes} anio={anio} onChange={onPeriodo} aniosDisponibles={[...new Set((datos.produccion||[]).map(d=>new Date(d.fecha+"T00:00:00").getFullYear()))].sort()} />
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 14, marginBottom: 24 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(clamp(140px,40vw,200px), 1fr))", gap: 10, marginBottom: 20 }}>
         {kpis.map((k, i) => <KpiCard key={i} {...k} i={i} onClick={()=>setKpiModal(k.label)} />)}
       </div>
 
@@ -2771,14 +2771,31 @@ export default function App() {
         ::-webkit-scrollbar-track { background: ${C.bg}; }
         ::-webkit-scrollbar-thumb { background: ${C.accentLight}; border-radius: 3px; }
         @keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+        @media (max-width: 640px) {
+          .topbar-fecha { display: none !important; }
+          .topbar-center { left: 50% !important; }
+          .kpi-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 10px !important; }
+          .meses-grid { grid-template-columns: repeat(3, 1fr) !important; min-width: unset !important; }
+          .dash-header { flex-direction: column !important; align-items: flex-start !important; gap: 12px !important; }
+          nav > div { padding: 0 16px !important; }
+          main, #main-scroll { padding: 16px !important; }
+        }
+        @media (max-width: 768px) {
+          .topbar-date { display: none !important; }
+          .topbar-nav-label { display: none !important; }
+          .topbar-nav-icon { display: inline !important; }
+          .topbar-importar-label { display: none !important; }
+          .topbar-importar-icon { display: inline !important; }
+          .topbar-perfil-label { display: none !important; }
+        }
       `}</style>
 
       {/* Topbar */}
-      <header style={{ background: C.bg, height: 52, position: "sticky", top: 0, zIndex: 100, borderBottom: `1px solid ${C.border}` }}><div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", padding: "0 32px", gap: 8 }}>
+      <header style={{ background: C.bg, minHeight: 52, position: "sticky", top: 0, zIndex: 100, borderBottom: `1px solid ${C.border}` }}><div style={{ width: "100%", minHeight: 52, display: "flex", alignItems: "center", padding: "0 clamp(12px, 4vw, 32px)", gap: 6, flexWrap: "nowrap" }}>
         {/* Logo centro */}
         <div style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", pointerEvents: "none", display: "flex", alignItems: "center", gap: 12 }}>
-          <span style={{ fontFamily: "'Arial', sans-serif", fontWeight: 800, fontSize: 18, letterSpacing: 2, color: "#2B7EC1", textTransform: "uppercase", lineHeight: 1 }}>FastRevenue</span>
-          <span style={{ fontSize: 12, color: "#2B7EC1", fontWeight: 500, fontFamily: "'DM Sans', sans-serif", letterSpacing: 0.3, whiteSpace: "nowrap" }}>
+          <span style={{ fontFamily: "'Arial', sans-serif", fontWeight: 800, fontSize: "clamp(13px, 3.5vw, 18px)", letterSpacing: 2, color: "#2B7EC1", textTransform: "uppercase", lineHeight: 1, whiteSpace: "nowrap" }}>FastRevenue</span>
+          <span className="topbar-date" style={{ fontSize: 12, color: "#2B7EC1", fontWeight: 500, fontFamily: "'DM Sans', sans-serif", letterSpacing: 0.3, whiteSpace: "nowrap" }}>
             {new Date().toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).replace(/^\w/, c => c.toUpperCase())}
           </span>
         </div>
@@ -2790,10 +2807,11 @@ export default function App() {
             const isActive = view===n.key;
             return (
               <button key={n.key} onClick={() => { setView(n.key); setMesDetalle(null); localStorage.setItem("fr_view", n.key); }}
-                style={{ padding: "6px 16px", borderRadius: 7, border: "none", cursor: "pointer", background: isActive ? navColor+"18" : "transparent", color: isActive ? navColor : C.textLight, fontSize: 13, fontWeight: isActive ? 700 : 400, fontFamily: "'DM Sans', sans-serif", transition: "all 0.15s", whiteSpace: "nowrap", outline: isActive ? `1.5px solid ${navColor}44` : "1.5px solid transparent" }}
+                style={{ padding: "6px clamp(6px,2vw,16px)", borderRadius: 7, border: "none", cursor: "pointer", background: isActive ? navColor+"18" : "transparent", color: isActive ? navColor : C.textLight, fontSize: "clamp(11px,2.5vw,13px)", fontWeight: isActive ? 700 : 400, fontFamily: "'DM Sans', sans-serif", transition: "all 0.15s", whiteSpace: "nowrap", outline: isActive ? `1.5px solid ${navColor}44` : "1.5px solid transparent" }}
                 onMouseEnter={e=>{ if(!isActive){ e.currentTarget.style.color=C.text; } }}
                 onMouseLeave={e=>{ e.currentTarget.style.color=isActive?navColor:C.textLight; }}>
-                {n.label}
+                <span className="topbar-nav-label">{n.label}</span>
+                <span style={{ display:"none" }} className="topbar-nav-icon">{n.label.slice(0,3)}</span>
               </button>
             );
           })}
@@ -2813,19 +2831,20 @@ export default function App() {
               }} />}
             </div>
           ); })()}
-          <button onClick={() => setImportar(true)} style={{ background: C.accent, color: "#fff", border: "none", borderRadius: 7, padding: "5px 12px", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "'DM Sans',sans-serif" }}>
-            Importar
+          <button onClick={() => setImportar(true)} style={{ background: C.accent, color: "#fff", border: "none", borderRadius: 7, padding: "5px 10px", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "'DM Sans',sans-serif", whiteSpace: "nowrap" }}>
+            <span className="topbar-importar-label">Importar</span>
+            <span style={{ display:"none" }} className="topbar-importar-icon">↑</span>
           </button>
 
 
           {/* Menú Mi Perfil */}
           <div data-menu style={{ position:"relative" }}>
             <button onClick={() => setMostrarPerfil(v=>!v)}
-              style={{ display:"flex", alignItems:"center", gap:8, padding:"5px 12px", borderRadius:7, border:`1px solid ${C.border}`, background:"transparent", color:C.text, cursor:"pointer", fontSize:12, fontWeight:500, fontFamily:"'DM Sans',sans-serif", transition:"all 0.15s", letterSpacing:0.2 }}>
+              style={{ display:"flex", alignItems:"center", gap:6, padding:"5px 8px", borderRadius:7, border:`1px solid ${C.border}`, background:"transparent", color:C.text, cursor:"pointer", fontSize:12, fontWeight:500, fontFamily:"'DM Sans',sans-serif", transition:"all 0.15s", letterSpacing:0.2 }}>
               <span style={{ width:26, height:26, borderRadius:"50%", background:C.accent, color:"#fff", fontSize:11, fontWeight:700, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
                 {session.user.email[0].toUpperCase()}
               </span>
-              Mi perfil
+              <span className="topbar-perfil-label">Mi perfil</span>
             </button>
             {mostrarPerfil && (
               <div style={{ position:"absolute", top:42, right:0, width:240, background:C.bgCard, border:`1px solid ${C.border}`, borderRadius:10, boxShadow:"0 4px 24px rgba(0,0,0,0.08)", zIndex:200, overflow:"hidden" }}>
@@ -2870,7 +2889,7 @@ export default function App() {
       </div></header>
 
       {/* Main */}
-      <main id="main-scroll" onScroll={e => localStorage.setItem("fr_scroll", e.currentTarget.scrollTop)} style={{ padding: "28px 32px", width: "100%", boxSizing: "border-box" }}>
+      <main id="main-scroll" onScroll={e => localStorage.setItem("fr_scroll", e.currentTarget.scrollTop)} style={{ padding: "clamp(14px,4vw,28px) clamp(12px,4vw,32px)", width: "100%", boxSizing: "border-box" }}>
 
 
         {cargandoDatos ? <LoadingSpinner /> : mesDetalle ? (
