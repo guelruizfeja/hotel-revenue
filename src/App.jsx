@@ -2479,7 +2479,7 @@ function AuthScreen() {
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap'); * { box-sizing: border-box; margin: 0; padding: 0; } html, body, #root { width: 100%; min-height: 100vh; } @keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }`}</style>
       <div style={{ width: 420, background: C.bgCard, borderRadius: 20, padding: "40px 36px", boxShadow: "0 32px 80px rgba(0,0,0,0.4)", animation: "fadeUp 0.5s ease both" }}>
         <div style={{ textAlign: "center", marginBottom: 32 }}>
-          <img src={LOGO_B64} alt="FastRev" style={{ height: 56, width: "auto", margin: "0 auto 14px", display: "block" }} />
+          <img src={LOGO_B64} alt="FastRevenue" style={{ height: 56, width: "auto", margin: "0 auto 14px", display: "block" }} />
           <p style={{ fontSize: 12, color: C.textLight, marginTop: 4 }}>Revenue Management para hoteles independientes</p>
         </div>
         <div style={{ display: "flex", background: C.bg, borderRadius: 10, padding: 4, marginBottom: 24 }}>
@@ -2559,7 +2559,7 @@ function PantallaSubscripcion({ session, onPagar }) {
   return (
     <div style={{ minHeight:"100vh", background:C.bg, display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'DM Sans',sans-serif" }}>
       <div style={{ width:460, background:C.bgCard, borderRadius:20, padding:"48px 40px", boxShadow:"0 32px 80px rgba(0,0,0,0.1)", textAlign:"center" }}>
-        <img src={LOGO_B64} alt="FastRev" style={{ height:52, marginBottom:24 }} />
+        <img src={LOGO_B64} alt="FastRevenue" style={{ height:52, marginBottom:24 }} />
         <h1 style={{ fontFamily:"'Playfair Display',serif", fontSize:26, fontWeight:800, color:C.text, marginBottom:10 }}>Empieza gratis 30 días</h1>
         <p style={{ fontSize:14, color:C.textMid, lineHeight:1.7, marginBottom:32 }}>
           Acceso completo a FastRev durante 30 días sin coste.<br/>
@@ -2785,8 +2785,13 @@ export default function App() {
 
       {/* Topbar */}
       <header style={{ background: C.bg, height: 52, position: "sticky", top: 0, zIndex: 100, borderBottom: `1px solid ${C.border}` }}><div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", padding: "0 32px", gap: 8 }}>
-        {/* Logo */}
-        <img src={LOGO_B64} alt="FastRevenue" style={{ height: 26, width: "auto", marginRight: 24 }} />
+        {/* Logo centro */}
+        <div style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", pointerEvents: "none", display: "flex", alignItems: "center", gap: 12 }}>
+          <span style={{ fontFamily: "'Arial', sans-serif", fontWeight: 800, fontSize: 18, letterSpacing: 2, color: "#2B7EC1", textTransform: "uppercase", lineHeight: 1 }}>FastRevenue</span>
+          <span style={{ fontSize: 12, color: "#2B7EC1", fontWeight: 500, fontFamily: "'DM Sans', sans-serif", letterSpacing: 0.3, whiteSpace: "nowrap" }}>
+            {new Date().toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).replace(/^\w/, c => c.toUpperCase())}
+          </span>
+        </div>
 
         {/* Nav links */}
         <nav style={{ display: "flex", alignItems: "center", gap: 2, flex: 1 }}>
@@ -2821,6 +2826,7 @@ export default function App() {
           <button onClick={() => setImportar(true)} style={{ background: C.accent, color: "#fff", border: "none", borderRadius: 7, padding: "5px 12px", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "'DM Sans',sans-serif" }}>
             Importar
           </button>
+
 
           {/* Menú Mi Perfil */}
           <div data-menu style={{ position:"relative" }}>
