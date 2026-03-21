@@ -3,7 +3,7 @@ import { supabase } from "./supabase";
 import {
   AreaChart, Area, BarChart, Bar, LineChart, Line, ComposedChart,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
-  PieChart, Pie, Cell,
+  PieChart, Pie, Cell, ReferenceLine,
 } from "recharts";
 
 const LOGO_B64 = "data:image/png;base64,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";
@@ -1296,7 +1296,31 @@ async function generarReportePDF(datos, mes, anio, hotelNombre) {
 // ─── DASHBOARD VIEW ───────────────────────────────────────────────
 function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, setKpiModal, kpiModalExterno, onKpiModalExternoHandled }) {
   const { produccion } = datos;
+  const pickupEntries = datos.pickupEntries || [];
+  const presupuesto   = datos.presupuesto   || [];
   const [hmMesSel, setHmMesSel] = useState(null);
+  const [insightsVisible, setInsightsVisible] = useState(() => {
+    try { const s = localStorage.getItem("fr_insights_visible"); return s === null ? true : s === "true"; } catch(_) { return true; }
+  });
+  const toggleInsights = () => setInsightsVisible(v => {
+    try { localStorage.setItem("fr_insights_visible", String(!v)); } catch(_) {}
+    return !v;
+  });
+
+  // ── Pickup últimas 24h por mes de llegada ──
+  const hoy24 = new Date();
+  const hace24 = new Date(hoy24.getTime() - 24*60*60*1000);
+  const hace24Str = hace24.toISOString().slice(0,10);
+  const hoy24Str  = hoy24.toISOString().slice(0,10);
+  const pickup24hPorMes = {};
+  pickupEntries.forEach(e => {
+    const fp = String(e.fecha_pickup || '').slice(0,10);
+    if (fp < hace24Str || fp > hoy24Str) return;
+    const fl = String(e.fecha_llegada || '').slice(0,7); // YYYY-MM
+    if (!fl) return;
+    pickup24hPorMes[fl] = (pickup24hPorMes[fl] || 0) + (e.num_reservas || 1);
+  });
+  const UMBRAL_RAYO = 3; // reservas en 24h para mostrar ⚡
   const [metricaSel, setMetricaSel] = useState("adr_occ");
   useEffect(() => {
     if (kpiModalExterno) { setKpiModal(kpiModalExterno); onKpiModalExternoHandled && onKpiModalExternoHandled(); }
@@ -1422,6 +1446,73 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
         {kpis.map((k, i) => <KpiCard key={i} {...k} i={i} onClick={()=>setKpiModal(k.label)} />)}
       </div>
 
+      {/* ── STRATEGIC INSIGHTS ── */}
+      {(() => {
+        const pad = n => String(n).padStart(2,"0");
+        const hoyI = new Date();
+        const hab = datos.hotel?.habitaciones || 30;
+        const insights = [];
+
+        for (let i = 1; i <= 6; i++) {
+          const d = new Date(hoyI.getFullYear(), hoyI.getMonth() + i, 1);
+          const mIdx = d.getMonth();
+          const aIdx = d.getFullYear();
+          const mesStr   = `${aIdx}-${pad(mIdx+1)}`;
+          const mesStrLY = `${aIdx-1}-${pad(mIdx+1)}`;
+          const diasMes  = new Date(aIdx, mIdx+1, 0).getDate();
+          const nombreMes = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"][mIdx];
+
+          const otb = pickupEntries.filter(e => String(e.fecha_llegada||"").slice(0,7) === mesStr).reduce((a,e)=>a+(e.num_reservas||1),0);
+          const occOtb = hab > 0 ? otb / (hab * diasMes) * 100 : 0;
+
+          const diasLY   = produccion.filter(r => String(r.fecha||"").slice(0,7) === mesStrLY);
+          const habOcuLY = diasLY.reduce((a,r)=>a+(r.hab_ocupadas||0),0);
+          const revHabLY = diasLY.reduce((a,r)=>a+(r.revenue_hab||0),0);
+          const adrLY    = habOcuLY > 0 ? revHabLY / habOcuLY : null;
+
+          const pptoMes = presupuesto.find(p => p.anio===aIdx && p.mes===mIdx+1);
+          const adrPpto = pptoMes?.adr_ppto || null;
+
+          const otbLY = pickupEntries.filter(e => String(e.fecha_llegada||"").slice(0,7) === mesStrLY).reduce((a,e)=>a+(e.num_reservas||1),0);
+
+          if (occOtb >= 75 && adrLY && adrPpto && adrPpto < adrLY * 0.97) {
+            insights.push({ icono:"🚀", titulo:`Oportunidad — ${nombreMes}`, desc:`OTB al ${occOtb.toFixed(0)}% de ocupación pero el ADR presupuestado (€${Math.round(adrPpto)}) está por debajo del año anterior (€${Math.round(adrLY)}). Considera subir el ADR.`, color:"#1A7A3C", bg:"#E6F7EE" });
+          } else if (occOtb >= 85 && adrLY && adrPpto && adrPpto >= adrLY) {
+            insights.push({ icono:"🔒", titulo:`Precio firme — ${nombreMes}`, desc:`Ocupación OTB al ${occOtb.toFixed(0)}% con ADR por encima del año anterior. Mantén o sube el ADR, la demanda lo soporta.`, color:C.accent, bg:"#E8F0F9" });
+          } else if (otbLY > 10 && otb < otbLY * 0.6 && occOtb < 40) {
+            insights.push({ icono:"⚠️", titulo:`Ritmo lento — ${nombreMes}`, desc:`OTB al ${occOtb.toFixed(0)}%, muy por debajo del ritmo del año pasado. Considera revisar el ADR a la baja para activar la demanda.`, color:"#E85D04", bg:"#FFF3E0" });
+          }
+        }
+
+        if (insights.length === 0) return null;
+        return (
+          <div style={{ marginBottom:20 }}>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom: insightsVisible ? 10 : 0 }}>
+              <p style={{ fontSize:11, fontWeight:700, color:C.textLight, textTransform:"uppercase", letterSpacing:1.5 }}>
+                💡 Insights estratégicos
+                <span style={{ marginLeft:8, background:C.accentLight, color:C.accent, borderRadius:10, padding:"1px 7px", fontSize:10 }}>{insights.length}</span>
+              </p>
+              <button onClick={toggleInsights} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, padding:"3px 10px", fontSize:11, color:C.textMid, cursor:"pointer", fontFamily:"'DM Sans',sans-serif", display:"flex", alignItems:"center", gap:4 }}>
+                {insightsVisible ? "▲ Ocultar" : "▼ Ver"}
+              </button>
+            </div>
+            {insightsVisible && (
+              <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                {insights.slice(0,3).map((ins,i) => (
+                  <div key={i} style={{ background:ins.bg, border:`1px solid ${ins.color}33`, borderLeft:`3px solid ${ins.color}`, borderRadius:8, padding:"12px 16px", display:"flex", gap:12, alignItems:"flex-start" }}>
+                    <span style={{ fontSize:18, lineHeight:1, flexShrink:0 }}>{ins.icono}</span>
+                    <div>
+                      <p style={{ fontSize:12, fontWeight:700, color:ins.color, marginBottom:3 }}>{ins.titulo}</p>
+                      <p style={{ fontSize:12, color:C.textMid, lineHeight:1.5 }}>{ins.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })()}
+
       {/* ── HEATMAP + GRÁFICAS ── */}
       {(() => {
         const MESES_H = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
@@ -1524,18 +1615,28 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
               {hmMesSel==null ? (
                 /* Vista anual: grid 4x3 */
                 <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gridTemplateRows:"repeat(3,1fr)", gap:8, flex:1 }}>
-                  {occPorMes.map(({label, mi, occ, occLY, esOtb})=>(
-                    <div key={mi} onClick={()=>setHmMesSel(mi)} title={occ!=null?(occLY!=null?`${label}: ${occ.toFixed(0)}% | LY: ${occLY.toFixed(0)}%`:`${label}: ${occ.toFixed(0)}%`):""} style={{ borderRadius:8, padding:"10px 6px", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", background: occ!=null ? heatColor(occ)+"22" : C.bg, border:`1.5px solid ${occ!=null?heatColor(occ):C.border}`, cursor:"pointer", textAlign:"center", transition:"all 0.15s" }}
+                  {occPorMes.map(({label, mi, occ, occLY, esOtb})=>{
+                    const mesKey = `${anio}-${String(mi+1).padStart(2,"0")}`;
+                    const pu24h  = pickup24hPorMes[mesKey] || 0;
+                    const esCaliente = pu24h >= UMBRAL_RAYO;
+                    return (
+                    <div key={mi} onClick={()=>setHmMesSel(mi)}
+                      title={occ!=null?(occLY!=null?`${label}: ${occ.toFixed(0)}% | LY: ${occLY.toFixed(0)}%`:`${label}: ${occ.toFixed(0)}%`):""}
+                      style={{ borderRadius:8, padding:"10px 6px", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", background: occ!=null ? heatColor(occ)+"22" : C.bg, border:`1.5px solid ${esCaliente?"#E85D04":occ!=null?heatColor(occ):C.border}`, cursor:"pointer", textAlign:"center", transition:"all 0.15s", position:"relative" }}
                       onMouseEnter={e=>e.currentTarget.style.opacity="0.8"} onMouseLeave={e=>e.currentTarget.style.opacity="1"}>
+                      {esCaliente && (
+                        <span title={`${pu24h} reservas en las últimas 24h`} style={{ position:"absolute", top:3, right:4, fontSize:10, lineHeight:1, animation:"pulse-rayo 1.5s ease-in-out infinite" }}>⚡</span>
+                      )}
                       <p style={{ fontSize:9, fontWeight:600, color:C.textLight, textTransform:"uppercase", letterSpacing:0.5, marginBottom:3 }}>{label}</p>
                       {occ!=null
                         ? <p style={{ fontSize:16, fontWeight:800, color:heatColor(occ), fontFamily:"'DM Sans',sans-serif" }}>{occ.toFixed(0)}%</p>
                         : <p style={{ fontSize:12, color:C.border }}>—</p>
                       }
-                      {esOtb && occ!=null && <p style={{ fontSize:8, color:"#7A9CC8", fontWeight:700, marginTop:2 }}>OTB</p>}
-                      {!esOtb && occLY!=null && occ!=null && <p style={{ fontSize:8, color:C.textLight, marginTop:2 }}>LY: {occLY.toFixed(0)}%</p>}
+                      {esCaliente && <p style={{ fontSize:7, color:"#E85D04", fontWeight:700, marginTop:1 }}>{pu24h} hoy</p>}
+                      {!esCaliente && esOtb && occ!=null && <p style={{ fontSize:8, color:"#7A9CC8", fontWeight:700, marginTop:2 }}>OTB</p>}
+                      {!esCaliente && !esOtb && occLY!=null && occ!=null && <p style={{ fontSize:8, color:C.textLight, marginTop:2 }}>LY: {occLY.toFixed(0)}%</p>}
                     </div>
-                  ))}
+                  );})}
                 </div>
               ) : (
                 /* Vista diaria del mes */
@@ -1616,6 +1717,12 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
                           <Tooltip content={<CustomTooltip/>}/>
                           <Bar  yAxisId="left"  dataKey="occ" name="Ocupación" fill={C.accent} radius={[2,2,0,0]} fillOpacity={0.8}/>
                           <Line yAxisId="right" dataKey="adr" name="ADR" type="monotone" stroke="#E85D04" strokeWidth={2} dot={{fill:"#E85D04", r:3, strokeWidth:0}} activeDot={{r:4}}/>
+                          {(() => {
+                            const pptoMes = presupuesto.filter(p=>p.anio===anio && p.adr_ppto);
+                            if (pptoMes.length === 0) return null;
+                            const mediaAdrPpto = Math.round(pptoMes.reduce((a,p)=>a+(p.adr_ppto||0),0)/pptoMes.length);
+                            return <ReferenceLine yAxisId="right" y={mediaAdrPpto} stroke="#B8860B" strokeDasharray="6 3" strokeWidth={1.5} label={{ value:`Ppto €${mediaAdrPpto}`, position:"insideTopRight", fill:"#B8860B", fontSize:9, fontWeight:600 }}/>;
+                          })()}
                         </ComposedChart>
                       ) : (
                         <AreaChart data={porMes}>
@@ -2771,6 +2878,7 @@ export default function App() {
         ::-webkit-scrollbar-track { background: ${C.bg}; }
         ::-webkit-scrollbar-thumb { background: ${C.accentLight}; border-radius: 3px; }
         @keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes pulse-rayo { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(0.8); } }
         @media (max-width: 640px) {
           /* Contenedor raíz — evita desbordamiento lateral */
           html, body, #root { overflow-x: hidden !important; max-width: 100vw !important; }
