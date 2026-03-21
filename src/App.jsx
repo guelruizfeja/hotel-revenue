@@ -1548,7 +1548,13 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
           const primerDia = `${mesStr}-01`;
           if (primerDia <= _hoyStr) return { label, mi, occ: null, occLY, esOtb: false };
           const diasMes = new Date(anio, mi+1, 0).getDate();
-          const habH = datos.hotel?.habitaciones || 30;
+          // Calcular habH desde produccion si no viene del hotel
+          const habFromProd = produccion.length > 0
+            ? Math.round(produccion.reduce((a,r)=>a+(r.hab_disponibles||0),0)/produccion.length)
+            : 30;
+          const habH = (datos.hotel?.habitaciones && datos.hotel.habitaciones > 0)
+            ? datos.hotel.habitaciones
+            : habFromProd;
           let totalRes = 0;
           for (let di=1; di<=diasMes; di++) {
             const iso = `${mesStr}-${_pad(di)}`;
