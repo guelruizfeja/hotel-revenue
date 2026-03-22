@@ -1959,6 +1959,50 @@ function PickupView({ datos }) {
     "Directo": "#111111", "Teléfono": "#059669", "Agencia": "#7C3AED"
   };
 
+  // ── Cancelaciones de ayer ──
+  const cancelacionesAyer = reservasAyer.filter(e => (e.estado||"confirmada") === "cancelada");
+  const cancelTotal = cancelacionesAyer.length;
+  const cancelPorMes = {};
+  cancelacionesAyer.forEach(e => {
+    const fl = String(e.fecha_llegada||"").slice(0,7);
+    const mes = parseInt(fl.slice(5,7)) - 1;
+    cancelPorMes[mes] = (cancelPorMes[mes]||0) + 1;
+  });
+
+  // ── Duración media de estancia ──
+  const conNoches = pickupEntries.filter(e => e.noches && e.noches > 0 && (e.estado||"confirmada") !== "cancelada");
+  const nochesMed = conNoches.length > 0
+    ? (conNoches.reduce((a,e)=>a+(e.noches||0),0) / conNoches.length).toFixed(1)
+    : null;
+  // Por canal
+  const nochesPorCanal = {};
+  conNoches.forEach(e => {
+    const c = e.canal || "Directo";
+    if (!nochesPorCanal[c]) nochesPorCanal[c] = { total:0, count:0 };
+    nochesPorCanal[c].total  += e.noches||0;
+    nochesPorCanal[c].count  += 1;
+  });
+  const nochesCanalData = Object.entries(nochesPorCanal)
+    .map(([canal, d]) => ({ canal, media: (d.total/d.count).toFixed(1) }))
+    .sort((a,b) => b.media - a.media);
+
+  // ── Precio medio por reserva ──
+  const conPrecio = pickupEntries.filter(e => e.precio_total && e.precio_total > 0 && (e.estado||"confirmada") !== "cancelada");
+  const precioMed = conPrecio.length > 0
+    ? Math.round(conPrecio.reduce((a,e)=>a+(e.precio_total||0),0) / conPrecio.length)
+    : null;
+  // Por canal
+  const precioPorCanal = {};
+  conPrecio.forEach(e => {
+    const c = e.canal || "Directo";
+    if (!precioPorCanal[c]) precioPorCanal[c] = { total:0, count:0 };
+    precioPorCanal[c].total += e.precio_total||0;
+    precioPorCanal[c].count += 1;
+  });
+  const precioCanalData = Object.entries(precioPorCanal)
+    .map(([canal, d]) => ({ canal, media: Math.round(d.total/d.count), color: CANAL_COLORS[canal]||C.accent }))
+    .sort((a,b) => b.media - a.media);
+
   return (
     <div style={{ display:"flex", flexDirection:"column", gap:20 }}>
 
@@ -2036,6 +2080,111 @@ function PickupView({ datos }) {
           </div>
         )}
       </Card>
+
+      {/* ── 3 WIDGETS NUEVOS ── */}
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(280px,1fr))", gap:16 }}>
+
+        {/* CANCELACIONES DE AYER */}
+        <Card>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:14 }}>
+            <div>
+              <p style={{ fontFamily:"'Playfair Display',serif", fontWeight:700, fontSize:16, color:C.text }}>Cancelaciones de ayer</p>
+              <p style={{ fontSize:11, color:C.textLight, marginTop:2 }}>
+                {ayerD.toLocaleDateString("es-ES",{weekday:"long",day:"numeric",month:"long"}).replace(/^\w/,c=>c.toUpperCase())}
+              </p>
+            </div>
+            <div style={{ background: cancelTotal>0?"#FDECEA":"#E6F7EE", border:`1px solid ${cancelTotal>0?"#D32F2F44":"#1A7A3C44"}`, borderRadius:10, padding:"10px 20px", textAlign:"center" }}>
+              <p style={{ fontSize:28, fontWeight:800, color:cancelTotal>0?C.red:C.green, fontFamily:"'DM Sans',sans-serif", lineHeight:1 }}>{cancelTotal}</p>
+              <p style={{ fontSize:10, fontWeight:600, textTransform:"uppercase", letterSpacing:0.8, marginTop:3, color:cancelTotal>0?C.red:C.green }}>cancelaciones</p>
+            </div>
+          </div>
+          {cancelTotal === 0 ? (
+            <p style={{ color:C.green, fontSize:13, textAlign:"center", padding:"12px 0" }}>✅ Sin cancelaciones ayer</p>
+          ) : (
+            <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+              <p style={{ fontSize:11, fontWeight:700, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:4 }}>Por mes afectado</p>
+              {Object.entries(cancelPorMes).sort((a,b)=>a[0]-b[0]).map(([mi, n]) => (
+                <div key={mi} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"6px 10px", background:C.redLight, borderRadius:6 }}>
+                  <span style={{ fontSize:12, color:C.text, fontWeight:500 }}>{MESES_FULL_PU[parseInt(mi)]}</span>
+                  <span style={{ fontSize:13, fontWeight:700, color:C.red }}>{n} cancel.</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </Card>
+
+        {/* DURACIÓN MEDIA DE ESTANCIA */}
+        <Card>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:14 }}>
+            <div>
+              <p style={{ fontFamily:"'Playfair Display',serif", fontWeight:700, fontSize:16, color:C.text }}>Duración media</p>
+              <p style={{ fontSize:11, color:C.textLight, marginTop:2 }}>Noches por reserva confirmada</p>
+            </div>
+            <div style={{ background:`${C.accent}15`, border:`1px solid ${C.accent}33`, borderRadius:10, padding:"10px 20px", textAlign:"center" }}>
+              <p style={{ fontSize:28, fontWeight:800, color:C.accent, fontFamily:"'DM Sans',sans-serif", lineHeight:1 }}>{nochesMed ?? "—"}</p>
+              <p style={{ fontSize:10, fontWeight:600, textTransform:"uppercase", letterSpacing:0.8, marginTop:3, color:C.accent }}>noches media</p>
+            </div>
+          </div>
+          {nochesCanalData.length > 0 && (
+            <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+              <p style={{ fontSize:11, fontWeight:700, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:4 }}>Por canal</p>
+              {nochesCanalData.slice(0,5).map((d,i) => {
+                const maxNoches = parseFloat(nochesCanalData[0].media);
+                const pct = maxNoches > 0 ? parseFloat(d.media)/maxNoches : 0;
+                const color = CANAL_COLORS[d.canal] || C.accent;
+                return (
+                  <div key={i}>
+                    <div style={{ display:"flex", justifyContent:"space-between", marginBottom:3 }}>
+                      <span style={{ fontSize:12, color:C.textMid }}>{d.canal}</span>
+                      <span style={{ fontSize:12, fontWeight:700, color }}>{d.media} noches</span>
+                    </div>
+                    <div style={{ height:5, borderRadius:3, background:C.border }}>
+                      <div style={{ height:5, borderRadius:3, background:color, width:`${pct*100}%`, transition:"width 0.4s" }}/>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </Card>
+
+        {/* PRECIO MEDIO POR RESERVA */}
+        <Card>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:14 }}>
+            <div>
+              <p style={{ fontFamily:"'Playfair Display',serif", fontWeight:700, fontSize:16, color:C.text }}>Precio medio reserva</p>
+              <p style={{ fontSize:11, color:C.textLight, marginTop:2 }}>Revenue medio por reserva confirmada</p>
+            </div>
+            <div style={{ background:"#1A7A3C15", border:"1px solid #1A7A3C33", borderRadius:10, padding:"10px 20px", textAlign:"center" }}>
+              <p style={{ fontSize:28, fontWeight:800, color:C.green, fontFamily:"'DM Sans',sans-serif", lineHeight:1 }}>
+                {precioMed ? `€${precioMed.toLocaleString("es-ES")}` : "—"}
+              </p>
+              <p style={{ fontSize:10, fontWeight:600, textTransform:"uppercase", letterSpacing:0.8, marginTop:3, color:C.green }}>precio medio</p>
+            </div>
+          </div>
+          {precioCanalData.length > 0 && (
+            <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+              <p style={{ fontSize:11, fontWeight:700, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:4 }}>Por canal</p>
+              {precioCanalData.slice(0,5).map((d,i) => {
+                const maxPrecio = precioCanalData[0].media;
+                const pct = maxPrecio > 0 ? d.media/maxPrecio : 0;
+                return (
+                  <div key={i}>
+                    <div style={{ display:"flex", justifyContent:"space-between", marginBottom:3 }}>
+                      <span style={{ fontSize:12, color:C.textMid }}>{d.canal}</span>
+                      <span style={{ fontSize:12, fontWeight:700, color:d.color }}>€{d.media.toLocaleString("es-ES")}</span>
+                    </div>
+                    <div style={{ height:5, borderRadius:3, background:C.border }}>
+                      <div style={{ height:5, borderRadius:3, background:d.color, width:`${pct*100}%`, transition:"width 0.4s" }}/>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </Card>
+
+      </div>
 
       {/* Selector año */}
       <div style={{ display:"flex", justifyContent:"flex-end" }}>
@@ -2852,7 +3001,7 @@ export default function App() {
     let pickupEntries = [];
     try {
       const { data: pe0, count } = await supabase.from("pickup_entries")
-        .select("fecha_llegada, fecha_pickup, canal, num_reservas", { count: "exact" })
+        .select("fecha_llegada, fecha_pickup, canal, num_reservas, fecha_salida, noches, precio_total, estado", { count: "exact" })
         .eq("hotel_id", session.user.id)
         .range(0, 999);
       if (pe0 && pe0.length > 0) {
@@ -2863,7 +3012,7 @@ export default function App() {
           ? await Promise.all(
               Array.from({ length: paginas - 1 }, (_, i) =>
                 supabase.from("pickup_entries")
-                  .select("fecha_llegada, fecha_pickup, canal, num_reservas")
+                  .select("fecha_llegada, fecha_pickup, canal, num_reservas, fecha_salida, noches, precio_total, estado")
                   .eq("hotel_id", session.user.id)
                   .range((i + 1) * PAGINA, (i + 2) * PAGINA - 1)
                   .then(r => r.data || [])
