@@ -742,6 +742,51 @@ function ImportarExcel({ onClose, session, onImportado }) {
         if (err3) throw new Error("Error al guardar presupuesto: " + err3.message);
       }
 
+      // ── Grupos & Eventos ──
+      const wsGr = wb.Sheets["🎪 Grupos y Eventos"];
+      if (wsGr) {
+        const rowsGr = XLSX.utils.sheet_to_json(wsGr, { header: 1, raw: true });
+        const gruposRows = [];
+        for (const row of rowsGr) {
+          if (!row || !row[0] || typeof row[0] !== "string" || row[0].startsWith("GRUPOS") || row[0].startsWith("Estado")) continue;
+          if (row[0] === "nombre") continue; // cabecera
+          const serialToDate = (v) => {
+            if (!v) return null;
+            if (typeof v === "string" && v.match(/^\d{4}-\d{2}-\d{2}$/)) return v;
+            if (typeof v === "number" && v > 40000) {
+              const d = new Date(Date.UTC(1899, 11, 30) + Math.floor(v) * 86400000);
+              return d.toISOString().slice(0,10);
+            }
+            return null;
+          };
+          const fi = serialToDate(row[3]);
+          const ff = serialToDate(row[4]);
+          if (!fi || !ff) continue;
+          const estados_validos = ["confirmado","tentativo","cotizacion","cancelado"];
+          const cats_validas    = ["corporativo","boda","feria","deportivo","otros"];
+          gruposRows.push({
+            hotel_id:       session.user.id,
+            nombre:         String(row[0]),
+            categoria:      cats_validas.includes(row[1]) ? row[1] : "otros",
+            estado:         estados_validos.includes(row[2]) ? row[2] : "cotizacion",
+            fecha_inicio:   fi,
+            fecha_fin:      ff,
+            habitaciones:   parseInt(row[5])||0,
+            adr_grupo:      parseFloat(row[6])||0,
+            revenue_fnb:    parseFloat(row[7])||0,
+            revenue_sala:   parseFloat(row[8])||0,
+            notas:          row[9] ? String(row[9]) : null,
+            motivo_perdida: row[10] ? String(row[10]) : null,
+          });
+        }
+        if (gruposRows.length > 0) {
+          await supabase.from("grupos_eventos").delete().eq("hotel_id", session.user.id);
+          const { error: errGr } = await supabase.from("grupos_eventos").insert(gruposRows);
+          if (errGr) throw new Error("Error al guardar grupos: " + errGr.message);
+          setProgreso(`${gruposRows.length} grupos/eventos importados`);
+        }
+      }
+
       // Actualizar habitaciones en hoteles si viene del Excel
       if (totalHab) {
         await supabase.from("hoteles").update({ habitaciones: totalHab }).eq("id", session.user.id);
@@ -2783,6 +2828,384 @@ function BudgetView({ datos, anio: anioProp }) {
   );
 }
 
+
+// ─── GRUPOS & EVENTOS VIEW ────────────────────────────────────────
+function GruposView({ datos, onRecargar }) {
+  const grupos = datos.grupos || [];
+  const session = datos.session;
+
+  const CATS = {
+    corporativo: { label: "Corporativo",    icon: "🏢", color: "#2B7EC1" },
+    boda:        { label: "Boda / Social",  icon: "💍", color: "#D4547A" },
+    feria:       { label: "Feria / Congreso", icon: "🎟️", color: "#E85D04" },
+    deportivo:   { label: "Deportivo",      icon: "🏆", color: "#059669" },
+    otros:       { label: "Otros",          icon: "✨", color: "#7C3AED" },
+  };
+
+  const ESTADOS = {
+    confirmado:  { label: "Confirmado",    color: "#1A7A3C", bg: "#E6F7EE", peso: 1.0 },
+    tentativo:   { label: "Tentativo",     color: "#B8860B", bg: "#FFF8E7", peso: 0.5 },
+    cotizacion:  { label: "En cotización", color: "#2B7EC1", bg: "#E8F0F9", peso: 0 },
+    cancelado:   { label: "Cancelado",     color: "#999",    bg: "#F5F5F5", peso: 0 },
+  };
+
+  const MESES = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+  const MESES_FULL = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+
+  const [anio, setAnio] = useState(new Date().getFullYear());
+  const [filtroEstado, setFiltroEstado] = useState("todos");
+  const [modalGrupo, setModalGrupo] = useState(null); // null | {} (nuevo) | {id,...} (editar)
+  const [guardando, setGuardando] = useState(false);
+  const [vistaActiva, setVistaActiva] = useState("calendario"); // calendario | lista | pipeline
+
+  // ── Formulario estado ──
+  const FORM_VACIO = { nombre:"", categoria:"corporativo", estado:"cotizacion", fecha_inicio:"", fecha_fin:"", habitaciones:"", adr_grupo:"", revenue_fnb:"", revenue_sala:"", notas:"", motivo_perdida:"" };
+  const [form, setForm] = useState(FORM_VACIO);
+
+  const abrirNuevo = (fecha = "") => {
+    setForm({ ...FORM_VACIO, fecha_inicio: fecha, fecha_fin: fecha });
+    setModalGrupo({});
+  };
+
+  const abrirEditar = (g) => {
+    setForm({
+      nombre: g.nombre||"", categoria: g.categoria||"corporativo", estado: g.estado||"cotizacion",
+      fecha_inicio: g.fecha_inicio||"", fecha_fin: g.fecha_fin||"",
+      habitaciones: g.habitaciones||"", adr_grupo: g.adr_grupo||"",
+      revenue_fnb: g.revenue_fnb||"", revenue_sala: g.revenue_sala||"",
+      notas: g.notas||"", motivo_perdida: g.motivo_perdida||"",
+    });
+    setModalGrupo(g);
+  };
+
+  const guardar = async () => {
+    if (!form.nombre || !form.fecha_inicio || !form.fecha_fin) return;
+    setGuardando(true);
+    const payload = {
+      hotel_id: session.user.id,
+      nombre: form.nombre,
+      categoria: form.categoria,
+      estado: form.estado,
+      fecha_inicio: form.fecha_inicio,
+      fecha_fin: form.fecha_fin,
+      habitaciones: parseInt(form.habitaciones)||0,
+      adr_grupo: parseFloat(form.adr_grupo)||0,
+      revenue_fnb: parseFloat(form.revenue_fnb)||0,
+      revenue_sala: parseFloat(form.revenue_sala)||0,
+      notas: form.notas||null,
+      motivo_perdida: form.motivo_perdida||null,
+    };
+    if (modalGrupo?.id) {
+      await supabase.from("grupos_eventos").update(payload).eq("id", modalGrupo.id);
+    } else {
+      await supabase.from("grupos_eventos").insert(payload);
+    }
+    setGuardando(false);
+    setModalGrupo(null);
+    onRecargar();
+  };
+
+  const eliminar = async (id) => {
+    if (!window.confirm("¿Eliminar este grupo?")) return;
+    await supabase.from("grupos_eventos").delete().eq("id", id);
+    setModalGrupo(null);
+    onRecargar();
+  };
+
+  // ── Cálculos KPIs ──
+  const gruposAnio = grupos.filter(g => g.fecha_inicio?.slice(0,4) === String(anio) || g.fecha_fin?.slice(0,4) === String(anio));
+  const confirmados = gruposAnio.filter(g => g.estado === "confirmado");
+  const tentativos  = gruposAnio.filter(g => g.estado === "tentativo");
+  const pipeline    = gruposAnio.filter(g => g.estado === "cotizacion");
+  const cancelados  = gruposAnio.filter(g => g.estado === "cancelado");
+
+  const calcRevTotal = (g) => {
+    const noches = g.fecha_inicio && g.fecha_fin
+      ? Math.max(1, Math.round((new Date(g.fecha_fin) - new Date(g.fecha_inicio)) / 86400000))
+      : 1;
+    return (g.habitaciones||0) * (g.adr_grupo||0) * noches + (g.revenue_fnb||0) + (g.revenue_sala||0);
+  };
+
+  const revConfirmado = confirmados.reduce((a,g) => a + calcRevTotal(g), 0);
+  const revTentativo  = tentativos.reduce((a,g)  => a + calcRevTotal(g) * 0.5, 0);
+  const revPipeline   = pipeline.reduce((a,g)    => a + calcRevTotal(g), 0);
+
+  // ── Calendario mensual ──
+  const eventosPorMes = MESES.map((_, mi) => 
+    gruposAnio.filter(g => {
+      const ini = new Date(g.fecha_inicio+"T00:00:00");
+      const fin = new Date(g.fecha_fin+"T00:00:00");
+      return ini.getMonth() <= mi && fin.getMonth() >= mi;
+    })
+  );
+
+  const gruposFiltrados = filtroEstado === "todos"
+    ? gruposAnio.filter(g => g.estado !== "cancelado")
+    : gruposAnio.filter(g => g.estado === filtroEstado);
+
+  const inp = { width:"100%", padding:"9px 12px", borderRadius:7, border:`1.5px solid ${C.border}`, fontSize:13, fontFamily:"'DM Sans',sans-serif", color:C.text, background:C.bg, outline:"none", boxSizing:"border-box" };
+
+  return (
+    <div style={{ display:"flex", flexDirection:"column", gap:20 }}>
+
+      {/* ── KPIs ── */}
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))", gap:12 }}>
+        {[
+          { label:"Revenue confirmado",  value:`€${Math.round(revConfirmado).toLocaleString("es-ES")}`,  color:"#1A7A3C", n:confirmados.length },
+          { label:"Revenue tentativo (50%)", value:`€${Math.round(revTentativo).toLocaleString("es-ES")}`, color:"#B8860B", n:tentativos.length },
+          { label:"Pipeline en cotización", value:`€${Math.round(revPipeline).toLocaleString("es-ES")}`,  color:"#2B7EC1", n:pipeline.length },
+          { label:"Cancelados / Perdidos",  value:cancelados.length,                                       color:"#999",    n:cancelados.length },
+        ].map((k,i) => (
+          <div key={i} style={{ background:C.bgCard, border:`1px solid ${C.border}`, borderRadius:10, padding:"14px 18px", borderLeft:`3px solid ${k.color}` }}>
+            <p style={{ fontSize:10, color:C.textLight, textTransform:"uppercase", letterSpacing:1.5, fontWeight:600, marginBottom:4 }}>{k.label}</p>
+            <p style={{ fontSize:20, fontWeight:800, color:k.color, fontFamily:"'DM Sans',sans-serif" }}>{k.value}</p>
+            <p style={{ fontSize:11, color:C.textLight, marginTop:2 }}>{k.n} evento{k.n!==1?"s":""}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* ── Toolbar ── */}
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", gap:12, flexWrap:"wrap" }}>
+        <div style={{ display:"flex", gap:6, alignItems:"center" }}>
+          {/* Selector año */}
+          <button onClick={()=>setAnio(a=>a-1)} style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:6, width:28, height:28, cursor:"pointer", color:C.textMid }}>‹</button>
+          <span style={{ fontSize:14, fontWeight:700, color:C.text, minWidth:40, textAlign:"center" }}>{anio}</span>
+          <button onClick={()=>setAnio(a=>a+1)} style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:6, width:28, height:28, cursor:"pointer", color:C.textMid }}>›</button>
+          {/* Tabs vista */}
+          <div style={{ display:"flex", background:C.bg, borderRadius:8, padding:3, marginLeft:8, gap:2 }}>
+            {[["calendario","📅"],["lista","☰"],["pipeline","🔮"]].map(([k,ic])=>(
+              <button key={k} onClick={()=>setVistaActiva(k)}
+                style={{ padding:"4px 12px", borderRadius:6, border:"none", background:vistaActiva===k?C.bgCard:"transparent", color:vistaActiva===k?C.text:C.textLight, fontSize:12, fontWeight:vistaActiva===k?600:400, cursor:"pointer", boxShadow:vistaActiva===k?"0 1px 4px rgba(0,0,0,0.08)":"none" }}>
+                {ic} {k.charAt(0).toUpperCase()+k.slice(1)}
+              </button>
+            ))}
+          </div>
+        </div>
+        <button onClick={()=>abrirNuevo()} style={{ background:"#7C3AED", color:"#fff", border:"none", borderRadius:8, padding:"8px 18px", fontSize:13, fontWeight:600, cursor:"pointer", fontFamily:"'DM Sans',sans-serif" }}>
+          + Nuevo evento
+        </button>
+      </div>
+
+      {/* ── VISTA CALENDARIO ── */}
+      {vistaActiva === "calendario" && (
+        <Card>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:10 }}>
+            {MESES.map((mes, mi) => {
+              const evs = eventosPorMes[mi];
+              return (
+                <div key={mi} style={{ border:`1px solid ${C.border}`, borderRadius:8, padding:"10px 12px", minHeight:90, cursor:"pointer", background: evs.length>0?C.bg:C.bgCard }}
+                  onClick={()=>abrirNuevo(`${anio}-${String(mi+1).padStart(2,"0")}-01`)}>
+                  <p style={{ fontSize:11, fontWeight:700, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:6 }}>{MESES_FULL[mi]}</p>
+                  {evs.length === 0
+                    ? <p style={{ fontSize:10, color:C.border }}>Sin eventos</p>
+                    : evs.map((g,i) => (
+                        <div key={i} onClick={e=>{e.stopPropagation();abrirEditar(g);}}
+                          style={{ display:"flex", alignItems:"center", gap:5, marginBottom:4, padding:"3px 6px", borderRadius:4, background:ESTADOS[g.estado]?.bg||"#f5f5f5", border:`1px solid ${ESTADOS[g.estado]?.color||"#ddd"}33`, cursor:"pointer" }}>
+                          <span style={{ fontSize:11 }}>{CATS[g.categoria]?.icon||"✨"}</span>
+                          <span style={{ fontSize:10, fontWeight:600, color:ESTADOS[g.estado]?.color||C.text, flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{g.nombre}</span>
+                          <span style={{ fontSize:9, color:C.textLight }}>{g.habitaciones||0}h</span>
+                        </div>
+                      ))
+                  }
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+      )}
+
+      {/* ── VISTA LISTA ── */}
+      {vistaActiva === "lista" && (
+        <Card>
+          <div style={{ display:"flex", gap:6, marginBottom:16, flexWrap:"wrap" }}>
+            {["todos","confirmado","tentativo","cotizacion","cancelado"].map(e=>(
+              <button key={e} onClick={()=>setFiltroEstado(e)}
+                style={{ padding:"4px 12px", borderRadius:6, border:`1px solid ${filtroEstado===e?(ESTADOS[e]?.color||C.accent):C.border}`, background:filtroEstado===e?(ESTADOS[e]?.bg||C.accentLight):"transparent", color:filtroEstado===e?(ESTADOS[e]?.color||C.accent):C.textLight, fontSize:11, fontWeight:filtroEstado===e?700:400, cursor:"pointer" }}>
+                {e==="todos"?"Todos":ESTADOS[e]?.label}
+              </button>
+            ))}
+          </div>
+          <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+            {gruposFiltrados.length === 0
+              ? <p style={{ color:C.textLight, textAlign:"center", padding:24 }}>Sin eventos</p>
+              : gruposFiltrados.sort((a,b)=>a.fecha_inicio?.localeCompare(b.fecha_inicio)).map(g => {
+                  const revT = calcRevTotal(g);
+                  const noches = Math.max(1, Math.round((new Date(g.fecha_fin) - new Date(g.fecha_inicio)) / 86400000));
+                  return (
+                    <div key={g.id} onClick={()=>abrirEditar(g)} style={{ display:"flex", alignItems:"center", gap:14, padding:"12px 16px", borderRadius:8, border:`1px solid ${C.border}`, background:C.bgCard, cursor:"pointer" }}
+                      onMouseEnter={e=>e.currentTarget.style.background=C.bg}
+                      onMouseLeave={e=>e.currentTarget.style.background=C.bgCard}>
+                      <span style={{ fontSize:22 }}>{CATS[g.categoria]?.icon||"✨"}</span>
+                      <div style={{ flex:1 }}>
+                        <p style={{ fontSize:13, fontWeight:700, color:C.text }}>{g.nombre}</p>
+                        <p style={{ fontSize:11, color:C.textLight }}>{g.fecha_inicio} → {g.fecha_fin} · {noches} noche{noches!==1?"s":""} · {g.habitaciones||0} hab.</p>
+                      </div>
+                      <div style={{ textAlign:"right" }}>
+                        <p style={{ fontSize:14, fontWeight:700, color:"#1A7A3C" }}>€{Math.round(revT).toLocaleString("es-ES")}</p>
+                        <span style={{ fontSize:10, fontWeight:600, padding:"2px 8px", borderRadius:10, background:ESTADOS[g.estado]?.bg, color:ESTADOS[g.estado]?.color }}>
+                          {ESTADOS[g.estado]?.label}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })
+            }
+          </div>
+        </Card>
+      )}
+
+      {/* ── VISTA PIPELINE ── */}
+      {vistaActiva === "pipeline" && (
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(260px,1fr))", gap:16 }}>
+          {["cotizacion","tentativo","confirmado"].map(estado => {
+            const evs = gruposAnio.filter(g=>g.estado===estado).sort((a,b)=>a.fecha_inicio?.localeCompare(b.fecha_inicio));
+            const revTotal = evs.reduce((a,g)=>a+calcRevTotal(g),0);
+            return (
+              <div key={estado} style={{ background:C.bgCard, border:`1px solid ${C.border}`, borderRadius:10, overflow:"hidden" }}>
+                <div style={{ padding:"12px 16px", background:ESTADOS[estado]?.bg, borderBottom:`1px solid ${C.border}` }}>
+                  <p style={{ fontSize:12, fontWeight:700, color:ESTADOS[estado]?.color, textTransform:"uppercase", letterSpacing:1 }}>{ESTADOS[estado]?.label}</p>
+                  <p style={{ fontSize:11, color:C.textLight }}>{evs.length} eventos · €{Math.round(revTotal).toLocaleString("es-ES")}</p>
+                </div>
+                <div style={{ padding:"10px 12px", display:"flex", flexDirection:"column", gap:8, minHeight:120 }}>
+                  {evs.length === 0
+                    ? <p style={{ fontSize:11, color:C.border, textAlign:"center", paddingTop:16 }}>Sin eventos</p>
+                    : evs.map(g => (
+                        <div key={g.id} onClick={()=>abrirEditar(g)} style={{ padding:"8px 10px", borderRadius:7, border:`1px solid ${C.border}`, cursor:"pointer", background:C.bg }}
+                          onMouseEnter={e=>e.currentTarget.style.borderColor=ESTADOS[estado]?.color}
+                          onMouseLeave={e=>e.currentTarget.style.borderColor=C.border}>
+                          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
+                            <p style={{ fontSize:12, fontWeight:600, color:C.text }}>{CATS[g.categoria]?.icon} {g.nombre}</p>
+                            <p style={{ fontSize:11, fontWeight:700, color:"#1A7A3C" }}>€{Math.round(calcRevTotal(g)).toLocaleString("es-ES")}</p>
+                          </div>
+                          <p style={{ fontSize:10, color:C.textLight, marginTop:2 }}>{g.fecha_inicio} · {g.habitaciones||0} hab.</p>
+                        </div>
+                      ))
+                  }
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* ── MODAL FORMULARIO ── */}
+      {modalGrupo !== null && (
+        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.55)", zIndex:1000, display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}
+          onClick={()=>setModalGrupo(null)}>
+          <div style={{ background:C.bgCard, borderRadius:14, width:"100%", maxWidth:540, maxHeight:"90vh", overflow:"auto", padding:"28px 32px", boxShadow:"0 24px 80px rgba(0,0,0,0.2)" }}
+            onClick={e=>e.stopPropagation()}>
+
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20 }}>
+              <h3 style={{ fontSize:18, fontWeight:700, color:C.text }}>{modalGrupo?.id?"Editar evento":"Nuevo evento"}</h3>
+              <button onClick={()=>setModalGrupo(null)} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, width:28, height:28, cursor:"pointer", fontSize:16, color:C.textMid }}>×</button>
+            </div>
+
+            <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+
+              <div>
+                <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>Nombre del evento *</p>
+                <input style={inp} placeholder="Boda García · Congreso Pharma..." value={form.nombre} onChange={e=>setForm(f=>({...f,nombre:e.target.value}))}/>
+              </div>
+
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
+                <div>
+                  <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>Categoría</p>
+                  <select style={inp} value={form.categoria} onChange={e=>setForm(f=>({...f,categoria:e.target.value}))}>
+                    {Object.entries(CATS).map(([k,v])=><option key={k} value={k}>{v.icon} {v.label}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>Estado</p>
+                  <select style={inp} value={form.estado} onChange={e=>setForm(f=>({...f,estado:e.target.value}))}>
+                    {Object.entries(ESTADOS).map(([k,v])=><option key={k} value={k}>{v.label}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
+                <div>
+                  <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>Fecha entrada *</p>
+                  <input style={inp} type="date" value={form.fecha_inicio} onChange={e=>setForm(f=>({...f,fecha_inicio:e.target.value}))}/>
+                </div>
+                <div>
+                  <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>Fecha salida *</p>
+                  <input style={inp} type="date" value={form.fecha_fin} onChange={e=>setForm(f=>({...f,fecha_fin:e.target.value}))}/>
+                </div>
+              </div>
+
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
+                <div>
+                  <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>Habitaciones / noche</p>
+                  <input style={inp} type="number" placeholder="20" value={form.habitaciones} onChange={e=>setForm(f=>({...f,habitaciones:e.target.value}))}/>
+                </div>
+                <div>
+                  <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>ADR grupo (€)</p>
+                  <input style={inp} type="number" placeholder="89" value={form.adr_grupo} onChange={e=>setForm(f=>({...f,adr_grupo:e.target.value}))}/>
+                </div>
+              </div>
+
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
+                <div>
+                  <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>Revenue F&B (€)</p>
+                  <input style={inp} type="number" placeholder="5000" value={form.revenue_fnb} onChange={e=>setForm(f=>({...f,revenue_fnb:e.target.value}))}/>
+                </div>
+                <div>
+                  <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>Alquiler sala (€)</p>
+                  <input style={inp} type="number" placeholder="800" value={form.revenue_sala} onChange={e=>setForm(f=>({...f,revenue_sala:e.target.value}))}/>
+                </div>
+              </div>
+
+              {form.estado === "cancelado" && (
+                <div>
+                  <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>Motivo pérdida</p>
+                  <input style={inp} placeholder="Precio, competencia, fecha..." value={form.motivo_perdida} onChange={e=>setForm(f=>({...f,motivo_perdida:e.target.value}))}/>
+                </div>
+              )}
+
+              <div>
+                <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>Notas</p>
+                <textarea style={{...inp, resize:"vertical", minHeight:60}} placeholder="Contacto, condiciones especiales..." value={form.notas} onChange={e=>setForm(f=>({...f,notas:e.target.value}))}/>
+              </div>
+
+              {/* Preview revenue */}
+              {(form.habitaciones || form.revenue_fnb || form.revenue_sala) && (() => {
+                const noches = form.fecha_inicio && form.fecha_fin
+                  ? Math.max(1, Math.round((new Date(form.fecha_fin) - new Date(form.fecha_inicio)) / 86400000))
+                  : 1;
+                const revHab = (parseInt(form.habitaciones)||0) * (parseFloat(form.adr_grupo)||0) * noches;
+                const revFnb = parseFloat(form.revenue_fnb)||0;
+                const revSala = parseFloat(form.revenue_sala)||0;
+                const total = revHab + revFnb + revSala;
+                return total > 0 ? (
+                  <div style={{ background:"#E6F7EE", border:"1px solid #1A7A3C33", borderRadius:8, padding:"10px 14px", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                    <p style={{ fontSize:12, color:"#1A7A3C", fontWeight:600 }}>Revenue estimado</p>
+                    <p style={{ fontSize:18, fontWeight:800, color:"#1A7A3C" }}>€{Math.round(total).toLocaleString("es-ES")}</p>
+                  </div>
+                ) : null;
+              })()}
+
+              <div style={{ display:"flex", justifyContent:"space-between", marginTop:4 }}>
+                {modalGrupo?.id
+                  ? <button onClick={()=>eliminar(modalGrupo.id)} style={{ background:"none", border:`1px solid ${C.red}`, color:C.red, borderRadius:7, padding:"8px 16px", fontSize:12, cursor:"pointer" }}>Eliminar</button>
+                  : <div/>
+                }
+                <div style={{ display:"flex", gap:8 }}>
+                  <button onClick={()=>setModalGrupo(null)} style={{ background:"none", border:`1px solid ${C.border}`, color:C.textMid, borderRadius:7, padding:"8px 16px", fontSize:12, cursor:"pointer" }}>Cancelar</button>
+                  <button onClick={guardar} disabled={guardando||!form.nombre||!form.fecha_inicio||!form.fecha_fin}
+                    style={{ background:"#7C3AED", color:"#fff", border:"none", borderRadius:7, padding:"8px 20px", fontSize:13, fontWeight:600, cursor:"pointer", opacity:guardando?0.6:1 }}>
+                    {guardando?"Guardando...":"Guardar"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+}
+
 // ─── AUTH SCREEN ──────────────────────────────────────────────────
 function AuthScreen() {
   const [mode, setMode] = useState("login");
@@ -2873,8 +3296,9 @@ function AuthScreen() {
 
 const NAV = [
   { key: "dashboard",  icon: "◈",  label: "Dashboard" },
-  { key: "pickup", label: "Pickup" },
+  { key: "pickup",     label: "Pickup" },
   { key: "budget",     icon: "💰", label: "Presupuesto" },
+  { key: "grupos",     icon: "🎪", label: "M&E" },
 ];
 
 
@@ -3020,10 +3444,11 @@ export default function App() {
     }
 
     setCargandoDatos(true);
-    const [{ data: produccion }, { data: presupuesto }, { data: hotelData }] = await Promise.all([
+    const [{ data: produccion }, { data: presupuesto }, { data: hotelData }, { data: gruposData }] = await Promise.all([
       supabase.from("produccion_diaria").select("*").eq("hotel_id", session.user.id).order("fecha"),
       supabase.from("presupuesto").select("*").eq("hotel_id", session.user.id).order("mes"),
       supabase.from("hoteles").select("nombre, ciudad, habitaciones").eq("id", session.user.id).maybeSingle(),
+      supabase.from("grupos_eventos").select("*").eq("hotel_id", session.user.id).order("fecha_inicio"),
     ]);
     // Pickup separado — carga en paralelo para máxima velocidad
     let pickupEntries = [];
@@ -3056,6 +3481,7 @@ export default function App() {
       presupuesto: presupuesto || [],
       pickupEntries,
       hotel: hotelData,
+      grupos: gruposData || [],
     };
 
     // Guardar en caché
@@ -3102,6 +3528,7 @@ export default function App() {
     dashboard: (props) => <DashboardView {...props} onMesDetalle={(m, a) => setMesDetalle({ mes: m, anio: a })} kpiModal={kpiModal} setKpiModal={setKpiModal} kpiModalExterno={kpiModalApp} onKpiModalExternoHandled={() => setKpiModalApp(null)} />,
     pickup:    (props) => <PickupView    {...props} />,
     budget:    (props) => <BudgetView    {...props} />,
+    grupos:    (props) => <GruposView    {...props} onRecargar={() => cargarDatos(true)} />,
   };
   const View = views[view];
 
@@ -3194,7 +3621,7 @@ export default function App() {
         {/* Nav links */}
         <nav style={{ display: "flex", alignItems: "center", gap: 2, flex: 1 }}>
           {NAV.map(n => {
-            const navColor = n.key==="budget" ? "#1A7A3C" : n.key==="pickup" ? "#B8860B" : C.accent;
+            const navColor = n.key==="budget" ? "#1A7A3C" : n.key==="pickup" ? "#B8860B" : n.key==="grupos" ? "#7C3AED" : C.accent;
             const isActive = view===n.key;
             return (
               <button key={n.key} onClick={() => { setView(n.key); setMesDetalle(null); localStorage.setItem("fr_view", n.key); }}
