@@ -648,9 +648,15 @@ function ImportarExcel({ onClose, session, onImportado }) {
           const d = new Date(Date.UTC(1899, 11, 30) + Math.floor(v) * 86400000);
           return d.toISOString().slice(0, 10);
         };
+        let _debugPickup = true;
         for (const row of rowsPu) {
           if (!row || row.length < 2) continue;
           if (!esSerial(row[0]) || !esSerial(row[1])) continue;
+          if (_debugPickup) {
+            console.log("[PICKUP DEBUG] primera fila raw:", row);
+            console.log("[PICKUP DEBUG] row[4]=", row[4], "row[5]=", row[5], "row[6]=", row[6], "row[7]=", row[7]);
+            _debugPickup = false;
+          }
           const fp = serialToDate(row[0]);
           const fl = serialToDate(row[1]);
           // col2=canal, col3=num_reservas (puede ser número o serial pequeño 1900-xx)
@@ -658,12 +664,21 @@ function ImportarExcel({ onClose, session, onImportado }) {
           const nr = typeof nrRaw === "number"
             ? (nrRaw < 40000 ? Math.round(nrRaw) : 1)  // serial < 40000 = número real de reservas
             : (parseInt(nrRaw) || 1);
+          // Nuevos campos: col4=fecha_salida, col5=noches, col6=precio_total, col7=estado
+          const fechaSalida = row[4] && esSerial(row[4]) ? serialToDate(row[4]) : null;
+          const noches      = row[5] && typeof row[5] === "number" && row[5] < 100 ? Math.round(row[5]) : null;
+          const precioTotal = row[6] && typeof row[6] === "number" ? Math.round(row[6] * 100) / 100 : null;
+          const estado      = row[7] && typeof row[7] === "string" ? row[7] : "confirmada";
           pickupRows.push({
-            hotel_id: session.user.id,
+            hotel_id:      session.user.id,
             fecha_pickup:  fp,
             fecha_llegada: fl,
             canal:         row[2] || null,
             num_reservas:  nr || 1,
+            fecha_salida:  fechaSalida,
+            noches:        noches,
+            precio_total:  precioTotal,
+            estado:        estado || "confirmada",
           });
         }
       }
