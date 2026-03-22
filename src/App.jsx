@@ -1802,7 +1802,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
             return {
               dia: f.getDate(),
               label: `${f.getDate()}/${f.getMonth()+1}`,
-              occ: habDis>0 ? Math.round(r.hab_ocupadas/habDis*100) : 0,
+              occ: habDis>0 ? Math.min(100, Math.round(r.hab_ocupadas/habDis*100)) : 0,
               adr: r.hab_ocupadas>0 ? Math.round(r.revenue_hab/r.hab_ocupadas) : 0,
             };
           });
@@ -2341,8 +2341,9 @@ function BudgetView({ datos, anio: anioProp }) {
       })
       .reduce((a, e) => a + (e.num_reservas || 1), 0);
 
-    // Factor pace (si este año vamos más rápido, ETP sube proporcionalmente)
-    const paceFactor = otbResLY > 0 ? otbRes / otbResLY : 1;
+    // Factor pace — limitado a máx 1.5x para evitar distorsiones por falta de datos LY
+    const paceRaw = otbResLY > 20 ? otbRes / otbResLY : 1;
+    const paceFactor = Math.min(1.5, Math.max(0.5, paceRaw));
     const etpRes = Math.round(etpResLY * paceFactor);
 
     // Forecast reservas totales = OTB + ETP
@@ -2350,6 +2351,7 @@ function BudgetView({ datos, anio: anioProp }) {
 
     // Revenue forecast = reservas * ADR año anterior
     const forecastRev = Math.round(forecastRes * adrLY);
+
 
     // Confianza: % del mes transcurrido
     const diasMes    = ultimoDia.getDate();
