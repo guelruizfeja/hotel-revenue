@@ -2533,7 +2533,7 @@ function BudgetView({ datos, anio: anioProp }) {
             <Legend wrapperStyle={{fontSize:11, color:C.textMid, paddingTop:8}}/>
             <Bar dataKey="Ppto"     fill="#2E9C5588" radius={[3,3,0,0]}/>
             <Bar dataKey="Real"     fill="#1A7A3C"   radius={[3,3,0,0]}/>
-            <Bar dataKey="Forecast" fill="#B8860B88" radius={[3,3,0,0]} strokeDasharray="4 2"/>
+            <Bar dataKey="Forecast" fill="#B8860B88" radius={[3,3,0,0]} legendType={kpiChart==="revenue" ? "square" : "none"}/>
           </BarChart>
         </ResponsiveContainer>
       </Card>
