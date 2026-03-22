@@ -1292,20 +1292,30 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
     return !v;
   });
 
-  // ── Pickup últimas 24h por mes de llegada ──
-  const hoy24 = new Date();
-  const hace24 = new Date(hoy24.getTime() - 24*60*60*1000);
-  const hace24Str = hace24.toISOString().slice(0,10);
-  const hoy24Str  = hoy24.toISOString().slice(0,10);
-  const pickup24hPorMes = {};
+  // ── Pickup del último día importado por mes de llegada ──
+  const todasFechasPickup = pickupEntries
+    .map(e => String(e.fecha_pickup || '').slice(0,10))
+    .filter(f => f.length === 10)
+    .sort();
+  const ultimoDiaImportado = todasFechasPickup[todasFechasPickup.length - 1] || '';
+  const pickupUltimoDiaPorMes = {};
+  const pickupUltimoDiaPorDia = {}; // { "2026-04-15": X, ... }
   pickupEntries.forEach(e => {
     const fp = String(e.fecha_pickup || '').slice(0,10);
-    if (fp < hace24Str || fp > hoy24Str) return;
-    const fl = String(e.fecha_llegada || '').slice(0,7); // YYYY-MM
-    if (!fl) return;
-    pickup24hPorMes[fl] = (pickup24hPorMes[fl] || 0) + (e.num_reservas || 1);
+    if (fp !== ultimoDiaImportado) return;
+    const fl = String(e.fecha_llegada || '').slice(0,10);
+    const flMes = fl.slice(0,7);
+    if (!flMes) return;
+    const cancelada = (e.estado || 'confirmada') === 'cancelada';
+    const nr = (e.num_reservas || 1) * (cancelada ? -1 : 1);
+    pickupUltimoDiaPorMes[flMes] = (pickupUltimoDiaPorMes[flMes] || 0) + nr;
+    pickupUltimoDiaPorDia[fl]    = (pickupUltimoDiaPorDia[fl]    || 0) + nr;
   });
-  const UMBRAL_RAYO = 3; // reservas en 24h para mostrar ⚡
+  // Los 2 meses con más reservas ese día
+  const top2Meses = Object.entries(pickupUltimoDiaPorMes)
+    .sort((a,b) => b[1]-a[1])
+    .slice(0,2)
+    .map(([mes]) => mes);
   const [metricaSel, setMetricaSel] = useState("adr_occ");
   useEffect(() => {
     if (kpiModalExterno) { setKpiModal(kpiModalExterno); onKpiModalExternoHandled && onKpiModalExternoHandled(); }
@@ -1568,6 +1578,20 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
         const hoyStr2 = `${_hoy2.getFullYear()}-${pad2(_hoy2.getMonth()+1)}-${pad2(_hoy2.getDate())}`;
 
 
+        // Neto acumulado por día para meses futuros (confirmadas - canceladas)
+        const netoPorDia = {};
+        if (hmMesSel != null) {
+          const padM = n => String(n).padStart(2,"0");
+          const mesStr = `${anio}-${padM(hmMesSel+1)}`;
+          pickupEntries.forEach(e => {
+            const fl = String(e.fecha_llegada||"").slice(0,10);
+            if (!fl.startsWith(mesStr)) return;
+            const cancelada = (e.estado||"confirmada") === "cancelada";
+            const nr = (e.num_reservas||1) * (cancelada ? -1 : 1);
+            netoPorDia[fl] = (netoPorDia[fl]||0) + nr;
+          });
+        }
+
         const diasDelMes = hmMesSel!=null ? (() => {
           const diasEnMes = new Date(anio, hmMesSel+1, 0).getDate();
           const pad = n => String(n).padStart(2,"0");
@@ -1576,15 +1600,16 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
             const iso  = `${anio}-${pad(hmMesSel+1)}-${pad(di+1)}`;
             const prod = produccion.find(r=>r.fecha===iso);
             const esFut = iso > hoyStr2;
+            const neto  = netoPorDia[iso] || 0;
             let occ=null, adr=null;
             if (prod) {
-              occ = prod.hab_disponibles>0 ? (prod.hab_ocupadas/prod.hab_disponibles*100) : null;
-              adr = prod.hab_ocupadas>0    ? (prod.revenue_hab/prod.hab_ocupadas)         : null;
+              occ = prod.hab_disponibles>0 ? Math.min(100,prod.hab_ocupadas/prod.hab_disponibles*100) : null;
+              adr = prod.hab_ocupadas>0    ? (prod.revenue_hab/prod.hab_ocupadas) : null;
             } else if (esFut) {
-              const res = otbDia[iso]||0;
-              occ = res>0 ? (res/habHotel*100) : null;
+              occ = neto>0 ? Math.min(100, neto/habHotel*100) : null;
             }
-            return { iso, dia:di+1, diaSem:dt.getDay(), occ, adr, esFut, tieneReal:!!prod };
+            const resUltDia = pickupUltimoDiaPorDia[iso] || 0;
+            return { iso, dia:di+1, diaSem:dt.getDay(), occ, adr, esFut, tieneReal:!!prod, resUltDia, neto };
           });
         })() : [];
 
@@ -1598,78 +1623,97 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
                   <p style={{ fontFamily:"'Playfair Display',serif", fontWeight:700, fontSize:20, color:C.text, marginBottom:2 }}>Ocupación mensual</p>
                   
                 </div>
-                {hmMesSel!=null && (
-                  <button onClick={()=>setHmMesSel(null)} style={{ fontSize:11, color:C.accent, background:"none", border:`1px solid ${C.accent}`, borderRadius:6, padding:"3px 10px", cursor:"pointer" }}>← Volver</button>
-                )}
+
               </div>
 
-              {hmMesSel==null ? (
-                /* Vista anual: grid 4x3 */
+              {/* Vista anual: grid 4x3 */}
                 <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gridTemplateRows:"repeat(3,1fr)", gap:8, flex:1 }}>
-                  {occPorMes.map(({label, mi, occ, occLY, esOtb})=>{
+                  {occPorMes.map(({label, mi, occ, esOtb})=>{
                     const mesKey = `${anio}-${String(mi+1).padStart(2,"0")}`;
-                    const pu24h  = pickup24hPorMes[mesKey] || 0;
-                    const esCaliente = pu24h >= UMBRAL_RAYO;
+                    const resUltDia = pickupUltimoDiaPorMes[mesKey] || 0;
+                    const esCaliente = top2Meses.includes(mesKey) && resUltDia > 0;
+                    const signo = resUltDia > 0 ? "+" : resUltDia < 0 ? "" : null;
                     return (
                     <div key={mi} onClick={()=>setHmMesSel(mi)}
-                      title={occ!=null?(occLY!=null?`${label}: ${occ.toFixed(0)}% | LY: ${occLY.toFixed(0)}%`:`${label}: ${occ.toFixed(0)}%`):""}
+                      title={occ!=null?`${label}: ${occ.toFixed(0)}%`:""}
                       style={{ borderRadius:8, padding:"10px 6px", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", background: occ!=null ? heatColor(occ)+"22" : C.bg, border:`1.5px solid ${esCaliente?"#E85D04":occ!=null?heatColor(occ):C.border}`, cursor:"pointer", textAlign:"center", transition:"all 0.15s", position:"relative" }}
                       onMouseEnter={e=>e.currentTarget.style.opacity="0.8"} onMouseLeave={e=>e.currentTarget.style.opacity="1"}>
                       {esCaliente && (
-                        <span title={`${pu24h} reservas en las últimas 24h`} style={{ position:"absolute", top:3, right:4, fontSize:10, lineHeight:1, animation:"pulse-rayo 1.5s ease-in-out infinite" }}>⚡</span>
+                        <span title={`${resUltDia} reservas captadas el ${ultimoDiaImportado}`} style={{ position:"absolute", top:3, right:4, fontSize:10, lineHeight:1, animation:"pulse-rayo 1.5s ease-in-out infinite" }}>⚡</span>
                       )}
                       <p style={{ fontSize:9, fontWeight:600, color:C.textLight, textTransform:"uppercase", letterSpacing:0.5, marginBottom:3 }}>{label}</p>
                       {occ!=null
                         ? <p style={{ fontSize:16, fontWeight:800, color:heatColor(occ), fontFamily:"'DM Sans',sans-serif" }}>{occ.toFixed(0)}%</p>
                         : <p style={{ fontSize:12, color:C.border }}>—</p>
                       }
-                      {esCaliente && <p style={{ fontSize:7, color:"#E85D04", fontWeight:700, marginTop:1 }}>{pu24h} hoy</p>}
-                      {!esCaliente && esOtb && occ!=null && <p style={{ fontSize:8, color:"#7A9CC8", fontWeight:700, marginTop:2 }}>OTB</p>}
-                      {!esCaliente && !esOtb && occLY!=null && occ!=null && <p style={{ fontSize:8, color:C.textLight, marginTop:2 }}>LY: {occLY.toFixed(0)}%</p>}
+                      {resUltDia !== 0
+                        ? <p style={{ fontSize:8, color:resUltDia>0?"#E85D04":C.red, fontWeight:700, marginTop:2 }}>{resUltDia>0?"+":""}{resUltDia} res.</p>
+                        : esOtb && occ!=null
+                          ? <p style={{ fontSize:8, color:"#7A9CC8", fontWeight:700, marginTop:2 }}>OTB</p>
+                          : null
+                      }
                     </div>
                   );})}
                 </div>
-              ) : (
-                /* Vista diaria del mes */
-                <div style={{ display:"flex", flexDirection:"column", flex:1 }}>
-                  <p style={{ fontSize:12, fontWeight:700, color:C.text, marginBottom:10 }}>{MESES_H[hmMesSel]} {anio}</p>
-                  <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:3, marginBottom:6 }}>
-                    {DIAS_S.map(d=><p key={d} style={{ fontSize:9, color:C.textLight, textAlign:"center", fontWeight:600 }}>{d}</p>)}
+            </Card>
+
+            {/* ── MODAL HEATMAP DIARIO ── */}
+            {hmMesSel!=null && (
+              <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", zIndex:1000, display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}
+                onClick={()=>setHmMesSel(null)}>
+                <div style={{ background:C.bgCard, borderRadius:14, width:"100%", maxWidth:560, padding:"20px 24px", boxShadow:"0 20px 60px rgba(0,0,0,0.25)" }}
+                  onClick={e=>e.stopPropagation()}>
+
+                  {/* Cabecera compacta */}
+                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
+                    <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                      <button onClick={()=>setHmMesSel(m=>m>0?m-1:11)} style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:6, width:26, height:26, cursor:"pointer", fontSize:12, color:C.textMid }}>‹</button>
+                      <h3 style={{ fontSize:15, fontWeight:700, color:C.text }}>{MESES_H[hmMesSel]} {anio}</h3>
+                      <button onClick={()=>setHmMesSel(m=>m<11?m+1:0)} style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:6, width:26, height:26, cursor:"pointer", fontSize:12, color:C.textMid }}>›</button>
+                    </div>
+                    <button onClick={()=>setHmMesSel(null)} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, width:26, height:26, cursor:"pointer", fontSize:15, color:C.textMid }}>×</button>
                   </div>
-                  {/* Espaciado inicial según día semana del día 1 (lun=0) */}
-                  <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gridAutoRows:"1fr", gap:3, flex:1 }}>
-                    {Array.from({length: (diasDelMes[0]?.diaSem===0?6:diasDelMes[0]?.diaSem-1)||0 },(_,i)=>(
-                      <div key={"e"+i}/>
+
+                  {/* Días semana */}
+                  <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:3, marginBottom:3 }}>
+                    {["L","M","X","J","V","S","D"].map(d=>(
+                      <p key={d} style={{ fontSize:9, color:C.textLight, textAlign:"center", fontWeight:600 }}>{d}</p>
                     ))}
-                    {diasDelMes.map(({dia,occ,adr,esFut,tieneReal})=>{
+                  </div>
+
+                  {/* Grid días — todos con aspectRatio 1 */}
+                  <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:3 }}>
+                    {Array.from({length:(diasDelMes[0]?.diaSem===0?6:diasDelMes[0]?.diaSem-1)||0},(_,i)=>(
+                      <div key={"e"+i} style={{ aspectRatio:"1" }}/>
+                    ))}
+                    {diasDelMes.map(({dia,occ,adr,esFut,resUltDia,neto})=>{
                       const col = occ!=null ? heatColor(occ) : C.border;
+                      const resDia = resUltDia || 0;
+                      const netoVal = neto || 0;
                       return (
-                        <div key={dia} title={occ!=null?`OCC: ${occ.toFixed(0)}%${adr?` | ADR: €${Math.round(adr)}`:""}`:""} style={{ borderRadius:4, padding:"4px 2px", background: occ!=null?col+"33":C.bg, border:`1px solid ${occ!=null?col:C.border}`, textAlign:"center", opacity: esFut&&!tieneReal?0.7:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center" }}>
-                          <p style={{ fontSize:9, color:C.textLight, lineHeight:1 }}>{dia}</p>
-                          {occ!=null
-                            ? <p style={{ fontSize:10, fontWeight:700, color:col, lineHeight:1.4 }}>{occ.toFixed(0)}%</p>
-                            : <p style={{ fontSize:9, color:C.border }}>—</p>
+                        <div key={dia} style={{ aspectRatio:"1", borderRadius:5, background: resDia<0?C.redLight:occ!=null?col+"22":esFut&&netoVal>0?col+"22":C.bg, border:`1.5px solid ${resDia<0?C.red:occ!=null?col:C.border}`, opacity:esFut&&netoVal===0?0.2:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:1 }}>
+                          <p style={{ fontSize:8, color:C.textLight, lineHeight:1 }}>{dia}</p>
+                          {esFut
+                            ? netoVal>0
+                              ? <p style={{ fontSize:11, fontWeight:800, color:heatColor(netoVal/habHotel*100), lineHeight:1 }}>{netoVal}</p>
+                              : <p style={{ fontSize:8, color:C.border }}>—</p>
+                            : occ!=null
+                              ? <p style={{ fontSize:11, fontWeight:800, color:col, lineHeight:1 }}>{occ.toFixed(0)}%</p>
+                              : <p style={{ fontSize:8, color:C.border }}>—</p>
                           }
-                          {esFut && <p style={{ fontSize:7, color:"#7A9CC8", lineHeight:1 }}>OTB</p>}
+                          {adr && !esFut && <p style={{ fontSize:7, color:C.textLight, lineHeight:1 }}>€{Math.round(adr)}</p>}
+                          {resDia>0 && <p style={{ fontSize:7, color:C.green, fontWeight:700, lineHeight:1 }}>+{resDia}</p>}
+                          {resDia<0 && <p style={{ fontSize:7, color:C.red, fontWeight:700, lineHeight:1 }}>{resDia}</p>}
                         </div>
                       );
                     })}
                   </div>
-                  {/* Leyenda */}
-                  <div style={{ display:"flex", gap:8, marginTop:10, flexWrap:"wrap" }}>
-                    {[["<25%","#7B241C"],["25-40%","#A93226"],["40-55%","#C0392B"],["55-70%","#4CAF50"],["70-85%","#1A7A3C"],["≥85%","#004D26"]].map(([l,c])=>(
-                      <div key={l} style={{ display:"flex", alignItems:"center", gap:4 }}>
-                        <div style={{ width:8, height:8, borderRadius:2, background:c }}/>
-                        <span style={{ fontSize:9, color:C.textLight }}>{l}</span>
-                      </div>
-                    ))}
-                    <div style={{ display:"flex", alignItems:"center", gap:4 }}>
-                      <span style={{ fontSize:9, color:"#7A9CC8", fontWeight:600 }}>OTB</span><span style={{ fontSize:9, color:C.textLight }}>=pickup futuro</span>
-                    </div>
-                  </div>
+
+
+
                 </div>
-              )}
-            </Card>
+              </div>
+            )}
 
             {/* ── GRÁFICA DERECHA UNIFICADA ── */}
             {(() => {
