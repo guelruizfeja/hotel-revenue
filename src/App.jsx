@@ -19,14 +19,14 @@ const MESES = ["Enero","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","No
 const MESES_CORTO = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
 const MESES_FULL = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 
-const CustomTooltip = ({ active, payload, label }) => {
+const CustomTooltip = ({ active, payload, label, unit }) => {
   if (!active || !payload?.length) return null;
   const OCC_NAMES = ["Ocupación","occ","OCC"];
   return (
     <div style={{ background: "#fff", borderRadius: 8, padding: "10px 14px", fontSize: 12, color: C.text, border: `1px solid ${C.border}`, boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}>
       <p style={{ color: C.accent, fontWeight: 700, marginBottom: 6 }}>{payload[0]?.payload?.mesNombre || payload[0]?.payload?.fecha || label}</p>
       {payload.map((p, i) => {
-        const isOcc = OCC_NAMES.includes(p.name);
+        const isOcc = unit === "%" || OCC_NAMES.includes(p.name);
         const val = typeof p.value === 'number'
           ? isOcc ? `${Math.round(p.value)}%` : `${Math.round(p.value).toLocaleString("es-ES")}€`
           : p.value;
@@ -300,7 +300,7 @@ function KpiModal({ kpi, datos, mes, anio, onClose }) {
                 <CartesianGrid strokeDasharray="3 3" stroke={C.border} vertical={false}/>
                 <XAxis dataKey="dia" tick={{fill:"#555",fontSize:11,fontWeight:500}} axisLine={false} tickLine={false} interval={modoVista==="mes"?1:4}/>
                 <YAxis tick={{fill:C.textLight,fontSize:10}} axisLine={false} tickLine={false} unit={unit}/>
-                <Tooltip content={<CustomTooltip/>}/>
+                <Tooltip content={<CustomTooltip unit={unit}/>}/>
                 <Bar dataKey={fieldKey} name={kpi} fill={C.accent} fillOpacity={0.85} radius={[2,2,0,0]} barSize={modoVista==="mes"?10:6}/>
                 <Line type="monotone" dataKey="ly" name="Año anterior" stroke="#E85D04" strokeWidth={1.5} dot={false} connectNulls/>
               </ComposedChart>
