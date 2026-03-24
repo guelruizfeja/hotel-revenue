@@ -3612,8 +3612,8 @@ export default function App() {
       <header style={{ background: C.bg, minHeight: 52, position: "sticky", top: 0, zIndex: 100, borderBottom: `1px solid ${C.border}` }}><div style={{ width: "100%", minHeight: 52, display: "flex", alignItems: "center", padding: "0 clamp(12px, 4vw, 32px)", gap: 6, flexWrap: "nowrap" }}>
         {/* Logo centro */}
         <div style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", pointerEvents: "none", display: "flex", alignItems: "center", gap: 12 }}>
-          <span style={{ fontFamily: "'Arial', sans-serif", fontWeight: 800, fontSize: "clamp(13px, 3.5vw, 18px)", letterSpacing: 2, color: "#2B7EC1", textTransform: "uppercase", lineHeight: 1, whiteSpace: "nowrap" }}>FastRevenue</span>
-          <span className="topbar-date" style={{ fontSize: 12, color: "#2B7EC1", fontWeight: 500, fontFamily: "'DM Sans', sans-serif", letterSpacing: 0.3, whiteSpace: "nowrap" }}>
+          <span style={{ fontFamily: "'Arial', sans-serif", fontWeight: 800, fontSize: "clamp(13px, 3.5vw, 18px)", letterSpacing: 2, color: "#000000", textTransform: "uppercase", lineHeight: 1, whiteSpace: "nowrap" }}>FastRevenue</span>
+          <span className="topbar-date" style={{ fontSize: 12, color: "#000000", fontWeight: 500, fontFamily: "'DM Sans', sans-serif", letterSpacing: 0.3, whiteSpace: "nowrap" }}>
             {new Date().toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).replace(/^\w/, c => c.toUpperCase())}
           </span>
         </div>
