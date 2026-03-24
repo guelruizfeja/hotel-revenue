@@ -1531,15 +1531,15 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
           return { label, mi, occ: totalRes>0 ? occ : null, occLY, esOtb: true };
         });
 
-        // Color heatmap
+        // Color heatmap — verde claro (baja ocupación) → rojo oscuro (alta ocupación)
         const heatColor = (occ) => {
           if (occ==null) return C.border;
-          if (occ<25)  return "#7B241C";
-          if (occ<40)  return "#A93226";
-          if (occ<55)  return "#C0392B";
-          if (occ<70)  return "#4CAF50";
-          if (occ<85)  return "#1A7A3C";
-          return "#004D26";
+          if (occ<25)  return "#81C784";
+          if (occ<40)  return "#4CAF50";
+          if (occ<55)  return "#FFC107";
+          if (occ<70)  return "#FF7043";
+          if (occ<85)  return "#E53935";
+          return "#B71C1C";
         };
 
         // Datos diarios del mes seleccionado (pasado=produccion, futuro=pickup)
@@ -1658,24 +1658,20 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
                     {Array.from({length:(diasDelMes[0]?.diaSem===0?6:diasDelMes[0]?.diaSem-1)||0},(_,i)=>(
                       <div key={"e"+i} style={{ aspectRatio:"1" }}/>
                     ))}
-                    {diasDelMes.map(({dia,occ,adr,esFut,resUltDia,neto})=>{
-                      const col = occ!=null ? heatColor(occ) : C.border;
+                    {diasDelMes.map(({dia,occ,adr,esFut,resUltDia})=>{
                       const resDia = resUltDia || 0;
-                      const netoVal = neto || 0;
+                      const bgColor = resDia > 0 ? C.greenLight : resDia < 0 ? C.redLight : C.bg;
+                      const borderColor = resDia > 0 ? C.green : resDia < 0 ? C.red : C.border;
+                      const textColor = resDia > 0 ? C.green : resDia < 0 ? C.red : C.textLight;
                       return (
-                        <div key={dia} style={{ aspectRatio:"1", borderRadius:5, background: resDia<0?C.redLight:occ!=null?col+"22":esFut&&netoVal>0?col+"22":C.bg, border:`1.5px solid ${resDia<0?C.red:occ!=null?col:C.border}`, opacity:esFut&&netoVal===0?0.2:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:1 }}>
+                        <div key={dia} style={{ aspectRatio:"1", borderRadius:5, background: bgColor, border:`1.5px solid ${borderColor}`, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:1 }}>
                           <p style={{ fontSize:8, color:C.textLight, lineHeight:1 }}>{dia}</p>
-                          {esFut
-                            ? netoVal>0
-                              ? <p style={{ fontSize:11, fontWeight:800, color:heatColor(netoVal/habHotel*100), lineHeight:1 }}>{netoVal}</p>
-                              : <p style={{ fontSize:8, color:C.border }}>—</p>
-                            : occ!=null
-                              ? <p style={{ fontSize:11, fontWeight:800, color:col, lineHeight:1 }}>{occ.toFixed(0)}%</p>
-                              : <p style={{ fontSize:8, color:C.border }}>—</p>
+                          {occ!=null
+                            ? <p style={{ fontSize:11, fontWeight:800, color:heatColor(occ), lineHeight:1 }}>{occ.toFixed(0)}%</p>
+                            : <p style={{ fontSize:8, color:C.border }}>—</p>
                           }
                           {adr && !esFut && <p style={{ fontSize:7, color:C.textLight, lineHeight:1 }}>€{Math.round(adr)}</p>}
-                          {resDia>0 && <p style={{ fontSize:7, color:C.green, fontWeight:700, lineHeight:1 }}>+{resDia}</p>}
-                          {resDia<0 && <p style={{ fontSize:7, color:C.red, fontWeight:700, lineHeight:1 }}>{resDia}</p>}
+                          {resDia!==0 && <p style={{ fontSize:7, color:textColor, fontWeight:700, lineHeight:1 }}>{resDia>0?"+":""}{resDia}</p>}
                         </div>
                       );
                     })}
