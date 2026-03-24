@@ -1328,14 +1328,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
   const pickupEntries = datos.pickupEntries || [];
   const presupuesto   = datos.presupuesto   || [];
   const [hmMesSel, setHmMesSel] = useState(null);
-  const [insightsVisible, setInsightsVisible] = useState(() => {
-    try { const s = localStorage.getItem("fr_insights_visible"); return s === null ? true : s === "true"; } catch(_) { return true; }
-  });
   const [modalDiario, setModalDiario] = useState(null); // {mesIdx, anioIdx}
-  const toggleInsights = () => setInsightsVisible(v => {
-    try { localStorage.setItem("fr_insights_visible", String(!v)); } catch(_) {}
-    return !v;
-  });
 
   // ── Pickup del último día importado por mes de llegada ──
   const todasFechasPickup = pickupEntries
@@ -1486,72 +1479,6 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
         {kpis.map((k, i) => <KpiCard key={i} {...k} i={i} onClick={()=>setKpiModal(k.label)} />)}
       </div>
 
-      {/* ── STRATEGIC INSIGHTS ── */}
-      {(() => {
-        const pad = n => String(n).padStart(2,"0");
-        const hoyI = new Date();
-        const hab = datos.hotel?.habitaciones || 30;
-        const insights = [];
-
-        for (let i = 1; i <= 6; i++) {
-          const d = new Date(hoyI.getFullYear(), hoyI.getMonth() + i, 1);
-          const mIdx = d.getMonth();
-          const aIdx = d.getFullYear();
-          const mesStr   = `${aIdx}-${pad(mIdx+1)}`;
-          const mesStrLY = `${aIdx-1}-${pad(mIdx+1)}`;
-          const diasMes  = new Date(aIdx, mIdx+1, 0).getDate();
-          const nombreMes = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"][mIdx];
-
-          const otb = pickupEntries.filter(e => String(e.fecha_llegada||"").slice(0,7) === mesStr).reduce((a,e)=>a+(e.num_reservas||1),0);
-          const occOtb = hab > 0 ? otb / (hab * diasMes) * 100 : 0;
-
-          const diasLY   = produccion.filter(r => String(r.fecha||"").slice(0,7) === mesStrLY);
-          const habOcuLY = diasLY.reduce((a,r)=>a+(r.hab_ocupadas||0),0);
-          const revHabLY = diasLY.reduce((a,r)=>a+(r.revenue_hab||0),0);
-          const adrLY    = habOcuLY > 0 ? revHabLY / habOcuLY : null;
-
-          const pptoMes = presupuesto.find(p => p.anio===aIdx && p.mes===mIdx+1);
-          const adrPpto = pptoMes?.adr_ppto || null;
-
-          const otbLY = pickupEntries.filter(e => String(e.fecha_llegada||"").slice(0,7) === mesStrLY).reduce((a,e)=>a+(e.num_reservas||1),0);
-
-          if (occOtb >= 75 && adrLY && adrPpto && adrPpto < adrLY * 0.97) {
-            insights.push({ icono:"🚀", titulo:`Oportunidad — ${nombreMes}`, desc:`OTB al ${occOtb.toFixed(0)}% de ocupación pero el ADR presupuestado (€${Math.round(adrPpto)}) está por debajo del año anterior (€${Math.round(adrLY)}). Considera subir el ADR.`, color:"#1A7A3C", bg:"#E6F7EE" });
-          } else if (occOtb >= 85 && adrLY && adrPpto && adrPpto >= adrLY) {
-            insights.push({ icono:"🔒", titulo:`Precio firme — ${nombreMes}`, desc:`Ocupación OTB al ${occOtb.toFixed(0)}% con ADR por encima del año anterior. Mantén o sube el ADR, la demanda lo soporta.`, color:C.accent, bg:"#E8F0F9" });
-          } else if (otbLY > 10 && otb < otbLY * 0.6 && occOtb < 40) {
-            insights.push({ icono:"⚠️", titulo:`Ritmo lento — ${nombreMes}`, desc:`OTB al ${occOtb.toFixed(0)}%, muy por debajo del ritmo del año pasado. Considera revisar el ADR a la baja para activar la demanda.`, color:"#E85D04", bg:"#FFF3E0" });
-          }
-        }
-
-        if (insights.length === 0) return null;
-        return (
-          <div style={{ marginBottom:20 }}>
-            <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom: insightsVisible ? 10 : 0 }}>
-              <p style={{ fontSize:11, fontWeight:700, color:C.textLight, textTransform:"uppercase", letterSpacing:1.5 }}>
-                💡 Insights estratégicos
-                <span style={{ marginLeft:8, background:C.accentLight, color:C.accent, borderRadius:10, padding:"1px 7px", fontSize:10 }}>{insights.length}</span>
-              </p>
-              <button onClick={toggleInsights} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, padding:"3px 10px", fontSize:11, color:C.textMid, cursor:"pointer", fontFamily:"'DM Sans',sans-serif", display:"flex", alignItems:"center", gap:4 }}>
-                {insightsVisible ? "▲ Ocultar" : "▼ Ver"}
-              </button>
-            </div>
-            {insightsVisible && (
-              <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
-                {insights.slice(0,3).map((ins,i) => (
-                  <div key={i} style={{ background:ins.bg, border:`1px solid ${ins.color}33`, borderLeft:`3px solid ${ins.color}`, borderRadius:8, padding:"12px 16px", display:"flex", gap:12, alignItems:"flex-start" }}>
-                    <span style={{ fontSize:18, lineHeight:1, flexShrink:0 }}>{ins.icono}</span>
-                    <div>
-                      <p style={{ fontSize:12, fontWeight:700, color:ins.color, marginBottom:3 }}>{ins.titulo}</p>
-                      <p style={{ fontSize:12, color:C.textMid, lineHeight:1.5 }}>{ins.desc}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        );
-      })()}
 
       {/* ── HEATMAP + GRÁFICAS ── */}
       {(() => {
