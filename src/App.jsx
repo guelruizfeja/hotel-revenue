@@ -3189,6 +3189,11 @@ function AuthScreen() {
     if (error) { setError(error.message); setLoading(false); return; }
     if (data.user) {
       await supabase.from("hoteles").insert({ id: data.user.id, nombre: hotelNombre, ciudad: hotelCiudad, habitaciones: parseInt(habitaciones) || null });
+      fetch("/api/send-welcome-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, hotelNombre }),
+      }).catch(() => {});
     }
     setMensaje("¡Cuenta creada! Ya puedes iniciar sesión.");
     setLoading(false);
