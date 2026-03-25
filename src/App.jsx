@@ -163,7 +163,7 @@ function KpiModal({ kpi, datos, mes, anio, onClose }) {
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20 }}>
           <div>
             <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:2 }}>{MESES_FULL[mes]} {anio}</p>
-            <h3 style={{ fontSize:22, fontWeight:800, color:C.text, fontFamily:"'DM Sans',sans-serif", letterSpacing:-0.5 }}>{kpi}</h3>
+            <h3 style={{ fontSize:22, fontWeight:800, color:C.text, fontFamily:"'Plus Jakarta Sans',sans-serif", letterSpacing:-0.5 }}>{kpi}</h3>
           </div>
           <div style={{ display:"flex", alignItems:"center", gap:8 }}>
             <button onClick={onClose} style={{ background:"none", border:`1.5px solid ${C.border}`, borderRadius:8, width:34, height:34, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", fontSize:16, color:C.textMid, fontWeight:300, transition:"all 0.15s" }}
@@ -189,7 +189,7 @@ function KpiModal({ kpi, datos, mes, anio, onClose }) {
               ].map((k,i)=>(
                 <div key={i} style={{ background:`${C.accent}0f`, borderRadius:8, padding:"16px", borderLeft:`3px solid ${k.color||C.accent}`, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", textAlign:"center" }}>
                   <p style={{ fontSize:10, color:C.textMid, textTransform:"uppercase", letterSpacing:1.5, marginBottom:6, fontWeight:600 }}>{k.label}</p>
-                  <p style={{ fontSize:22, fontWeight:700, color:k.color||(k.up===false?C.red:k.up===true?C.green:C.text), fontFamily:"'DM Sans',sans-serif" }}>{k.value}</p>
+                  <p style={{ fontSize:22, fontWeight:700, color:k.color||(k.up===false?C.red:k.up===true?C.green:C.text), fontFamily:"'Plus Jakarta Sans',sans-serif" }}>{k.value}</p>
                 </div>
               ))}
             </div>
@@ -202,7 +202,7 @@ function KpiModal({ kpi, datos, mes, anio, onClose }) {
           ].map((k,i)=>(
             <div key={i} style={{ background:`${C.accent}0f`, borderRadius:8, padding:"16px", borderLeft:`3px solid ${C.accent}`, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", textAlign:"center" }}>
               <p style={{ fontSize:10, color:C.textMid, textTransform:"uppercase", letterSpacing:1.5, marginBottom:6, fontWeight:600 }}>{k.label}</p>
-              <p style={{ fontSize:22, fontWeight:700, color:k.up===false?C.red:k.up===true?C.green:C.text, fontFamily:"'DM Sans',sans-serif" }}>{k.value}</p>
+              <p style={{ fontSize:22, fontWeight:700, color:k.up===false?C.red:k.up===true?C.green:C.text, fontFamily:"'Plus Jakarta Sans',sans-serif" }}>{k.value}</p>
             </div>
           ))}
         </div>
@@ -279,7 +279,7 @@ function KpiModal({ kpi, datos, mes, anio, onClose }) {
               <div style={{ display:"flex", gap:6 }}>
                 {[["30dias","Últimos 30 días"],["mes","Mes actual"]].map(([key,label])=>(
                   <button key={key} onClick={()=>setModoVista(key)}
-                    style={{ padding:"4px 12px", borderRadius:6, border:`1px solid ${modoVista===key?C.accent:C.border}`, background:modoVista===key?C.accentLight:"transparent", color:modoVista===key?C.accent:C.textLight, fontSize:11, fontWeight:modoVista===key?600:400, cursor:"pointer", fontFamily:"'DM Sans',sans-serif" }}>
+                    style={{ padding:"4px 12px", borderRadius:6, border:`1px solid ${modoVista===key?C.accent:C.border}`, background:modoVista===key?C.accentLight:"transparent", color:modoVista===key?C.accent:C.textLight, fontSize:11, fontWeight:modoVista===key?600:400, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
                     {label}
                   </button>
                 ))}
@@ -337,7 +337,7 @@ function KpiCard({ label, value, change, sub, up, i, onClick, accentColor }) {
     }}>
       <div style={{ display: "none" }} />
       <p style={{ fontSize: 12, color: C.textMid, textTransform: "uppercase", letterSpacing: "1.5px", fontWeight: 700 }}>{label}</p>
-      <p style={{ fontSize: "clamp(22px,5vw,30px)", fontWeight: 700, fontFamily: "'DM Sans', sans-serif", color: C.text, margin: "8px 0 6px", letterSpacing: "-1px", lineHeight: 1 }}>{value}</p>
+      <p style={{ fontSize: "clamp(22px,5vw,30px)", fontWeight: 700, fontFamily: "'Plus Jakarta Sans', sans-serif", color: C.text, margin: "8px 0 6px", letterSpacing: "-1px", lineHeight: 1 }}>{value}</p>
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
         <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 4, background: up ? C.greenLight : C.redLight, color: up ? C.green : C.red }}>{change}</span>
         <span style={{ fontSize: 11, color: C.textLight }}>{sub}</span>
@@ -368,7 +368,7 @@ function PeriodSelectorInline({ mes, anio, onChange, aniosDisponibles }) {
     <div style={{ userSelect:"none" }}>
       <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:10, marginBottom:8 }}>
         <button onClick={anioAnterior} style={btnFlecha(puedeAnterior)}>‹</button>
-        <p style={{ fontSize:13, fontWeight:700, color:C.text, fontFamily:"'DM Sans',sans-serif", minWidth:36, textAlign:"center" }}>{anio}</p>
+        <p style={{ fontSize:13, fontWeight:700, color:C.text, fontFamily:"'Plus Jakarta Sans',sans-serif", minWidth:36, textAlign:"center" }}>{anio}</p>
         <button onClick={anioSiguiente} style={btnFlecha(puedeSiguiente)}>›</button>
       </div>
       <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:4 }}>
@@ -386,7 +386,7 @@ function PeriodSelectorInline({ mes, anio, onChange, aniosDisponibles }) {
                 color: futuro ? C.textLight : activo ? "#fff" : C.text,
                 fontSize: 11, fontWeight: activo ? 700 : 500, opacity: futuro ? 0.3 : 1,
                 cursor: futuro ? "not-allowed" : "pointer",
-                fontFamily: "'DM Sans',sans-serif",
+                fontFamily: "'Plus Jakarta Sans',sans-serif",
                 textAlign: "center",
                 transition: "all 0.1s",
               }}>
@@ -518,7 +518,7 @@ function AlertasPanel({ alertas, onClose, onNavegar }) {
 function LoadingSpinner() {
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: 60 }}>
-      <div style={{ color: C.accent, fontFamily: "'Playfair Display', serif", fontSize: 16 }}>Cargando datos...</div>
+      <div style={{ color: C.accent, fontFamily: "'Cormorant Garamond', serif", fontSize: 16 }}>Cargando datos...</div>
     </div>
   );
 }
@@ -527,7 +527,7 @@ function EmptyState({ mensaje }) {
   return (
     <div style={{ textAlign: "center", padding: 60 }}>
       
-      <p style={{ fontFamily: "'Playfair Display', serif", fontSize: 18, fontWeight: 700, color: C.text, marginBottom: 8 }}>Sin datos todavía</p>
+      <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 18, fontWeight: 700, color: C.text, marginBottom: 8 }}>Sin datos todavía</p>
       <p style={{ fontSize: 13, color: C.textLight }}>{mensaje || "Importa tu plantilla Excel para ver los datos aquí"}</p>
     </div>
   );
@@ -829,10 +829,10 @@ function ImportarExcel({ onClose, session, onImportado }) {
 
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
-      <div style={{ background: "#fff", borderRadius: 10, padding: "36px 40px", width: 480, boxShadow: "0 24px 60px rgba(0,0,0,0.3)", fontFamily: "'DM Sans', sans-serif" }}>
+      <div style={{ background: "#fff", borderRadius: 10, padding: "36px 40px", width: 480, boxShadow: "0 24px 60px rgba(0,0,0,0.3)", fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
           <div>
-            <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, fontWeight: 700, color: "#1C1814" }}>Importar datos</h2>
+            <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 20, fontWeight: 700, color: "#1C1814" }}>Importar datos</h2>
             <p style={{ fontSize: 12, color: "#A8998A", marginTop: 4 }}>Sube tu plantilla Excel de FastRev</p>
           </div>
           <button onClick={onClose} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: "#A8998A" }}>✕</button>
@@ -844,12 +844,12 @@ function ImportarExcel({ onClose, session, onImportado }) {
                 <p style={{ fontWeight: 700, color: "#C0392B", marginBottom: 8 }}>⚠️ ¿Vaciar todos los datos?</p>
                 <p style={{ fontSize: 12, color: "#A8998A", marginBottom: 16 }}>Se eliminarán producción, pickup y presupuesto. Esta acción no se puede deshacer.</p>
                 <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
-                  <button onClick={()=>setConfirmVaciar(false)} style={{ padding: "8px 20px", borderRadius: 8, border: "1px solid #E8E0D5", background: "#fff", color: "#A8998A", cursor: "pointer", fontFamily: "'DM Sans',sans-serif", fontSize: 13 }}>Cancelar</button>
-                  <button onClick={vaciarDatos} disabled={vaciando} style={{ padding: "8px 20px", borderRadius: 8, border: "none", background: "#C0392B", color: "#fff", cursor: vaciando?"not-allowed":"pointer", fontWeight: 700, fontFamily: "'DM Sans',sans-serif", fontSize: 13 }}>{vaciando ? "Vaciando..." : "Sí, vaciar todo"}</button>
+                  <button onClick={()=>setConfirmVaciar(false)} style={{ padding: "8px 20px", borderRadius: 8, border: "1px solid #E8E0D5", background: "#fff", color: "#A8998A", cursor: "pointer", fontFamily: "'Plus Jakarta Sans',sans-serif", fontSize: 13 }}>Cancelar</button>
+                  <button onClick={vaciarDatos} disabled={vaciando} style={{ padding: "8px 20px", borderRadius: 8, border: "none", background: "#C0392B", color: "#fff", cursor: vaciando?"not-allowed":"pointer", fontWeight: 700, fontFamily: "'Plus Jakarta Sans',sans-serif", fontSize: 13 }}>{vaciando ? "Vaciando..." : "Sí, vaciar todo"}</button>
                 </div>
               </div>
             ) : (
-              <button onClick={()=>setConfirmVaciar(true)} style={{ width: "100%", padding: "9px", borderRadius: 8, border: "1px solid #FDECEA", background: "#FFF5F5", color: "#C0392B", cursor: "pointer", fontSize: 12, fontWeight: 600, fontFamily: "'DM Sans',sans-serif", marginBottom: 16, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+              <button onClick={()=>setConfirmVaciar(true)} style={{ width: "100%", padding: "9px", borderRadius: 8, border: "1px solid #FDECEA", background: "#FFF5F5", color: "#C0392B", cursor: "pointer", fontSize: 12, fontWeight: 600, fontFamily: "'Plus Jakarta Sans',sans-serif", marginBottom: 16, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
                 🗑️ Vaciar todos los datos importados
               </button>
             )}
@@ -878,7 +878,7 @@ function ImportarExcel({ onClose, session, onImportado }) {
               {resultado.pickup > 0 && <p style={{ color: "#2D7A4F", fontSize: 13, marginTop: 6 }}>🎯 {resultado.pickup} reservas de pickup importadas</p>}
               {resultado.presupuesto > 0 && <p style={{ color: "#2D7A4F", fontSize: 13, marginTop: 6 }}>💰 {resultado.presupuesto} meses de presupuesto importados</p>}
             </div>
-            <button onClick={onClose} style={{ background: "#C8933A", color: "#fff", border: "none", borderRadius: 10, padding: "12px 32px", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "'DM Sans', sans-serif" }}>Ver dashboard</button>
+            <button onClick={onClose} style={{ background: "#C8933A", color: "#fff", border: "none", borderRadius: 10, padding: "12px 32px", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "'Plus Jakarta Sans', sans-serif" }}>Ver dashboard</button>
           </div>
         )}
       </div>
@@ -907,11 +907,11 @@ function MonthDetailView({ datos, mes, anio, onBack }) {
   return (
     <div>
       <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 28 }}>
-        <button onClick={onBack} style={{ background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 16px", cursor: "pointer", fontSize: 13, color: C.textMid, fontFamily: "'DM Sans', sans-serif", display: "flex", alignItems: "center", gap: 6 }}>
+        <button onClick={onBack} style={{ background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 16px", cursor: "pointer", fontSize: 13, color: C.textMid, fontFamily: "'Plus Jakarta Sans', sans-serif", display: "flex", alignItems: "center", gap: 6 }}>
           ← Volver
         </button>
         <div>
-          <h2 style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 20, fontWeight: 700, color: C.text, letterSpacing: -0.3 }}>
+          <h2 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 20, fontWeight: 700, color: C.text, letterSpacing: -0.3 }}>
             Detalle diario — {MESES[mes]} {anio}
           </h2>
           <p style={{ fontSize: 12, color: C.textLight, marginTop: 4 }}>{datosMes.length} días con datos</p>
@@ -928,7 +928,7 @@ function MonthDetailView({ datos, mes, anio, onBack }) {
         ].map((k, i) => (
           <div key={i} style={{ background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: 8, padding: "16px 18px", borderTop: `3px solid ${C.accent}` }}>
             <p style={{ fontSize: 11, color: C.textLight, textTransform: "uppercase", letterSpacing: "1.5px" }}>{k.label}</p>
-            <p style={{ fontSize: 24, fontWeight: 700, fontFamily: "'Playfair Display', serif", color: C.text, marginTop: 6 }}>{k.value}</p>
+            <p style={{ fontSize: 24, fontWeight: 700, fontFamily: "'Cormorant Garamond', serif", color: C.text, marginTop: 6 }}>{k.value}</p>
           </div>
         ))}
       </div>
@@ -1495,11 +1495,11 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
       {/* ── CABECERA MES ACTIVO ── */}
       <div className="dash-header" style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16, paddingBottom:14, borderBottom:`1px solid ${C.border}` }}>
         <div>
-          <p style={{ fontSize:22, fontWeight:800, color:C.text, fontFamily:"'DM Sans',sans-serif", letterSpacing:-0.5, marginBottom:2 }}>
+          <p style={{ fontSize:22, fontWeight:800, color:C.text, fontFamily:"'Plus Jakarta Sans',sans-serif", letterSpacing:-0.5, marginBottom:2 }}>
             Bienvenido, <span style={{ color:C.accent }}>{datos.hotel?.nombre || "Mi Hotel"}</span>
           </p>
           <div style={{ display:"flex", alignItems:"baseline", gap:10 }}>
-            <h2 style={{ fontFamily:"'Playfair Display',serif", fontSize:28, fontWeight:700, color:C.text, margin:0, letterSpacing:-0.5 }}>
+            <h2 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:28, fontWeight:700, color:C.text, margin:0, letterSpacing:-0.5 }}>
               {["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"][mes]}
             </h2>
             <span style={{ fontSize:20, fontWeight:400, color:C.textLight }}>{anio}</span>
@@ -1625,7 +1625,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
             <Card style={{ display:"flex", flexDirection:"column" }}>
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
                 <div>
-                  <p style={{ fontFamily:"'Playfair Display',serif", fontWeight:700, fontSize:20, color:C.text, marginBottom:2 }}>Ocupación mensual</p>
+                  <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:20, color:C.text, marginBottom:2 }}>Ocupación mensual</p>
                   
                 </div>
 
@@ -1648,7 +1648,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
                       )}
                       <p style={{ fontSize:9, fontWeight:600, color:C.textLight, textTransform:"uppercase", letterSpacing:0.5, marginBottom:3 }}>{label}</p>
                       {occ!=null
-                        ? <p style={{ fontSize:16, fontWeight:800, color:heatColor(occ), fontFamily:"'DM Sans',sans-serif" }}>{occ.toFixed(0)}%</p>
+                        ? <p style={{ fontSize:16, fontWeight:800, color:heatColor(occ), fontFamily:"'Plus Jakarta Sans',sans-serif" }}>{occ.toFixed(0)}%</p>
                         : <p style={{ fontSize:12, color:C.border }}>—</p>
                       }
                       {resUltDia !== 0
@@ -1729,13 +1729,13 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
               return (
                 <Card style={{ display:"flex", flexDirection:"column", minHeight:360 }}>
                   <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16 }}>
-                    <p style={{ fontFamily:"'Playfair Display',serif", fontWeight:700, fontSize:18, color:C.text }}>
+                    <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:18, color:C.text }}>
                       {metricas.find(m=>m.key===metricaSel)?.label}
                     </p>
                     <div style={{ display:"flex", gap:4 }}>
                       {metricas.map(m => (
                         <button key={m.key} onClick={()=>setMetricaSel(m.key)}
-                          style={{ padding:"4px 10px", borderRadius:6, border:`1px solid ${metricaSel===m.key?C.accent:C.border}`, background:metricaSel===m.key?C.accentLight:"transparent", color:metricaSel===m.key?C.accent:C.textLight, fontSize:10, fontWeight:metricaSel===m.key?600:400, cursor:"pointer", fontFamily:"'DM Sans',sans-serif", transition:"all 0.15s" }}>
+                          style={{ padding:"4px 10px", borderRadius:6, border:`1px solid ${metricaSel===m.key?C.accent:C.border}`, background:metricaSel===m.key?C.accentLight:"transparent", color:metricaSel===m.key?C.accent:C.textLight, fontSize:10, fontWeight:metricaSel===m.key?600:400, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", transition:"all 0.15s" }}>
                           {m.label}
                         </button>
                       ))}
@@ -1784,7 +1784,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
       })()}
 
       <Card>
-        <p style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700, fontSize: 16, color: C.text, marginBottom: 16 }}>
+        <p style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 700, fontSize: 16, color: C.text, marginBottom: 16 }}>
           Últimos 12 meses
         </p>
         <div style={{ overflowX: "auto" }}>
@@ -1847,7 +1847,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20 }}>
                 <div>
                   <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:2 }}>{MESES_FULL2[mesIdx]} {anioIdx}</p>
-                  <h3 style={{ fontSize:22, fontWeight:800, color:C.text, fontFamily:"'DM Sans',sans-serif", letterSpacing:-0.5 }}>ADR & Ocupación diaria</h3>
+                  <h3 style={{ fontSize:22, fontWeight:800, color:C.text, fontFamily:"'Plus Jakarta Sans',sans-serif", letterSpacing:-0.5 }}>ADR & Ocupación diaria</h3>
                 </div>
                 <button onClick={()=>setModalDiario(null)} style={{ background:"none", border:`1.5px solid ${C.border}`, borderRadius:8, width:34, height:34, cursor:"pointer", fontSize:16, color:C.textMid }}
                   onMouseEnter={e=>{e.currentTarget.style.background=C.accent;e.currentTarget.style.color="#fff";}}
@@ -2040,13 +2040,13 @@ function PickupView({ datos }) {
       <Card>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:16 }}>
           <div>
-            <p style={{ fontFamily:"'Playfair Display',serif", fontWeight:700, fontSize:18, color:C.text }}>Reservas de ayer</p>
+            <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:18, color:C.text }}>Reservas de ayer</p>
             <p style={{ fontSize:12, color:C.textLight, marginTop:2 }}>
               {ayerD.toLocaleDateString("es-ES",{weekday:"long",day:"numeric",month:"long"}).replace(/^\w/,c=>c.toUpperCase())}
             </p>
           </div>
           <div style={{ background:"#B8860B22", border:"1px solid #B8860B44", borderRadius:10, padding:"10px 20px", textAlign:"center" }}>
-            <p style={{ fontSize:28, fontWeight:800, color:"#B8860B", fontFamily:"'DM Sans',sans-serif", lineHeight:1 }}>{ayerTotal}</p>
+            <p style={{ fontSize:28, fontWeight:800, color:"#B8860B", fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1 }}>{ayerTotal}</p>
             <p style={{ fontSize:10, color:"#B8860B", fontWeight:600, textTransform:"uppercase", letterSpacing:0.8, marginTop:3 }}>reservas captadas</p>
           </div>
         </div>
@@ -2118,13 +2118,13 @@ function PickupView({ datos }) {
         <Card>
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:14 }}>
             <div>
-              <p style={{ fontFamily:"'Playfair Display',serif", fontWeight:700, fontSize:16, color:C.text }}>Cancelaciones de ayer</p>
+              <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:16, color:C.text }}>Cancelaciones de ayer</p>
               <p style={{ fontSize:11, color:C.textLight, marginTop:2 }}>
                 {ayerD.toLocaleDateString("es-ES",{weekday:"long",day:"numeric",month:"long"}).replace(/^\w/,c=>c.toUpperCase())}
               </p>
             </div>
             <div style={{ background: cancelTotal>0?"#FDECEA":"#E6F7EE", border:`1px solid ${cancelTotal>0?"#D32F2F44":"#1A7A3C44"}`, borderRadius:10, padding:"10px 20px", textAlign:"center" }}>
-              <p style={{ fontSize:28, fontWeight:800, color:cancelTotal>0?C.red:C.green, fontFamily:"'DM Sans',sans-serif", lineHeight:1 }}>{cancelTotal}</p>
+              <p style={{ fontSize:28, fontWeight:800, color:cancelTotal>0?C.red:C.green, fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1 }}>{cancelTotal}</p>
               <p style={{ fontSize:10, fontWeight:600, textTransform:"uppercase", letterSpacing:0.8, marginTop:3, color:cancelTotal>0?C.red:C.green }}>cancelaciones</p>
             </div>
           </div>
@@ -2147,11 +2147,11 @@ function PickupView({ datos }) {
         <Card>
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:14 }}>
             <div>
-              <p style={{ fontFamily:"'Playfair Display',serif", fontWeight:700, fontSize:16, color:C.text }}>Duración media</p>
+              <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:16, color:C.text }}>Duración media</p>
               <p style={{ fontSize:11, color:C.textLight, marginTop:2 }}>Noches por reserva confirmada</p>
             </div>
             <div style={{ background:`${C.accent}15`, border:`1px solid ${C.accent}33`, borderRadius:10, padding:"10px 20px", textAlign:"center" }}>
-              <p style={{ fontSize:28, fontWeight:800, color:C.accent, fontFamily:"'DM Sans',sans-serif", lineHeight:1 }}>{nochesMed ?? "—"}</p>
+              <p style={{ fontSize:28, fontWeight:800, color:C.accent, fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1 }}>{nochesMed ?? "—"}</p>
               <p style={{ fontSize:10, fontWeight:600, textTransform:"uppercase", letterSpacing:0.8, marginTop:3, color:C.accent }}>noches media</p>
             </div>
           </div>
@@ -2182,11 +2182,11 @@ function PickupView({ datos }) {
         <Card>
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:14 }}>
             <div>
-              <p style={{ fontFamily:"'Playfair Display',serif", fontWeight:700, fontSize:16, color:C.text }}>Precio medio reserva</p>
+              <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:16, color:C.text }}>Precio medio reserva</p>
               <p style={{ fontSize:11, color:C.textLight, marginTop:2 }}>Revenue medio por reserva confirmada</p>
             </div>
             <div style={{ background:"#1A7A3C15", border:"1px solid #1A7A3C33", borderRadius:10, padding:"10px 20px", textAlign:"center" }}>
-              <p style={{ fontSize:28, fontWeight:800, color:C.green, fontFamily:"'DM Sans',sans-serif", lineHeight:1 }}>
+              <p style={{ fontSize:28, fontWeight:800, color:C.green, fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1 }}>
                 {precioMed ? `€${precioMed.toLocaleString("es-ES")}` : "—"}
               </p>
               <p style={{ fontSize:10, fontWeight:600, textTransform:"uppercase", letterSpacing:0.8, marginTop:3, color:C.green }}>precio medio</p>
@@ -2223,7 +2223,7 @@ function PickupView({ datos }) {
             onClick={()=>setAnio(a=>{const i=aniosDisp.indexOf(a); return i>0?aniosDisp[i-1]:a;})}
             disabled={aniosDisp.indexOf(anio)===0}
             style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, width:28, height:28, cursor: aniosDisp.indexOf(anio)===0?"default":"pointer", fontSize:15, color: aniosDisp.indexOf(anio)===0?C.border:C.textMid, display:"flex", alignItems:"center", justifyContent:"center" }}>‹</button>
-          <span style={{ fontWeight:700, fontSize:16, color:C.text, minWidth:44, textAlign:"center", fontFamily:"'DM Sans',sans-serif" }}>{anio}</span>
+          <span style={{ fontWeight:700, fontSize:16, color:C.text, minWidth:44, textAlign:"center", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>{anio}</span>
           <button
             onClick={()=>setAnio(a=>{const i=aniosDisp.indexOf(a); return i<aniosDisp.length-1?aniosDisp[i+1]:a;})}
             disabled={aniosDisp.indexOf(anio)===aniosDisp.length-1}
@@ -2277,7 +2277,7 @@ function PickupView({ datos }) {
                 <p style={{ fontSize:10, color:C.textLight, fontWeight:600, marginBottom:4 }}>{icon} {label}</p>
                 {peak ? (
                   <>
-                    <p style={{ fontSize:15, fontWeight:800, color:C.text, fontFamily:"'DM Sans',sans-serif", letterSpacing:-0.3 }}>{fmt(peak.fecha)}</p>
+                    <p style={{ fontSize:15, fontWeight:800, color:C.text, fontFamily:"'Plus Jakarta Sans',sans-serif", letterSpacing:-0.3 }}>{fmt(peak.fecha)}</p>
                     <p style={{ fontSize:11, color:C.textMid, marginTop:2 }}><span style={{ fontWeight:700, color:COL_PPTO }}>{peak.reservas}</span> reservas</p>
                   </>
                 ) : (
@@ -2419,7 +2419,7 @@ function PickupView({ datos }) {
         return (
           <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:12, overflow:"hidden" }}>
             <div style={{ padding:"18px 24px 12px", borderBottom:`1px solid ${C.border}`, display:"flex", alignItems:"baseline", gap:10 }}>
-              <h3 style={{ fontFamily:"'DM Sans',sans-serif", fontSize:16, fontWeight:700, color:C.text, margin:0 }}>Pace — Próximos 6 meses</h3>
+              <h3 style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:16, fontWeight:700, color:C.text, margin:0 }}>Pace — Próximos 6 meses</h3>
               <span style={{ fontSize:11, color:C.textLight }}>OCC en cartera vs Presupuesto y Año Anterior</span>
             </div>
             <div style={{ overflowX:"auto" }}>
@@ -2664,7 +2664,7 @@ function BudgetView({ datos, anio: anioProp }) {
           ].map((k,i) => (
             <div key={i} style={{ background:C.bgCard, border:`1px solid ${C.border}`, borderRadius:10, padding:"16px 20px", borderLeft:`3px solid ${k.color}` }}>
               <p style={{ fontSize:10, color:C.textLight, textTransform:"uppercase", letterSpacing:1.5, marginBottom:6, fontWeight:600 }}>{k.label}</p>
-              <p style={{ fontSize:22, fontWeight:700, color:k.color, fontFamily:"'DM Sans',sans-serif" }}>{k.value}</p>
+              <p style={{ fontSize:22, fontWeight:700, color:k.color, fontFamily:"'Plus Jakarta Sans',sans-serif" }}>{k.value}</p>
             </div>
           ))}
         </div>
@@ -2673,7 +2673,7 @@ function BudgetView({ datos, anio: anioProp }) {
       {/* Selector año */}
       {aniosDisponibles.length > 1 && (
         <div style={{ display:"flex", justifyContent:"flex-end" }}>
-          <select value={anio} onChange={e => setAnio(parseInt(e.target.value))} style={{ padding:"6px 10px", borderRadius:6, border:`1px solid ${C.border}`, fontSize:12, fontWeight:600, color:C.text, background:C.bgCard, cursor:"pointer", fontFamily:"'DM Sans',sans-serif", outline:"none" }}>
+          <select value={anio} onChange={e => setAnio(parseInt(e.target.value))} style={{ padding:"6px 10px", borderRadius:6, border:`1px solid ${C.border}`, fontSize:12, fontWeight:600, color:C.text, background:C.bgCard, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", outline:"none" }}>
             {aniosDisponibles.map(a => <option key={a} value={a}>{a}</option>)}
           </select>
         </div>
@@ -2683,13 +2683,13 @@ function BudgetView({ datos, anio: anioProp }) {
       <Card>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:18 }}>
           <div>
-            <p style={{ fontFamily:"'Playfair Display',serif", fontWeight:700, fontSize:17, color:C.text }}>{chartTitle}</p>
+            <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:17, color:C.text }}>{chartTitle}</p>
             <p style={{ fontSize:11, color:C.textLight, marginTop:2 }}>Ppto. vs Real vs Forecast · {anio}</p>
           </div>
           <div style={{ display:"flex", gap:6 }}>
             {kpiOpts.map(o => (
               <button key={o.key} onClick={()=>setKpiChart(o.key)}
-                style={{ padding:"5px 14px", borderRadius:7, border:`1.5px solid ${kpiChart===o.key?"#1A7A3C":C.border}`, background:kpiChart===o.key?"#1A7A3C18":"transparent", color:kpiChart===o.key?"#1A7A3C":C.textLight, fontSize:12, fontWeight:kpiChart===o.key?700:400, cursor:"pointer", fontFamily:"'DM Sans',sans-serif", transition:"all 0.15s" }}>
+                style={{ padding:"5px 14px", borderRadius:7, border:`1.5px solid ${kpiChart===o.key?"#1A7A3C":C.border}`, background:kpiChart===o.key?"#1A7A3C18":"transparent", color:kpiChart===o.key?"#1A7A3C":C.textLight, fontSize:12, fontWeight:kpiChart===o.key?700:400, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", transition:"all 0.15s" }}>
                 {o.label}
               </button>
             ))}
@@ -2719,7 +2719,7 @@ function BudgetView({ datos, anio: anioProp }) {
 
       {/* Tabla detalle */}
       <Card>
-        <p style={{ fontFamily:"'Playfair Display',serif", fontWeight:700, fontSize:16, color:C.text, marginBottom:16 }}>Detalle mensual</p>
+        <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:16, color:C.text, marginBottom:16 }}>Detalle mensual</p>
         <div style={{ overflowX:"auto" }}>
           <table style={{ width:"100%", borderCollapse:"collapse", fontSize:12 }}>
             <thead>
@@ -2900,7 +2900,7 @@ function GruposView({ datos, onRecargar }) {
     ? gruposAnio.filter(g => g.estado !== "cancelado")
     : gruposAnio.filter(g => g.estado === filtroEstado);
 
-  const inp = { width:"100%", padding:"9px 12px", borderRadius:7, border:`1.5px solid ${C.border}`, fontSize:13, fontFamily:"'DM Sans',sans-serif", color:C.text, background:C.bg, outline:"none", boxSizing:"border-box" };
+  const inp = { width:"100%", padding:"9px 12px", borderRadius:7, border:`1.5px solid ${C.border}`, fontSize:13, fontFamily:"'Plus Jakarta Sans',sans-serif", color:C.text, background:C.bg, outline:"none", boxSizing:"border-box" };
 
   return (
     <div style={{ display:"flex", flexDirection:"column", gap:20 }}>
@@ -2915,7 +2915,7 @@ function GruposView({ datos, onRecargar }) {
         ].map((k,i) => (
           <div key={i} style={{ background:C.bgCard, border:`1px solid ${C.border}`, borderRadius:10, padding:"14px 18px", borderLeft:`3px solid ${k.color}` }}>
             <p style={{ fontSize:10, color:C.textLight, textTransform:"uppercase", letterSpacing:1.5, fontWeight:600, marginBottom:4 }}>{k.label}</p>
-            <p style={{ fontSize:20, fontWeight:800, color:k.color, fontFamily:"'DM Sans',sans-serif" }}>{k.value}</p>
+            <p style={{ fontSize:20, fontWeight:800, color:k.color, fontFamily:"'Plus Jakarta Sans',sans-serif" }}>{k.value}</p>
             <p style={{ fontSize:11, color:C.textLight, marginTop:2 }}>{k.n} evento{k.n!==1?"s":""}</p>
           </div>
         ))}
@@ -2938,7 +2938,7 @@ function GruposView({ datos, onRecargar }) {
             ))}
           </div>
         </div>
-        <button onClick={()=>abrirNuevo()} style={{ background:"#7C3AED", color:"#fff", border:"none", borderRadius:8, padding:"8px 18px", fontSize:13, fontWeight:600, cursor:"pointer", fontFamily:"'DM Sans',sans-serif" }}>
+        <button onClick={()=>abrirNuevo()} style={{ background:"#7C3AED", color:"#fff", border:"none", borderRadius:8, padding:"8px 18px", fontSize:13, fontWeight:600, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
           + Nuevo evento
         </button>
       </div>
@@ -3194,11 +3194,11 @@ function AuthScreen() {
     setLoading(false);
   };
 
-  const inp = { width: "100%", padding: "11px 14px", borderRadius: 8, border: `1.5px solid ${C.border}`, fontSize: 14, fontFamily: "'DM Sans', sans-serif", color: C.text, background: C.bg, outline: "none" };
+  const inp = { width: "100%", padding: "11px 14px", borderRadius: 8, border: `1.5px solid ${C.border}`, fontSize: 14, fontFamily: "'Plus Jakarta Sans', sans-serif", color: C.text, background: C.bg, outline: "none" };
 
   return (
-    <div style={{ minHeight: "100vh", background: C.bgDeep, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'DM Sans', sans-serif" }}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap'); * { box-sizing: border-box; margin: 0; padding: 0; } html, body, #root { width: 100%; min-height: 100vh; } @keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }`}</style>
+    <div style={{ minHeight: "100vh", background: C.bgDeep, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;0,800;1,400;1,600&family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap'); * { box-sizing: border-box; margin: 0; padding: 0; } html, body, #root { width: 100%; min-height: 100vh; } @keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }`}</style>
       <div style={{ width: 420, background: C.bgCard, borderRadius: 20, padding: "40px 36px", boxShadow: "0 32px 80px rgba(0,0,0,0.4)", animation: "fadeUp 0.5s ease both" }}>
         <div style={{ textAlign: "center", marginBottom: 32 }}>
           <img src={LOGO_B64} alt="FastRevenue" style={{ height: 56, width: "auto", margin: "0 auto 14px", display: "block" }} />
@@ -3206,7 +3206,7 @@ function AuthScreen() {
         </div>
         <div style={{ display: "flex", background: C.bg, borderRadius: 10, padding: 4, marginBottom: 24 }}>
           {[["login","Iniciar sesión"],["register","Crear cuenta"]].map(([k,l]) => (
-            <button key={k} onClick={() => { setMode(k); setError(""); setMensaje(""); }} style={{ flex: 1, padding: "9px", borderRadius: 8, border: "none", cursor: "pointer", background: mode===k ? C.bgCard : "transparent", color: mode===k ? C.accent : C.textMid, fontWeight: mode===k ? 600 : 400, fontSize: 13, fontFamily: "'DM Sans', sans-serif", boxShadow: mode===k ? "0 1px 4px rgba(0,0,0,0.08)" : "none" }}>{l}</button>
+            <button key={k} onClick={() => { setMode(k); setError(""); setMensaje(""); }} style={{ flex: 1, padding: "9px", borderRadius: 8, border: "none", cursor: "pointer", background: mode===k ? C.bgCard : "transparent", color: mode===k ? C.accent : C.textMid, fontWeight: mode===k ? 600 : 400, fontSize: 13, fontFamily: "'Plus Jakarta Sans', sans-serif", boxShadow: mode===k ? "0 1px 4px rgba(0,0,0,0.08)" : "none" }}>{l}</button>
           ))}
         </div>
         {mensaje ? (
@@ -3241,7 +3241,7 @@ function AuthScreen() {
               <input style={inp} type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} onKeyDown={e => e.key==="Enter" && (mode==="login" ? handleLogin() : handleRegister())} />
             </div>
             {error && <div style={{ background: C.redLight, color: C.red, padding: "10px 14px", borderRadius: 8, fontSize: 13 }}>{error}</div>}
-            <button onClick={mode==="login" ? handleLogin : handleRegister} disabled={loading} style={{ width: "100%", padding: "13px", borderRadius: 10, border: "none", background: loading ? C.accentLight : C.accent, color: loading ? C.accentDark : "#fff", fontSize: 14, fontWeight: 700, cursor: loading ? "not-allowed" : "pointer", fontFamily: "'DM Sans', sans-serif", marginTop: 4 }}>
+            <button onClick={mode==="login" ? handleLogin : handleRegister} disabled={loading} style={{ width: "100%", padding: "13px", borderRadius: 10, border: "none", background: loading ? C.accentLight : C.accent, color: loading ? C.accentDark : "#fff", fontSize: 14, fontWeight: 700, cursor: loading ? "not-allowed" : "pointer", fontFamily: "'Plus Jakarta Sans', sans-serif", marginTop: 4 }}>
               {loading ? "Cargando..." : mode==="login" ? "Entrar" : "Crear cuenta"}
             </button>
           </div>
@@ -3280,10 +3280,10 @@ function PantallaSubscripcion({ session, onPagar }) {
   };
 
   return (
-    <div style={{ minHeight:"100vh", background:C.bg, display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'DM Sans',sans-serif" }}>
+    <div style={{ minHeight:"100vh", background:C.bg, display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
       <div style={{ width:460, background:C.bgCard, borderRadius:20, padding:"48px 40px", boxShadow:"0 32px 80px rgba(0,0,0,0.1)", textAlign:"center" }}>
         <img src={LOGO_B64} alt="FastRevenue" style={{ height:52, marginBottom:24 }} />
-        <h1 style={{ fontFamily:"'Playfair Display',serif", fontSize:26, fontWeight:800, color:C.text, marginBottom:10 }}>Empieza gratis 30 días</h1>
+        <h1 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:26, fontWeight:800, color:C.text, marginBottom:10 }}>Empieza gratis 30 días</h1>
         <p style={{ fontSize:14, color:C.textMid, lineHeight:1.7, marginBottom:32 }}>
           Acceso completo a FastRev durante 30 días sin coste.<br/>
           Después, solo <strong>€49/mes</strong> + IVA. Cancela cuando quieras.
@@ -3297,7 +3297,7 @@ function PantallaSubscripcion({ session, onPagar }) {
           ))}
         </div>
         <button onClick={iniciarPago} disabled={cargando}
-          style={{ width:"100%", padding:"14px", borderRadius:10, border:"none", background:C.accent, color:"#fff", fontSize:15, fontWeight:700, cursor:cargando?"not-allowed":"pointer", fontFamily:"'DM Sans',sans-serif", marginBottom:12 }}>
+          style={{ width:"100%", padding:"14px", borderRadius:10, border:"none", background:C.accent, color:"#fff", fontSize:15, fontWeight:700, cursor:cargando?"not-allowed":"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", marginBottom:12 }}>
           {cargando ? "Redirigiendo..." : "Empezar prueba gratuita →"}
         </button>
         <button onClick={() => supabase.auth.signOut()} style={{ background:"none", border:"none", color:C.textLight, fontSize:12, cursor:"pointer" }}>
@@ -3493,7 +3493,7 @@ export default function App() {
 
   if (loading) return (
     <div style={{ minHeight: "100vh", background: C.bgDeep, display: "flex", alignItems: "center", justifyContent: "center" }}>
-      <div style={{ color: C.accent, fontFamily: "'Playfair Display', serif", fontSize: 20 }}>Cargando...</div>
+      <div style={{ color: C.accent, fontFamily: "'Cormorant Garamond', serif", fontSize: 20 }}>Cargando...</div>
     </div>
   );
 
@@ -3501,9 +3501,9 @@ export default function App() {
   if (!cargandoSub && (!suscripcion || suscripcion.estado === "cancelada")) return <PantallaSubscripcion session={session} />;
 
   return (
-    <div style={{ fontFamily: "'DM Sans', sans-serif", background: C.bg, minHeight: "100vh" }}>
+    <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", background: C.bg, minHeight: "100vh" }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;0,800;1,400;1,600&family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap');
         * { box-sizing: border-box; margin: 0; padding: 0; } html, body, #root { width: 100%; min-height: 100vh; }
         ::-webkit-scrollbar { width: 5px; }
         ::-webkit-scrollbar-track { background: ${C.bg}; }
@@ -3572,7 +3572,7 @@ export default function App() {
         {/* Logo centro */}
         <div style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", pointerEvents: "none", display: "flex", alignItems: "center", gap: 12 }}>
           <span style={{ fontFamily: "'Arial', sans-serif", fontWeight: 800, fontSize: "clamp(13px, 3.5vw, 18px)", letterSpacing: 2, color: "#000000", textTransform: "uppercase", lineHeight: 1, whiteSpace: "nowrap" }}>FastRevenue</span>
-          <span className="topbar-date" style={{ fontSize: 12, color: "#000000", fontWeight: 500, fontFamily: "'DM Sans', sans-serif", letterSpacing: 0.3, whiteSpace: "nowrap" }}>
+          <span className="topbar-date" style={{ fontSize: 12, color: "#000000", fontWeight: 500, fontFamily: "'Plus Jakarta Sans', sans-serif", letterSpacing: 0.3, whiteSpace: "nowrap" }}>
             {new Date().toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).replace(/^\w/, c => c.toUpperCase())}
           </span>
         </div>
@@ -3584,7 +3584,7 @@ export default function App() {
             const isActive = view===n.key;
             return (
               <button key={n.key} onClick={() => { setView(n.key); setMesDetalle(null); localStorage.setItem("fr_view", n.key); }}
-                style={{ padding: "6px clamp(6px,2vw,16px)", borderRadius: 7, border: "none", cursor: "pointer", background: isActive ? navColor+"18" : "transparent", color: isActive ? navColor : C.textLight, fontSize: "clamp(11px,2.5vw,13px)", fontWeight: isActive ? 700 : 400, fontFamily: "'DM Sans', sans-serif", transition: "all 0.15s", whiteSpace: "nowrap", outline: isActive ? `1.5px solid ${navColor}44` : "1.5px solid transparent" }}
+                style={{ padding: "6px clamp(6px,2vw,16px)", borderRadius: 7, border: "none", cursor: "pointer", background: isActive ? navColor+"18" : "transparent", color: isActive ? navColor : C.textLight, fontSize: "clamp(11px,2.5vw,13px)", fontWeight: isActive ? 700 : 400, fontFamily: "'Plus Jakarta Sans', sans-serif", transition: "all 0.15s", whiteSpace: "nowrap", outline: isActive ? `1.5px solid ${navColor}44` : "1.5px solid transparent" }}
                 onMouseEnter={e=>{ if(!isActive){ e.currentTarget.style.color=C.text; } }}
                 onMouseLeave={e=>{ e.currentTarget.style.color=isActive?navColor:C.textLight; }}>
                 <span className="topbar-nav-label">{n.label}</span>
@@ -3608,7 +3608,7 @@ export default function App() {
               }} />}
             </div>
           ); })()}
-          <button onClick={() => setImportar(true)} style={{ background: C.accent, color: "#fff", border: "none", borderRadius: 7, padding: "5px 10px", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "'DM Sans',sans-serif", whiteSpace: "nowrap" }}>
+          <button onClick={() => setImportar(true)} style={{ background: C.accent, color: "#fff", border: "none", borderRadius: 7, padding: "5px 10px", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "'Plus Jakarta Sans',sans-serif", whiteSpace: "nowrap" }}>
             <span className="topbar-importar-label">Importar</span>
             <span style={{ display:"none" }} className="topbar-importar-icon">↑</span>
           </button>
@@ -3617,7 +3617,7 @@ export default function App() {
           {/* Menú Mi Perfil */}
           <div data-menu style={{ position:"relative" }}>
             <button onClick={() => setMostrarPerfil(v=>!v)}
-              style={{ display:"flex", alignItems:"center", gap:6, padding:"5px 8px", borderRadius:7, border:`1px solid ${C.border}`, background:"transparent", color:C.text, cursor:"pointer", fontSize:12, fontWeight:500, fontFamily:"'DM Sans',sans-serif", transition:"all 0.15s", letterSpacing:0.2 }}>
+              style={{ display:"flex", alignItems:"center", gap:6, padding:"5px 8px", borderRadius:7, border:`1px solid ${C.border}`, background:"transparent", color:C.text, cursor:"pointer", fontSize:12, fontWeight:500, fontFamily:"'Plus Jakarta Sans',sans-serif", transition:"all 0.15s", letterSpacing:0.2 }}>
               <span style={{ width:26, height:26, borderRadius:"50%", background:C.accent, color:"#fff", fontSize:11, fontWeight:700, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
                 {session.user.email[0].toUpperCase()}
               </span>
@@ -3647,14 +3647,14 @@ export default function App() {
                         setMostrarPerfil(false);
                       }
                     }}
-                    style={{ width:"100%", display:"flex", alignItems:"center", padding:"10px 16px", background:"transparent", border:"none", borderBottom:`1px solid ${C.border}`, cursor:"pointer", fontSize:12, color:C.text, fontFamily:"'DM Sans',sans-serif", textAlign:"left", letterSpacing:0.2 }}
+                    style={{ width:"100%", display:"flex", alignItems:"center", padding:"10px 16px", background:"transparent", border:"none", borderBottom:`1px solid ${C.border}`, cursor:"pointer", fontSize:12, color:C.text, fontFamily:"'Plus Jakarta Sans',sans-serif", textAlign:"left", letterSpacing:0.2 }}
                     onMouseEnter={e=>e.currentTarget.style.background=C.bg}
                     onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
                     {op.key === "informe" && generandoPDF ? "Generando..." : op.label}
                   </button>
                 ))}
                 <button onClick={handleLogout}
-                  style={{ width:"100%", display:"flex", alignItems:"center", padding:"10px 16px", background:"transparent", border:"none", cursor:"pointer", fontSize:12, color:C.red, fontFamily:"'DM Sans',sans-serif", textAlign:"left", letterSpacing:0.2 }}
+                  style={{ width:"100%", display:"flex", alignItems:"center", padding:"10px 16px", background:"transparent", border:"none", cursor:"pointer", fontSize:12, color:C.red, fontFamily:"'Plus Jakarta Sans',sans-serif", textAlign:"left", letterSpacing:0.2 }}
                   onMouseEnter={e=>e.currentTarget.style.background=C.redLight}
                   onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
                   Cerrar sesión
@@ -3680,9 +3680,9 @@ export default function App() {
       {/* Modal Suscripción */}
       {perfilSeccion === "suscripcion" && (
         <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:1000 }}>
-          <div style={{ background:C.bgCard, borderRadius:16, padding:"36px 40px", width:440, boxShadow:"0 24px 60px rgba(0,0,0,0.2)", fontFamily:"'DM Sans',sans-serif" }}>
+          <div style={{ background:C.bgCard, borderRadius:16, padding:"36px 40px", width:440, boxShadow:"0 24px 60px rgba(0,0,0,0.2)", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:24 }}>
-              <h2 style={{ fontFamily:"'Playfair Display',serif", fontSize:20, fontWeight:700, color:C.text }}>Gestión de suscripción</h2>
+              <h2 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:20, fontWeight:700, color:C.text }}>Gestión de suscripción</h2>
               <button onClick={()=>{ setPerfilSeccion(null); setConfirmCancelar(false); }} style={{ background:"none", border:"none", fontSize:20, cursor:"pointer", color:C.textLight }}>✕</button>
             </div>
 
@@ -3755,7 +3755,7 @@ export default function App() {
                 </p>
                 <div style={{ display:"flex", gap:10 }}>
                   <button onClick={()=>setConfirmCancelar(false)}
-                    style={{ flex:1, padding:"9px", borderRadius:8, border:`1px solid ${C.border}`, background:"#fff", color:C.textMid, fontSize:13, cursor:"pointer", fontFamily:"'DM Sans',sans-serif" }}>
+                    style={{ flex:1, padding:"9px", borderRadius:8, border:`1px solid ${C.border}`, background:"#fff", color:C.textMid, fontSize:13, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
                     Volver
                   </button>
                   <button
@@ -3777,14 +3777,14 @@ export default function App() {
                       }
                       setCancelandoSub(false);
                     }}
-                    style={{ flex:1, padding:"9px", borderRadius:8, border:"none", background:C.red, color:"#fff", fontSize:13, fontWeight:700, cursor:cancelandoSub?"not-allowed":"pointer", fontFamily:"'DM Sans',sans-serif" }}>
+                    style={{ flex:1, padding:"9px", borderRadius:8, border:"none", background:C.red, color:"#fff", fontSize:13, fontWeight:700, cursor:cancelandoSub?"not-allowed":"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
                     {cancelandoSub ? "Cancelando..." : "Sí, cancelar"}
                   </button>
                 </div>
               </div>
             ) : suscripcion?.estado !== "cancelando" ? (
               <button onClick={()=>setConfirmCancelar(true)}
-                style={{ width:"100%", padding:"10px", borderRadius:8, border:`1px solid ${C.border}`, background:"transparent", color:C.red, fontSize:13, cursor:"pointer", fontFamily:"'DM Sans',sans-serif", fontWeight:500 }}>
+                style={{ width:"100%", padding:"10px", borderRadius:8, border:`1px solid ${C.border}`, background:"transparent", color:C.red, fontSize:13, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", fontWeight:500 }}>
                 Cancelar suscripción
               </button>
             ) : null}
@@ -3795,9 +3795,9 @@ export default function App() {
       {/* Modal Extranets */}
       {perfilSeccion === "extranets" && (
         <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:1000 }}>
-          <div style={{ background:C.bgCard, borderRadius:16, padding:"36px 40px", width:480, boxShadow:"0 24px 60px rgba(0,0,0,0.2)", fontFamily:"'DM Sans',sans-serif" }}>
+          <div style={{ background:C.bgCard, borderRadius:16, padding:"36px 40px", width:480, boxShadow:"0 24px 60px rgba(0,0,0,0.2)", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
-              <h2 style={{ fontFamily:"'Playfair Display',serif", fontSize:20, fontWeight:700, color:C.text }}>Extranets</h2>
+              <h2 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:20, fontWeight:700, color:C.text }}>Extranets</h2>
               <button onClick={()=>setPerfilSeccion(null)} style={{ background:"none", border:"none", fontSize:20, cursor:"pointer", color:C.textLight }}>✕</button>
             </div>
             <p style={{ fontSize:12, color:C.textMid, marginBottom:24 }}>Accede directamente a la extranet de cada canal</p>
