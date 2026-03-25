@@ -3319,6 +3319,8 @@ export default function App() {
   const [importar, setImportar] = useState(false);
   const [suscripcion, setSuscripcion] = useState(null);
   const [cargandoSub, setCargandoSub] = useState(true);
+  const [confirmCancelar, setConfirmCancelar] = useState(false);
+  const [cancelandoSub, setCancelandoSub] = useState(false);
   const [datos, setDatos] = useState({ produccion: [], presupuesto: [] });
   const [cargandoDatos, setCargandoDatos] = useState(false);
 
@@ -3681,8 +3683,10 @@ export default function App() {
           <div style={{ background:C.bgCard, borderRadius:16, padding:"36px 40px", width:440, boxShadow:"0 24px 60px rgba(0,0,0,0.2)", fontFamily:"'DM Sans',sans-serif" }}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:24 }}>
               <h2 style={{ fontFamily:"'Playfair Display',serif", fontSize:20, fontWeight:700, color:C.text }}>Gestión de suscripción</h2>
-              <button onClick={()=>setPerfilSeccion(null)} style={{ background:"none", border:"none", fontSize:20, cursor:"pointer", color:C.textLight }}>✕</button>
+              <button onClick={()=>{ setPerfilSeccion(null); setConfirmCancelar(false); }} style={{ background:"none", border:"none", fontSize:20, cursor:"pointer", color:C.textLight }}>✕</button>
             </div>
+
+            {/* Datos del plan */}
             <div style={{ background:C.bg, borderRadius:10, padding:"16px 20px", marginBottom:20 }}>
               <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
                 <span style={{ fontSize:12, color:C.textMid }}>Plan</span>
@@ -3690,8 +3694,13 @@ export default function App() {
               </div>
               <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
                 <span style={{ fontSize:12, color:C.textMid }}>Estado</span>
-                <span style={{ fontSize:12, fontWeight:700, color: suscripcion?.estado==="activa"||suscripcion?.estado==="trial" ? C.green : C.red }}>
-                  {suscripcion?.estado === "trial" ? "Periodo de prueba" : suscripcion?.estado === "activa" ? "Activa" : suscripcion?.estado || "—"}
+                <span style={{ fontSize:12, fontWeight:700, color:
+                  suscripcion?.estado === "activa" || suscripcion?.estado === "trial" ? C.green :
+                  suscripcion?.estado === "cancelando" ? C.gold : C.red }}>
+                  {suscripcion?.estado === "trial" ? "Periodo de prueba"
+                    : suscripcion?.estado === "activa" ? "Activa"
+                    : suscripcion?.estado === "cancelando" ? "Cancelación programada"
+                    : suscripcion?.estado || "—"}
                 </span>
               </div>
               {suscripcion?.trial_end && suscripcion.estado === "trial" && (
@@ -3706,16 +3715,79 @@ export default function App() {
                   <span style={{ fontSize:12, fontWeight:700, color:C.text }}>{new Date(suscripcion.periodo_fin).toLocaleDateString("es-ES")}</span>
                 </div>
               )}
+              {suscripcion?.periodo_fin && suscripcion.estado === "cancelando" && (
+                <div style={{ display:"flex", justifyContent:"space-between" }}>
+                  <span style={{ fontSize:12, color:C.textMid }}>Acceso hasta</span>
+                  <span style={{ fontSize:12, fontWeight:700, color:C.text }}>{new Date(suscripcion.periodo_fin).toLocaleDateString("es-ES")}</span>
+                </div>
+              )}
             </div>
+
+            {/* Badge plan */}
             <div style={{ background:C.accentLight, borderRadius:10, padding:"12px 16px", marginBottom:20, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
               <div>
                 <p style={{ fontSize:13, fontWeight:700, color:C.accent }}>FastRevenue Básico</p>
                 <p style={{ fontSize:11, color:C.textMid }}>€49/mes + IVA</p>
               </div>
-              <span style={{ fontSize:11, fontWeight:600, color:C.green, background:C.greenLight, padding:"3px 10px", borderRadius:20 }}>Activo</span>
+              <span style={{ fontSize:11, fontWeight:600,
+                color: suscripcion?.estado === "cancelando" ? C.gold : C.green,
+                background: suscripcion?.estado === "cancelando" ? "#FEF3C7" : C.greenLight,
+                padding:"3px 10px", borderRadius:20 }}>
+                {suscripcion?.estado === "cancelando" ? "Cancela pronto" : "Activo"}
+              </span>
             </div>
-            <p style={{ fontSize:11, color:C.textLight, textAlign:"center", marginBottom:16 }}>Para cancelar tu suscripción contacta con soporte</p>
-            <a href="mailto:soporte@fastrevenue.app" style={{ display:"block", textAlign:"center", fontSize:12, color:C.accent, fontWeight:600 }}>soporte@fastrevenue.app</a>
+
+            {/* Aviso cancelación programada */}
+            {suscripcion?.estado === "cancelando" && (
+              <div style={{ background:"#FEF3C7", border:"1px solid #FCD34D", borderRadius:10, padding:"12px 16px", marginBottom:16 }}>
+                <p style={{ fontSize:12, color:"#92400E", lineHeight:1.6 }}>
+                  Tu suscripción se cancelará el <strong>{new Date(suscripcion.periodo_fin).toLocaleDateString("es-ES")}</strong>. Seguirás teniendo acceso completo hasta esa fecha.
+                </p>
+              </div>
+            )}
+
+            {/* Confirmación cancelar */}
+            {confirmCancelar && suscripcion?.estado !== "cancelando" ? (
+              <div style={{ background:"#FEF2F2", border:"1px solid #FECACA", borderRadius:10, padding:"16px", marginBottom:16 }}>
+                <p style={{ fontSize:13, fontWeight:700, color:C.red, marginBottom:6 }}>¿Confirmas la cancelación?</p>
+                <p style={{ fontSize:12, color:"#7F1D1D", lineHeight:1.6, marginBottom:14 }}>
+                  No se realizarán más cargos. Mantendrás el acceso hasta el final del período actual ({suscripcion?.periodo_fin ? new Date(suscripcion.periodo_fin).toLocaleDateString("es-ES") : "fin del período"}).
+                </p>
+                <div style={{ display:"flex", gap:10 }}>
+                  <button onClick={()=>setConfirmCancelar(false)}
+                    style={{ flex:1, padding:"9px", borderRadius:8, border:`1px solid ${C.border}`, background:"#fff", color:C.textMid, fontSize:13, cursor:"pointer", fontFamily:"'DM Sans',sans-serif" }}>
+                    Volver
+                  </button>
+                  <button
+                    disabled={cancelandoSub}
+                    onClick={async () => {
+                      setCancelandoSub(true);
+                      try {
+                        const res = await fetch("/api/cancel-subscription", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ user_id: session.user.id }),
+                        });
+                        const json = await res.json();
+                        if (!res.ok) throw new Error(json.error);
+                        setSuscripcion(s => ({ ...s, estado: "cancelando", periodo_fin: json.periodo_fin }));
+                        setConfirmCancelar(false);
+                      } catch(e) {
+                        alert("Error al cancelar: " + e.message);
+                      }
+                      setCancelandoSub(false);
+                    }}
+                    style={{ flex:1, padding:"9px", borderRadius:8, border:"none", background:C.red, color:"#fff", fontSize:13, fontWeight:700, cursor:cancelandoSub?"not-allowed":"pointer", fontFamily:"'DM Sans',sans-serif" }}>
+                    {cancelandoSub ? "Cancelando..." : "Sí, cancelar"}
+                  </button>
+                </div>
+              </div>
+            ) : suscripcion?.estado !== "cancelando" ? (
+              <button onClick={()=>setConfirmCancelar(true)}
+                style={{ width:"100%", padding:"10px", borderRadius:8, border:`1px solid ${C.border}`, background:"transparent", color:C.red, fontSize:13, cursor:"pointer", fontFamily:"'DM Sans',sans-serif", fontWeight:500 }}>
+                Cancelar suscripción
+              </button>
+            ) : null}
           </div>
         </div>
       )}

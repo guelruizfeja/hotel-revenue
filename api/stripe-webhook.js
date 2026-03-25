@@ -61,6 +61,24 @@ export default async function handler(req, res) {
     }).eq('stripe_subscription_id', invoice.subscription);
   }
 
+  if (type === 'customer.subscription.updated') {
+    const subscription = data.object;
+    if (subscription.cancel_at_period_end) {
+      const periodo_fin = new Date(subscription.current_period_end * 1000).toISOString();
+      await supabase.from('suscripciones').update({
+        estado: 'cancelando',
+        periodo_fin,
+      }).eq('stripe_subscription_id', subscription.id);
+    } else if (subscription.status === 'active') {
+      // Reactivación
+      const periodo_fin = new Date(subscription.current_period_end * 1000).toISOString();
+      await supabase.from('suscripciones').update({
+        estado: 'activa',
+        periodo_fin,
+      }).eq('stripe_subscription_id', subscription.id);
+    }
+  }
+
   if (type === 'customer.subscription.deleted' || type === 'invoice.payment_failed') {
     const obj = data.object;
     const sub_id = obj.subscription || obj.id;
