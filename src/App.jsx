@@ -545,9 +545,11 @@ function ImportarExcel({ onClose, session, onImportado }) {
   const vaciarDatos = async () => {
     setVaciando(true); setError("");
     try {
-      await supabase.from("produccion_diaria").delete().eq("hotel_id", session.user.id);
-      await supabase.from("pickup_entries").delete().eq("hotel_id", session.user.id);
-      await supabase.from("presupuesto").delete().eq("hotel_id", session.user.id);
+      await Promise.all([
+        supabase.from("produccion_diaria").delete().eq("hotel_id", session.user.id),
+        supabase.from("pickup_entries").delete().eq("hotel_id", session.user.id),
+        supabase.from("presupuesto").delete().eq("hotel_id", session.user.id),
+      ]);
       setConfirmVaciar(false);
       onImportado();
       onClose();
@@ -709,38 +711,48 @@ function ImportarExcel({ onClose, session, onImportado }) {
       const aniosPickup = [...new Set(pickupRows.map(r => r.fecha_llegada.slice(0, 4)))];
       const todosAnios  = [...new Set([...aniosImport, ...aniosPickup])];
 
-      for (const anio of aniosImport) {
-        await supabase.from("produccion_diaria").delete()
-          .eq("hotel_id", session.user.id)
-          .gte("fecha", `${anio}-01-01`).lte("fecha", `${anio}-12-31`);
-        await supabase.from("presupuesto").delete()
-          .eq("hotel_id", session.user.id).eq("anio", parseInt(anio));
-      }
-      for (const anio of todosAnios) {
-        await supabase.from("pickup_entries").delete()
-          .eq("hotel_id", session.user.id)
-          .gte("fecha_llegada", `${anio}-01-01`).lte("fecha_llegada", `${anio}-12-31`);
-      }
+      await Promise.all([
+        ...aniosImport.flatMap(anio => [
+          supabase.from("produccion_diaria").delete()
+            .eq("hotel_id", session.user.id)
+            .gte("fecha", `${anio}-01-01`).lte("fecha", `${anio}-12-31`),
+          supabase.from("presupuesto").delete()
+            .eq("hotel_id", session.user.id).eq("anio", parseInt(anio)),
+        ]),
+        ...todosAnios.map(anio =>
+          supabase.from("pickup_entries").delete()
+            .eq("hotel_id", session.user.id)
+            .gte("fecha_llegada", `${anio}-01-01`).lte("fecha_llegada", `${anio}-12-31`)
+        ),
+      ]);
 
-      const { error: err1 } = await supabase.from("produccion_diaria").insert(produccionRows);
-      if (err1) throw new Error("Error al guardar producción: " + err1.message);
+      const insertPromises = [
+        supabase.from("produccion_diaria").insert(produccionRows).then(({ error }) => {
+          if (error) throw new Error("Error al guardar producción: " + error.message);
+        }),
+        presupuestoRows.length > 0
+          ? supabase.from("presupuesto").insert(presupuestoRows).then(({ error }) => {
+              if (error) throw new Error("Error al guardar presupuesto: " + error.message);
+            })
+          : Promise.resolve(),
+      ];
 
       if (pickupRows.length > 0) {
-        const LOTE = 200;
+        const LOTE = 500;
         const total = pickupRows.length;
-        for (let i = 0; i < total; i += LOTE) {
-          setProgreso(`Guardando pickup... ${Math.min(i+LOTE, total)} de ${total}`);
-          const { error: errPu } = await supabase.from("pickup_entries").insert(pickupRows.slice(i, i + LOTE));
-          if (errPu) throw new Error("Error al guardar pickup: " + errPu.message);
-          await new Promise(r => setTimeout(r, 50));
-        }
-        setProgreso("");
+        const lotes = [];
+        for (let i = 0; i < total; i += LOTE) lotes.push(pickupRows.slice(i, i + LOTE));
+        insertPromises.push(
+          Promise.all(lotes.map((lote, idx) =>
+            supabase.from("pickup_entries").insert(lote).then(({ error }) => {
+              if (error) throw new Error("Error al guardar pickup: " + error.message);
+              setProgreso(`Guardando pickup... ${Math.min((idx+1)*LOTE, total)} de ${total}`);
+            })
+          )).then(() => setProgreso(""))
+        );
       }
 
-      if (presupuestoRows.length > 0) {
-        const { error: err3 } = await supabase.from("presupuesto").insert(presupuestoRows);
-        if (err3) throw new Error("Error al guardar presupuesto: " + err3.message);
-      }
+      await Promise.all(insertPromises);
 
       // ── Grupos & Eventos ──
       const wsGr = wb.Sheets["🎪 Grupos y Eventos"];
