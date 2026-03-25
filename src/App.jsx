@@ -539,6 +539,7 @@ function ImportarExcel({ onClose, session, onImportado }) {
   const [resultado, setResultado] = useState(null);
   const [error, setError] = useState("");
   const [progreso, setProgreso] = useState("");
+  const [progresoPct, setProgresoPct] = useState(0);
   const [vaciando, setVaciando] = useState(false);
   const [confirmVaciar, setConfirmVaciar] = useState(false);
 
@@ -560,11 +561,13 @@ function ImportarExcel({ onClose, session, onImportado }) {
   };
 
   const procesarExcel = async (file) => {
-    setLoading(true); setError(""); setResultado(null);
+    setLoading(true); setError(""); setResultado(null); setProgresoPct(0);
     try {
+      setProgreso("Leyendo archivo..."); setProgresoPct(5);
       const XLSX = await import("xlsx");
       const data = await file.arrayBuffer();
       const wb = XLSX.read(data);
+      setProgresoPct(15);
 
       // ── Producción Diaria ──
       const ws = wb.Sheets["📅 Producción Diaria"];
@@ -705,12 +708,15 @@ function ImportarExcel({ onClose, session, onImportado }) {
 
       if (produccionRows.length === 0) throw new Error("No se encontraron datos en la hoja de Producción Diaria");
 
+      setProgreso("Procesando hojas..."); setProgresoPct(30);
+
       // Detectar años y limpiar
       const aniosImport = [...new Set(produccionRows.map(r => r.fecha.slice(0, 4)))];
       // Años en pickup (por fecha_llegada)
       const aniosPickup = [...new Set(pickupRows.map(r => r.fecha_llegada.slice(0, 4)))];
       const todosAnios  = [...new Set([...aniosImport, ...aniosPickup])];
 
+      setProgreso("Limpiando datos anteriores..."); setProgresoPct(40);
       await Promise.all([
         ...aniosImport.flatMap(anio => [
           supabase.from("produccion_diaria").delete()
@@ -726,9 +732,12 @@ function ImportarExcel({ onClose, session, onImportado }) {
         ),
       ]);
 
+      setProgreso("Guardando datos..."); setProgresoPct(55);
+
       const insertPromises = [
         supabase.from("produccion_diaria").insert(produccionRows).then(({ error }) => {
           if (error) throw new Error("Error al guardar producción: " + error.message);
+          setProgresoPct(p => Math.max(p, 70));
         }),
         presupuestoRows.length > 0
           ? supabase.from("presupuesto").insert(presupuestoRows).then(({ error }) => {
@@ -746,6 +755,8 @@ function ImportarExcel({ onClose, session, onImportado }) {
           Promise.all(lotes.map((lote, idx) =>
             supabase.from("pickup_entries").insert(lote).then(({ error }) => {
               if (error) throw new Error("Error al guardar pickup: " + error.message);
+              const pct = Math.round(55 + ((idx + 1) / lotes.length) * 35);
+              setProgresoPct(pct);
               setProgreso(`Guardando pickup... ${Math.min((idx+1)*LOTE, total)} de ${total}`);
             })
           )).then(() => setProgreso(""))
@@ -753,6 +764,7 @@ function ImportarExcel({ onClose, session, onImportado }) {
       }
 
       await Promise.all(insertPromises);
+      setProgresoPct(90);
 
       // ── Grupos & Eventos ──
       const wsGr = wb.Sheets["🎪 Grupos y Eventos"];
@@ -804,10 +816,12 @@ function ImportarExcel({ onClose, session, onImportado }) {
         await supabase.from("hoteles").update({ habitaciones: totalHab }).eq("id", session.user.id);
       }
 
+      setProgresoPct(100);
       setResultado({ produccion: produccionRows.length, pickup: pickupRows.length, presupuesto: presupuestoRows.length });
       if (onImportado) onImportado();
     } catch (e) {
       setError(e.message);
+      setProgresoPct(0);
     }
     setLoading(false);
   };
@@ -839,10 +853,17 @@ function ImportarExcel({ onClose, session, onImportado }) {
                 🗑️ Vaciar todos los datos importados
               </button>
             )}
-<div onClick={() => document.getElementById("excel-input").click()} style={{ border: "2px dashed #E8E0D5", borderRadius: 8, padding: "40px 20px", textAlign: "center", cursor: "pointer", background: "#F7F3EE", marginBottom: 16 }}>
-              
+<div onClick={() => !loading && document.getElementById("excel-input").click()} style={{ border: "2px dashed #E8E0D5", borderRadius: 8, padding: "40px 20px", textAlign: "center", cursor: loading ? "default" : "pointer", background: "#F7F3EE", marginBottom: 16 }}>
               <p style={{ fontWeight: 600, color: "#1C1814", marginBottom: 6 }}>{progreso || (loading ? "Procesando..." : "Haz clic para seleccionar el archivo")}</p>
               <p style={{ fontSize: 12, color: "#A8998A" }}>Formato .xlsx · Plantilla FastRev</p>
+              {loading && (
+                <div style={{ marginTop: 16 }}>
+                  <div style={{ background: "#E8E0D5", borderRadius: 999, height: 8, overflow: "hidden" }}>
+                    <div style={{ height: "100%", borderRadius: 999, background: "linear-gradient(90deg, #C8A96E, #A07840)", width: `${progresoPct}%`, transition: "width 0.4s ease" }} />
+                  </div>
+                  <p style={{ fontSize: 11, color: "#A8998A", marginTop: 6 }}>{progresoPct}%</p>
+                </div>
+              )}
               <input id="excel-input" type="file" accept=".xlsx" style={{ display: "none" }} onChange={e => e.target.files[0] && procesarExcel(e.target.files[0])} />
             </div>
             {error && <div style={{ background: "#FDECEA", color: "#C0392B", padding: "12px 16px", borderRadius: 8, fontSize: 13, marginBottom: 12 }}>⚠️ {error}</div>}
