@@ -4,6 +4,9 @@
     { "source": "/home/(.*)", "destination": "/index.html" }
   ],
   "routes": [
-    { "src": "/", "dest": "/landing.html" }
+    { "src": "/", "dest": "/landing.html" },
+    { "src": "/aviso-legal", "dest": "/aviso-legal.html" },
+    { "src": "/privacidad", "dest": "/privacidad.html" },
+    { "src": "/terminos", "dest": "/terminos.html" }
   ]
 }

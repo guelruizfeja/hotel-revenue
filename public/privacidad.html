@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Política de Privacidad — FastRevenue</title>
+<link rel="icon" type="image/png" href="/fastrev-logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --navy: #0A2540;
+    --gold: #B8860B;
+    --gray: #6B7280;
+    --text: #111827;
+    --bg: #FAFBFC;
+    --border: #E5E7EB;
+  }
+  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); }
+  nav {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(255,255,255,0.97); backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 6vw; height: 58px;
+  }
+  nav a { text-decoration: none; }
+  .nav-logo img { height: 28px; }
+  .nav-back { font-size: 13px; color: var(--gray); display: flex; align-items: center; gap: 6px; }
+  .nav-back:hover { color: var(--navy); }
+  .wrapper { max-width: 760px; margin: 0 auto; padding: 60px 24px 100px; }
+  .badge {
+    display: inline-block; background: var(--navy); color: #fff;
+    font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
+    padding: 4px 12px; border-radius: 4px; margin-bottom: 20px;
+  }
+  h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(28px, 4vw, 40px); font-weight: 700;
+    color: var(--navy); margin-bottom: 8px; line-height: 1.15;
+  }
+  .meta { font-size: 13px; color: var(--gray); margin-bottom: 48px; }
+  h2 {
+    font-size: 15px; font-weight: 600; color: var(--navy);
+    margin: 36px 0 10px; text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  p { font-size: 14px; line-height: 1.75; color: #374151; margin-bottom: 12px; }
+  ul { padding-left: 20px; margin-bottom: 12px; }
+  li { font-size: 14px; line-height: 1.75; color: #374151; margin-bottom: 4px; }
+  a { color: var(--gold); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+  .table-wrap { overflow-x: auto; margin-bottom: 16px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { background: var(--navy); color: #fff; padding: 10px 14px; text-align: left; font-weight: 500; }
+  td { padding: 10px 14px; border-bottom: 1px solid var(--border); color: #374151; vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  footer {
+    background: var(--navy); color: rgba(255,255,255,0.4);
+    text-align: center; padding: 28px 24px; font-size: 12px;
+  }
+  footer a { color: rgba(255,255,255,0.5); text-decoration: none; margin: 0 10px; }
+  footer a:hover { color: #fff; }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="nav-logo"><img src="/fastrev-logo.png" alt="FastRevenue"></a>
+  <a href="/" class="nav-back">← Volver al inicio</a>
+</nav>
+
+<div class="wrapper">
+  <span class="badge">Legal</span>
+  <h1>Política de Privacidad</h1>
+  <p class="meta">Última actualización: marzo de 2025</p>
+
+  <h2>1. Responsable del tratamiento</h2>
+  <p>
+    <strong>Nombre:</strong> Miguel Ruiz<br>
+    <strong>NIF:</strong> 73051069X<br>
+    <strong>Domicilio:</strong> Calle Matilde Sanguesa 21, 2B<br>
+    <strong>Contacto:</strong> <a href="mailto:info@fastrevenue.app">info@fastrevenue.app</a>
+  </p>
+  <p>En adelante, «el Responsable» o «FastRevenue».</p>
+
+  <hr>
+
+  <h2>2. Datos que recogemos</h2>
+  <p>FastRevenue recoge únicamente los datos necesarios para prestar el servicio:</p>
+  <ul>
+    <li><strong>Datos de cuenta:</strong> dirección de correo electrónico y contraseña (cifrada) para el acceso a la plataforma.</li>
+    <li><strong>Datos del hotel:</strong> nombre del establecimiento y número de habitaciones, facilitados voluntariamente por el usuario.</li>
+    <li><strong>Datos operativos:</strong> producción diaria (ocupación, revenue), pickup de reservas, presupuesto y grupos/eventos, que el usuario importa desde su propia plantilla Excel.</li>
+    <li><strong>Datos de facturación:</strong> gestionados íntegramente por Stripe; FastRevenue no almacena datos de tarjeta de crédito.</li>
+    <li><strong>Datos de uso:</strong> logs técnicos básicos para el correcto funcionamiento del servicio (sin tracking de comportamiento ni publicidad).</li>
+  </ul>
+
+  <h2>3. Finalidad y base legitimadora</h2>
+  <div class="table-wrap">
+    <table>
+      <tr>
+        <th>Finalidad</th>
+        <th>Base jurídica (RGPD art. 6)</th>
+      </tr>
+      <tr>
+        <td>Prestación del servicio contratado</td>
+        <td>Ejecución del contrato (art. 6.1.b)</td>
+      </tr>
+      <tr>
+        <td>Gestión del acceso y autenticación</td>
+        <td>Ejecución del contrato (art. 6.1.b)</td>
+      </tr>
+      <tr>
+        <td>Facturación y cobro de la suscripción</td>
+        <td>Ejecución del contrato (art. 6.1.b)</td>
+      </tr>
+      <tr>
+        <td>Comunicaciones sobre el servicio (avisos, actualizaciones)</td>
+        <td>Interés legítimo (art. 6.1.f)</td>
+      </tr>
+      <tr>
+        <td>Cumplimiento de obligaciones legales</td>
+        <td>Obligación legal (art. 6.1.c)</td>
+      </tr>
+    </table>
+  </div>
+
+  <h2>4. Encargados del tratamiento</h2>
+  <p>FastRevenue utiliza los siguientes proveedores de confianza, con los que mantiene el correspondiente contrato de encargado del tratamiento (DPA):</p>
+  <div class="table-wrap">
+    <table>
+      <tr>
+        <th>Proveedor</th>
+        <th>Función</th>
+        <th>Ubicación</th>
+      </tr>
+      <tr>
+        <td><strong>Supabase, Inc.</strong></td>
+        <td>Base de datos y autenticación</td>
+        <td>UE (región eu-west)</td>
+      </tr>
+      <tr>
+        <td><strong>Stripe, Inc.</strong></td>
+        <td>Procesamiento de pagos</td>
+        <td>UE / EEUU (con SCCs)</td>
+      </tr>
+      <tr>
+        <td><strong>Vercel, Inc.</strong></td>
+        <td>Hospedaje de la aplicación web</td>
+        <td>UE / EEUU (con SCCs)</td>
+      </tr>
+    </table>
+  </div>
+  <p>Las transferencias a países fuera del EEE se realizan bajo las Cláusulas Contractuales Tipo (SCCs) aprobadas por la Comisión Europea.</p>
+
+  <h2>5. Plazo de conservación</h2>
+  <p>Los datos de cuenta y operativos se conservan mientras el usuario mantenga su suscripción activa. Tras la baja, los datos se eliminan en un plazo máximo de <strong>30 días</strong>, salvo los datos de facturación, que se conservan durante <strong>5 años</strong> para cumplir con las obligaciones fiscales y contables.</p>
+
+  <h2>6. Derechos del usuario</h2>
+  <p>Conforme al RGPD y la LOPDGDD, el usuario tiene derecho a:</p>
+  <ul>
+    <li><strong>Acceso:</strong> obtener confirmación de si se tratan sus datos y acceder a ellos.</li>
+    <li><strong>Rectificación:</strong> solicitar la corrección de datos inexactos.</li>
+    <li><strong>Supresión («derecho al olvido»):</strong> solicitar la eliminación de sus datos.</li>
+    <li><strong>Limitación del tratamiento:</strong> solicitar que el tratamiento quede restringido en determinadas circunstancias.</li>
+    <li><strong>Portabilidad:</strong> recibir sus datos en formato estructurado y de uso común.</li>
+    <li><strong>Oposición:</strong> oponerse al tratamiento basado en interés legítimo.</li>
+  </ul>
+  <p>Para ejercer cualquiera de estos derechos, envía un correo a <a href="mailto:info@fastrevenue.app">info@fastrevenue.app</a> indicando tu solicitud y adjuntando una copia de tu documento de identidad. Responderemos en el plazo máximo de <strong>30 días</strong>.</p>
+  <p>Si consideras que el tratamiento no es conforme a la normativa, puedes presentar una reclamación ante la <strong>Agencia Española de Protección de Datos</strong> (<a href="https://www.aepd.es" target="_blank" rel="noopener">www.aepd.es</a>).</p>
+
+  <h2>7. Seguridad</h2>
+  <p>FastRevenue aplica medidas técnicas y organizativas adecuadas para proteger los datos frente a accesos no autorizados, pérdida o alteración: cifrado en tránsito (TLS), cifrado en reposo en la base de datos, acceso restringido con autenticación segura y contraseñas hasheadas.</p>
+
+  <h2>8. Cookies</h2>
+  <p>FastRevenue utiliza únicamente cookies técnicas estrictamente necesarias para el funcionamiento de la sesión de usuario. No se usan cookies publicitarias ni de seguimiento de terceros.</p>
+</div>
+
+<footer>
+  <p>© 2025 FastRevenue · Miguel Ruiz · NIF 73051069X</p>
+  <p style="margin-top:8px;">
+    <a href="/aviso-legal.html">Aviso Legal</a>
+    <a href="/privacidad.html">Privacidad</a>
+    <a href="/terminos.html">Términos</a>
+  </p>
+</footer>
+
+</body>
+</html>
