@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Página no encontrada — FastRevenue</title>
+<link rel="icon" type="image/png" href="/fastrev-logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --navy: #0A2540;
+    --gold: #B8860B;
+    --gray: #6B7280;
+    --text: #111827;
+    --bg: #FAFBFC;
+    --border: #E5E7EB;
+  }
+  body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    background: var(--bg); color: var(--text);
+    min-height: 100vh; display: flex; flex-direction: column;
+  }
+  nav {
+    background: rgba(255,255,255,0.97); backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 6vw; height: 58px; flex-shrink: 0;
+  }
+  nav a { text-decoration: none; }
+  .nav-logo img { height: 28px; }
+  main {
+    flex: 1; display: flex; align-items: center; justify-content: center;
+    padding: 60px 24px;
+  }
+  .container { text-align: center; max-width: 480px; }
+  .code {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(80px, 18vw, 130px); font-weight: 700;
+    color: var(--navy); line-height: 1; margin-bottom: 8px;
+    opacity: 0.12; user-select: none;
+  }
+  h1 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(24px, 4vw, 34px); font-weight: 700;
+    color: var(--navy); margin-bottom: 14px; line-height: 1.2;
+  }
+  p {
+    font-size: 14px; line-height: 1.7; color: var(--gray);
+    margin-bottom: 36px;
+  }
+  .actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+  .btn-primary {
+    background: var(--navy); color: #fff;
+    font-size: 13px; font-weight: 500; letter-spacing: 0.2px;
+    padding: 11px 28px; border-radius: 6px;
+    text-decoration: none; transition: opacity 0.2s;
+  }
+  .btn-primary:hover { opacity: 0.85; }
+  .btn-secondary {
+    background: transparent; color: var(--navy);
+    font-size: 13px; font-weight: 500; letter-spacing: 0.2px;
+    padding: 11px 28px; border-radius: 6px; border: 1px solid var(--border);
+    text-decoration: none; transition: border-color 0.2s;
+  }
+  .btn-secondary:hover { border-color: var(--navy); }
+  footer {
+    background: var(--navy); color: rgba(255,255,255,0.4);
+    text-align: center; padding: 28px 24px; font-size: 12px; flex-shrink: 0;
+  }
+  footer a { color: rgba(255,255,255,0.5); text-decoration: none; margin: 0 10px; }
+  footer a:hover { color: #fff; }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="nav-logo"><img src="/fastrev-logo.png" alt="FastRevenue"></a>
+</nav>
+
+<main>
+  <div class="container">
+    <div class="code">404</div>
+    <h1>Página no encontrada</h1>
+    <p>La URL que buscas no existe o ha sido movida.<br>Comprueba la dirección o vuelve al inicio.</p>
+    <div class="actions">
+      <a href="/" class="btn-primary">Volver al inicio</a>
+      <a href="mailto:info@fastrevenue.app" class="btn-secondary">Contactar</a>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <p>© 2025 FastRevenue · Miguel Ruiz · NIF 73051069X</p>
+  <p style="margin-top:8px;">
+    <a href="/aviso-legal.html">Aviso Legal</a>
+    <a href="/privacidad.html">Privacidad</a>
+    <a href="/terminos.html">Términos</a>
+    <a href="/cookies.html">Cookies</a>
+  </p>
+</footer>
+
+</body>
+</html>

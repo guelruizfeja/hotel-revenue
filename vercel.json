@@ -1,12 +1,13 @@
 {
-  "rewrites": [
-    { "source": "/home", "destination": "/index.html" },
-    { "source": "/home/(.*)", "destination": "/index.html" }
-  ],
   "routes": [
     { "src": "/", "dest": "/landing.html" },
+    { "src": "/home", "dest": "/index.html" },
+    { "src": "/home/(.*)", "dest": "/index.html" },
     { "src": "/aviso-legal", "dest": "/aviso-legal.html" },
     { "src": "/privacidad", "dest": "/privacidad.html" },
-    { "src": "/terminos", "dest": "/terminos.html" }
+    { "src": "/terminos", "dest": "/terminos.html" },
+    { "src": "/cookies", "dest": "/cookies.html" },
+    { "handle": "error" },
+    { "status": 404, "dest": "/404.html" }
   ]
 }
