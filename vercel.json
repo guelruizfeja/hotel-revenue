@@ -7,7 +7,6 @@
     { "src": "/privacidad", "dest": "/privacidad.html" },
     { "src": "/terminos", "dest": "/terminos.html" },
     { "src": "/cookies", "dest": "/cookies.html" },
-    { "handle": "error" },
-    { "status": 404, "dest": "/404.html" }
+    { "src": "/(.*)", "status": 404, "dest": "/404.html" }
   ]
 }
