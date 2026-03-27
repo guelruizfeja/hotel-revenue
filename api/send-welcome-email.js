@@ -151,7 +151,7 @@ export default async function handler(req, res) {
           <tr>
             <td align="center" style="padding:24px 0 0;">
               <p style="margin:0 0 8px;font-size:12px;color:#9CA3AF;">
-                FastRevenue · Miguel Ruiz · NIF 73051069X
+                FastRevenue
               </p>
               <p style="margin:0;font-size:11px;color:#D1D5DB;">
                 <a href="https://fastrevenue.app/privacidad" style="color:#9CA3AF;text-decoration:none;">Privacidad</a>
