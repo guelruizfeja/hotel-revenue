@@ -110,7 +110,7 @@ const TRANSLATIONS = {
     feat_presupuesto:"Presupuesto vs real mensual", feat_pdf:"Informes PDF mensuales",
     feat_alertas:"Alertas automáticas",
     // Alertas
-    alertas_ok:"Todo en orden, sin alertas activas",
+    alertas_title:"Alertas", alertas_ok:"Todo en orden, sin alertas activas",
     ver_pickup:"→ Ver Pickup", importar_datos:"→ Importar datos", ver_mas:"→ Ver más",
     // General
     generando:"Generando...", cancelar:"Cancelar", guardar:"Guardar", eliminar:"Eliminar",
@@ -195,7 +195,7 @@ const TRANSLATIONS = {
     feat_dashboard:"Real-time KPI dashboard", feat_pickup:"Pickup and forecast analysis",
     feat_presupuesto:"Budget vs actual monthly", feat_pdf:"Monthly PDF reports",
     feat_alertas:"Automatic alerts",
-    alertas_ok:"All clear, no active alerts",
+    alertas_title:"Alerts", alertas_ok:"All clear, no active alerts",
     ver_pickup:"→ View Pickup", importar_datos:"→ Import data", ver_mas:"→ See more",
     generando:"Generating...", cancelar:"Cancel", guardar:"Save", eliminar:"Delete",
     si:"Yes", no:"No", todos:"All",
@@ -279,7 +279,7 @@ const TRANSLATIONS = {
     feat_dashboard:"Dashboard KPIs en temps réel", feat_pickup:"Analyse pickup et prévisions",
     feat_presupuesto:"Budget vs réel mensuel", feat_pdf:"Rapports PDF mensuels",
     feat_alertas:"Alertes automatiques",
-    alertas_ok:"Tout est en ordre, aucune alerte active",
+    alertas_title:"Alertes", alertas_ok:"Tout est en ordre, aucune alerte active",
     ver_pickup:"→ Voir Pickup", importar_datos:"→ Importer données", ver_mas:"→ Voir plus",
     generando:"Génération...", cancelar:"Annuler", guardar:"Enregistrer", eliminar:"Supprimer",
     si:"Oui", no:"Non", todos:"Tous",
@@ -321,8 +321,10 @@ function Card({ children, style = {} }) {
 
 
 // ─── KPI MODAL ───────────────────────────────────────────────────
+const KPI_TKEYS = { "Ocupación":"kpi_ocupacion", "ADR":"kpi_adr", "RevPAR":"kpi_revpar", "TRevPAR":"kpi_trevpar", "Revenue Diario":"kpi_rev_diario", "Revenue Total":"kpi_rev_total" };
 function KpiModal({ kpi, datos, mes, anio, onClose }) {
   const t = useT();
+  const kpiLabel = t(KPI_TKEYS[kpi]) || kpi;
   const compMode = "mes";
 
   useEffect(() => {
@@ -435,7 +437,7 @@ function KpiModal({ kpi, datos, mes, anio, onClose }) {
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20 }}>
           <div>
             <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:2 }}>{MESES_FULL[mes]} {anio}</p>
-            <h3 style={{ fontSize:22, fontWeight:800, color:C.text, fontFamily:"'Plus Jakarta Sans',sans-serif", letterSpacing:-0.5 }}>{kpi}</h3>
+            <h3 style={{ fontSize:22, fontWeight:800, color:C.text, fontFamily:"'Plus Jakarta Sans',sans-serif", letterSpacing:-0.5 }}>{kpiLabel}</h3>
           </div>
           <div style={{ display:"flex", alignItems:"center", gap:8 }}>
             <button onClick={onClose} style={{ background:"none", border:`1.5px solid ${C.border}`, borderRadius:8, width:34, height:34, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", fontSize:16, color:C.textMid, fontWeight:300, transition:"all 0.15s" }}
@@ -766,7 +768,7 @@ function AlertasPanel({ alertas, onClose, onNavegar }) {
   return (
     <div style={{ position:"absolute", top:54, right:0, width:360, background:C.bgCard, border:`1px solid ${C.border}`, borderRadius:12, boxShadow:"0 8px 32px rgba(0,0,0,0.12)", zIndex:200, overflow:"hidden" }}>
       <div style={{ padding:"14px 16px", borderBottom:`1px solid ${C.border}`, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-        <p style={{ fontSize:13, fontWeight:700, color:C.text }}>Alertas <span style={{ background:C.accent, color:"#fff", borderRadius:10, padding:"1px 7px", fontSize:11, marginLeft:6 }}>{alertas.length}</span></p>
+        <p style={{ fontSize:13, fontWeight:700, color:C.text }}>{t("alertas_title")} <span style={{ background:C.accent, color:"#fff", borderRadius:10, padding:"1px 7px", fontSize:11, marginLeft:6 }}>{alertas.length}</span></p>
         <button onClick={onClose} style={{ background:"none", border:"none", cursor:"pointer", color:C.textLight, fontSize:16 }}>✕</button>
       </div>
       <div style={{ maxHeight:380, overflowY:"auto" }}>
@@ -1755,10 +1757,10 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
   };
 
   const kpis = [
-    { label: t("kpi_ocupacion"), value: `${occ}%`,    ...diff(parseFloat(occ), prevOcc) },
-    { label: t("kpi_adr"),       value: `€${adr}`,    ...diff(parseFloat(adr), prevAdr) },
-    { label: t("kpi_revpar"),    value: `€${revpar}`,  ...diff(parseFloat(revpar), prevRevpar) },
-    { label: t("kpi_trevpar"),   value: `€${trevpar}`, ...diff(parseFloat(trevpar), prevTrevpar) },
+    { label: t("kpi_ocupacion"), kpiKey:"Ocupación",    value: `${occ}%`,    ...diff(parseFloat(occ), prevOcc) },
+    { label: t("kpi_adr"),       kpiKey:"ADR",           value: `€${adr}`,    ...diff(parseFloat(adr), prevAdr) },
+    { label: t("kpi_revpar"),    kpiKey:"RevPAR",        value: `€${revpar}`,  ...diff(parseFloat(revpar), prevRevpar) },
+    { label: t("kpi_trevpar"),   kpiKey:"TRevPAR",       value: `€${trevpar}`, ...diff(parseFloat(trevpar), prevTrevpar) },
     { label: t("kpi_rev_diario"), value: `€${datosMes.length > 0 ? Math.round(totalRevTotal / datosMes.length).toLocaleString("es-ES") : 0}`,
       ...(() => {
         const diasPrev = prevRevTot > 0 ? (datos.produccion||[]).filter(d => { const f=new Date(d.fecha+"T00:00:00"); return f.getMonth()===(mes===0?11:mes-1) && f.getFullYear()===(mes===0?anio-1:anio); }).length : 0;
@@ -1788,7 +1790,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(clamp(140px,40vw,200px), 1fr))", gap: 10, marginBottom: 20 }}>
-        {kpis.map((k, i) => <KpiCard key={i} {...k} i={i} onClick={()=>setKpiModal(k.label)} />)}
+        {kpis.map((k, i) => <KpiCard key={i} {...k} i={i} onClick={()=>setKpiModal(k.kpiKey)} />)}
       </div>
 
 
@@ -3934,7 +3936,7 @@ export default function App() {
         <div style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", pointerEvents: "none", display: "flex", alignItems: "center", gap: 12 }}>
           <img src="/fastrev-logo.png" alt="FastRevenue" style={{ height: 92, width: "auto", transform: "scaleX(1.08)" }} />
           <span className="topbar-date" style={{ fontSize: 12, color: "#000000", fontWeight: 500, fontFamily: "'Plus Jakarta Sans', sans-serif", letterSpacing: 0.3, whiteSpace: "nowrap" }}>
-            {new Date().toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).replace(/^\w/, c => c.toUpperCase())}
+            {new Date().toLocaleDateString(lang === "en" ? "en-GB" : lang === "fr" ? "fr-FR" : "es-ES", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).replace(/^\w/, c => c.toUpperCase())}
           </span>
         </div>
 
