@@ -112,6 +112,14 @@ const TRANSLATIONS = {
     // Alertas
     alertas_title:"Alertas", alertas_ok:"Todo en orden, sin alertas activas",
     ver_pickup:"→ Ver Pickup", importar_datos:"→ Importar datos", ver_mas:"→ Ver más",
+    prox_semana:"Próx. semana", prox_mes:"Próx. mes", anio_actual:"Año actual",
+    otb_actual:"OTB Actual", anio_anterior:"Año Anterior",
+    pace_title:"Pace — Próximos 6 meses", pace_sub:"OCC en cartera vs Presupuesto y Año Anterior",
+    sin_datos_pickup:"Sin datos de pickup",
+    budget_empty:"Importa tu plantilla Excel con los datos de la hoja 💰 Presupuesto para ver el análisis aquí",
+    rev_total_label:"Revenue Total", ppto_abrev:"Ppto.", real_label:"Real",
+    chart_rev:"Revenue Total — Ppto. vs Real vs Forecast",
+    chart_adr:"ADR — Ppto. vs Real", chart_revpar:"RevPAR — Ppto. vs Real",
     // General
     generando:"Generando...", cancelar:"Cancelar", guardar:"Guardar", eliminar:"Eliminar",
     si:"Sí", no:"No", todos:"Todos",
@@ -197,6 +205,14 @@ const TRANSLATIONS = {
     feat_alertas:"Automatic alerts",
     alertas_title:"Alerts", alertas_ok:"All clear, no active alerts",
     ver_pickup:"→ View Pickup", importar_datos:"→ Import data", ver_mas:"→ See more",
+    prox_semana:"Next week", prox_mes:"Next month", anio_actual:"Current year",
+    otb_actual:"Current OTB", anio_anterior:"Previous Year",
+    pace_title:"Pace — Next 6 months", pace_sub:"OCC pipeline vs Budget and Previous Year",
+    sin_datos_pickup:"No pickup data",
+    budget_empty:"Import your Excel template with the 💰 Budget sheet data to see the analysis here",
+    rev_total_label:"Total Revenue", ppto_abrev:"Budget", real_label:"Actual",
+    chart_rev:"Total Revenue — Budget vs Actual vs Forecast",
+    chart_adr:"ADR — Budget vs Actual", chart_revpar:"RevPAR — Budget vs Actual",
     generando:"Generating...", cancelar:"Cancel", guardar:"Save", eliminar:"Delete",
     si:"Yes", no:"No", todos:"All",
   },
@@ -281,6 +297,14 @@ const TRANSLATIONS = {
     feat_alertas:"Alertes automatiques",
     alertas_title:"Alertes", alertas_ok:"Tout est en ordre, aucune alerte active",
     ver_pickup:"→ Voir Pickup", importar_datos:"→ Importer données", ver_mas:"→ Voir plus",
+    prox_semana:"Sem. prochaine", prox_mes:"Mois prochain", anio_actual:"Année en cours",
+    otb_actual:"OTB Actuel", anio_anterior:"Année Précédente",
+    pace_title:"Pace — 6 prochains mois", pace_sub:"OCC en portefeuille vs Budget et Année Précédente",
+    sin_datos_pickup:"Pas de données pickup",
+    budget_empty:"Importez votre modèle Excel avec les données de la feuille 💰 Budget pour voir l'analyse ici",
+    rev_total_label:"Revenu Total", ppto_abrev:"Budget", real_label:"Réel",
+    chart_rev:"Revenu Total — Budget vs Réel vs Prévision",
+    chart_adr:"ADR — Budget vs Réel", chart_revpar:"RevPAR — Budget vs Réel",
     generando:"Génération...", cancelar:"Annuler", guardar:"Enregistrer", eliminar:"Supprimer",
     si:"Oui", no:"Non", todos:"Tous",
   },
@@ -2386,7 +2410,7 @@ function PickupView({ datos }) {
                     </div>
                   </div>
                 );
-              })() : <p style={{ fontSize:12, color:C.textLight }}>Sin datos</p>}
+              })() : <p style={{ fontSize:12, color:C.textLight }}>{t("sin_datos")}</p>}
             </div>
 
           </div>
@@ -2439,7 +2463,7 @@ function PickupView({ datos }) {
           </div>
           {nochesCanalData.length > 0 && (
             <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
-              <p style={{ fontSize:11, fontWeight:700, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:4 }}>Por canal</p>
+              <p style={{ fontSize:11, fontWeight:700, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:4 }}>{t("por_canal")}</p>
               {nochesCanalData.slice(0,5).map((d,i) => {
                 const maxNoches = parseFloat(nochesCanalData[0].media);
                 const pct = maxNoches > 0 ? parseFloat(d.media)/maxNoches : 0;
@@ -2476,7 +2500,7 @@ function PickupView({ datos }) {
           </div>
           {precioCanalData.length > 0 && (
             <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
-              <p style={{ fontSize:11, fontWeight:700, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:4 }}>Por canal</p>
+              <p style={{ fontSize:11, fontWeight:700, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:4 }}>{t("por_canal")}</p>
               {precioCanalData.slice(0,5).map((d,i) => {
                 const maxPrecio = precioCanalData[0].media;
                 const pct = maxPrecio > 0 ? d.media/maxPrecio : 0;
@@ -2534,10 +2558,10 @@ function PickupView({ datos }) {
             };
             const fmt = (isoStr) => {
               const [y, m, d] = isoStr.split("-");
-              const dias  = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
-              const meses = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+              const diasA  = t("dias_abrev");
+              const mesesA = t("meses_corto");
               const dt = new Date(Number(y), Number(m)-1, Number(d));
-              return `${dias[dt.getDay()]} ${Number(d)} ${meses[Number(m)-1]}`;
+              return `${diasA[dt.getDay()]} ${Number(d)} ${mesesA[Number(m)-1]}`;
             };
             const pad = n => String(n).padStart(2,"0");
             const hoyStr    = `${hoy.getFullYear()}-${pad(hoy.getMonth()+1)}-${pad(hoy.getDate())}`;
@@ -2550,9 +2574,9 @@ function PickupView({ datos }) {
             const anioDesde = `${hoy.getFullYear()}-01-01`;
             const anioHasta = `${hoy.getFullYear()}-12-31`;
             const tarjetas  = [
-              { label:"Próx. semana", icon:"📅", peak: findPeak(hoyStr,    semFinStr) },
-              { label:"Próx. mes",    icon:"🗓️",  peak: findPeak(mesDesde,  mesHasta)  },
-              { label:"Año actual",   icon:"📆",  peak: findPeak(anioDesde, anioHasta) },
+              { label:t("prox_semana"), icon:"📅", peak: findPeak(hoyStr,    semFinStr) },
+              { label:t("prox_mes"),    icon:"🗓️",  peak: findPeak(mesDesde,  mesHasta)  },
+              { label:t("anio_actual"), icon:"📆",  peak: findPeak(anioDesde, anioHasta) },
             ];
             return tarjetas.map(({ label, icon, peak }) => (
               <div key={label} style={{ borderLeft:`3px solid ${COL_OTB}`, paddingLeft:12 }}>
@@ -2563,7 +2587,7 @@ function PickupView({ datos }) {
                     <p style={{ fontSize:11, color:C.textMid, marginTop:2 }}><span style={{ fontWeight:700, color:COL_PPTO }}>{peak.reservas}</span> {t("reservas_captadas")}</p>
                   </>
                 ) : (
-                  <p style={{ fontSize:11, color:C.textLight }}>Sin datos</p>
+                  <p style={{ fontSize:11, color:C.textLight }}>{t("sin_datos")}</p>
                 )}
               </div>
             ));
@@ -2574,7 +2598,7 @@ function PickupView({ datos }) {
 
         {/* Leyenda */}
         <div style={{ display:"flex", gap:20, marginBottom:24, flexWrap:"wrap" }}>
-          {[["OTB Actual", COL_OTB], ["Presupuesto", COL_PPTO], ["Año Anterior", COL_LY]].map(([label, color]) => (
+          {[[t("otb_actual"), COL_OTB], [t("nav_budget"), COL_PPTO], [t("anio_anterior"), COL_LY]].map(([label, color]) => (
             <div key={label} style={{ display:"flex", alignItems:"center", gap:7 }}>
               <div style={{ width:14, height:14, background:color, borderRadius:2 }} />
               <span style={{ fontSize:12, fontWeight:600, color:C.textMid }}>{label}</span>
@@ -2584,7 +2608,7 @@ function PickupView({ datos }) {
 
         {!hayDatos ? (
           <div style={{ textAlign:"center", padding:"60px 0", color:C.textLight, fontSize:13 }}>
-            Sin datos de pickup. Sube un CSV para ver la gráfica.
+            {t("sin_datos_pickup")}
           </div>
         ) : (
           <div style={{ display:"flex", gap:0, alignItems:"flex-end", height:280, position:"relative" }}>
@@ -2701,8 +2725,8 @@ function PickupView({ datos }) {
         return (
           <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:12, overflow:"hidden" }}>
             <div style={{ padding:"18px 24px 12px", borderBottom:`1px solid ${C.border}`, display:"flex", alignItems:"baseline", gap:10 }}>
-              <h3 style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:16, fontWeight:700, color:C.text, margin:0 }}>Pace — Próximos 6 meses</h3>
-              <span style={{ fontSize:11, color:C.textLight }}>OCC en cartera vs Presupuesto y Año Anterior</span>
+              <h3 style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:16, fontWeight:700, color:C.text, margin:0 }}>{t("pace_title")}</h3>
+              <span style={{ fontSize:11, color:C.textLight }}>{t("pace_sub")}</span>
             </div>
             <div style={{ overflowX:"auto" }}>
               <table style={{ width:"100%", borderCollapse:"collapse", fontSize:12 }}>
@@ -2759,7 +2783,7 @@ function BudgetView({ datos, anio: anioProp }) {
   const [kpiChart, setKpiChart] = useState("revenue");
 
   if (!presupuesto || presupuesto.length === 0) {
-    return <EmptyState mensaje="Importa tu plantilla Excel con los datos de la hoja 💰 Presupuesto para ver el análisis aquí" />;
+    return <EmptyState mensaje={t("budget_empty")} />;
   }
 
   const hoy = new Date();
@@ -2915,7 +2939,7 @@ function BudgetView({ datos, anio: anioProp }) {
   };
 
   const kpiOpts = [
-    { key: "revenue", label: "Revenue Total" },
+    { key: "revenue", label: t("rev_total_label") },
     { key: "adr",     label: "ADR" },
     { key: "revpar",  label: "RevPAR" },
   ];
@@ -2931,8 +2955,8 @@ function BudgetView({ datos, anio: anioProp }) {
   }));
 
   const chartUnit  = kpiChart==="revenue" ? "k€" : "€";
-  const chartTitle = kpiChart==="revenue" ? "Revenue Total — Ppto. vs Real vs Forecast"
-                   : kpiChart==="adr"     ? "ADR — Ppto. vs Real" : "RevPAR — Ppto. vs Real";
+  const chartTitle = kpiChart==="revenue" ? t("chart_rev")
+                   : kpiChart==="adr"     ? t("chart_adr") : t("chart_revpar");
 
   return (
     <div style={{ display:"flex", flexDirection:"column", gap:20 }}>
@@ -2993,9 +3017,9 @@ function BudgetView({ datos, anio: anioProp }) {
               labelStyle={{color:C.accent, fontWeight:700}}
             />
             <Legend wrapperStyle={{fontSize:11, color:C.textMid, paddingTop:8}}/>
-            <Bar dataKey="Ppto"     fill="#2E9C5588" radius={[3,3,0,0]}/>
-            <Bar dataKey="Real"     fill="#1A7A3C"   radius={[3,3,0,0]}/>
-            <Bar dataKey="Forecast" fill="#B8860B88" radius={[3,3,0,0]} legendType={kpiChart==="revenue" ? "square" : "none"}/>
+            <Bar dataKey="Ppto"     name={t("ppto_abrev")} fill="#2E9C5588" radius={[3,3,0,0]}/>
+            <Bar dataKey="Real"     name={t("real_label")} fill="#1A7A3C"   radius={[3,3,0,0]}/>
+            <Bar dataKey="Forecast" name="Forecast"         fill="#B8860B88" radius={[3,3,0,0]} legendType={kpiChart==="revenue" ? "square" : "none"}/>
           </BarChart>
         </ResponsiveContainer>
       </Card>
