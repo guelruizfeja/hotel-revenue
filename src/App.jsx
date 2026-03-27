@@ -19,16 +19,102 @@ const LangContext = createContext("es");
 const useT = () => { const lang = useContext(LangContext); return (k) => (TRANSLATIONS[lang] || TRANSLATIONS.es)[k] ?? k; };
 const TRANSLATIONS = {
   es: {
+    // Nav & topbar
     nav_dashboard:"Dashboard", nav_pickup:"Pickup", nav_budget:"Presupuesto", nav_grupos:"M&E",
     importar:"Importar", mi_perfil:"Mi perfil", cerrar_sesion:"Cerrar sesión",
     suscripcion:"Suscripción", extranets:"Extranets", informe_mensual:"Informe mensual",
     conectado_como:"Conectado como", cargando:"Cargando...",
+    // Onboarding
     ob_paso:"Paso", ob_de:"de", ob_omitir:"Omitir", ob_siguiente:"Siguiente →", ob_empezar:"¡Empezar!",
     ob0_title:"Importa tus datos", ob0_text:"Descarga la plantilla Excel, rellénala con tus datos de producción y súbela aquí. En segundos tendrás el dashboard activo.",
     ob1_title:"Dashboard", ob1_text:"Visualiza tus KPIs principales: RevPAR, ADR y ocupación comparados con el año anterior.",
     ob2_title:"Pickup", ob2_text:"Analiza el ritmo de nuevas reservas día a día y detecta tendencias de cara al mes.",
     ob3_title:"Presupuesto", ob3_text:"Compara producción real vs objetivo mensual y proyecta el cierre del año.",
     ob4_title:"M&E", ob4_text:"Gestiona grupos y eventos: confirmados, tentativos y pipeline de negocio.",
+    // KPIs
+    kpi_ocupacion:"Ocupación", kpi_adr:"ADR", kpi_revpar:"RevPAR", kpi_trevpar:"TRevPAR",
+    kpi_rev_diario:"Revenue Diario", kpi_rev_hab:"Rev. Hab.", kpi_rev_total:"Rev. Total",
+    sin_datos_prev:"Sin datos prev.", vs_mes_ant:"vs mes ant.", vs_anio_ant:"vs año ant.",
+    // Empty & loading
+    sin_datos:"Sin datos todavía", importa_excel:"Importa tu plantilla Excel para ver los datos aquí",
+    cargando_datos:"Cargando datos...", cargando_pickup:"Cargando pickup...",
+    // Months
+    meses_full:["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"],
+    meses_corto:["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"],
+    dias_semana:["L","M","X","J","V","S","D"],
+    dias_abrev:["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"],
+    // Dashboard
+    bienvenido:"Bienvenido", ocup_mensual:"Ocupación mensual", adr_ocupacion:"ADR & Ocupación",
+    ultimos_12m:"Últimos 12 meses", sin_datos_mes:"Sin datos para este mes",
+    adr_ocup_diaria:"ADR & Ocupación diaria", otb:"OTB",
+    // Table headers
+    th_anio:"Año", th_mes:"Mes", th_ocup:"Ocup.", th_adr:"ADR",
+    th_revpar:"RevPAR", th_trevpar:"TRevPAR", th_rev_hab:"Rev. Hab.", th_rev_total:"Rev. Total",
+    th_fecha:"Fecha", th_hab_ocup:"Hab. Ocup.", th_rev_day:"Rev. Total",
+    th_ocup_media:"Ocupación media", th_adr_medio:"ADR medio", th_revpar_medio:"RevPAR medio",
+    th_rev_hab_total:"Rev. Hab. total", detalle_diario:"Detalle diario",
+    dias_con_datos:"días con datos", total_mes:"TOTAL MES", volver:"← Volver",
+    // Pickup
+    reservas_ayer:"Reservas de ayer", reservas_captadas:"reservas captadas",
+    no_reservas_ayer:"No hay reservas registradas para ayer",
+    por_mes_llegada:"Por mes de llegada", por_canal:"Por canal", por_mes_afectado:"Por mes afectado",
+    cancelaciones_ayer:"Cancelaciones de ayer", cancelaciones:"cancelaciones",
+    sin_cancelaciones:"Sin cancelaciones ayer", cancel_abrev:"cancel.",
+    duracion_media:"Duración media", noches_reserva:"Noches por reserva confirmada",
+    noches_media:"noches media", precio_medio_reserva:"Precio medio reserva",
+    revenue_medio:"Revenue medio por reserva confirmada", precio_medio:"precio medio",
+    dia_pico:"Día pico", res_abrev:"res.",
+    // Budget
+    rev_real_ytd:"Revenue Real YTD", forecast_cierre_anio:"Forecast Cierre Año",
+    presupuesto_anio:"Presupuesto Año", detalle_mensual:"Detalle mensual",
+    th_adr_ppto:"ADR Ppto.", th_adr_real:"ADR Real", th_desv_adr:"Desv. ADR",
+    th_revpar_ppto:"RevPAR Ppto.", th_revpar_real:"RevPAR Real", th_desv_revpar:"Desv. RevPAR",
+    th_rev_ppto:"Rev. Ppto.", th_rev_real:"Rev. Real", th_desv_rev:"Desv. Rev.",
+    th_forecast:"Forecast Cierre", total_ytd:"TOTAL YTD", vs_ppto:"vs ppto",
+    confianza:"confianza", real_badge:"✓ Real",
+    // Grupos
+    nuevo_evento:"+ Nuevo evento", sin_eventos:"Sin eventos", rev_estimado:"Revenue estimado",
+    editar_evento:"Editar evento", nuevo_evento_title:"Nuevo evento",
+    eliminar_grupo:"¿Eliminar este grupo?",
+    vista_calendario:"Calendario", vista_lista:"Lista", vista_pipeline:"Pipeline",
+    rev_confirmado:"Revenue confirmado", rev_tentativo:"Revenue tentativo (50%)",
+    pipeline_cotizacion:"Pipeline en cotización", cancelados_perdidos:"Cancelados / Perdidos",
+    cat_corporativo:"Corporativo", cat_boda:"Boda / Social", cat_feria:"Feria / Congreso",
+    cat_deportivo:"Deportivo", cat_otros:"Otros",
+    estado_confirmado:"Confirmado", estado_tentativo:"Tentativo",
+    estado_cotizacion:"En cotización", estado_cancelado:"Cancelado",
+    form_nombre:"Nombre del evento *", form_categoria:"Categoría", form_estado:"Estado",
+    form_fecha_entrada:"Fecha entrada *", form_fecha_salida:"Fecha salida *",
+    form_habitaciones:"Habitaciones", form_adr:"ADR Grupo", form_fnb:"Revenue F&B",
+    form_sala:"Revenue Sala", form_notas:"Notas", form_motivo:"Motivo de pérdida",
+    form_guardar:"Guardar", form_cancelar:"Cancelar", form_eliminar:"Eliminar", guardando_btn:"Guardando...",
+    noche:"noche", noches:"noches", hab_abrev:"hab.",
+    // Importar
+    importar_title:"Importar datos", importar_sub:"Sube tu plantilla Excel de FastRev",
+    vaciar_datos:"Vaciar todos los datos importados", vaciar_confirm:"¿Vaciar todos los datos?",
+    vaciar_desc:"Se eliminarán producción, pickup y presupuesto. Esta acción no se puede deshacer.",
+    vaciando:"Vaciando...", si_vaciar:"Sí, vaciar todo",
+    haz_clic:"Haz clic para seleccionar el archivo", formato_xlsx:"Formato .xlsx · Plantilla FastRev",
+    importando_xlsx:"Al importar se reemplazarán los datos anteriores",
+    importado_ok:"¡Datos importados correctamente!", ver_dashboard:"Ver dashboard",
+    dias_produccion:"días de producción importados", reservas_pickup:"reservas de pickup importadas",
+    meses_presupuesto:"meses de presupuesto importados",
+    leyendo:"Leyendo archivo...", procesando:"Procesando hojas...",
+    limpiando:"Limpiando datos anteriores...", guardando:"Guardando datos...",
+    // Suscripción
+    empieza_gratis:"Empieza gratis 30 días",
+    acceso_completo:"Acceso completo a FastRev durante 30 días sin coste.",
+    precio_sub:"Después, solo €49/mes + IVA. Cancela cuando quieras.",
+    empezar_prueba:"Empezar prueba gratuita →", redirigiendo:"Redirigiendo...",
+    feat_dashboard:"Dashboard con KPIs en tiempo real", feat_pickup:"Análisis de pickup y forecast",
+    feat_presupuesto:"Presupuesto vs real mensual", feat_pdf:"Informes PDF mensuales",
+    feat_alertas:"Alertas automáticas",
+    // Alertas
+    alertas_ok:"Todo en orden, sin alertas activas",
+    ver_pickup:"→ Ver Pickup", importar_datos:"→ Importar datos", ver_mas:"→ Ver más",
+    // General
+    generando:"Generando...", cancelar:"Cancelar", guardar:"Guardar", eliminar:"Eliminar",
+    si:"Sí", no:"No", todos:"Todos",
   },
   en: {
     nav_dashboard:"Dashboard", nav_pickup:"Pickup", nav_budget:"Budget", nav_grupos:"M&E",
@@ -41,6 +127,78 @@ const TRANSLATIONS = {
     ob2_title:"Pickup", ob2_text:"Analyze the pace of new reservations day by day and detect trends for the month.",
     ob3_title:"Budget", ob3_text:"Compare real production vs monthly target and project year-end results.",
     ob4_title:"M&E", ob4_text:"Manage groups and events: confirmed, tentative and business pipeline.",
+    kpi_ocupacion:"Occupancy", kpi_adr:"ADR", kpi_revpar:"RevPAR", kpi_trevpar:"TRevPAR",
+    kpi_rev_diario:"Daily Revenue", kpi_rev_hab:"Room Rev.", kpi_rev_total:"Total Rev.",
+    sin_datos_prev:"No prev. data", vs_mes_ant:"vs prev. month", vs_anio_ant:"vs prev. year",
+    sin_datos:"No data yet", importa_excel:"Import your Excel template to see your data here",
+    cargando_datos:"Loading data...", cargando_pickup:"Loading pickup...",
+    meses_full:["January","February","March","April","May","June","July","August","September","October","November","December"],
+    meses_corto:["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],
+    dias_semana:["M","T","W","T","F","S","S"],
+    dias_abrev:["Sun","Mon","Tue","Wed","Thu","Fri","Sat"],
+    bienvenido:"Welcome", ocup_mensual:"Monthly Occupancy", adr_ocupacion:"ADR & Occupancy",
+    ultimos_12m:"Last 12 months", sin_datos_mes:"No data for this month",
+    adr_ocup_diaria:"Daily ADR & Occupancy", otb:"OTB",
+    th_anio:"Year", th_mes:"Month", th_ocup:"Occup.", th_adr:"ADR",
+    th_revpar:"RevPAR", th_trevpar:"TRevPAR", th_rev_hab:"Room Rev.", th_rev_total:"Total Rev.",
+    th_fecha:"Date", th_hab_ocup:"Occ. Rooms", th_rev_day:"Total Rev.",
+    th_ocup_media:"Avg Occupancy", th_adr_medio:"Avg ADR", th_revpar_medio:"Avg RevPAR",
+    th_rev_hab_total:"Total Room Rev.", detalle_diario:"Daily detail",
+    dias_con_datos:"days with data", total_mes:"MONTH TOTAL", volver:"← Back",
+    reservas_ayer:"Yesterday's bookings", reservas_captadas:"bookings captured",
+    no_reservas_ayer:"No bookings registered for yesterday",
+    por_mes_llegada:"By arrival month", por_canal:"By channel", por_mes_afectado:"By affected month",
+    cancelaciones_ayer:"Yesterday's cancellations", cancelaciones:"cancellations",
+    sin_cancelaciones:"No cancellations yesterday", cancel_abrev:"cancel.",
+    duracion_media:"Average stay", noches_reserva:"Nights per confirmed booking",
+    noches_media:"avg nights", precio_medio_reserva:"Average booking price",
+    revenue_medio:"Average revenue per confirmed booking", precio_medio:"avg price",
+    dia_pico:"Peak day", res_abrev:"bkgs.",
+    rev_real_ytd:"Actual Revenue YTD", forecast_cierre_anio:"Year-End Forecast",
+    presupuesto_anio:"Annual Budget", detalle_mensual:"Monthly detail",
+    th_adr_ppto:"Budget ADR", th_adr_real:"Actual ADR", th_desv_adr:"ADR Dev.",
+    th_revpar_ppto:"Budget RevPAR", th_revpar_real:"Actual RevPAR", th_desv_revpar:"RevPAR Dev.",
+    th_rev_ppto:"Budget Rev.", th_rev_real:"Actual Rev.", th_desv_rev:"Rev. Dev.",
+    th_forecast:"Closing Forecast", total_ytd:"TOTAL YTD", vs_ppto:"vs budget",
+    confianza:"confidence", real_badge:"✓ Actual",
+    nuevo_evento:"+ New event", sin_eventos:"No events", rev_estimado:"Estimated revenue",
+    editar_evento:"Edit event", nuevo_evento_title:"New event",
+    eliminar_grupo:"Delete this group?",
+    vista_calendario:"Calendar", vista_lista:"List", vista_pipeline:"Pipeline",
+    rev_confirmado:"Confirmed revenue", rev_tentativo:"Tentative revenue (50%)",
+    pipeline_cotizacion:"Quotation pipeline", cancelados_perdidos:"Cancelled / Lost",
+    cat_corporativo:"Corporate", cat_boda:"Wedding / Social", cat_feria:"Trade Fair / Congress",
+    cat_deportivo:"Sports", cat_otros:"Others",
+    estado_confirmado:"Confirmed", estado_tentativo:"Tentative",
+    estado_cotizacion:"In quotation", estado_cancelado:"Cancelled",
+    form_nombre:"Event name *", form_categoria:"Category", form_estado:"Status",
+    form_fecha_entrada:"Check-in date *", form_fecha_salida:"Check-out date *",
+    form_habitaciones:"Rooms", form_adr:"Group ADR", form_fnb:"F&B Revenue",
+    form_sala:"Meeting Room Revenue", form_notas:"Notes", form_motivo:"Reason for loss",
+    form_guardar:"Save", form_cancelar:"Cancel", form_eliminar:"Delete", guardando_btn:"Saving...",
+    noche:"night", noches:"nights", hab_abrev:"rms.",
+    importar_title:"Import data", importar_sub:"Upload your FastRev Excel template",
+    vaciar_datos:"Clear all imported data", vaciar_confirm:"Clear all data?",
+    vaciar_desc:"Production, pickup and budget data will be deleted. This action cannot be undone.",
+    vaciando:"Clearing...", si_vaciar:"Yes, clear all",
+    haz_clic:"Click to select file", formato_xlsx:"Format .xlsx · FastRev template",
+    importando_xlsx:"Importing will replace previous data",
+    importado_ok:"Data imported successfully!", ver_dashboard:"View dashboard",
+    dias_produccion:"production days imported", reservas_pickup:"pickup bookings imported",
+    meses_presupuesto:"budget months imported",
+    leyendo:"Reading file...", procesando:"Processing sheets...",
+    limpiando:"Clearing previous data...", guardando:"Saving data...",
+    empieza_gratis:"Start free for 30 days",
+    acceso_completo:"Full access to FastRev for 30 days at no cost.",
+    precio_sub:"Then just €49/month + VAT. Cancel anytime.",
+    empezar_prueba:"Start free trial →", redirigiendo:"Redirecting...",
+    feat_dashboard:"Real-time KPI dashboard", feat_pickup:"Pickup and forecast analysis",
+    feat_presupuesto:"Budget vs actual monthly", feat_pdf:"Monthly PDF reports",
+    feat_alertas:"Automatic alerts",
+    alertas_ok:"All clear, no active alerts",
+    ver_pickup:"→ View Pickup", importar_datos:"→ Import data", ver_mas:"→ See more",
+    generando:"Generating...", cancelar:"Cancel", guardar:"Save", eliminar:"Delete",
+    si:"Yes", no:"No", todos:"All",
   },
   fr: {
     nav_dashboard:"Dashboard", nav_pickup:"Pickup", nav_budget:"Budget", nav_grupos:"M&E",
@@ -53,6 +211,78 @@ const TRANSLATIONS = {
     ob2_title:"Pickup", ob2_text:"Analysez le rythme des nouvelles réservations jour par jour et détectez les tendances.",
     ob3_title:"Budget", ob3_text:"Comparez la production réelle vs l'objectif mensuel et projetez la clôture annuelle.",
     ob4_title:"M&E", ob4_text:"Gérez les groupes et événements : confirmés, tentatifs et pipeline.",
+    kpi_ocupacion:"Occupation", kpi_adr:"ADR", kpi_revpar:"RevPAR", kpi_trevpar:"TRevPAR",
+    kpi_rev_diario:"Revenu Journalier", kpi_rev_hab:"Rev. Ch.", kpi_rev_total:"Rev. Total",
+    sin_datos_prev:"Pas de données préc.", vs_mes_ant:"vs mois préc.", vs_anio_ant:"vs année préc.",
+    sin_datos:"Aucune donnée", importa_excel:"Importez votre modèle Excel pour voir vos données ici",
+    cargando_datos:"Chargement...", cargando_pickup:"Chargement pickup...",
+    meses_full:["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"],
+    meses_corto:["Jan","Fév","Mar","Avr","Mai","Jun","Jul","Aoû","Sep","Oct","Nov","Déc"],
+    dias_semana:["L","M","M","J","V","S","D"],
+    dias_abrev:["Dim","Lun","Mar","Mer","Jeu","Ven","Sam"],
+    bienvenido:"Bienvenue", ocup_mensual:"Occupation mensuelle", adr_ocupacion:"ADR & Occupation",
+    ultimos_12m:"12 derniers mois", sin_datos_mes:"Pas de données pour ce mois",
+    adr_ocup_diaria:"ADR & Occupation journalière", otb:"OTB",
+    th_anio:"Année", th_mes:"Mois", th_ocup:"Occup.", th_adr:"ADR",
+    th_revpar:"RevPAR", th_trevpar:"TRevPAR", th_rev_hab:"Rev. Ch.", th_rev_total:"Rev. Total",
+    th_fecha:"Date", th_hab_ocup:"Ch. Occup.", th_rev_day:"Rev. Total",
+    th_ocup_media:"Occup. moy.", th_adr_medio:"ADR moy.", th_revpar_medio:"RevPAR moy.",
+    th_rev_hab_total:"Rev. Ch. total", detalle_diario:"Détail journalier",
+    dias_con_datos:"jours avec données", total_mes:"TOTAL MOIS", volver:"← Retour",
+    reservas_ayer:"Réservations d'hier", reservas_captadas:"réservations captées",
+    no_reservas_ayer:"Aucune réservation enregistrée hier",
+    por_mes_llegada:"Par mois d'arrivée", por_canal:"Par canal", por_mes_afectado:"Par mois concerné",
+    cancelaciones_ayer:"Annulations d'hier", cancelaciones:"annulations",
+    sin_cancelaciones:"Aucune annulation hier", cancel_abrev:"annul.",
+    duracion_media:"Durée moyenne", noches_reserva:"Nuits par réservation confirmée",
+    noches_media:"nuits moy.", precio_medio_reserva:"Prix moyen réservation",
+    revenue_medio:"Revenu moyen par réservation confirmée", precio_medio:"prix moy.",
+    dia_pico:"Jour pic", res_abrev:"rés.",
+    rev_real_ytd:"Revenu Réel YTD", forecast_cierre_anio:"Prévision Clôture Année",
+    presupuesto_anio:"Budget Annuel", detalle_mensual:"Détail mensuel",
+    th_adr_ppto:"ADR Budget", th_adr_real:"ADR Réel", th_desv_adr:"Écart ADR",
+    th_revpar_ppto:"RevPAR Budget", th_revpar_real:"RevPAR Réel", th_desv_revpar:"Écart RevPAR",
+    th_rev_ppto:"Rev. Budget", th_rev_real:"Rev. Réelle", th_desv_rev:"Écart Rev.",
+    th_forecast:"Prévision Clôture", total_ytd:"TOTAL YTD", vs_ppto:"vs budget",
+    confianza:"confiance", real_badge:"✓ Réel",
+    nuevo_evento:"+ Nouvel événement", sin_eventos:"Aucun événement", rev_estimado:"Chiffre d'affaires estimé",
+    editar_evento:"Modifier l'événement", nuevo_evento_title:"Nouvel événement",
+    eliminar_grupo:"Supprimer ce groupe ?",
+    vista_calendario:"Calendrier", vista_lista:"Liste", vista_pipeline:"Pipeline",
+    rev_confirmado:"Revenu confirmé", rev_tentativo:"Revenu tentative (50%)",
+    pipeline_cotizacion:"Pipeline en devis", cancelados_perdidos:"Annulés / Perdus",
+    cat_corporativo:"Corporatif", cat_boda:"Mariage / Social", cat_feria:"Foire / Congrès",
+    cat_deportivo:"Sportif", cat_otros:"Autres",
+    estado_confirmado:"Confirmé", estado_tentativo:"Tentative",
+    estado_cotizacion:"En devis", estado_cancelado:"Annulé",
+    form_nombre:"Nom de l'événement *", form_categoria:"Catégorie", form_estado:"Statut",
+    form_fecha_entrada:"Date d'arrivée *", form_fecha_salida:"Date de départ *",
+    form_habitaciones:"Chambres", form_adr:"ADR Groupe", form_fnb:"Revenu F&B",
+    form_sala:"Revenu Salle", form_notas:"Notes", form_motivo:"Motif de perte",
+    form_guardar:"Enregistrer", form_cancelar:"Annuler", form_eliminar:"Supprimer", guardando_btn:"Enregistrement...",
+    noche:"nuit", noches:"nuits", hab_abrev:"ch.",
+    importar_title:"Importer des données", importar_sub:"Téléchargez votre modèle Excel FastRev",
+    vaciar_datos:"Effacer toutes les données importées", vaciar_confirm:"Effacer toutes les données ?",
+    vaciar_desc:"Les données de production, pickup et budget seront supprimées. Cette action est irréversible.",
+    vaciando:"Effacement...", si_vaciar:"Oui, tout effacer",
+    haz_clic:"Cliquez pour sélectionner le fichier", formato_xlsx:"Format .xlsx · Modèle FastRev",
+    importando_xlsx:"L'importation remplacera les données précédentes",
+    importado_ok:"Données importées avec succès !", ver_dashboard:"Voir le dashboard",
+    dias_produccion:"jours de production importés", reservas_pickup:"réservations pickup importées",
+    meses_presupuesto:"mois de budget importés",
+    leyendo:"Lecture du fichier...", procesando:"Traitement des feuilles...",
+    limpiando:"Suppression des données précédentes...", guardando:"Sauvegarde...",
+    empieza_gratis:"Commencez gratuitement 30 jours",
+    acceso_completo:"Accès complet à FastRev pendant 30 jours sans frais.",
+    precio_sub:"Ensuite, seulement 49€/mois + TVA. Annulez quand vous voulez.",
+    empezar_prueba:"Démarrer l'essai gratuit →", redirigiendo:"Redirection...",
+    feat_dashboard:"Dashboard KPIs en temps réel", feat_pickup:"Analyse pickup et prévisions",
+    feat_presupuesto:"Budget vs réel mensuel", feat_pdf:"Rapports PDF mensuels",
+    feat_alertas:"Alertes automatiques",
+    alertas_ok:"Tout est en ordre, aucune alerte active",
+    ver_pickup:"→ Voir Pickup", importar_datos:"→ Importer données", ver_mas:"→ Voir plus",
+    generando:"Génération...", cancelar:"Annuler", guardar:"Enregistrer", eliminar:"Supprimer",
+    si:"Oui", no:"Non", todos:"Tous",
   },
 };
 
@@ -92,6 +322,7 @@ function Card({ children, style = {} }) {
 
 // ─── KPI MODAL ───────────────────────────────────────────────────
 function KpiModal({ kpi, datos, mes, anio, onClose }) {
+  const t = useT();
   const compMode = "mes";
 
   useEffect(() => {
@@ -100,7 +331,7 @@ function KpiModal({ kpi, datos, mes, anio, onClose }) {
     return () => window.removeEventListener("keydown", handler);
   }, []);
   const { produccion, presupuesto } = datos;
-  const MESES_FULL = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+  const MESES_FULL = t("meses_full");
 
   const [modoVista, setModoVista] = useState("30dias"); // "30dias" | "mes"
 
@@ -388,10 +619,11 @@ function KpiCard({ label, value, change, sub, up, i, onClick, accentColor }) {
 }
 
 function PeriodSelectorInline({ mes, anio, onChange, aniosDisponibles }) {
+  const t = useT();
   const hoy = new Date();
   const anioMax = hoy.getFullYear();
   const anios = aniosDisponibles && aniosDisponibles.length > 0 ? aniosDisponibles : [anioMax];
-  const MESES_C = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+  const MESES_C = t("meses_full");
 
   const anioAnterior = () => {
     const idx = anios.indexOf(anio);
@@ -517,18 +749,19 @@ function calcularAlertas(datos, mes, anio) {
 }
 
 function AlertasPanel({ alertas, onClose, onNavegar }) {
+  const t = useT();
   if (alertas.length === 0) return (
     <div style={{ position:"absolute", top:54, right:0, width:340, background:C.bgCard, border:`1px solid ${C.border}`, borderRadius:12, boxShadow:"0 8px 32px rgba(0,0,0,0.12)", zIndex:200, padding:20 }}>
-      <p style={{ fontSize:13, color:C.textMid, textAlign:"center" }}>✅ Todo en orden, sin alertas activas</p>
+      <p style={{ fontSize:13, color:C.textMid, textAlign:"center" }}>✅ {t("alertas_ok")}</p>
     </div>
   );
   const colores = { rojo:{ bg:"#FDECEA", border:"#D32F2F", text:"#D32F2F" }, amarillo:{ bg:"#FFF8E1", border:"#F9A825", text:"#E65100" }, verde:{ bg:"#E6F7EE", border:"#1A7A3C", text:"#1A7A3C" } };
   const labelAccion = (accion) => {
     if (!accion) return null;
-    if (accion === "pickup") return "→ Ver Pickup";
-    if (accion === "importar") return "→ Importar datos";
+    if (accion === "pickup") return t("ver_pickup");
+    if (accion === "importar") return t("importar_datos");
     if (accion.startsWith("kpi:")) return `→ Ver ${accion.split(":")[1]}`;
-    return "→ Ver más";
+    return t("ver_mas");
   };
   return (
     <div style={{ position:"absolute", top:54, right:0, width:360, background:C.bgCard, border:`1px solid ${C.border}`, borderRadius:12, boxShadow:"0 8px 32px rgba(0,0,0,0.12)", zIndex:200, overflow:"hidden" }}>
@@ -557,25 +790,28 @@ function AlertasPanel({ alertas, onClose, onNavegar }) {
 }
 
 function LoadingSpinner() {
+  const t = useT();
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: 60 }}>
-      <div style={{ color: C.accent, fontFamily: "'Cormorant Garamond', serif", fontSize: 16 }}>Cargando datos...</div>
+      <div style={{ color: C.accent, fontFamily: "'Cormorant Garamond', serif", fontSize: 16 }}>{t("cargando_datos")}</div>
     </div>
   );
 }
 
 function EmptyState({ mensaje }) {
+  const t = useT();
   return (
     <div style={{ textAlign: "center", padding: 60 }}>
-      
-      <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 18, fontWeight: 700, color: C.text, marginBottom: 8 }}>Sin datos todavía</p>
-      <p style={{ fontSize: 13, color: C.textLight }}>{mensaje || "Importa tu plantilla Excel para ver los datos aquí"}</p>
+
+      <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 18, fontWeight: 700, color: C.text, marginBottom: 8 }}>{t("sin_datos")}</p>
+      <p style={{ fontSize: 13, color: C.textLight }}>{mensaje || t("importa_excel")}</p>
     </div>
   );
 }
 
 // ─── IMPORTAR EXCEL ───────────────────────────────────────────────
 function ImportarExcel({ onClose, session, onImportado }) {
+  const t = useT();
   const [loading, setLoading] = useState(false);
   const [resultado, setResultado] = useState(null);
   const [error, setError] = useState("");
@@ -604,7 +840,7 @@ function ImportarExcel({ onClose, session, onImportado }) {
   const procesarExcel = async (file) => {
     setLoading(true); setError(""); setResultado(null); setProgresoPct(0);
     try {
-      setProgreso("Leyendo archivo..."); setProgresoPct(5);
+      setProgreso(t("leyendo")); setProgresoPct(5);
       const XLSX = await import("xlsx");
       const data = await file.arrayBuffer();
       const wb = XLSX.read(data);
@@ -749,7 +985,7 @@ function ImportarExcel({ onClose, session, onImportado }) {
 
       if (produccionRows.length === 0) throw new Error("No se encontraron datos en la hoja de Producción Diaria");
 
-      setProgreso("Procesando hojas..."); setProgresoPct(30);
+      setProgreso(t("procesando")); setProgresoPct(30);
 
       // Detectar años y limpiar
       const aniosImport = [...new Set(produccionRows.map(r => r.fecha.slice(0, 4)))];
@@ -757,7 +993,7 @@ function ImportarExcel({ onClose, session, onImportado }) {
       const aniosPickup = [...new Set(pickupRows.map(r => r.fecha_llegada.slice(0, 4)))];
       const todosAnios  = [...new Set([...aniosImport, ...aniosPickup])];
 
-      setProgreso("Limpiando datos anteriores..."); setProgresoPct(40);
+      setProgreso(t("limpiando")); setProgresoPct(40);
       await Promise.all([
         ...aniosImport.flatMap(anio => [
           supabase.from("produccion_diaria").delete()
@@ -773,7 +1009,7 @@ function ImportarExcel({ onClose, session, onImportado }) {
         ),
       ]);
 
-      setProgreso("Guardando datos..."); setProgresoPct(55);
+      setProgreso(t("guardando")); setProgresoPct(55);
 
       const insertPromises = [
         supabase.from("produccion_diaria").insert(produccionRows).then(({ error }) => {
@@ -873,8 +1109,8 @@ function ImportarExcel({ onClose, session, onImportado }) {
       <div style={{ background: "#fff", borderRadius: 10, padding: "36px 40px", width: 480, boxShadow: "0 24px 60px rgba(0,0,0,0.3)", fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
           <div>
-            <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 20, fontWeight: 700, color: "#1C1814" }}>Importar datos</h2>
-            <p style={{ fontSize: 12, color: "#A8998A", marginTop: 4 }}>Sube tu plantilla Excel de FastRev</p>
+            <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 20, fontWeight: 700, color: "#1C1814" }}>{t("importar_title")}</h2>
+            <p style={{ fontSize: 12, color: "#A8998A", marginTop: 4 }}>{t("importar_sub")}</p>
           </div>
           <button onClick={onClose} style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: "#A8998A" }}>✕</button>
         </div>
@@ -882,21 +1118,21 @@ function ImportarExcel({ onClose, session, onImportado }) {
           <>
             {confirmVaciar ? (
               <div style={{ background: "#FDECEA", borderRadius: 10, padding: "20px", marginBottom: 16, textAlign: "center" }}>
-                <p style={{ fontWeight: 700, color: "#C0392B", marginBottom: 8 }}>⚠️ ¿Vaciar todos los datos?</p>
-                <p style={{ fontSize: 12, color: "#A8998A", marginBottom: 16 }}>Se eliminarán producción, pickup y presupuesto. Esta acción no se puede deshacer.</p>
+                <p style={{ fontWeight: 700, color: "#C0392B", marginBottom: 8 }}>⚠️ {t("vaciar_confirm")}</p>
+                <p style={{ fontSize: 12, color: "#A8998A", marginBottom: 16 }}>{t("vaciar_desc")}</p>
                 <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
-                  <button onClick={()=>setConfirmVaciar(false)} style={{ padding: "8px 20px", borderRadius: 8, border: "1px solid #E8E0D5", background: "#fff", color: "#A8998A", cursor: "pointer", fontFamily: "'Plus Jakarta Sans',sans-serif", fontSize: 13 }}>Cancelar</button>
-                  <button onClick={vaciarDatos} disabled={vaciando} style={{ padding: "8px 20px", borderRadius: 8, border: "none", background: "#C0392B", color: "#fff", cursor: vaciando?"not-allowed":"pointer", fontWeight: 700, fontFamily: "'Plus Jakarta Sans',sans-serif", fontSize: 13 }}>{vaciando ? "Vaciando..." : "Sí, vaciar todo"}</button>
+                  <button onClick={()=>setConfirmVaciar(false)} style={{ padding: "8px 20px", borderRadius: 8, border: "1px solid #E8E0D5", background: "#fff", color: "#A8998A", cursor: "pointer", fontFamily: "'Plus Jakarta Sans',sans-serif", fontSize: 13 }}>{t("cancelar")}</button>
+                  <button onClick={vaciarDatos} disabled={vaciando} style={{ padding: "8px 20px", borderRadius: 8, border: "none", background: "#C0392B", color: "#fff", cursor: vaciando?"not-allowed":"pointer", fontWeight: 700, fontFamily: "'Plus Jakarta Sans',sans-serif", fontSize: 13 }}>{vaciando ? t("vaciando") : t("si_vaciar")}</button>
                 </div>
               </div>
             ) : (
               <button onClick={()=>setConfirmVaciar(true)} style={{ width: "100%", padding: "9px", borderRadius: 8, border: "1px solid #FDECEA", background: "#FFF5F5", color: "#C0392B", cursor: "pointer", fontSize: 12, fontWeight: 600, fontFamily: "'Plus Jakarta Sans',sans-serif", marginBottom: 16, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
-                🗑️ Vaciar todos los datos importados
+                🗑️ {t("vaciar_datos")}
               </button>
             )}
 <div onClick={() => !loading && document.getElementById("excel-input").click()} style={{ border: "2px dashed #E8E0D5", borderRadius: 8, padding: "40px 20px", textAlign: "center", cursor: loading ? "default" : "pointer", background: "#F7F3EE", marginBottom: 16 }}>
-              <p style={{ fontWeight: 600, color: "#1C1814", marginBottom: 6 }}>{progreso || (loading ? "Procesando..." : "Haz clic para seleccionar el archivo")}</p>
-              <p style={{ fontSize: 12, color: "#A8998A" }}>Formato .xlsx · Plantilla FastRev</p>
+              <p style={{ fontWeight: 600, color: "#1C1814", marginBottom: 6 }}>{progreso || (loading ? t("procesando") : t("haz_clic"))}</p>
+              <p style={{ fontSize: 12, color: "#A8998A" }}>{t("formato_xlsx")}</p>
               {loading && (
                 <div style={{ marginTop: 16 }}>
                   <div style={{ background: "#E8E0D5", borderRadius: 999, height: 8, overflow: "hidden" }}>
@@ -908,18 +1144,18 @@ function ImportarExcel({ onClose, session, onImportado }) {
               <input id="excel-input" type="file" accept=".xlsx" style={{ display: "none" }} onChange={e => e.target.files[0] && procesarExcel(e.target.files[0])} />
             </div>
             {error && <div style={{ background: "#FDECEA", color: "#C0392B", padding: "12px 16px", borderRadius: 8, fontSize: 13, marginBottom: 12 }}>⚠️ {error}</div>}
-            <p style={{ fontSize: 11, color: "#A8998A", textAlign: "center" }}>Al importar se reemplazarán los datos anteriores</p>
+            <p style={{ fontSize: 11, color: "#A8998A", textAlign: "center" }}>{t("importando_xlsx")}</p>
           </>
         ) : (
           <div style={{ textAlign: "center" }}>
             <div style={{ fontSize: 50, marginBottom: 16 }}>✅</div>
-            <p style={{ fontWeight: 700, fontSize: 16, color: "#1C1814", marginBottom: 8 }}>¡Datos importados correctamente!</p>
+            <p style={{ fontWeight: 700, fontSize: 16, color: "#1C1814", marginBottom: 8 }}>{t("importado_ok")}</p>
             <div style={{ background: "#D4EDDE", borderRadius: 10, padding: "16px", marginBottom: 20 }}>
-              <p style={{ color: "#2D7A4F", fontSize: 13 }}>📅 {resultado.produccion} días de producción importados</p>
-              {resultado.pickup > 0 && <p style={{ color: "#2D7A4F", fontSize: 13, marginTop: 6 }}>🎯 {resultado.pickup} reservas de pickup importadas</p>}
-              {resultado.presupuesto > 0 && <p style={{ color: "#2D7A4F", fontSize: 13, marginTop: 6 }}>💰 {resultado.presupuesto} meses de presupuesto importados</p>}
+              <p style={{ color: "#2D7A4F", fontSize: 13 }}>📅 {resultado.produccion} {t("dias_produccion")}</p>
+              {resultado.pickup > 0 && <p style={{ color: "#2D7A4F", fontSize: 13, marginTop: 6 }}>🎯 {resultado.pickup} {t("reservas_pickup")}</p>}
+              {resultado.presupuesto > 0 && <p style={{ color: "#2D7A4F", fontSize: 13, marginTop: 6 }}>💰 {resultado.presupuesto} {t("meses_presupuesto")}</p>}
             </div>
-            <button onClick={onClose} style={{ background: "#C8933A", color: "#fff", border: "none", borderRadius: 10, padding: "12px 32px", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "'Plus Jakarta Sans', sans-serif" }}>Ver dashboard</button>
+            <button onClick={onClose} style={{ background: "#C8933A", color: "#fff", border: "none", borderRadius: 10, padding: "12px 32px", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "'Plus Jakarta Sans', sans-serif" }}>{t("ver_dashboard")}</button>
           </div>
         )}
       </div>
@@ -930,6 +1166,7 @@ function ImportarExcel({ onClose, session, onImportado }) {
 
 // ─── MONTH DETAIL VIEW ───────────────────────────────────────────
 function MonthDetailView({ datos, mes, anio, onBack }) {
+  const t = useT();
   const { produccion } = datos;
 
   const datosMes = (produccion || []).filter(d => {
@@ -949,23 +1186,23 @@ function MonthDetailView({ datos, mes, anio, onBack }) {
     <div>
       <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 28 }}>
         <button onClick={onBack} style={{ background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 16px", cursor: "pointer", fontSize: 13, color: C.textMid, fontFamily: "'Plus Jakarta Sans', sans-serif", display: "flex", alignItems: "center", gap: 6 }}>
-          ← Volver
+          {t("volver")}
         </button>
         <div>
           <h2 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 20, fontWeight: 700, color: C.text, letterSpacing: -0.3 }}>
-            Detalle diario — {MESES[mes]} {anio}
+            {t("detalle_diario")} — {t("meses_corto")[mes]} {anio}
           </h2>
-          <p style={{ fontSize: 12, color: C.textLight, marginTop: 4 }}>{datosMes.length} días con datos</p>
+          <p style={{ fontSize: 12, color: C.textLight, marginTop: 4 }}>{datosMes.length} {t("dias_con_datos")}</p>
         </div>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 14, marginBottom: 24 }}>
         {[
-          { label: "Ocupación media", value: `${mediaOcc}%` },
-          { label: "ADR medio",       value: `€${mediaAdr}` },
-          { label: "RevPAR medio",    value: `€${mediaRevpar}` },
-          { label: "Rev. Hab. total", value: `€${Math.round(totalRevHab).toLocaleString("es-ES")}` },
-          { label: "Rev. Total",      value: `€${Math.round(totalRevTot).toLocaleString("es-ES")}` },
+          { label: t("th_ocup_media"), value: `${mediaOcc}%` },
+          { label: t("th_adr_medio"),  value: `€${mediaAdr}` },
+          { label: t("th_revpar_medio"), value: `€${mediaRevpar}` },
+          { label: t("th_rev_hab_total"), value: `€${Math.round(totalRevHab).toLocaleString("es-ES")}` },
+          { label: t("th_rev_total"),  value: `€${Math.round(totalRevTot).toLocaleString("es-ES")}` },
         ].map((k, i) => (
           <div key={i} style={{ background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: 8, padding: "16px 18px", borderTop: `3px solid ${C.accent}` }}>
             <p style={{ fontSize: 11, color: C.textLight, textTransform: "uppercase", letterSpacing: "1.5px" }}>{k.label}</p>
@@ -979,7 +1216,7 @@ function MonthDetailView({ datos, mes, anio, onBack }) {
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
             <thead>
               <tr style={{ borderBottom: `2px solid ${C.border}` }}>
-                {["Fecha", "Hab. Ocup.", "Ocupación", "ADR", "RevPAR", "Rev. Hab.", "Rev. Total"].map(h => (
+                {[t("th_fecha"), t("th_hab_ocup"), t("th_ocup"), t("th_adr"), t("th_revpar"), t("th_rev_hab"), t("th_rev_total")].map(h => (
                   <th key={h} style={{ padding: "10px 14px", textAlign: h === "Fecha" ? "left" : "right", fontSize: 10, color: C.textLight, textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600 }}>{h}</th>
                 ))}
               </tr>
@@ -988,7 +1225,7 @@ function MonthDetailView({ datos, mes, anio, onBack }) {
               {datosMes.map((d, i) => {
                 const fecha   = new Date(d.fecha + "T00:00:00");
                 const dia     = fecha.getDate();
-                const semana  = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"][fecha.getDay()];
+                const semana  = t("dias_abrev")[fecha.getDay()];
                 const habDis  = d.hab_disponibles || 30;
                 const occ     = habDis > 0 ? (d.hab_ocupadas / habDis * 100).toFixed(1) : 0;
                 const adr     = d.hab_ocupadas > 0 ? Math.round(d.revenue_hab / d.hab_ocupadas) : 0;
@@ -1012,7 +1249,7 @@ function MonthDetailView({ datos, mes, anio, onBack }) {
             </tbody>
             <tfoot>
               <tr style={{ borderTop: `2px solid ${C.border}`, background: "#E8F5EE", fontWeight: 700 }}>
-                <td style={{ padding: "10px 14px", color: C.text, fontWeight: 700 }}>TOTAL MES</td>
+                <td style={{ padding: "10px 14px", color: C.text, fontWeight: 700 }}>{t("total_mes")}</td>
                 <td style={{ padding: "10px 14px", textAlign: "right", color: C.text }}>{totalHabOcu}</td>
                 <td style={{ padding: "10px 14px", textAlign: "right", color: C.text }}>{mediaOcc}%</td>
                 <td style={{ padding: "10px 14px", textAlign: "right", color: C.text }}>€{mediaAdr}</td>
@@ -1398,6 +1635,7 @@ async function generarReportePDF(datos, mes, anio, hotelNombre) {
 
 // ─── DASHBOARD VIEW ───────────────────────────────────────────────
 function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, setKpiModal, kpiModalExterno, onKpiModalExternoHandled }) {
+  const t = useT();
   const { produccion } = datos;
   const pickupEntries = datos.pickupEntries || [];
   const presupuesto   = datos.presupuesto   || [];
@@ -1466,8 +1704,8 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
     const revFnb   = d.reduce((a, r) => a + (r.revenue_fnb || 0), 0);
     const revOtros = d.reduce((a, r) => a + (r.revenue_otros || 0), 0);
     return {
-      mes: MESES_CORTO[mIdx],
-      mesNombre: MESES_FULL[mIdx],
+      mes: t("meses_corto")[mIdx],
+      mesNombre: t("meses_full")[mIdx],
       mesIdx: mIdx,
       anioIdx: aIdx,
       occ:     habDis > 0 ? Math.round(habOcu / habDis * 100) : 0,
@@ -1509,19 +1747,19 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
   const prevTrevpar = prevHabDis > 0 ? ((prevRevHab + prevRevFnb + prevRevOtros) / prevHabDis) : null;
 
   const diff = (curr, prev, isEur = false, decimals = 1) => {
-    if (prev == null || prev === 0) return { change: "Sin datos prev.", up: true, sub: "" };
+    if (prev == null || prev === 0) return { change: t("sin_datos_prev"), up: true, sub: "" };
     const d = curr - prev;
     const pct = ((d / prev) * 100).toFixed(1);
     const sign = d >= 0 ? "+" : "";
-    return { change: `${sign}${pct}% vs mes ant.`, up: d >= 0, sub: "" };
+    return { change: `${sign}${pct}% ${t("vs_mes_ant")}`, up: d >= 0, sub: "" };
   };
 
   const kpis = [
-    { label: "Ocupación",     value: `${occ}%`,    ...diff(parseFloat(occ), prevOcc) },
-    { label: "ADR",           value: `€${adr}`,    ...diff(parseFloat(adr), prevAdr) },
-    { label: "RevPAR",        value: `€${revpar}`,  ...diff(parseFloat(revpar), prevRevpar) },
-    { label: "TRevPAR",       value: `€${trevpar}`, ...diff(parseFloat(trevpar), prevTrevpar) },
-    { label: "Revenue Diario", value: `€${datosMes.length > 0 ? Math.round(totalRevTotal / datosMes.length).toLocaleString("es-ES") : 0}`,
+    { label: t("kpi_ocupacion"), value: `${occ}%`,    ...diff(parseFloat(occ), prevOcc) },
+    { label: t("kpi_adr"),       value: `€${adr}`,    ...diff(parseFloat(adr), prevAdr) },
+    { label: t("kpi_revpar"),    value: `€${revpar}`,  ...diff(parseFloat(revpar), prevRevpar) },
+    { label: t("kpi_trevpar"),   value: `€${trevpar}`, ...diff(parseFloat(trevpar), prevTrevpar) },
+    { label: t("kpi_rev_diario"), value: `€${datosMes.length > 0 ? Math.round(totalRevTotal / datosMes.length).toLocaleString("es-ES") : 0}`,
       ...(() => {
         const diasPrev = prevRevTot > 0 ? (datos.produccion||[]).filter(d => { const f=new Date(d.fecha+"T00:00:00"); return f.getMonth()===(mes===0?11:mes-1) && f.getFullYear()===(mes===0?anio-1:anio); }).length : 0;
         const revDiarioPrev = diasPrev > 0 ? prevRevTot / diasPrev : null;
@@ -1537,11 +1775,11 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
       <div className="dash-header" style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16, paddingBottom:14, borderBottom:`1px solid ${C.border}` }}>
         <div>
           <p style={{ fontSize:22, fontWeight:800, color:C.text, fontFamily:"'Plus Jakarta Sans',sans-serif", letterSpacing:-0.5, marginBottom:2 }}>
-            Bienvenido, <span style={{ color:C.accent }}>{datos.hotel?.nombre || "Mi Hotel"}</span>
+            {t("bienvenido")}, <span style={{ color:C.accent }}>{datos.hotel?.nombre || "Mi Hotel"}</span>
           </p>
           <div style={{ display:"flex", alignItems:"baseline", gap:10 }}>
             <h2 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:28, fontWeight:700, color:C.text, margin:0, letterSpacing:-0.5 }}>
-              {["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"][mes]}
+              {t("meses_full")[mes]}
             </h2>
             <span style={{ fontSize:20, fontWeight:400, color:C.textLight }}>{anio}</span>
           </div>
@@ -1556,8 +1794,8 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
 
       {/* ── HEATMAP + GRÁFICAS ── */}
       {(() => {
-        const MESES_H = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
-        const DIAS_S  = ["L","M","X","J","V","S","D"];
+        const MESES_H = t("meses_full");
+        const DIAS_S  = t("dias_semana");
         // Ocupación por mes para el heatmap (real o OTB para futuros)
         const _pad = n => String(n).padStart(2,"0");
         const _hoy = new Date();
@@ -1666,7 +1904,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
             <Card style={{ display:"flex", flexDirection:"column" }}>
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
                 <div>
-                  <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:20, color:C.text, marginBottom:2 }}>Ocupación mensual</p>
+                  <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:20, color:C.text, marginBottom:2 }}>{t("ocup_mensual")}</p>
                   
                 </div>
 
@@ -1722,7 +1960,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
 
                   {/* Días semana */}
                   <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:3, marginBottom:3 }}>
-                    {["L","M","X","J","V","S","D"].map(d=>(
+                    {t("dias_semana").map(d=>(
                       <p key={d} style={{ fontSize:9, color:C.textLight, textAlign:"center", fontWeight:600 }}>{d}</p>
                     ))}
                   </div>
@@ -1760,7 +1998,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
             {/* ── GRÁFICA DERECHA UNIFICADA ── */}
             {(() => {
               const metricas = [
-                { key:"adr_occ", label:"ADR & Ocupación" },
+                { key:"adr_occ", label:t("adr_ocupacion") },
               ];
               const xTick = (props) => {
                 const {x,y,payload} = props;
@@ -1826,13 +2064,13 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
 
       <Card>
         <p style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 700, fontSize: 16, color: C.text, marginBottom: 16 }}>
-          Últimos 12 meses
+          {t("ultimos_12m")}
         </p>
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
             <thead>
               <tr style={{ borderBottom: `2px solid ${C.border}` }}>
-                {["Año","Mes","Ocup.","ADR","RevPAR","TRevPAR","Rev. Hab.","Rev. Total"].map((h,hi) => (
+                {[t("th_anio"),t("th_mes"),t("th_ocup"),t("th_adr"),t("th_revpar"),t("th_trevpar"),t("th_rev_hab"),t("th_rev_total")].map((h,hi) => (
                   <th key={h} style={{ padding: "8px 12px", textAlign: hi<=1?"left":"right", fontSize: 11, color: C.textLight, textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600 }}>{h}</th>
                 ))}
               </tr>
@@ -1888,7 +2126,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20 }}>
                 <div>
                   <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:2 }}>{MESES_FULL2[mesIdx]} {anioIdx}</p>
-                  <h3 style={{ fontSize:22, fontWeight:800, color:C.text, fontFamily:"'Plus Jakarta Sans',sans-serif", letterSpacing:-0.5 }}>ADR & Ocupación diaria</h3>
+                  <h3 style={{ fontSize:22, fontWeight:800, color:C.text, fontFamily:"'Plus Jakarta Sans',sans-serif", letterSpacing:-0.5 }}>{t("adr_ocup_diaria")}</h3>
                 </div>
                 <button onClick={()=>setModalDiario(null)} style={{ background:"none", border:`1.5px solid ${C.border}`, borderRadius:8, width:34, height:34, cursor:"pointer", fontSize:16, color:C.textMid }}
                   onMouseEnter={e=>{e.currentTarget.style.background=C.accent;e.currentTarget.style.color="#fff";}}
@@ -1896,7 +2134,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
               </div>
 
               {diasData.length === 0 ? (
-                <p style={{ color:C.textLight, textAlign:"center", padding:40 }}>Sin datos para este mes</p>
+                <p style={{ color:C.textLight, textAlign:"center", padding:40 }}>{t("sin_datos_mes")}</p>
               ) : (
                 <ResponsiveContainer width="100%" height={300}>
                   <ComposedChart data={diasData} barSize={10}>
@@ -1922,13 +2160,14 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
 
 // ─── PICKUP VIEW ──────────────────────────────────────────────────
 function PickupView({ datos }) {
+  const t = useT();
   const { session, presupuesto, produccion } = datos;
   const pickupEntries = datos.pickupEntries || [];
   const cargando = false;
   const [anio, setAnio]                   = useState(new Date().getFullYear());
 
   const hoy     = new Date();
-  const MESES   = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+  const MESES   = t("meses_corto");
 
   // Año inicial: el más reciente con datos
   useEffect(() => {
@@ -2000,7 +2239,7 @@ function PickupView({ datos }) {
   if (cargando) return (
     <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", minHeight:300, gap:12 }}>
       <div style={{ width:32, height:32, border:`3px solid ${C.border}`, borderTop:`3px solid ${C.accent}`, borderRadius:"50%", animation:"spin 0.8s linear infinite" }} />
-      <p style={{ color:C.textLight, fontSize:13 }}>Cargando pickup...</p>
+      <p style={{ color:C.textLight, fontSize:13 }}>{t("cargando_pickup")}</p>
     </div>
   );
 
@@ -2008,7 +2247,7 @@ function PickupView({ datos }) {
   const hoyD = new Date();
   const ayerD = new Date(hoyD); ayerD.setDate(hoyD.getDate()-1);
   const ayerStr = `${ayerD.getFullYear()}-${String(ayerD.getMonth()+1).padStart(2,"0")}-${String(ayerD.getDate()).padStart(2,"0")}`;
-  const MESES_FULL_PU = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+  const MESES_FULL_PU = t("meses_full");
 
   const reservasAyer = pickupEntries.filter(e => String(e.fecha_pickup||"").slice(0,10) === ayerStr);
 
@@ -2081,25 +2320,25 @@ function PickupView({ datos }) {
       <Card>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:16 }}>
           <div>
-            <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:18, color:C.text }}>Reservas de ayer</p>
+            <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:18, color:C.text }}>{t("reservas_ayer")}</p>
             <p style={{ fontSize:12, color:C.textLight, marginTop:2 }}>
               {ayerD.toLocaleDateString("es-ES",{weekday:"long",day:"numeric",month:"long"}).replace(/^\w/,c=>c.toUpperCase())}
             </p>
           </div>
           <div style={{ background:"#B8860B22", border:"1px solid #B8860B44", borderRadius:10, padding:"10px 20px", textAlign:"center" }}>
             <p style={{ fontSize:28, fontWeight:800, color:"#B8860B", fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1 }}>{ayerTotal}</p>
-            <p style={{ fontSize:10, color:"#B8860B", fontWeight:600, textTransform:"uppercase", letterSpacing:0.8, marginTop:3 }}>reservas captadas</p>
+            <p style={{ fontSize:10, color:"#B8860B", fontWeight:600, textTransform:"uppercase", letterSpacing:0.8, marginTop:3 }}>{t("reservas_captadas")}</p>
           </div>
         </div>
 
         {ayerTotal === 0 ? (
-          <p style={{ color:C.textLight, fontSize:13, textAlign:"center", padding:"20px 0" }}>No hay reservas registradas para ayer</p>
+          <p style={{ color:C.textLight, fontSize:13, textAlign:"center", padding:"20px 0" }}>{t("no_reservas_ayer")}</p>
         ) : (
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:20 }}>
 
             {/* Por mes de llegada */}
             <div>
-              <p style={{ fontSize:11, fontWeight:700, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:10 }}>Por mes de llegada</p>
+              <p style={{ fontSize:11, fontWeight:700, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:10 }}>{t("por_mes_llegada")}</p>
               <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
                 {Object.entries(ayerPorMes).sort((a,b)=>a[0]-b[0]).map(([mi, nr]) => {
                   const pct = ayerTotal > 0 ? nr/ayerTotal : 0;
@@ -2120,7 +2359,7 @@ function PickupView({ datos }) {
 
             {/* Por canal — Pie chart */}
             <div>
-              <p style={{ fontSize:11, fontWeight:700, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:10 }}>Por canal</p>
+              <p style={{ fontSize:11, fontWeight:700, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:10 }}>{t("por_canal")}</p>
               {Object.keys(ayerPorCanal).length > 0 ? (() => {
                 const pieData = Object.entries(ayerPorCanal).sort((a,b)=>b[1]-a[1]).map(([canal, nr]) => ({
                   name: canal, value: nr, color: CANAL_COLORS[canal] || C.accent
@@ -2159,25 +2398,25 @@ function PickupView({ datos }) {
         <Card>
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:14 }}>
             <div>
-              <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:16, color:C.text }}>Cancelaciones de ayer</p>
+              <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:16, color:C.text }}>{t("cancelaciones_ayer")}</p>
               <p style={{ fontSize:11, color:C.textLight, marginTop:2 }}>
                 {ayerD.toLocaleDateString("es-ES",{weekday:"long",day:"numeric",month:"long"}).replace(/^\w/,c=>c.toUpperCase())}
               </p>
             </div>
             <div style={{ background: cancelTotal>0?"#FDECEA":"#E6F7EE", border:`1px solid ${cancelTotal>0?"#D32F2F44":"#1A7A3C44"}`, borderRadius:10, padding:"10px 20px", textAlign:"center" }}>
               <p style={{ fontSize:28, fontWeight:800, color:cancelTotal>0?C.red:C.green, fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1 }}>{cancelTotal}</p>
-              <p style={{ fontSize:10, fontWeight:600, textTransform:"uppercase", letterSpacing:0.8, marginTop:3, color:cancelTotal>0?C.red:C.green }}>cancelaciones</p>
+              <p style={{ fontSize:10, fontWeight:600, textTransform:"uppercase", letterSpacing:0.8, marginTop:3, color:cancelTotal>0?C.red:C.green }}>{t("cancelaciones")}</p>
             </div>
           </div>
           {cancelTotal === 0 ? (
-            <p style={{ color:C.green, fontSize:13, textAlign:"center", padding:"12px 0" }}>✅ Sin cancelaciones ayer</p>
+            <p style={{ color:C.green, fontSize:13, textAlign:"center", padding:"12px 0" }}>✅ {t("sin_cancelaciones")}</p>
           ) : (
             <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
-              <p style={{ fontSize:11, fontWeight:700, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:4 }}>Por mes afectado</p>
+              <p style={{ fontSize:11, fontWeight:700, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:4 }}>{t("por_mes_afectado")}</p>
               {Object.entries(cancelPorMes).sort((a,b)=>a[0]-b[0]).map(([mi, n]) => (
                 <div key={mi} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"6px 10px", background:C.redLight, borderRadius:6 }}>
                   <span style={{ fontSize:12, color:C.text, fontWeight:500 }}>{MESES_FULL_PU[parseInt(mi)]}</span>
-                  <span style={{ fontSize:13, fontWeight:700, color:C.red }}>{n} cancel.</span>
+                  <span style={{ fontSize:13, fontWeight:700, color:C.red }}>{n} {t("cancel_abrev")}</span>
                 </div>
               ))}
             </div>
@@ -2188,12 +2427,12 @@ function PickupView({ datos }) {
         <Card>
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:14 }}>
             <div>
-              <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:16, color:C.text }}>Duración media</p>
-              <p style={{ fontSize:11, color:C.textLight, marginTop:2 }}>Noches por reserva confirmada</p>
+              <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:16, color:C.text }}>{t("duracion_media")}</p>
+              <p style={{ fontSize:11, color:C.textLight, marginTop:2 }}>{t("noches_reserva")}</p>
             </div>
             <div style={{ background:`${C.accent}15`, border:`1px solid ${C.accent}33`, borderRadius:10, padding:"10px 20px", textAlign:"center" }}>
               <p style={{ fontSize:28, fontWeight:800, color:C.accent, fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1 }}>{nochesMed ?? "—"}</p>
-              <p style={{ fontSize:10, fontWeight:600, textTransform:"uppercase", letterSpacing:0.8, marginTop:3, color:C.accent }}>noches media</p>
+              <p style={{ fontSize:10, fontWeight:600, textTransform:"uppercase", letterSpacing:0.8, marginTop:3, color:C.accent }}>{t("noches_media")}</p>
             </div>
           </div>
           {nochesCanalData.length > 0 && (
@@ -2223,14 +2462,14 @@ function PickupView({ datos }) {
         <Card>
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:14 }}>
             <div>
-              <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:16, color:C.text }}>Precio medio reserva</p>
-              <p style={{ fontSize:11, color:C.textLight, marginTop:2 }}>Revenue medio por reserva confirmada</p>
+              <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:16, color:C.text }}>{t("precio_medio_reserva")}</p>
+              <p style={{ fontSize:11, color:C.textLight, marginTop:2 }}>{t("revenue_medio")}</p>
             </div>
             <div style={{ background:"#1A7A3C15", border:"1px solid #1A7A3C33", borderRadius:10, padding:"10px 20px", textAlign:"center" }}>
               <p style={{ fontSize:28, fontWeight:800, color:C.green, fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1 }}>
                 {precioMed ? `€${precioMed.toLocaleString("es-ES")}` : "—"}
               </p>
-              <p style={{ fontSize:10, fontWeight:600, textTransform:"uppercase", letterSpacing:0.8, marginTop:3, color:C.green }}>precio medio</p>
+              <p style={{ fontSize:10, fontWeight:600, textTransform:"uppercase", letterSpacing:0.8, marginTop:3, color:C.green }}>{t("precio_medio")}</p>
             </div>
           </div>
           {precioCanalData.length > 0 && (
@@ -2276,7 +2515,7 @@ function PickupView({ datos }) {
       <div className="pickup-chart-row" style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:12, padding:"24px 28px", display:"flex", gap:40 }}>
         {/* Col izquierda: días más reservados */}
         <div style={{ display:"flex", flexDirection:"column", gap:12, minWidth:190, paddingRight:24, borderRight:`1px solid ${C.border}` }}>
-          <p style={{ fontSize:11, fontWeight:700, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:4 }}>🏆 Día pico</p>
+          <p style={{ fontSize:11, fontWeight:700, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:4 }}>🏆 {t("dia_pico")}</p>
           {(pickupEntries && pickupEntries.length > 0) && (() => {
             const porDia = {};
             (pickupEntries || []).forEach(e => {
@@ -2319,7 +2558,7 @@ function PickupView({ datos }) {
                 {peak ? (
                   <>
                     <p style={{ fontSize:15, fontWeight:800, color:C.text, fontFamily:"'Plus Jakarta Sans',sans-serif", letterSpacing:-0.3 }}>{fmt(peak.fecha)}</p>
-                    <p style={{ fontSize:11, color:C.textMid, marginTop:2 }}><span style={{ fontWeight:700, color:COL_PPTO }}>{peak.reservas}</span> reservas</p>
+                    <p style={{ fontSize:11, color:C.textMid, marginTop:2 }}><span style={{ fontWeight:700, color:COL_PPTO }}>{peak.reservas}</span> {t("reservas_captadas")}</p>
                   </>
                 ) : (
                   <p style={{ fontSize:11, color:C.textLight }}>Sin datos</p>
@@ -2398,7 +2637,7 @@ function PickupView({ datos }) {
 
       {/* ── PACE ── */}
       {(() => {
-        const MESES_FULL2 = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+        const MESES_FULL2 = t("meses_full");
         const pad = n => String(n).padStart(2,"0");
         const hab = datos.hotel?.habitaciones || 30;
 
@@ -2509,6 +2748,7 @@ function PickupView({ datos }) {
 
 // ─── BUDGET VIEW ──────────────────────────────────────────────────
 function BudgetView({ datos, anio: anioProp }) {
+  const t = useT();
   const { produccion, presupuesto } = datos;
   const pickupEntries = datos.pickupEntries || [];
 
@@ -2582,7 +2822,7 @@ function BudgetView({ datos, anio: anioProp }) {
   };
 
   // ── REALES POR MES ────────────────────────────────────────────
-  const realesPorMes = MESES_FULL.map((_, i) => {
+  const realesPorMes = t("meses_full").map((_, i) => {
     const d = (produccion || []).filter(r => {
       const f = new Date(r.fecha + "T00:00:00");
       return f.getMonth() === i && f.getFullYear() === anio;
@@ -2619,7 +2859,7 @@ function BudgetView({ datos, anio: anioProp }) {
       const forecast_dev_pct = forecast_dev != null && p.rev_total_ppto > 0 ? ((forecast_dev / p.rev_total_ppto) * 100).toFixed(1) : null;
 
       return {
-        mes: MESES_CORTO[p.mes - 1], mesIdx: p.mes - 1,
+        mes: t("meses_corto")[p.mes - 1], mesIdx: p.mes - 1,
         adr_ppto: p.adr_ppto, adr_real: real.adr_real, adr_dev,
         adr_dev_pct: p.adr_ppto > 0 && adr_dev != null ? ((adr_dev / p.adr_ppto) * 100).toFixed(1) : null,
         revpar_ppto: p.revpar_ppto, revpar_real: real.revpar_real, revpar_dev,
@@ -2663,11 +2903,11 @@ function BudgetView({ datos, anio: anioProp }) {
 
   const ConfianzaBadge = ({ pct, cerrado }) => {
     if (pct == null) return null;
-    if (cerrado) return <span style={{ fontSize: 9, color: C.green, fontWeight: 600 }}>✓ Real</span>;
+    if (cerrado) return <span style={{ fontSize: 9, color: C.green, fontWeight: 600 }}>{t("real_badge")}</span>;
     const color = pct >= 70 ? C.green : pct >= 40 ? "#E85D04" : C.textLight;
     return (
       <span style={{ fontSize: 9, color, fontWeight: 600, display: "block", marginTop: 2 }}>
-        {pct}% confianza
+        {pct}% {t("confianza")}
       </span>
     );
   };
@@ -2699,9 +2939,9 @@ function BudgetView({ datos, anio: anioProp }) {
       {totalForecast > 0 && (
         <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:14 }}>
           {[
-            { label:"Revenue Real YTD",     value:`€${Math.round(totalRevReal).toLocaleString("es-ES")}`,    color:C.green },
-            { label:"Forecast Cierre Año",  value:`€${Math.round(totalForecast).toLocaleString("es-ES")}`,   color:"#B8860B" },
-            { label:"Presupuesto Año",       value:`€${Math.round(totalRevPpto).toLocaleString("es-ES")}`,   color:C.accent },
+            { label:t("rev_real_ytd"),         value:`€${Math.round(totalRevReal).toLocaleString("es-ES")}`,    color:C.green },
+            { label:t("forecast_cierre_anio"), value:`€${Math.round(totalForecast).toLocaleString("es-ES")}`,   color:"#B8860B" },
+            { label:t("presupuesto_anio"),     value:`€${Math.round(totalRevPpto).toLocaleString("es-ES")}`,   color:C.accent },
           ].map((k,i) => (
             <div key={i} style={{ background:C.bgCard, border:`1px solid ${C.border}`, borderRadius:10, padding:"16px 20px", borderLeft:`3px solid ${k.color}` }}>
               <p style={{ fontSize:10, color:C.textLight, textTransform:"uppercase", letterSpacing:1.5, marginBottom:6, fontWeight:600 }}>{k.label}</p>
@@ -2760,13 +3000,13 @@ function BudgetView({ datos, anio: anioProp }) {
 
       {/* Tabla detalle */}
       <Card>
-        <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:16, color:C.text, marginBottom:16 }}>Detalle mensual</p>
+        <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:16, color:C.text, marginBottom:16 }}>{t("detalle_mensual")}</p>
         <div style={{ overflowX:"auto" }}>
           <table style={{ width:"100%", borderCollapse:"collapse", fontSize:12 }}>
             <thead>
               <tr style={{ borderBottom:`2px solid ${C.border}` }}>
-                {["Mes","ADR Ppto.","ADR Real","Desv. ADR","RevPAR Ppto.","RevPAR Real","Desv. RevPAR","Rev. Ppto.","Rev. Real","Desv. Rev.","Forecast Cierre"].map((h,hi) => (
-                  <th key={h} style={{ padding:"8px 8px", textAlign: hi===0?"left":"right", fontSize:10, color: h==="Forecast Cierre"?"#B8860B":C.textLight, textTransform:"uppercase", letterSpacing:"1px", fontWeight:600 }}>{h}</th>
+                {[t("th_mes"),t("th_adr_ppto"),t("th_adr_real"),t("th_desv_adr"),t("th_revpar_ppto"),t("th_revpar_real"),t("th_desv_revpar"),t("th_rev_ppto"),t("th_rev_real"),t("th_desv_rev"),t("th_forecast")].map((h,hi) => (
+                  <th key={hi} style={{ padding:"8px 8px", textAlign: hi===0?"left":"right", fontSize:10, color: hi===10?"#B8860B":C.textLight, textTransform:"uppercase", letterSpacing:"1px", fontWeight:600 }}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -2792,7 +3032,7 @@ function BudgetView({ datos, anio: anioProp }) {
                           <span style={{ fontSize:13, fontWeight:700, color:"#B8860B" }}>€{Math.round(f.forecast_rev).toLocaleString("es-ES")}</span>
                           {f.forecast_dev != null && (
                             <span style={{ fontSize:9, color:f.forecast_dev>=0?C.green:C.red, fontWeight:600, display:"block" }}>
-                              {f.forecast_dev>=0?"+":""}{(f.forecast_dev/1000).toFixed(1)}k vs ppto
+                              {f.forecast_dev>=0?"+":""}{(f.forecast_dev/1000).toFixed(1)}k {t("vs_ppto")}
                             </span>
                           )}
                           <ConfianzaBadge pct={f.confianza} cerrado={f.mesCerrado}/>
@@ -2804,7 +3044,7 @@ function BudgetView({ datos, anio: anioProp }) {
               })}
               {filasConReal.length > 0 && (
                 <tr style={{ borderTop:`2px solid ${C.border}`, background:"#E8F5EE", fontWeight:700 }}>
-                  <td style={{ padding:"10px 12px", color:C.text, fontWeight:700 }}>TOTAL YTD</td>
+                  <td style={{ padding:"10px 12px", color:C.text, fontWeight:700 }}>{t("total_ytd")}</td>
                   <td colSpan={2} style={{ padding:"10px 8px", textAlign:"right", color:C.textMid, fontSize:11 }}>Ppto: €{mediaAdrPpto} media</td>
                   <td style={{ padding:"10px 8px", textAlign:"right" }}><DevBadge val={mediaAdrReal!=null?mediaAdrReal-mediaAdrPpto:null} pct={mediaAdrReal!=null?(((mediaAdrReal-mediaAdrPpto)/mediaAdrPpto)*100).toFixed(1):null}/></td>
                   <td colSpan={2} style={{ padding:"10px 8px", textAlign:"right", color:C.textMid, fontSize:11 }}>Ppto: €{mediaRevparPpto} media</td>
@@ -2829,26 +3069,27 @@ function BudgetView({ datos, anio: anioProp }) {
 
 // ─── GRUPOS & EVENTOS VIEW ────────────────────────────────────────
 function GruposView({ datos, onRecargar }) {
+  const t = useT();
   const grupos = datos.grupos || [];
   const session = datos.session;
 
   const CATS = {
-    corporativo: { label: "Corporativo",    icon: "🏢", color: "#2B7EC1" },
-    boda:        { label: "Boda / Social",  icon: "💍", color: "#D4547A" },
-    feria:       { label: "Feria / Congreso", icon: "🎟️", color: "#E85D04" },
-    deportivo:   { label: "Deportivo",      icon: "🏆", color: "#059669" },
-    otros:       { label: "Otros",          icon: "✨", color: "#7C3AED" },
+    corporativo: { label: t("cat_corporativo"), icon: "🏢", color: "#2B7EC1" },
+    boda:        { label: t("cat_boda"),        icon: "💍", color: "#D4547A" },
+    feria:       { label: t("cat_feria"),       icon: "🎟️", color: "#E85D04" },
+    deportivo:   { label: t("cat_deportivo"),   icon: "🏆", color: "#059669" },
+    otros:       { label: t("cat_otros"),       icon: "✨", color: "#7C3AED" },
   };
 
   const ESTADOS = {
-    confirmado:  { label: "Confirmado",    color: "#1A7A3C", bg: "#E6F7EE", peso: 1.0 },
-    tentativo:   { label: "Tentativo",     color: "#B8860B", bg: "#FFF8E7", peso: 0.5 },
-    cotizacion:  { label: "En cotización", color: "#2B7EC1", bg: "#E8F0F9", peso: 0 },
-    cancelado:   { label: "Cancelado",     color: "#999",    bg: "#F5F5F5", peso: 0 },
+    confirmado:  { label: t("estado_confirmado"), color: "#1A7A3C", bg: "#E6F7EE", peso: 1.0 },
+    tentativo:   { label: t("estado_tentativo"),  color: "#B8860B", bg: "#FFF8E7", peso: 0.5 },
+    cotizacion:  { label: t("estado_cotizacion"), color: "#2B7EC1", bg: "#E8F0F9", peso: 0 },
+    cancelado:   { label: t("estado_cancelado"),  color: "#999",    bg: "#F5F5F5", peso: 0 },
   };
 
-  const MESES = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
-  const MESES_FULL = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+  const MESES = t("meses_corto");
+  const MESES_FULL = t("meses_full");
 
   const [anio, setAnio] = useState(new Date().getFullYear());
   const [filtroEstado, setFiltroEstado] = useState("todos");
@@ -2904,7 +3145,7 @@ function GruposView({ datos, onRecargar }) {
   };
 
   const eliminar = async (id) => {
-    if (!window.confirm("¿Eliminar este grupo?")) return;
+    if (!window.confirm(t("eliminar_grupo"))) return;
     await supabase.from("grupos_eventos").delete().eq("id", id);
     setModalGrupo(null);
     onRecargar();
@@ -2949,10 +3190,10 @@ function GruposView({ datos, onRecargar }) {
       {/* ── KPIs ── */}
       <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))", gap:12 }}>
         {[
-          { label:"Revenue confirmado",  value:`€${Math.round(revConfirmado).toLocaleString("es-ES")}`,  color:"#1A7A3C", n:confirmados.length },
-          { label:"Revenue tentativo (50%)", value:`€${Math.round(revTentativo).toLocaleString("es-ES")}`, color:"#B8860B", n:tentativos.length },
-          { label:"Pipeline en cotización", value:`€${Math.round(revPipeline).toLocaleString("es-ES")}`,  color:"#2B7EC1", n:pipeline.length },
-          { label:"Cancelados / Perdidos",  value:cancelados.length,                                       color:"#999",    n:cancelados.length },
+          { label:t("rev_confirmado"),        value:`€${Math.round(revConfirmado).toLocaleString("es-ES")}`,  color:"#1A7A3C", n:confirmados.length },
+          { label:t("rev_tentativo"),         value:`€${Math.round(revTentativo).toLocaleString("es-ES")}`, color:"#B8860B", n:tentativos.length },
+          { label:t("pipeline_cotizacion"),   value:`€${Math.round(revPipeline).toLocaleString("es-ES")}`,  color:"#2B7EC1", n:pipeline.length },
+          { label:t("cancelados_perdidos"),   value:cancelados.length,                                       color:"#999",    n:cancelados.length },
         ].map((k,i) => (
           <div key={i} style={{ background:C.bgCard, border:`1px solid ${C.border}`, borderRadius:10, padding:"14px 18px", borderLeft:`3px solid ${k.color}` }}>
             <p style={{ fontSize:10, color:C.textLight, textTransform:"uppercase", letterSpacing:1.5, fontWeight:600, marginBottom:4 }}>{k.label}</p>
@@ -2974,13 +3215,13 @@ function GruposView({ datos, onRecargar }) {
             {[["calendario","📅"],["lista","☰"],["pipeline","🔮"]].map(([k,ic])=>(
               <button key={k} onClick={()=>setVistaActiva(k)}
                 style={{ padding:"4px 12px", borderRadius:6, border:"none", background:vistaActiva===k?C.bgCard:"transparent", color:vistaActiva===k?C.text:C.textLight, fontSize:12, fontWeight:vistaActiva===k?600:400, cursor:"pointer", boxShadow:vistaActiva===k?"0 1px 4px rgba(0,0,0,0.08)":"none" }}>
-                {ic} {k.charAt(0).toUpperCase()+k.slice(1)}
+                {ic} {t(`vista_${k}`)}
               </button>
             ))}
           </div>
         </div>
         <button onClick={()=>abrirNuevo()} style={{ background:"#7C3AED", color:"#fff", border:"none", borderRadius:8, padding:"8px 18px", fontSize:13, fontWeight:600, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
-          + Nuevo evento
+          {t("nuevo_evento")}
         </button>
       </div>
 
@@ -2995,7 +3236,7 @@ function GruposView({ datos, onRecargar }) {
                   onClick={()=>abrirNuevo(`${anio}-${String(mi+1).padStart(2,"0")}-01`)}>
                   <p style={{ fontSize:11, fontWeight:700, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:6 }}>{MESES_FULL[mi]}</p>
                   {evs.length === 0
-                    ? <p style={{ fontSize:10, color:C.border }}>Sin eventos</p>
+                    ? <p style={{ fontSize:10, color:C.border }}>{t("sin_eventos")}</p>
                     : evs.map((g,i) => (
                         <div key={i} onClick={e=>{e.stopPropagation();abrirEditar(g);}}
                           style={{ display:"flex", alignItems:"center", gap:5, marginBottom:4, padding:"3px 6px", borderRadius:4, background:ESTADOS[g.estado]?.bg||"#f5f5f5", border:`1px solid ${ESTADOS[g.estado]?.color||"#ddd"}33`, cursor:"pointer" }}>
@@ -3019,13 +3260,13 @@ function GruposView({ datos, onRecargar }) {
             {["todos","confirmado","tentativo","cotizacion","cancelado"].map(e=>(
               <button key={e} onClick={()=>setFiltroEstado(e)}
                 style={{ padding:"4px 12px", borderRadius:6, border:`1px solid ${filtroEstado===e?(ESTADOS[e]?.color||C.accent):C.border}`, background:filtroEstado===e?(ESTADOS[e]?.bg||C.accentLight):"transparent", color:filtroEstado===e?(ESTADOS[e]?.color||C.accent):C.textLight, fontSize:11, fontWeight:filtroEstado===e?700:400, cursor:"pointer" }}>
-                {e==="todos"?"Todos":ESTADOS[e]?.label}
+                {e==="todos"?t("todos"):ESTADOS[e]?.label}
               </button>
             ))}
           </div>
           <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
             {gruposFiltrados.length === 0
-              ? <p style={{ color:C.textLight, textAlign:"center", padding:24 }}>Sin eventos</p>
+              ? <p style={{ color:C.textLight, textAlign:"center", padding:24 }}>{t("sin_eventos")}</p>
               : gruposFiltrados.sort((a,b)=>a.fecha_inicio?.localeCompare(b.fecha_inicio)).map(g => {
                   const revT = calcRevTotal(g);
                   const noches = Math.max(1, Math.round((new Date(g.fecha_fin) - new Date(g.fecha_inicio)) / 86400000));
@@ -3036,7 +3277,7 @@ function GruposView({ datos, onRecargar }) {
                       <span style={{ fontSize:22 }}>{CATS[g.categoria]?.icon||"✨"}</span>
                       <div style={{ flex:1 }}>
                         <p style={{ fontSize:13, fontWeight:700, color:C.text }}>{g.nombre}</p>
-                        <p style={{ fontSize:11, color:C.textLight }}>{g.fecha_inicio} → {g.fecha_fin} · {noches} noche{noches!==1?"s":""} · {g.habitaciones||0} hab.</p>
+                        <p style={{ fontSize:11, color:C.textLight }}>{g.fecha_inicio} → {g.fecha_fin} · {noches} {noches!==1?t("noches"):t("noche")} · {g.habitaciones||0} {t("hab_abrev")}</p>
                       </div>
                       <div style={{ textAlign:"right" }}>
                         <p style={{ fontSize:14, fontWeight:700, color:"#1A7A3C" }}>€{Math.round(revT).toLocaleString("es-ES")}</p>
@@ -3066,7 +3307,7 @@ function GruposView({ datos, onRecargar }) {
                 </div>
                 <div style={{ padding:"10px 12px", display:"flex", flexDirection:"column", gap:8, minHeight:120 }}>
                   {evs.length === 0
-                    ? <p style={{ fontSize:11, color:C.border, textAlign:"center", paddingTop:16 }}>Sin eventos</p>
+                    ? <p style={{ fontSize:11, color:C.border, textAlign:"center", paddingTop:16 }}>{t("sin_eventos")}</p>
                     : evs.map(g => (
                         <div key={g.id} onClick={()=>abrirEditar(g)} style={{ padding:"8px 10px", borderRadius:7, border:`1px solid ${C.border}`, cursor:"pointer", background:C.bg }}
                           onMouseEnter={e=>e.currentTarget.style.borderColor=ESTADOS[estado]?.color}
@@ -3094,26 +3335,26 @@ function GruposView({ datos, onRecargar }) {
             onClick={e=>e.stopPropagation()}>
 
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20 }}>
-              <h3 style={{ fontSize:18, fontWeight:700, color:C.text }}>{modalGrupo?.id?"Editar evento":"Nuevo evento"}</h3>
+              <h3 style={{ fontSize:18, fontWeight:700, color:C.text }}>{modalGrupo?.id?t("editar_evento"):t("nuevo_evento_title")}</h3>
               <button onClick={()=>setModalGrupo(null)} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, width:28, height:28, cursor:"pointer", fontSize:16, color:C.textMid }}>×</button>
             </div>
 
             <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
 
               <div>
-                <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>Nombre del evento *</p>
+                <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>{t("form_nombre")}</p>
                 <input style={inp} placeholder="Boda García · Congreso Pharma..." value={form.nombre} onChange={e=>setForm(f=>({...f,nombre:e.target.value}))}/>
               </div>
 
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
                 <div>
-                  <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>Categoría</p>
+                  <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>{t("form_categoria")}</p>
                   <select style={inp} value={form.categoria} onChange={e=>setForm(f=>({...f,categoria:e.target.value}))}>
                     {Object.entries(CATS).map(([k,v])=><option key={k} value={k}>{v.icon} {v.label}</option>)}
                   </select>
                 </div>
                 <div>
-                  <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>Estado</p>
+                  <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>{t("form_estado")}</p>
                   <select style={inp} value={form.estado} onChange={e=>setForm(f=>({...f,estado:e.target.value}))}>
                     {Object.entries(ESTADOS).map(([k,v])=><option key={k} value={k}>{v.label}</option>)}
                   </select>
@@ -3122,46 +3363,46 @@ function GruposView({ datos, onRecargar }) {
 
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
                 <div>
-                  <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>Fecha entrada *</p>
+                  <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>{t("form_fecha_entrada")}</p>
                   <input style={inp} type="date" value={form.fecha_inicio} onChange={e=>setForm(f=>({...f,fecha_inicio:e.target.value}))}/>
                 </div>
                 <div>
-                  <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>Fecha salida *</p>
+                  <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>{t("form_fecha_salida")}</p>
                   <input style={inp} type="date" value={form.fecha_fin} onChange={e=>setForm(f=>({...f,fecha_fin:e.target.value}))}/>
                 </div>
               </div>
 
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
                 <div>
-                  <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>Habitaciones / noche</p>
+                  <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>{t("form_habitaciones")}</p>
                   <input style={inp} type="number" placeholder="20" value={form.habitaciones} onChange={e=>setForm(f=>({...f,habitaciones:e.target.value}))}/>
                 </div>
                 <div>
-                  <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>ADR grupo (€)</p>
+                  <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>{t("form_adr")}</p>
                   <input style={inp} type="number" placeholder="89" value={form.adr_grupo} onChange={e=>setForm(f=>({...f,adr_grupo:e.target.value}))}/>
                 </div>
               </div>
 
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
                 <div>
-                  <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>Revenue F&B (€)</p>
+                  <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>{t("form_fnb")}</p>
                   <input style={inp} type="number" placeholder="5000" value={form.revenue_fnb} onChange={e=>setForm(f=>({...f,revenue_fnb:e.target.value}))}/>
                 </div>
                 <div>
-                  <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>Alquiler sala (€)</p>
+                  <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>{t("form_sala")}</p>
                   <input style={inp} type="number" placeholder="800" value={form.revenue_sala} onChange={e=>setForm(f=>({...f,revenue_sala:e.target.value}))}/>
                 </div>
               </div>
 
               {form.estado === "cancelado" && (
                 <div>
-                  <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>Motivo pérdida</p>
+                  <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>{t("form_motivo")}</p>
                   <input style={inp} placeholder="Precio, competencia, fecha..." value={form.motivo_perdida} onChange={e=>setForm(f=>({...f,motivo_perdida:e.target.value}))}/>
                 </div>
               )}
 
               <div>
-                <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>Notas</p>
+                <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>{t("form_notas")}</p>
                 <textarea style={{...inp, resize:"vertical", minHeight:60}} placeholder="Contacto, condiciones especiales..." value={form.notas} onChange={e=>setForm(f=>({...f,notas:e.target.value}))}/>
               </div>
 
@@ -3176,7 +3417,7 @@ function GruposView({ datos, onRecargar }) {
                 const total = revHab + revFnb + revSala;
                 return total > 0 ? (
                   <div style={{ background:"#E6F7EE", border:"1px solid #1A7A3C33", borderRadius:8, padding:"10px 14px", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-                    <p style={{ fontSize:12, color:"#1A7A3C", fontWeight:600 }}>Revenue estimado</p>
+                    <p style={{ fontSize:12, color:"#1A7A3C", fontWeight:600 }}>{t("rev_estimado")}</p>
                     <p style={{ fontSize:18, fontWeight:800, color:"#1A7A3C" }}>€{Math.round(total).toLocaleString("es-ES")}</p>
                   </div>
                 ) : null;
@@ -3184,14 +3425,14 @@ function GruposView({ datos, onRecargar }) {
 
               <div style={{ display:"flex", justifyContent:"space-between", marginTop:4 }}>
                 {modalGrupo?.id
-                  ? <button onClick={()=>eliminar(modalGrupo.id)} style={{ background:"none", border:`1px solid ${C.red}`, color:C.red, borderRadius:7, padding:"8px 16px", fontSize:12, cursor:"pointer" }}>Eliminar</button>
+                  ? <button onClick={()=>eliminar(modalGrupo.id)} style={{ background:"none", border:`1px solid ${C.red}`, color:C.red, borderRadius:7, padding:"8px 16px", fontSize:12, cursor:"pointer" }}>{t("form_eliminar")}</button>
                   : <div/>
                 }
                 <div style={{ display:"flex", gap:8 }}>
-                  <button onClick={()=>setModalGrupo(null)} style={{ background:"none", border:`1px solid ${C.border}`, color:C.textMid, borderRadius:7, padding:"8px 16px", fontSize:12, cursor:"pointer" }}>Cancelar</button>
+                  <button onClick={()=>setModalGrupo(null)} style={{ background:"none", border:`1px solid ${C.border}`, color:C.textMid, borderRadius:7, padding:"8px 16px", fontSize:12, cursor:"pointer" }}>{t("form_cancelar")}</button>
                   <button onClick={guardar} disabled={guardando||!form.nombre||!form.fecha_inicio||!form.fecha_fin}
                     style={{ background:"#7C3AED", color:"#fff", border:"none", borderRadius:7, padding:"8px 20px", fontSize:13, fontWeight:600, cursor:"pointer", opacity:guardando?0.6:1 }}>
-                    {guardando?"Guardando...":"Guardar"}
+                    {guardando?t("guardando_btn"):t("form_guardar")}
                   </button>
                 </div>
               </div>
@@ -3306,6 +3547,7 @@ const NAV = [
 
 
 function PantallaSubscripcion({ session, onPagar }) {
+  const t = useT();
   const [cargando, setCargando] = useState(false);
 
   const iniciarPago = async () => {
@@ -3329,13 +3571,13 @@ function PantallaSubscripcion({ session, onPagar }) {
     <div style={{ minHeight:"100vh", background:C.bg, display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
       <div style={{ width:460, background:C.bgCard, borderRadius:20, padding:"48px 40px", boxShadow:"0 32px 80px rgba(0,0,0,0.1)", textAlign:"center" }}>
         <img src={LOGO_B64} alt="FastRevenue" style={{ height:52, marginBottom:24 }} />
-        <h1 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:26, fontWeight:800, color:C.text, marginBottom:10 }}>Empieza gratis 30 días</h1>
+        <h1 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:26, fontWeight:800, color:C.text, marginBottom:10 }}>{t("empieza_gratis")}</h1>
         <p style={{ fontSize:14, color:C.textMid, lineHeight:1.7, marginBottom:32 }}>
-          Acceso completo a FastRev durante 30 días sin coste.<br/>
-          Después, solo <strong>€49/mes</strong> + IVA. Cancela cuando quieras.
+          {t("acceso_completo")}<br/>
+          {t("precio_sub")}
         </p>
         <div style={{ background:C.bg, borderRadius:12, padding:"20px 24px", marginBottom:28, textAlign:"left" }}>
-          {["Dashboard con KPIs en tiempo real","Análisis de pickup y forecast","Presupuesto vs real mensual","Informes PDF mensuales","Alertas automáticas"].map((f,i) => (
+          {[t("feat_dashboard"),t("feat_pickup"),t("feat_presupuesto"),t("feat_pdf"),t("feat_alertas")].map((f,i) => (
             <div key={i} style={{ display:"flex", alignItems:"center", gap:10, marginBottom: i<4?10:0 }}>
               <span style={{ color:C.green, fontWeight:700, fontSize:14 }}>✓</span>
               <span style={{ fontSize:13, color:C.text }}>{f}</span>
@@ -3344,10 +3586,10 @@ function PantallaSubscripcion({ session, onPagar }) {
         </div>
         <button onClick={iniciarPago} disabled={cargando}
           style={{ width:"100%", padding:"14px", borderRadius:10, border:"none", background:C.accent, color:"#fff", fontSize:15, fontWeight:700, cursor:cargando?"not-allowed":"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", marginBottom:12 }}>
-          {cargando ? "Redirigiendo..." : "Empezar prueba gratuita →"}
+          {cargando ? t("redirigiendo") : t("empezar_prueba")}
         </button>
         <button onClick={() => supabase.auth.signOut()} style={{ background:"none", border:"none", color:C.textLight, fontSize:12, cursor:"pointer" }}>
-          Cerrar sesión
+          {t("cerrar_sesion")}
         </button>
       </div>
     </div>
@@ -3611,7 +3853,7 @@ export default function App() {
 
   if (loading) return (
     <div style={{ minHeight: "100vh", background: C.bgDeep, display: "flex", alignItems: "center", justifyContent: "center" }}>
-      <div style={{ color: C.accent, fontFamily: "'Cormorant Garamond', serif", fontSize: 20 }}>Cargando...</div>
+      <div style={{ color: C.accent, fontFamily: "'Cormorant Garamond', serif", fontSize: 20 }}>{t("cargando")}</div>
     </div>
   );
 
@@ -3769,7 +4011,7 @@ export default function App() {
                     style={{ width:"100%", display:"flex", alignItems:"center", padding:"10px 16px", background:"transparent", border:"none", borderBottom:`1px solid ${C.border}`, cursor:"pointer", fontSize:12, color:C.text, fontFamily:"'Plus Jakarta Sans',sans-serif", textAlign:"left", letterSpacing:0.2 }}
                     onMouseEnter={e=>e.currentTarget.style.background=C.bg}
                     onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
-                    {op.key === "informe" && generandoPDF ? "Generando..." : op.label}
+                    {op.key === "informe" && generandoPDF ? t("generando") : op.label}
                   </button>
                 ))}
                 {/* Selector de idioma */}
