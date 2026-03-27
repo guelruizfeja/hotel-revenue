@@ -3727,14 +3727,6 @@ export default function App() {
               }} />}
             </div>
           ); })()}
-          {/* Selector de idioma */}
-          {[["es","🇪🇸"],["en","🇬🇧"],["fr","🇫🇷"]].map(([l, flag]) => (
-            <button key={l} onClick={() => { setLang(l); localStorage.setItem("fr_lang", l); }}
-              title={l.toUpperCase()}
-              style={{ width: 26, height: 26, borderRadius: "50%", border: lang===l ? `2px solid ${C.accent}` : `1.5px solid ${C.border}`, background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, padding: 0, lineHeight: 1, opacity: lang===l ? 1 : 0.55, transition: "all 0.15s", flexShrink: 0 }}>
-              {flag}
-            </button>
-          ))}
           <button id="ob-importar" onClick={() => setImportar(true)} style={{ background: C.accent, color: "#fff", border: "none", borderRadius: 7, padding: "5px 10px", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "'Plus Jakarta Sans',sans-serif", whiteSpace: "nowrap" }}>
             <span className="topbar-importar-label">{t("importar")}</span>
             <span style={{ display:"none" }} className="topbar-importar-icon">↑</span>
@@ -3780,8 +3772,18 @@ export default function App() {
                     {op.key === "informe" && generandoPDF ? "Generando..." : op.label}
                   </button>
                 ))}
+                {/* Selector de idioma */}
+                <div style={{ padding:"10px 16px", borderTop:`1px solid ${C.border}`, display:"flex", alignItems:"center", gap:8 }}>
+                  {[["es","🇪🇸"],["en","🇬🇧"],["fr","🇫🇷"]].map(([l, flag]) => (
+                    <button key={l} onClick={() => { setLang(l); localStorage.setItem("fr_lang", l); }}
+                      title={l.toUpperCase()}
+                      style={{ width:28, height:28, borderRadius:"50%", border: lang===l ? `2px solid ${C.accent}` : `1.5px solid ${C.border}`, background:"transparent", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", fontSize:16, padding:0, opacity: lang===l ? 1 : 0.5, transition:"all 0.15s" }}>
+                      {flag}
+                    </button>
+                  ))}
+                </div>
                 <button onClick={handleLogout}
-                  style={{ width:"100%", display:"flex", alignItems:"center", padding:"10px 16px", background:"transparent", border:"none", cursor:"pointer", fontSize:12, color:C.red, fontFamily:"'Plus Jakarta Sans',sans-serif", textAlign:"left", letterSpacing:0.2 }}
+                  style={{ width:"100%", display:"flex", alignItems:"center", padding:"10px 16px", background:"transparent", border:"none", borderTop:`1px solid ${C.border}`, cursor:"pointer", fontSize:12, color:C.red, fontFamily:"'Plus Jakarta Sans',sans-serif", textAlign:"left", letterSpacing:0.2 }}
                   onMouseEnter={e=>e.currentTarget.style.background=C.redLight}
                   onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
                   {t("cerrar_sesion")}
