@@ -3313,6 +3313,67 @@ function PantallaSubscripcion({ session, onPagar }) {
   );
 }
 
+function OnboardingOverlay({ step, onNext, onSkip }) {
+  const STEPS = [
+    { target: "ob-importar",      title: "Importa tus datos",  text: "Descarga la plantilla Excel, rellénala con tus datos de producción y súbela aquí. En segundos tendrás el dashboard activo." },
+    { target: "ob-nav-dashboard", title: "Dashboard",          text: "Visualiza tus KPIs principales: RevPAR, ADR y ocupación comparados con el año anterior." },
+    { target: "ob-nav-pickup",    title: "Pickup",             text: "Analiza el ritmo de nuevas reservas día a día y detecta tendencias de cara al mes." },
+    { target: "ob-nav-budget",    title: "Presupuesto",        text: "Compara producción real vs objetivo mensual y proyecta el cierre del año." },
+    { target: "ob-nav-grupos",    title: "M&E",                text: "Gestiona grupos y eventos: confirmados, tentativos y pipeline de negocio." },
+  ];
+
+  const [rect, setRect] = useState(null);
+  const s = STEPS[step];
+
+  useEffect(() => {
+    const update = () => {
+      const el = document.getElementById(s.target);
+      if (el) setRect(el.getBoundingClientRect());
+    };
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, [step]);
+
+  if (!rect) return null;
+
+  const PAD = 8;
+  const sL = rect.left - PAD, sT = rect.top - PAD, sW = rect.width + PAD * 2, sH = rect.height + PAD * 2;
+  const TW = 280;
+  let tLeft = sL + sW / 2 - TW / 2;
+  const tTop = sT + sH + 14;
+  tLeft = Math.max(12, Math.min(tLeft, window.innerWidth - TW - 12));
+  const arrowX = Math.max(20, Math.min((sL + sW / 2) - tLeft, TW - 20));
+
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 9999 }}>
+      <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%", cursor: "default" }} onClick={onNext}>
+        <defs>
+          <mask id="ob-spot">
+            <rect width="100%" height="100%" fill="white" />
+            <rect x={sL} y={sT} width={sW} height={sH} rx={8} fill="black" />
+          </mask>
+        </defs>
+        <rect width="100%" height="100%" fill="rgba(10,37,64,0.65)" mask="url(#ob-spot)" />
+      </svg>
+      <div style={{ position: "fixed", left: tLeft, top: tTop, width: TW, background: "#fff", borderRadius: 12, padding: "18px 20px 16px", boxShadow: "0 12px 40px rgba(0,0,0,0.25)", animation: "fadeUp 0.2s ease" }}>
+        <div style={{ position: "absolute", top: -8, left: arrowX - 8, width: 16, height: 8, overflow: "hidden" }}>
+          <div style={{ width: 12, height: 12, background: "#fff", transform: "rotate(45deg)", margin: "3px auto 0", boxShadow: "-2px -2px 4px rgba(0,0,0,0.06)" }} />
+        </div>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+          <span style={{ fontSize: 10, fontWeight: 700, color: C.accent, textTransform: "uppercase", letterSpacing: 1.5 }}>Paso {step + 1} de {STEPS.length}</span>
+          <button onClick={(e) => { e.stopPropagation(); onSkip(); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11, color: C.textLight, padding: 0 }}>Omitir</button>
+        </div>
+        <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 18, fontWeight: 700, color: C.text, marginBottom: 6 }}>{s.title}</p>
+        <p style={{ fontSize: 13, color: C.textMid, lineHeight: 1.6, marginBottom: 16 }}>{s.text}</p>
+        <button onClick={(e) => { e.stopPropagation(); onNext(); }} style={{ width: "100%", background: C.accent, color: "#fff", border: "none", borderRadius: 8, padding: "10px", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+          {step < STEPS.length - 1 ? "Siguiente →" : "¡Empezar!"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -3487,6 +3548,14 @@ export default function App() {
   const [kpiModalApp, setKpiModalApp] = useState(null);
   const [kpiModal, setKpiModal] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [onboardingStep, setOnboardingStep] = useState(() =>
+    localStorage.getItem("fr_onboarding_v1") ? null : 0
+  );
+  const handleOnboardingNext = () => {
+    if (onboardingStep >= 4) { localStorage.setItem("fr_onboarding_v1", "1"); setOnboardingStep(null); }
+    else setOnboardingStep(s => s + 1);
+  };
+  const handleOnboardingSkip = () => { localStorage.setItem("fr_onboarding_v1", "1"); setOnboardingStep(null); };
 
   const views = {
     dashboard: (props) => <DashboardView {...props} onMesDetalle={(m, a) => setMesDetalle({ mes: m, anio: a })} kpiModal={kpiModal} setKpiModal={setKpiModal} kpiModalExterno={kpiModalApp} onKpiModalExternoHandled={() => setKpiModalApp(null)} />,
@@ -3588,7 +3657,7 @@ export default function App() {
             const navColor = n.key==="budget" ? "#1A7A3C" : n.key==="pickup" ? "#B8860B" : n.key==="grupos" ? "#7C3AED" : C.accent;
             const isActive = view===n.key;
             return (
-              <button key={n.key} onClick={() => { setView(n.key); setMesDetalle(null); localStorage.setItem("fr_view", n.key); }}
+              <button key={n.key} id={`ob-nav-${n.key}`} onClick={() => { setView(n.key); setMesDetalle(null); localStorage.setItem("fr_view", n.key); }}
                 style={{ padding: "6px clamp(6px,2vw,16px)", borderRadius: 7, border: "none", cursor: "pointer", background: isActive ? navColor+"18" : "transparent", color: isActive ? navColor : C.textLight, fontSize: "clamp(11px,2.5vw,13px)", fontWeight: isActive ? 700 : 400, fontFamily: "'Plus Jakarta Sans', sans-serif", transition: "all 0.15s", whiteSpace: "nowrap", outline: isActive ? `1.5px solid ${navColor}44` : "1.5px solid transparent" }}
                 onMouseEnter={e=>{ if(!isActive){ e.currentTarget.style.color=C.text; } }}
                 onMouseLeave={e=>{ e.currentTarget.style.color=isActive?navColor:C.textLight; }}>
@@ -3613,7 +3682,7 @@ export default function App() {
               }} />}
             </div>
           ); })()}
-          <button onClick={() => setImportar(true)} style={{ background: C.accent, color: "#fff", border: "none", borderRadius: 7, padding: "5px 10px", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "'Plus Jakarta Sans',sans-serif", whiteSpace: "nowrap" }}>
+          <button id="ob-importar" onClick={() => setImportar(true)} style={{ background: C.accent, color: "#fff", border: "none", borderRadius: 7, padding: "5px 10px", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "'Plus Jakarta Sans',sans-serif", whiteSpace: "nowrap" }}>
             <span className="topbar-importar-label">Importar</span>
             <span style={{ display:"none" }} className="topbar-importar-icon">↑</span>
           </button>
@@ -3827,6 +3896,7 @@ export default function App() {
         </div>
       )}
       {importar && <ImportarExcel onClose={() => setImportar(false)} session={session} onImportado={() => { localStorage.removeItem("fr_datos_cache"); localStorage.removeItem("fr_datos_ts"); localStorage.removeItem("fr_scroll"); cargarDatos(true); }} />}
+      {onboardingStep !== null && <OnboardingOverlay step={onboardingStep} onNext={handleOnboardingNext} onSkip={handleOnboardingSkip} />}
     </div>
   );
 }
