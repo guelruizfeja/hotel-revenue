@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, createContext, useContext } from "react";
 import { supabase } from "./supabase";
 import {
   AreaChart, Area, BarChart, Bar, LineChart, Line, ComposedChart,
@@ -13,6 +13,47 @@ const C = {
   text: "#1A1A1A", textMid: "#555555", textLight: "#888888",
   border: "#E0E0E0", green: "#009F4D", greenLight: "#E6F7EE",
   red: "#D32F2F", redLight: "#FDECEA", blue: "#004B87",
+};
+
+const LangContext = createContext("es");
+const useT = () => { const lang = useContext(LangContext); return (k) => (TRANSLATIONS[lang] || TRANSLATIONS.es)[k] ?? k; };
+const TRANSLATIONS = {
+  es: {
+    nav_dashboard:"Dashboard", nav_pickup:"Pickup", nav_budget:"Presupuesto", nav_grupos:"M&E",
+    importar:"Importar", mi_perfil:"Mi perfil", cerrar_sesion:"Cerrar sesión",
+    suscripcion:"Suscripción", extranets:"Extranets", informe_mensual:"Informe mensual",
+    conectado_como:"Conectado como", cargando:"Cargando...",
+    ob_paso:"Paso", ob_de:"de", ob_omitir:"Omitir", ob_siguiente:"Siguiente →", ob_empezar:"¡Empezar!",
+    ob0_title:"Importa tus datos", ob0_text:"Descarga la plantilla Excel, rellénala con tus datos de producción y súbela aquí. En segundos tendrás el dashboard activo.",
+    ob1_title:"Dashboard", ob1_text:"Visualiza tus KPIs principales: RevPAR, ADR y ocupación comparados con el año anterior.",
+    ob2_title:"Pickup", ob2_text:"Analiza el ritmo de nuevas reservas día a día y detecta tendencias de cara al mes.",
+    ob3_title:"Presupuesto", ob3_text:"Compara producción real vs objetivo mensual y proyecta el cierre del año.",
+    ob4_title:"M&E", ob4_text:"Gestiona grupos y eventos: confirmados, tentativos y pipeline de negocio.",
+  },
+  en: {
+    nav_dashboard:"Dashboard", nav_pickup:"Pickup", nav_budget:"Budget", nav_grupos:"M&E",
+    importar:"Import", mi_perfil:"My profile", cerrar_sesion:"Log out",
+    suscripcion:"Subscription", extranets:"Extranets", informe_mensual:"Monthly report",
+    conectado_como:"Signed in as", cargando:"Loading...",
+    ob_paso:"Step", ob_de:"of", ob_omitir:"Skip", ob_siguiente:"Next →", ob_empezar:"Get started!",
+    ob0_title:"Import your data", ob0_text:"Download the Excel template, fill it with your production data and upload it here. Your dashboard will be ready in seconds.",
+    ob1_title:"Dashboard", ob1_text:"View your main KPIs: RevPAR, ADR and occupancy compared to the previous year.",
+    ob2_title:"Pickup", ob2_text:"Analyze the pace of new reservations day by day and detect trends for the month.",
+    ob3_title:"Budget", ob3_text:"Compare real production vs monthly target and project year-end results.",
+    ob4_title:"M&E", ob4_text:"Manage groups and events: confirmed, tentative and business pipeline.",
+  },
+  fr: {
+    nav_dashboard:"Dashboard", nav_pickup:"Pickup", nav_budget:"Budget", nav_grupos:"M&E",
+    importar:"Importer", mi_perfil:"Mon profil", cerrar_sesion:"Déconnexion",
+    suscripcion:"Abonnement", extranets:"Extranets", informe_mensual:"Rapport mensuel",
+    conectado_como:"Connecté en tant que", cargando:"Chargement...",
+    ob_paso:"Étape", ob_de:"sur", ob_omitir:"Ignorer", ob_siguiente:"Suivant →", ob_empezar:"Commencer !",
+    ob0_title:"Importez vos données", ob0_text:"Téléchargez le modèle Excel, remplissez-le avec vos données de production et importez-le ici.",
+    ob1_title:"Dashboard", ob1_text:"Visualisez vos KPIs principaux : RevPAR, ADR et occupation comparés à l'année précédente.",
+    ob2_title:"Pickup", ob2_text:"Analysez le rythme des nouvelles réservations jour par jour et détectez les tendances.",
+    ob3_title:"Budget", ob3_text:"Comparez la production réelle vs l'objectif mensuel et projetez la clôture annuelle.",
+    ob4_title:"M&E", ob4_text:"Gérez les groupes et événements : confirmés, tentatifs et pipeline.",
+  },
 };
 
 const MESES = ["Enero","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
@@ -3257,10 +3298,10 @@ function AuthScreen() {
 }
 
 const NAV = [
-  { key: "dashboard",  icon: "◈",  label: "Dashboard" },
-  { key: "pickup",     label: "Pickup" },
-  { key: "budget",     icon: "💰", label: "Presupuesto" },
-  { key: "grupos",     icon: "🎪", label: "M&E" },
+  { key: "dashboard",  icon: "◈",  labelKey: "nav_dashboard" },
+  { key: "pickup",                  labelKey: "nav_pickup" },
+  { key: "budget",     icon: "💰", labelKey: "nav_budget" },
+  { key: "grupos",     icon: "🎪", labelKey: "nav_grupos" },
 ];
 
 
@@ -3314,12 +3355,13 @@ function PantallaSubscripcion({ session, onPagar }) {
 }
 
 function OnboardingOverlay({ step, onNext, onSkip }) {
+  const t = useT();
   const STEPS = [
-    { target: "ob-importar",      title: "Importa tus datos",  text: "Descarga la plantilla Excel, rellénala con tus datos de producción y súbela aquí. En segundos tendrás el dashboard activo." },
-    { target: "ob-nav-dashboard", title: "Dashboard",          text: "Visualiza tus KPIs principales: RevPAR, ADR y ocupación comparados con el año anterior." },
-    { target: "ob-nav-pickup",    title: "Pickup",             text: "Analiza el ritmo de nuevas reservas día a día y detecta tendencias de cara al mes." },
-    { target: "ob-nav-budget",    title: "Presupuesto",        text: "Compara producción real vs objetivo mensual y proyecta el cierre del año." },
-    { target: "ob-nav-grupos",    title: "M&E",                text: "Gestiona grupos y eventos: confirmados, tentativos y pipeline de negocio." },
+    { target: "ob-importar",      titleKey: "ob0_title", textKey: "ob0_text" },
+    { target: "ob-nav-dashboard", titleKey: "ob1_title", textKey: "ob1_text" },
+    { target: "ob-nav-pickup",    titleKey: "ob2_title", textKey: "ob2_text" },
+    { target: "ob-nav-budget",    titleKey: "ob3_title", textKey: "ob3_text" },
+    { target: "ob-nav-grupos",    titleKey: "ob4_title", textKey: "ob4_text" },
   ];
 
   const [rect, setRect] = useState(null);
@@ -3361,13 +3403,13 @@ function OnboardingOverlay({ step, onNext, onSkip }) {
           <div style={{ width: 12, height: 12, background: "#fff", transform: "rotate(45deg)", margin: "3px auto 0", boxShadow: "-2px -2px 4px rgba(0,0,0,0.06)" }} />
         </div>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-          <span style={{ fontSize: 10, fontWeight: 700, color: C.accent, textTransform: "uppercase", letterSpacing: 1.5 }}>Paso {step + 1} de {STEPS.length}</span>
-          <button onClick={(e) => { e.stopPropagation(); onSkip(); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11, color: C.textLight, padding: 0 }}>Omitir</button>
+          <span style={{ fontSize: 10, fontWeight: 700, color: C.accent, textTransform: "uppercase", letterSpacing: 1.5 }}>{t("ob_paso")} {step + 1} {t("ob_de")} {STEPS.length}</span>
+          <button onClick={(e) => { e.stopPropagation(); onSkip(); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11, color: C.textLight, padding: 0 }}>{t("ob_omitir")}</button>
         </div>
-        <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 18, fontWeight: 700, color: C.text, marginBottom: 6 }}>{s.title}</p>
-        <p style={{ fontSize: 13, color: C.textMid, lineHeight: 1.6, marginBottom: 16 }}>{s.text}</p>
+        <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 18, fontWeight: 700, color: C.text, marginBottom: 6 }}>{t(s.titleKey)}</p>
+        <p style={{ fontSize: 13, color: C.textMid, lineHeight: 1.6, marginBottom: 16 }}>{t(s.textKey)}</p>
         <button onClick={(e) => { e.stopPropagation(); onNext(); }} style={{ width: "100%", background: C.accent, color: "#fff", border: "none", borderRadius: 8, padding: "10px", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
-          {step < STEPS.length - 1 ? "Siguiente →" : "¡Empezar!"}
+          {step < STEPS.length - 1 ? t("ob_siguiente") : t("ob_empezar")}
         </button>
       </div>
     </div>
@@ -3547,6 +3589,8 @@ export default function App() {
   const [perfilSeccion, setPerfilSeccion] = useState(null); // null | "suscripcion" | "extranets"
   const [kpiModalApp, setKpiModalApp] = useState(null);
   const [kpiModal, setKpiModal] = useState(null);
+  const [lang, setLang] = useState(() => localStorage.getItem("fr_lang") || "es");
+  const t = useT();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [onboardingStep, setOnboardingStep] = useState(() =>
     localStorage.getItem("fr_onboarding_v1") ? null : 0
@@ -3575,6 +3619,7 @@ export default function App() {
   if (!cargandoSub && (!suscripcion || suscripcion.estado === "cancelada")) return <PantallaSubscripcion session={session} />;
 
   return (
+    <LangContext.Provider value={lang}>
     <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", background: C.bg, minHeight: "100vh" }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;0,800;1,400;1,600&family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap');
@@ -3661,8 +3706,8 @@ export default function App() {
                 style={{ padding: "6px clamp(6px,2vw,16px)", borderRadius: 7, border: "none", cursor: "pointer", background: isActive ? navColor+"18" : "transparent", color: isActive ? navColor : C.textLight, fontSize: "clamp(11px,2.5vw,13px)", fontWeight: isActive ? 700 : 400, fontFamily: "'Plus Jakarta Sans', sans-serif", transition: "all 0.15s", whiteSpace: "nowrap", outline: isActive ? `1.5px solid ${navColor}44` : "1.5px solid transparent" }}
                 onMouseEnter={e=>{ if(!isActive){ e.currentTarget.style.color=C.text; } }}
                 onMouseLeave={e=>{ e.currentTarget.style.color=isActive?navColor:C.textLight; }}>
-                <span className="topbar-nav-label">{n.label}</span>
-                <span style={{ display:"none" }} className="topbar-nav-icon">{n.label.slice(0,3)}</span>
+                <span className="topbar-nav-label">{t(n.labelKey)}</span>
+                <span style={{ display:"none" }} className="topbar-nav-icon">{t(n.labelKey).slice(0,3)}</span>
               </button>
             );
           })}
@@ -3682,8 +3727,16 @@ export default function App() {
               }} />}
             </div>
           ); })()}
+          {/* Selector de idioma */}
+          {[["es","🇪🇸"],["en","🇬🇧"],["fr","🇫🇷"]].map(([l, flag]) => (
+            <button key={l} onClick={() => { setLang(l); localStorage.setItem("fr_lang", l); }}
+              title={l.toUpperCase()}
+              style={{ width: 26, height: 26, borderRadius: "50%", border: lang===l ? `2px solid ${C.accent}` : `1.5px solid ${C.border}`, background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, padding: 0, lineHeight: 1, opacity: lang===l ? 1 : 0.55, transition: "all 0.15s", flexShrink: 0 }}>
+              {flag}
+            </button>
+          ))}
           <button id="ob-importar" onClick={() => setImportar(true)} style={{ background: C.accent, color: "#fff", border: "none", borderRadius: 7, padding: "5px 10px", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "'Plus Jakarta Sans',sans-serif", whiteSpace: "nowrap" }}>
-            <span className="topbar-importar-label">Importar</span>
+            <span className="topbar-importar-label">{t("importar")}</span>
             <span style={{ display:"none" }} className="topbar-importar-icon">↑</span>
           </button>
 
@@ -3695,20 +3748,20 @@ export default function App() {
               <span style={{ width:26, height:26, borderRadius:"50%", background:C.accent, color:"#fff", fontSize:11, fontWeight:700, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
                 {session.user.email[0].toUpperCase()}
               </span>
-              <span className="topbar-perfil-label">Mi perfil</span>
+              <span className="topbar-perfil-label">{t("mi_perfil")}</span>
             </button>
             {mostrarPerfil && (
               <div style={{ position:"absolute", top:42, right:0, width:240, background:C.bgCard, border:`1px solid ${C.border}`, borderRadius:10, boxShadow:"0 4px 24px rgba(0,0,0,0.08)", zIndex:200, overflow:"hidden" }}>
                 {/* Email */}
                 <div style={{ padding:"10px 16px", borderBottom:`1px solid ${C.border}`, background:C.bg }}>
-                  <p style={{ fontSize:11, color:C.textLight, marginBottom:2 }}>Conectado como</p>
+                  <p style={{ fontSize:11, color:C.textLight, marginBottom:2 }}>{t("conectado_como")}</p>
                   <p style={{ fontSize:12, fontWeight:600, color:C.text, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{session.user.email}</p>
                 </div>
                 {/* Opciones */}
                 {[
-                  { label:"Suscripción", key:"suscripcion" },
-                  { label:"Extranets", key:"extranets" },
-                  { label:"Informe mensual", key:"informe" },
+                  { label:t("suscripcion"), key:"suscripcion" },
+                  { label:t("extranets"), key:"extranets" },
+                  { label:t("informe_mensual"), key:"informe" },
                 ].map(op => (
                   <button key={op.key} onClick={async () => {
                       if (op.key === "informe") {
@@ -3731,7 +3784,7 @@ export default function App() {
                   style={{ width:"100%", display:"flex", alignItems:"center", padding:"10px 16px", background:"transparent", border:"none", cursor:"pointer", fontSize:12, color:C.red, fontFamily:"'Plus Jakarta Sans',sans-serif", textAlign:"left", letterSpacing:0.2 }}
                   onMouseEnter={e=>e.currentTarget.style.background=C.redLight}
                   onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
-                  Cerrar sesión
+                  {t("cerrar_sesion")}
                 </button>
               </div>
             )}
@@ -3898,5 +3951,6 @@ export default function App() {
       {importar && <ImportarExcel onClose={() => setImportar(false)} session={session} onImportado={() => { localStorage.removeItem("fr_datos_cache"); localStorage.removeItem("fr_datos_ts"); localStorage.removeItem("fr_scroll"); cargarDatos(true); }} />}
       {onboardingStep !== null && <OnboardingOverlay step={onboardingStep} onNext={handleOnboardingNext} onSkip={handleOnboardingSkip} />}
     </div>
+    </LangContext.Provider>
   );
 }
