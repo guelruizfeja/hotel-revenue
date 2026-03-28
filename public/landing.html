@@ -189,14 +189,27 @@
   .section-eyebrow {
     text-align: center; font-size: 10px;
     letter-spacing: 3px; text-transform: uppercase;
-    color: var(--accent); font-weight: 600; margin-bottom: 14px;
+    color: var(--accent); font-weight: 700; margin-bottom: 16px;
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+  }
+  .section-eyebrow::before, .section-eyebrow::after {
+    content: ''; display: block; height: 1px; width: 32px;
+    background: var(--accent); opacity: 0.4;
   }
   .section-title {
     font-family: 'Cormorant Garamond', serif;
-    font-size: clamp(30px, 4vw, 50px);
+    font-size: clamp(32px, 4.2vw, 54px);
     font-weight: 700; text-align: center;
-    color: var(--navy); line-height: 1.15;
-    letter-spacing: -0.5px; margin-bottom: 14px;
+    color: var(--navy); line-height: 1.12;
+    letter-spacing: -0.8px; margin-bottom: 16px;
+  }
+  .section-title em {
+    font-style: italic; color: var(--accent);
+    position: relative; display: inline-block;
+  }
+  .section-title em::after {
+    content: ''; position: absolute; bottom: 2px; left: 0; right: 0;
+    height: 2px; background: currentColor; opacity: 0.25; border-radius: 1px;
   }
   .section-sub {
     text-align: center; font-size: 14px;
@@ -287,15 +300,16 @@
     border-bottom: 2px solid var(--gray-light);
   }
   .module-tab {
-    padding: 14px 24px; background: none; border: none;
-    font-size: 12px; font-weight: 600; letter-spacing: 1.2px;
+    flex: 1; text-align: center;
+    padding: 16px 8px; background: none; border: none;
+    font-size: 12px; font-weight: 600; letter-spacing: 1px;
     text-transform: uppercase; color: var(--gray);
     cursor: pointer; font-family: 'Plus Jakarta Sans', sans-serif;
     border-bottom: 2px solid transparent; margin-bottom: -2px;
     transition: all 0.2s; white-space: nowrap;
   }
-  .module-tab:hover { color: var(--navy); }
-  .module-tab.active { color: var(--navy); border-bottom-color: var(--navy); }
+  .module-tab:hover { color: var(--navy); background: rgba(0,75,135,0.03); }
+  .module-tab.active { color: var(--navy); border-bottom-color: var(--navy); background: rgba(0,75,135,0.04); }
   .module-panel { display: none; max-width: 980px; margin: 0 auto; }
   .module-panel.active { display: grid; grid-template-columns: repeat(3,1fr); gap: 20px; }
   .module-card {
@@ -621,7 +635,7 @@
 <!-- MOCKUP -->
 <section class="mockup-section reveal" id="producto">
   <div class="section-eyebrow">El producto</div>
-  <h2 class="section-title">Un único espacio<br>para todo tu hotel</h2>
+  <h2 class="section-title">Un <em>único espacio</em><br>para todo tu hotel</h2>
   <p class="section-sub">Importa tu Excel y en segundos tienes ocupación, revenue, pickup, presupuesto y grupos centralizados e interactivos.</p>
 
   <div class="dashboard-mock">
@@ -733,7 +747,7 @@
 <!-- FEATURES -->
 <section class="features-section reveal" id="funciones">
   <div class="section-eyebrow">Gestión inteligente de tu hotel</div>
-  <h2 class="section-title">Gestión inteligente<br>de tu hotel</h2>
+  <h2 class="section-title"><em>Gestión inteligente</em><br>de tu hotel</h2>
   <p class="section-sub">Cinco módulos interactivos que centralizan toda la información de tu hotel. Sin dispersión, sin hojas sueltas, sin perder el hilo.</p>
 
   <div class="module-tabs">
@@ -981,7 +995,7 @@ document.querySelectorAll('.module-tab').forEach(tab => {
 <!-- PRICING -->
 <section class="pricing-section reveal" id="precios">
   <div class="section-eyebrow">Precios</div>
-  <h2 class="section-title">Todo el hotel centralizado<br>por menos de lo que cuesta<br>un canal de distribución</h2>
+  <h2 class="section-title">Todo el hotel <em>centralizado</em><br>por menos de lo que cuesta<br>un canal de distribución</h2>
   <p class="section-sub">Un solo plan. Todos los módulos incluidos. Sin sorpresas.</p>
 
   <div class="pricing-wrap">
@@ -1009,7 +1023,7 @@ document.querySelectorAll('.module-tab').forEach(tab => {
 <section class="contact-section reveal" id="consulta">
   <div class="contact-wrap">
     <div class="section-eyebrow">Primera consulta</div>
-    <h2 class="section-title">Hablamos de tu hotel</h2>
+    <h2 class="section-title">Hablamos de <em>tu hotel</em></h2>
     <p class="section-sub" style="margin-bottom:0;">Cuéntanos cómo gestionas tus datos hoy y te mostramos cómo FastRevenue puede centralizarlo todo. Sin compromiso.</p>
     <form class="contact-form" id="contactForm">
       <input type="text" name="nombre" placeholder="Tu nombre *" required>
