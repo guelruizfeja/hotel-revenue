@@ -304,6 +304,37 @@
   .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(184,134,11,0.35); }
   .pricing-note { text-align: center; margin-top: 20px; font-size: 12px; color: var(--gray); }
 
+  /* ── CONTACT ── */
+  .contact-section { padding: 110px 6vw; background: var(--off); }
+  .contact-wrap { max-width: 560px; margin: 0 auto; }
+  .contact-form { display: flex; flex-direction: column; gap: 16px; margin-top: 48px; }
+  .contact-form input,
+  .contact-form textarea {
+    width: 100%; padding: 13px 16px;
+    border: 1.5px solid var(--gray-light); border-radius: 8px;
+    font-size: 14px; font-family: 'Plus Jakarta Sans', sans-serif;
+    color: var(--text); background: var(--white); outline: none;
+    transition: border-color 0.2s;
+  }
+  .contact-form input:focus,
+  .contact-form textarea:focus { border-color: var(--accent); }
+  .contact-form textarea { resize: vertical; min-height: 130px; }
+  .contact-submit {
+    background: var(--navy); color: white;
+    padding: 14px; border-radius: 8px; border: none;
+    font-size: 15px; font-weight: 600; cursor: pointer;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    transition: background 0.2s;
+  }
+  .contact-submit:hover { background: var(--navy-light); }
+  .contact-submit:disabled { opacity: 0.6; cursor: not-allowed; }
+  .contact-feedback {
+    text-align: center; font-size: 14px; padding: 14px;
+    border-radius: 8px; display: none;
+  }
+  .contact-feedback.ok { background: #ECFDF5; color: #065F46; display: block; }
+  .contact-feedback.err { background: #FEF2F2; color: #991B1B; display: block; }
+
   /* ── CTA ── */
   .cta-section {
     padding: 110px 6vw; background: var(--navy);
@@ -369,6 +400,7 @@
     <a href="#producto">Producto</a>
     <a href="#funciones">Funciones</a>
     <a href="#precios">Precios</a>
+    <a href="#contacto">Contacto</a>
     <a href="https://fastrevenue.app/home" class="nav-cta">Acceder</a>
   </div>
 </nav>
@@ -554,6 +586,50 @@
     <p class="pricing-note">Cancela en cualquier momento · Sin permanencia · Soporte por email</p>
   </div>
 </section>
+
+<!-- CONTACT -->
+<section class="contact-section" id="contacto">
+  <div class="contact-wrap">
+    <div class="section-eyebrow">Contacto</div>
+    <h2 class="section-title">¿Tienes alguna pregunta?</h2>
+    <p class="section-sub" style="margin-bottom:0;">Escríbenos y te respondemos en menos de 24 horas.</p>
+    <form class="contact-form" id="contactForm">
+      <input type="text" name="nombre" placeholder="Nombre *" required>
+      <input type="email" name="email" placeholder="Email *" required>
+      <textarea name="mensaje" placeholder="Mensaje *" required></textarea>
+      <button type="submit" class="contact-submit" id="contactBtn">Enviar mensaje</button>
+      <div class="contact-feedback" id="contactFeedback"></div>
+    </form>
+  </div>
+</section>
+
+<script>
+document.getElementById('contactForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  const btn = document.getElementById('contactBtn');
+  const feedback = document.getElementById('contactFeedback');
+  const data = Object.fromEntries(new FormData(this));
+  btn.disabled = true;
+  btn.textContent = 'Enviando...';
+  feedback.className = 'contact-feedback';
+  try {
+    const res = await fetch('/api/contact', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error();
+    feedback.textContent = '¡Mensaje enviado! Te respondemos en menos de 24h.';
+    feedback.className = 'contact-feedback ok';
+    this.reset();
+  } catch {
+    feedback.textContent = 'Error al enviar. Escríbenos a info@fastrevenue.app';
+    feedback.className = 'contact-feedback err';
+  }
+  btn.disabled = false;
+  btn.textContent = 'Enviar mensaje';
+});
+</script>
 
 <!-- CTA -->
 <section class="cta-section">
