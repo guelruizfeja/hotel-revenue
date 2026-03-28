@@ -50,45 +50,42 @@
   .nav-links a:hover { color: var(--navy); }
   .nav-cta {
     background: var(--navy) !important; color: white !important;
-    padding: 8px 18px; border-radius: 6px;
-    font-weight: 500 !important; font-size: 13px !important;
-    transition: background 0.2s !important; letter-spacing: 0.2px;
+    padding: 9px 22px; border-radius: 50px;
+    font-weight: 600 !important; font-size: 13px !important;
+    transition: all 0.2s !important; letter-spacing: 0.2px;
+    box-shadow: 0 2px 10px rgba(10,37,64,0.18);
   }
-  .nav-cta:hover { background: var(--navy-light) !important; }
+  .nav-cta:hover { background: var(--navy-light) !important; transform: translateY(-1px); }
 
   /* ── HERO ── */
   .hero {
     min-height: 100vh;
-    background: var(--navy);
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    padding: 120px 6vw 90px;
+    background: linear-gradient(150deg, #eef3fa 0%, #e4ecf7 60%, #dce7f5 100%);
+    display: grid; grid-template-columns: 1fr 1fr;
+    align-items: center;
+    padding: 110px 6vw 80px;
+    gap: 60px;
     position: relative; overflow: hidden;
   }
-  .hero-grid {
-    position: absolute; inset: 0;
-    background-image:
-      linear-gradient(rgba(0,75,135,0.15) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(0,75,135,0.15) 1px, transparent 1px);
-    background-size: 48px 48px;
-  }
-  .hero-glow {
-    position: absolute; top: -10%; left: 50%; transform: translateX(-50%);
-    width: 900px; height: 600px;
-    background: radial-gradient(ellipse, rgba(0,75,135,0.25) 0%, transparent 65%);
+  .hero::before {
+    content: '';
+    position: absolute; top: -200px; right: -200px;
+    width: 600px; height: 600px; border-radius: 50%;
+    background: radial-gradient(ellipse, rgba(0,75,135,0.08) 0%, transparent 70%);
     pointer-events: none;
   }
-  .hero-content { position: relative; text-align: center; max-width: 780px; }
+  .hero-content { position: relative; }
   .hero-badge {
     display: inline-flex; align-items: center; gap: 8px;
-    border: 1px solid rgba(184,134,11,0.4);
-    padding: 5px 16px; border-radius: 20px; margin-bottom: 36px;
-    font-size: 10px; letter-spacing: 2.5px; text-transform: uppercase;
-    color: var(--gold-light); font-weight: 500;
+    border: 1px solid rgba(0,75,135,0.2);
+    padding: 5px 16px; border-radius: 20px; margin-bottom: 28px;
+    font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
+    color: var(--accent); font-weight: 600;
+    background: rgba(0,75,135,0.05);
   }
   .hero-badge::before {
     content: ''; width: 5px; height: 5px; border-radius: 50%;
-    background: var(--gold-light);
+    background: var(--accent);
     animation: pulse 2s ease-in-out infinite;
   }
   @keyframes pulse {
@@ -97,39 +94,75 @@
   }
   .hero h1 {
     font-family: 'Cormorant Garamond', serif;
-    font-size: clamp(44px, 6.5vw, 78px);
+    font-size: clamp(42px, 5.5vw, 70px);
     font-weight: 700; line-height: 1.08;
-    color: var(--white); letter-spacing: -1px;
-    margin-bottom: 24px;
+    color: var(--navy); letter-spacing: -1.5px;
+    margin-bottom: 20px;
   }
-  .hero h1 em { font-style: italic; color: var(--gold-light); }
+  .hero h1 em { font-style: italic; color: var(--accent); }
   .hero-sub {
-    font-size: 15px; color: rgba(255,255,255,0.55);
-    line-height: 1.75; max-width: 500px; margin: 0 auto 44px;
-    font-weight: 300;
+    font-size: 15px; color: var(--gray);
+    line-height: 1.75; max-width: 420px; margin-bottom: 40px;
+    font-weight: 400;
   }
-  .hero-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+  .hero-actions { display: flex; gap: 12px; flex-wrap: wrap; }
   .btn-gold {
-    background: var(--gold-light); color: var(--navy);
-    padding: 13px 30px; border-radius: 7px; border: none;
+    background: var(--navy); color: white;
+    padding: 14px 32px; border-radius: 50px; border: none;
     font-size: 14px; font-weight: 600; cursor: pointer;
     font-family: 'Plus Jakarta Sans', sans-serif; letter-spacing: 0.2px;
     transition: all 0.2s; text-decoration: none; display: inline-block;
+    box-shadow: 0 4px 20px rgba(10,37,64,0.2);
   }
-  .btn-gold:hover { background: #E6B420; transform: translateY(-1px); }
+  .btn-gold:hover { background: var(--navy-light); transform: translateY(-2px); box-shadow: 0 8px 28px rgba(10,37,64,0.28); }
   .btn-ghost {
-    background: transparent; color: rgba(255,255,255,0.7);
-    padding: 13px 30px; border-radius: 7px;
-    border: 1px solid rgba(255,255,255,0.18);
-    font-size: 14px; font-weight: 400; cursor: pointer;
+    background: transparent; color: var(--navy);
+    padding: 14px 28px; border-radius: 50px;
+    border: 1.5px solid rgba(10,37,64,0.2);
+    font-size: 14px; font-weight: 500; cursor: pointer;
     font-family: 'Plus Jakarta Sans', sans-serif;
     transition: all 0.2s; text-decoration: none; display: inline-block;
   }
-  .btn-ghost:hover { border-color: rgba(255,255,255,0.45); color: white; }
-  .hero-note {
-    margin-top: 20px; font-size: 11px; color: rgba(255,255,255,0.3);
-    letter-spacing: 0.3px;
+  .btn-ghost:hover { border-color: var(--navy); }
+  /* Hero visual — right column */
+  .hero-visual { position: relative; }
+  .hero-visual-card {
+    background: var(--navy);
+    border-radius: 16px; padding: 20px;
+    box-shadow: 0 40px 80px rgba(10,37,64,0.22), 0 0 0 1px rgba(255,255,255,0.04);
   }
+  .hero-kpis { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-bottom: 12px; }
+  .hero-kpi {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 8px; padding: 12px;
+    border-left: 3px solid rgba(0,75,135,0.7);
+  }
+  .hero-kpi-label { font-size: 8px; color: rgba(255,255,255,0.35); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; }
+  .hero-kpi-value { font-family: 'Cormorant Garamond', serif; font-size: 20px; font-weight: 600; color: white; line-height: 1; }
+  .hero-kpi-delta { font-size: 8px; margin-top: 3px; color: #34D399; }
+  .hero-chart-row { display: grid; grid-template-columns: 3fr 2fr; gap: 8px; }
+  .hero-chart-box {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 8px; padding: 12px;
+  }
+  .hero-chart-label { font-size: 8px; color: rgba(255,255,255,0.4); margin-bottom: 8px; }
+  .hero-mini-bars { display: flex; align-items: flex-end; gap: 4px; height: 56px; }
+  .hero-mini-bar { flex: 1; border-radius: 2px 2px 0 0; background: rgba(0,75,135,0.3); }
+  .hero-mini-bar.hi { background: rgba(0,75,135,0.6); }
+  .hero-mini-bar.peak { background: var(--accent); }
+  .hero-mini-heatmap { display: grid; grid-template-columns: repeat(4,1fr); gap: 3px; }
+  .hero-hm-cell { aspect-ratio: 1; border-radius: 3px; }
+  .hero-float-badge {
+    position: absolute; bottom: -16px; left: -20px;
+    background: white; border-radius: 10px; padding: 10px 14px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .hero-float-badge-dot { width: 8px; height: 8px; border-radius: 50%; background: #34D399; }
+  .hero-float-badge-text { font-size: 11px; font-weight: 600; color: var(--navy); }
+  .hero-float-badge-sub { font-size: 10px; color: var(--gray); }
 
   /* ── STATS ── */
   .stats-bar {
@@ -377,11 +410,13 @@
   .hero-content > * { animation: fadeUp 0.65s ease both; }
   .hero-badge { animation-delay: 0.05s; }
   .hero h1 { animation-delay: 0.18s; }
-  .hero-sub { animation-delay: 0.32s; }
-  .hero-actions { animation-delay: 0.46s; }
-  .hero-note { animation-delay: 0.56s; }
+  .hero-sub { animation-delay: 0.30s; }
+  .hero-actions { animation-delay: 0.42s; }
+  .hero-visual { animation: fadeUp 0.8s ease 0.3s both; }
 
   @media (max-width: 768px) {
+    .hero { grid-template-columns: 1fr; padding: 100px 6vw 60px; }
+    .hero-visual { display: none; }
     .mock-kpis { grid-template-columns: repeat(2,1fr); }
     .mock-charts { grid-template-columns: 1fr; }
     .features-grid { grid-template-columns: 1fr; }
@@ -407,14 +442,72 @@
 
 <!-- HERO -->
 <section class="hero">
-  <div class="hero-grid"></div>
-  <div class="hero-glow"></div>
   <div class="hero-content">
     <div class="hero-badge">Un único espacio para tu hotel</div>
     <h1>Todos los datos<br>de tu hotel, <em>juntos<br>y en tiempo real</em></h1>
-    <p class="hero-sub">Ocupación, ADR, RevPAR, pickup, presupuesto y grupos — todo centralizado en un espacio interactivo y visual. Diseñado para hoteles independientes que quieren ver su negocio de un solo vistazo.</p>
+    <p class="hero-sub">Ocupación, ADR, RevPAR, pickup, presupuesto y grupos — todo centralizado en un espacio interactivo y visual.</p>
     <div class="hero-actions">
       <a href="#consulta" class="btn-gold">Agenda tu primera consulta →</a>
+    </div>
+  </div>
+  <div class="hero-visual">
+    <div class="hero-visual-card">
+      <div class="hero-kpis">
+        <div class="hero-kpi">
+          <div class="hero-kpi-label">Ocupación</div>
+          <div class="hero-kpi-value">74.2%</div>
+          <div class="hero-kpi-delta">+5.4pp vs LY</div>
+        </div>
+        <div class="hero-kpi">
+          <div class="hero-kpi-label">ADR</div>
+          <div class="hero-kpi-value">€118</div>
+          <div class="hero-kpi-delta">+€9 vs LY</div>
+        </div>
+        <div class="hero-kpi">
+          <div class="hero-kpi-label">RevPAR</div>
+          <div class="hero-kpi-value">€87</div>
+          <div class="hero-kpi-delta">+12.3%</div>
+        </div>
+      </div>
+      <div class="hero-chart-row">
+        <div class="hero-chart-box">
+          <div class="hero-chart-label">ADR — Últimos 8 meses</div>
+          <div class="hero-mini-bars">
+            <div class="hero-mini-bar" style="height:45%"></div>
+            <div class="hero-mini-bar hi" style="height:58%"></div>
+            <div class="hero-mini-bar hi" style="height:65%"></div>
+            <div class="hero-mini-bar peak" style="height:74%"></div>
+            <div class="hero-mini-bar peak" style="height:88%"></div>
+            <div class="hero-mini-bar peak" style="height:80%"></div>
+            <div class="hero-mini-bar peak" style="height:94%"></div>
+            <div class="hero-mini-bar peak" style="height:98%"></div>
+          </div>
+        </div>
+        <div class="hero-chart-box">
+          <div class="hero-chart-label">Ocupación mensual</div>
+          <div class="hero-mini-heatmap">
+            <div class="hero-hm-cell" style="background:rgba(0,75,135,0.2)"></div>
+            <div class="hero-hm-cell" style="background:rgba(0,75,135,0.35)"></div>
+            <div class="hero-hm-cell" style="background:rgba(0,75,135,0.5)"></div>
+            <div class="hero-hm-cell" style="background:rgba(0,75,135,0.65)"></div>
+            <div class="hero-hm-cell" style="background:rgba(0,75,135,0.75)"></div>
+            <div class="hero-hm-cell" style="background:rgba(0,75,135,0.9)"></div>
+            <div class="hero-hm-cell" style="background:rgba(0,75,135,1)"></div>
+            <div class="hero-hm-cell" style="background:rgba(0,75,135,0.95)"></div>
+            <div class="hero-hm-cell" style="background:rgba(0,75,135,0.7)"></div>
+            <div class="hero-hm-cell" style="background:rgba(0,75,135,0.5)"></div>
+            <div class="hero-hm-cell" style="background:rgba(0,75,135,0.28)"></div>
+            <div class="hero-hm-cell" style="background:rgba(0,75,135,0.38)"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="hero-float-badge">
+      <div class="hero-float-badge-dot"></div>
+      <div>
+        <div class="hero-float-badge-text">Todo en un único espacio</div>
+        <div class="hero-float-badge-sub">Dashboard · Pickup · Presupuesto · M&amp;E</div>
+      </div>
     </div>
   </div>
 </section>
