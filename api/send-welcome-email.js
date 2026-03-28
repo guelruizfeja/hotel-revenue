@@ -178,6 +178,11 @@ export default async function handler(req, res) {
       to: email,
       subject: `Bienvenido a FastRevenue — Tu prueba de 30 días ha comenzado`,
       html,
+      headers: {
+        'X-Entity-Ref-ID': `welcome-${email}`,
+        'List-Unsubscribe': '<mailto:info@fastrevenue.app?subject=unsubscribe>',
+        'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+      },
     });
 
     if (error) throw new Error(error.message);

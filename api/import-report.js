@@ -88,6 +88,11 @@ export default async function handler(req, res) {
       to: email,
       subject: `Importación ${fmtDate(fecha)} — ${hotel}`,
       html,
+      headers: {
+        'X-Entity-Ref-ID': `import-${email}-${fecha}`,
+        'List-Unsubscribe': '<mailto:info@fastrevenue.app?subject=unsubscribe>',
+        'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+      },
     });
     if (error) throw new Error(error.message);
     res.status(200).json({ ok: true });
