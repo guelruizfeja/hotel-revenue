@@ -11,118 +11,117 @@ const fmtDate = (iso) => {
   return `${parseInt(d)} ${MESES[parseInt(m) - 1]} ${y}`;
 };
 
-// Percentage change helpers
 const pctChg = (curr, prev) => {
   const c = Number(curr), p = Number(prev);
   if (curr == null || prev == null || p === 0) return null;
   return ((c - p) / Math.abs(p)) * 100;
 };
-const ppChg = (curr, prev) => {
-  if (curr == null || prev == null) return null;
-  return Number(curr) - Number(prev);
-};
-const chgBadge = (val, isPP = false) => {
+const ppChg  = (curr, prev) => (curr == null || prev == null) ? null : Number(curr) - Number(prev);
+const absChg = (curr, prev) => (curr == null || prev == null) ? null : Number(curr) - Number(prev);
+
+function badge(val, { isPP = false, isAbs = false, prefix = '' } = {}) {
   if (val == null) return '';
   const pos   = val >= 0;
   const color = pos ? '#059669' : '#DC2626';
-  const sign  = pos ? '+' : '';
-  const label = isPP ? `${sign}${val.toFixed(1)} pp` : `${sign}${val.toFixed(1)}%`;
-  return `<p style="margin:4px 0 0;font-size:11px;color:${color};font-weight:700;">${label}</p>`;
-};
-
-function kpiCol(label, main, sub, badge, borderLeft = true) {
-  return `<td style="padding:14px 6px;text-align:center;vertical-align:top;${borderLeft ? 'border-left:1px solid #E5E7EB;' : ''}">
-  <p style="margin:0 0 5px;font-size:8.5px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:#6B7280;">${label}</p>
-  <p style="margin:0;font-size:20px;font-weight:700;color:#0A2540;line-height:1.1;">${main}</p>
-  ${badge || ''}
-  ${sub ? `<p style="margin:4px 0 0;font-size:10px;color:#9CA3AF;">${sub}</p>` : ''}
-</td>`;
+  let label;
+  if (isPP) {
+    label = `${pos ? '+' : ''}${val.toFixed(1)} pp`;
+  } else if (isAbs) {
+    const a = Math.abs(val);
+    label = `${pos ? '+' : '-'}${prefix}${a < 100 ? a.toFixed(1) : Math.round(a).toLocaleString('es-ES')}`;
+  } else {
+    label = `${pos ? '+' : ''}${val.toFixed(1)}%`;
+  }
+  return `<p style="margin:4px 0 0;font-size:13px;color:${color};font-weight:700;line-height:1;">${label}</p>`;
 }
 
-function buildChart(revenueAcumulado, presupuestoMensual) {
-  if (!revenueAcumulado || revenueAcumulado.length === 0) return '';
-
-  const W = 380, H = 180, PL = 50, PR = 8, PT = 16, PB = 28;
-  const cW = W - PL - PR, cH = H - PT - PB;
-
-  const maxVal = Math.max(...revenueAcumulado.map(d => d.acum), presupuestoMensual || 0, 1);
-  const yMax   = maxVal * 1.12;
-
-  const lastDay   = revenueAcumulado[revenueAcumulado.length - 1]?.dia || 31;
-  const totalDays = Math.max(lastDay, 28);
-
-  const xS = (dia) => PL + ((dia - 0.5) / totalDays) * cW;
-  const yS = (val) => PT + cH - (val / yMax) * cH;
-  const bW  = Math.max(4, (cW / totalDays) * 0.72);
-
-  // Y ticks
-  const ticks = [0, 0.25, 0.5, 0.75, 1].map(t => {
-    const val = Math.round(yMax * t / 1000) * 1000;
-    const y   = yS(val).toFixed(1);
-    const lbl = val >= 1000 ? `€${(val / 1000).toFixed(0)}k` : '€0';
-    return `<line x1="${PL}" y1="${y}" x2="${W - PR}" y2="${y}" stroke="#F0F0F0" stroke-width="1"/>
-<text x="${(PL - 3).toFixed(1)}" y="${y}" text-anchor="end" dominant-baseline="middle" font-size="7.5" fill="#9CA3AF">${lbl}</text>`;
-  }).join('');
-
-  // Bars — gold
-  const bars = revenueAcumulado.map(d => {
-    const x  = (xS(d.dia) - bW / 2).toFixed(1);
-    const h  = Math.max(0, (d.acum / yMax) * cH).toFixed(1);
-    const y  = (PT + cH - (d.acum / yMax) * cH).toFixed(1);
-    return `<rect x="${x}" y="${y}" width="${bW.toFixed(1)}" height="${h}" fill="#B8860B" rx="1.5"/>`;
-  }).join('');
-
-  // Budget dashed line
-  let bLine = '';
-  if (presupuestoMensual) {
-    const by   = yS(presupuestoMensual).toFixed(1);
-    bLine = `<line x1="${PL}" y1="${by}" x2="${W - PR}" y2="${by}" stroke="#0A2540" stroke-width="1.5" stroke-dasharray="5,3"/>
-<text x="${(W - PR - 2).toFixed(1)}" y="${(parseFloat(by) - 5).toFixed(1)}" text-anchor="end" font-size="7.5" font-weight="600" fill="#0A2540">PPTO ${fmtEur(presupuestoMensual)}</text>`;
-  }
-
-  // X labels every 5 days + last
-  const shown = new Set();
-  const xLbls = [];
-  for (let d = 1; d <= totalDays; d += 5) {
-    shown.add(d);
-    xLbls.push(`<text x="${xS(d).toFixed(1)}" y="${(H - 7).toFixed(1)}" text-anchor="middle" font-size="7.5" fill="#9CA3AF">${d}</text>`);
-  }
-  if (!shown.has(lastDay)) {
-    xLbls.push(`<text x="${xS(lastDay).toFixed(1)}" y="${(H - 7).toFixed(1)}" text-anchor="middle" font-size="7.5" font-weight="700" fill="#6B7280">${lastDay}</text>`);
-  }
-
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" style="display:block;width:100%;max-width:${W}px;">
-  ${ticks}${bars}${bLine}${xLbls.join('')}
-  <line x1="${PL}" y1="${PT}" x2="${PL}" y2="${PT + cH}" stroke="#D1D5DB" stroke-width="1"/>
-  <line x1="${PL}" y1="${PT + cH}" x2="${W - PR}" y2="${PT + cH}" stroke="#D1D5DB" stroke-width="1"/>
-</svg>`;
-}
-
-function buildDonut(revenueAcumulado, presupuestoMensual) {
-  if (!presupuestoMensual || !revenueAcumulado?.length) return '';
-  const acum     = revenueAcumulado[revenueAcumulado.length - 1]?.acum || 0;
-  const pct      = Math.round((acum / presupuestoMensual) * 100);
-  const restante = Math.max(0, presupuestoMensual - acum);
-  const color    = pct >= 100 ? '#059669' : pct >= 75 ? '#B8860B' : '#DC2626';
-  const r = 44, cx = 57, cy = 57;
-  const circ = 2 * Math.PI * r;
-  const dash  = (Math.min(pct, 100) / 100 * circ).toFixed(1);
-  return `<table cellpadding="0" cellspacing="0" style="margin:0 auto;">
-  <tr><td align="center">
-    <svg xmlns="http://www.w3.org/2000/svg" width="114" height="114" viewBox="0 0 114 114">
-      <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#E5E7EB" stroke-width="11"/>
-      <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${color}" stroke-width="11"
-        stroke-dasharray="${dash} ${circ.toFixed(1)}" stroke-linecap="round"
-        transform="rotate(-90 ${cx} ${cy})"/>
-      <text x="${cx}" y="${cy - 6}" text-anchor="middle" font-size="17" font-weight="700" fill="${color}">${pct}%</text>
-      <text x="${cx}" y="${cy + 9}" text-anchor="middle" font-size="7" fill="#9CA3AF">CUMPL. PPTO</text>
-    </svg>
-  </td></tr>
-  <tr><td align="center" style="padding-top:4px;">
-    <p style="margin:0 0 1px;font-size:8px;text-transform:uppercase;letter-spacing:1px;color:#9CA3AF;font-weight:600;">Faltan</p>
-    <p style="margin:0;font-size:13px;font-weight:700;color:#0A2540;">${fmtEur(restante)}</p>
-  </td></tr>
+function buildProgressBar(revenueAcumulado, presupuestoMensual) {
+  if (!revenueAcumulado?.length) return '';
+  const acum = revenueAcumulado[revenueAcumulado.length - 1]?.acum || 0;
+  if (!presupuestoMensual) {
+    return `<table width="100%" cellpadding="0" cellspacing="0">
+  <tr>
+    <td style="padding:4px 0 10px;">
+      <p style="margin:0;font-size:13px;color:#64748B;">Revenue acumulado: <strong style="color:#0A2540;">${fmtEur(acum)}</strong></p>
+    </td>
+  </tr>
 </table>`;
+  }
+  const pct      = Math.min(Math.round((acum / presupuestoMensual) * 100), 100);
+  const restante = Math.max(0, presupuestoMensual - acum);
+  const color    = pct >= 100 ? '#059669' : pct >= 75 ? '#C49A0A' : '#DC2626';
+  const lastDay  = revenueAcumulado[revenueAcumulado.length - 1]?.dia || 1;
+
+  return `<table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:4px;">
+  <!-- Cifras principales -->
+  <tr>
+    <td style="padding:6px 0 4px;">
+      <table width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+          <td style="text-align:left;">
+            <p style="margin:0 0 2px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#64748B;">Acumulado día ${lastDay}</p>
+            <p style="margin:0;font-size:22px;font-weight:700;color:#0A2540;">${fmtEur(acum)}</p>
+          </td>
+          <td style="text-align:center;">
+            <p style="margin:0 0 2px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#64748B;">Cumplimiento</p>
+            <p style="margin:0;font-size:22px;font-weight:700;color:${color};">${pct}%</p>
+          </td>
+          <td style="text-align:right;">
+            <p style="margin:0 0 2px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#64748B;">Presupuesto total</p>
+            <p style="margin:0;font-size:22px;font-weight:700;color:#0A2540;">${fmtEur(presupuestoMensual)}</p>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+  <!-- Barra de progreso -->
+  <tr>
+    <td style="padding:10px 0 6px;">
+      <table width="100%" cellpadding="0" cellspacing="0" style="border-radius:6px;overflow:hidden;background:#E2E8F0;">
+        <tr>
+          <td style="width:${pct}%;background:${color};height:14px;"></td>
+          <td style="background:#E2E8F0;height:14px;"></td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+  <!-- Faltan -->
+  ${restante > 0 ? `<tr>
+    <td style="padding:0 0 2px;">
+      <p style="margin:0;font-size:11px;color:#94A3B8;">Faltan <strong style="color:#0A2540;">${fmtEur(restante)}</strong> para cerrar el mes en objetivo</p>
+    </td>
+  </tr>` : `<tr><td><p style="margin:0;font-size:11px;color:#059669;font-weight:700;">&#10003; Presupuesto superado</p></td></tr>`}
+</table>`;
+}
+
+
+function buildAlerts(kpis) {
+  const { occ, pickup_neto, revenue_pickup_ayer, presupuestoMensual, revenueAcumulado, cancelaciones } = kpis;
+  const alerts = [];
+
+  if (occ >= 88) {
+    alerts.push({ icon: '⚡', html: `<strong>Alta presión de demanda (${fmt(occ)}% ocupación)</strong> — Considera optimizar tarifas para maximizar ADR en los próximos días.` });
+  }
+  if (pickup_neto >= 12) {
+    const rev = revenue_pickup_ayer ? ` / +€${Math.round(revenue_pickup_ayer).toLocaleString('es-ES')}` : '';
+    alerts.push({ icon: '📈', html: `<strong>Excelente pickup ayer (+${pickup_neto} hab.${rev})</strong> — Demanda activa, revisa disponibilidad y tarifas.` });
+  }
+  if (cancelaciones >= 5) {
+    alerts.push({ icon: '⚠️', html: `<strong>Cancelaciones elevadas ayer (${cancelaciones})</strong> — Revisa política de cancelación y restricciones de estancia mínima.` });
+  }
+  if (presupuestoMensual && revenueAcumulado?.length) {
+    const acum     = revenueAcumulado[revenueAcumulado.length - 1]?.acum || 0;
+    const lastDay  = revenueAcumulado[revenueAcumulado.length - 1]?.dia || 1;
+    const pctReal  = (acum / presupuestoMensual) * 100;
+    const pctPace  = (lastDay / 30) * 100;
+    if (pctReal < pctPace - 15) {
+      alerts.push({ icon: '⚠️', html: `<strong>Ritmo por debajo del objetivo (${Math.round(pctReal)}% del presupuesto)</strong> — Revisa estrategia de pricing y distribución.` });
+    } else if (pctReal >= 95) {
+      alerts.push({ icon: '🎯', html: `<strong>¡Excelente ritmo! (${Math.round(pctReal)}% del presupuesto alcanzado)</strong> — Mantén la estrategia actual.` });
+    }
+  }
+
+  return alerts;
 }
 
 export default async function handler(req, res) {
@@ -135,24 +134,25 @@ export default async function handler(req, res) {
   const {
     fecha, mesNombre,
     occ, adr, revpar, trevpar,
-    revenue_hab, hab_ocupadas, hab_disponibles,
-    pickup_neto, cancelaciones,
+    hab_ocupadas, hab_disponibles,
+    pickup_neto, cancelaciones, revenue_pickup_ayer,
     revenueAcumulado, presupuestoMensual,
-    prev_occ, prev_adr, prev_revpar, prev_trevpar,
+    ly_occ, ly_adr, ly_revpar, ly_trevpar,
   } = kpis;
 
   console.log('import-report:', JSON.stringify({
-    email, hotel, fecha, mesNombre,
-    occ, adr, revpar, trevpar,
-    pickup_neto, cancelaciones,
+    email, hotel, fecha, occ, adr, revpar, trevpar,
+    pickup_neto, cancelaciones, revenue_pickup_ayer,
     revenueAcumuladoLen: revenueAcumulado?.length,
     presupuestoMensual,
-    prev_occ, prev_adr,
   }));
 
-  let chart = '', donut = '';
-  try { chart = buildChart(revenueAcumulado, presupuestoMensual); } catch (e) { console.error('chart error:', e); }
-  try { donut = buildDonut(revenueAcumulado, presupuestoMensual); } catch (e) { console.error('donut error:', e); }
+  let progressBar = '';
+  try { progressBar = buildProgressBar(revenueAcumulado, presupuestoMensual); } catch (e) { console.error('progressBar error:', e); }
+
+  const alerts    = buildAlerts(kpis);
+  const pickupRev = revenue_pickup_ayer ? `+€${Math.round(revenue_pickup_ayer).toLocaleString('es-ES')}` : '';
+  const pickupCanc = cancelaciones ? `(${cancelaciones} cancelación${cancelaciones !== 1 ? 'es' : ''})` : '';
 
   const html = `<!DOCTYPE html>
 <html lang="es">
@@ -161,31 +161,25 @@ export default async function handler(req, res) {
   <meta name="viewport" content="width=device-width,initial-scale=1.0">
   <title>Informe diario — ${hotel}</title>
 </head>
-<body style="margin:0;padding:0;background:#F1F3F6;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;">
+<body style="margin:0;padding:0;background:#EEF2F7;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;">
 
-<table width="100%" cellpadding="0" cellspacing="0" style="background:#F1F3F6;padding:24px 0;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#EEF2F7;padding:20px 0;">
 <tr><td align="center">
 <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;">
 
   <!-- ══ HEADER ══ -->
-  <tr><td style="background:#0A2540;border-radius:10px 10px 0 0;padding:20px 28px 18px;">
-    <table width="100%" cellpadding="0" cellspacing="0">
-      <tr>
-        <td style="width:100px;vertical-align:middle;">
-          <img src="https://fastrevenue.app/fastrev-logo.png" alt="FastRevenue"
-            width="90" style="display:block;width:90px;border:0;filter:brightness(0) invert(1);">
-        </td>
-        <td align="center" style="vertical-align:middle;padding:0 8px;">
-          <p style="margin:0 0 5px;font-size:16px;font-weight:700;color:#FFFFFF;letter-spacing:1px;text-transform:uppercase;">
-            Informe Diario de Revenue
-          </p>
-          <p style="margin:0;font-size:12px;color:rgba(255,255,255,0.5);">
-            FastRevenue &nbsp;—&nbsp; <strong style="color:rgba(255,255,255,0.85);">${hotel}</strong> &nbsp;—&nbsp; ${fmtDate(fecha)}
-          </p>
-        </td>
-        <td style="width:100px;"></td>
-      </tr>
-    </table>
+  <tr><td style="background:#0A2540;border-radius:10px 10px 0 0;padding:22px 28px 18px;text-align:center;">
+    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48" style="display:block;margin:0 auto 10px;">
+      <rect x="4" y="28" width="8" height="14" fill="#D4A017" rx="2"/>
+      <rect x="15" y="20" width="8" height="22" fill="#D4A017" rx="2"/>
+      <rect x="26" y="11" width="8" height="31" fill="#D4A017" rx="2"/>
+      <circle cx="40" cy="17" r="8" fill="none" stroke="#D4A017" stroke-width="2.5"/>
+      <text x="40" y="22" text-anchor="middle" font-size="10" font-weight="700" fill="#D4A017" font-family="Helvetica,Arial,sans-serif">$</text>
+    </svg>
+    <p style="margin:0 0 6px;font-size:17px;font-weight:700;color:#FFFFFF;letter-spacing:2px;text-transform:uppercase;">Informe Diario de Revenue</p>
+    <p style="margin:0;font-size:12px;color:rgba(255,255,255,0.55);">
+      FastRevenue &nbsp;&#8212;&nbsp; <strong style="color:#FFFFFF;font-size:14px;">${hotel}</strong> &nbsp;&#8212;&nbsp; ${fmtDate(fecha)}
+    </p>
     <div style="height:2px;background:linear-gradient(90deg,transparent,#D4A017,transparent);margin-top:16px;"></div>
   </td></tr>
 
@@ -193,76 +187,141 @@ export default async function handler(req, res) {
   <tr><td style="background:#FFFFFF;border:1px solid #E2E8F0;border-top:none;padding:0;">
     <table width="100%" cellpadding="0" cellspacing="0">
       <tr>
-        <td style="padding:12px 16px 8px;" colspan="5">
-          <p style="margin:0;font-size:11px;font-weight:700;color:#0A2540;text-transform:uppercase;letter-spacing:0.8px;">
+        <td colspan="5" style="padding:12px 16px 8px;border-bottom:1px solid #F1F5F9;">
+          <p style="margin:0;font-size:12px;font-weight:700;color:#0A2540;text-transform:uppercase;letter-spacing:0.8px;">
             Resumen de Ayer
+            <span style="font-size:11px;font-weight:400;color:#94A3B8;text-transform:none;letter-spacing:0;">(vs. Año Anterior, LY)</span>
           </p>
         </td>
       </tr>
-      <tr style="border-top:1px solid #F1F5F9;">
-        ${kpiCol('Ocupación',   `${fmt(occ)}%`,
-          hab_ocupadas != null ? `${hab_ocupadas} / ${hab_disponibles} hab.` : null,
-          chgBadge(ppChg(occ, prev_occ), true), false)}
-        ${kpiCol('ADR',         fmtEur(adr),   null,  chgBadge(pctChg(adr, prev_adr)))}
-        ${kpiCol('RevPAR',      fmtEur(revpar), null, chgBadge(pctChg(revpar, prev_revpar)))}
-        ${kpiCol('TRevPAR',     trevpar ? fmtEur(trevpar) : '—', null, trevpar ? chgBadge(pctChg(trevpar, prev_trevpar)) : '')}
-        ${kpiCol('Pickup Neto', pickup_neto != null ? `+${pickup_neto} hab.` : '—',
-          cancelaciones ? `${cancelaciones} cancelación${cancelaciones !== 1 ? 'es' : ''}` : null, '')}
+      <tr>
+        <!-- OCC -->
+        <td style="padding:14px 8px 12px;text-align:center;vertical-align:top;width:20%;">
+          <p style="margin:0 0 5px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:#64748B;">Ocupación</p>
+          <p style="margin:0;font-size:26px;font-weight:700;color:#0A2540;line-height:1;">${fmt(occ)}%</p>
+          ${badge(ppChg(occ, ly_occ), { isPP: true })}
+          ${hab_ocupadas != null ? `<p style="margin:5px 0 0;font-size:10px;color:#94A3B8;">${hab_ocupadas}/${hab_disponibles} hab.</p>` : ''}
+          <div style="text-align:right;margin-top:6px;">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="1" y="9" width="3" height="6" fill="#CBD5E1" rx="1"/>
+              <rect x="6" y="5" width="3" height="10" fill="#CBD5E1" rx="1"/>
+              <rect x="11" y="2" width="3" height="13" fill="#CBD5E1" rx="1"/>
+            </svg>
+          </div>
+        </td>
+        <!-- ADR -->
+        <td style="padding:14px 8px 12px;text-align:center;vertical-align:top;width:20%;border-left:1px solid #E2E8F0;">
+          <p style="margin:0 0 5px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:#64748B;">ADR</p>
+          <p style="margin:0;font-size:26px;font-weight:700;color:#0A2540;line-height:1;">${fmtEur(adr)}</p>
+          ${badge(absChg(adr, ly_adr), { isAbs: true, prefix: '€' })}
+          <div style="text-align:right;margin-top:6px;">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M3 2h8l2 2v10H3V2z" stroke="#CBD5E1" stroke-width="1.5" fill="none"/>
+              <path d="M6 7h5M6 10h3" stroke="#CBD5E1" stroke-width="1.2"/>
+            </svg>
+          </div>
+        </td>
+        <!-- RevPAR -->
+        <td style="padding:14px 8px 12px;text-align:center;vertical-align:top;width:20%;border-left:1px solid #E2E8F0;">
+          <p style="margin:0 0 5px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:#64748B;">RevPAR</p>
+          <p style="margin:0;font-size:26px;font-weight:700;color:#0A2540;line-height:1;">${fmtEur(revpar)}</p>
+          ${badge(pctChg(revpar, ly_revpar))}
+          <div style="text-align:right;margin-top:6px;">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <polyline points="1,13 5,8 9,10 15,3" stroke="#CBD5E1" stroke-width="1.5" fill="none"/>
+              <polyline points="11,3 15,3 15,7" stroke="#CBD5E1" stroke-width="1.5" fill="none"/>
+            </svg>
+          </div>
+        </td>
+        <!-- TRevPAR -->
+        <td style="padding:14px 8px 12px;text-align:center;vertical-align:top;width:20%;border-left:1px solid #E2E8F0;">
+          <p style="margin:0 0 5px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:#64748B;">TRevPAR</p>
+          <p style="margin:0;font-size:26px;font-weight:700;color:#0A2540;line-height:1;">${trevpar ? fmtEur(trevpar) : '—'}</p>
+          ${trevpar ? badge(pctChg(trevpar, ly_trevpar)) : ''}
+          <div style="text-align:right;margin-top:6px;">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="1" y="1" width="6" height="6" stroke="#CBD5E1" stroke-width="1.2" rx="1"/>
+              <rect x="9" y="1" width="6" height="6" stroke="#CBD5E1" stroke-width="1.2" rx="1"/>
+              <rect x="1" y="9" width="6" height="6" stroke="#CBD5E1" stroke-width="1.2" rx="1"/>
+              <rect x="9" y="9" width="6" height="6" stroke="#CBD5E1" stroke-width="1.2" rx="1"/>
+            </svg>
+          </div>
+        </td>
+        <!-- PICKUP NETO -->
+        <td style="padding:14px 8px 12px;text-align:center;vertical-align:top;width:20%;border-left:1px solid #E2E8F0;">
+          <p style="margin:0 0 5px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:#64748B;">Pickup Neto (Ayer)</p>
+          <p style="margin:0;font-size:20px;font-weight:700;color:#0A2540;line-height:1.1;">
+            ${pickup_neto != null ? `+${pickup_neto} hab.` : '—'}
+          </p>
+          ${pickupRev ? `<p style="margin:4px 0 0;font-size:13px;color:#059669;font-weight:700;line-height:1;">${pickupRev}</p>` : ''}
+          ${pickupCanc ? `<p style="margin:5px 0 0;font-size:10px;color:#94A3B8;">${pickupCanc}</p>` : ''}
+        </td>
       </tr>
     </table>
   </td></tr>
 
   <!-- gap -->
-  <tr><td style="height:8px;background:#F1F3F6;"></td></tr>
+  <tr><td style="height:8px;background:#EEF2F7;"></td></tr>
 
   <!-- ══ PROGRESO MENSUAL ══ -->
-  <tr><td style="background:#FFFFFF;border:1px solid #E2E8F0;border-radius:0;padding:0;">
+  <tr><td style="background:#FFFFFF;border:1px solid #E2E8F0;padding:0;">
     <table width="100%" cellpadding="0" cellspacing="0">
       <tr>
-        <td style="padding:12px 16px 8px;" colspan="2">
-          <p style="margin:0;font-size:11px;font-weight:700;color:#0A2540;text-transform:uppercase;letter-spacing:0.8px;">
-            Progreso Mensual de Revenue${mesNombre ? ` (${mesNombre})` : ''} vs. Presupuesto
+        <td colspan="2" style="padding:12px 16px 8px;border-bottom:1px solid #F1F5F9;">
+          <p style="margin:0;font-size:12px;font-weight:700;color:#0A2540;text-transform:uppercase;letter-spacing:0.8px;">
+            Progreso Mensual de Revenue${mesNombre ? ` <span style="color:#94A3B8;font-weight:400;text-transform:none;">(${mesNombre})</span>` : ''}
+            &nbsp;vs.&nbsp;Presupuesto Total
           </p>
         </td>
       </tr>
       <tr>
-        <td style="padding:4px 6px 12px 14px;vertical-align:middle;">
-          ${chart}
-          ${chart ? `<table cellpadding="0" cellspacing="0" style="margin:6px 0 0 50px;">
-            <tr>
-              <td style="padding-right:12px;">
-                <span style="display:inline-block;width:10px;height:10px;background:#B8860B;border-radius:2px;vertical-align:middle;margin-right:4px;"></span>
-                <span style="font-size:10px;color:#6B7280;vertical-align:middle;">Revenue acumulado</span>
-              </td>
-              ${presupuestoMensual ? `<td>
-                <span style="display:inline-block;width:14px;border-top:2px dashed #0A2540;vertical-align:middle;margin-right:4px;"></span>
-                <span style="font-size:10px;color:#6B7280;vertical-align:middle;">Presupuesto mensual</span>
-              </td>` : ''}
-            </tr>
-          </table>` : `<p style="margin:20px 0;font-size:12px;color:#9CA3AF;text-align:center;">Sin datos de progreso para este mes</p>`}
+        <td style="padding:12px 16px 14px;">
+          ${progressBar || '<p style="margin:0;font-size:12px;color:#94A3B8;">Sin datos de progreso mensual</p>'}
         </td>
-        ${donut ? `<td style="padding:8px 14px 12px 6px;vertical-align:middle;text-align:center;width:128px;">${donut}</td>` : ''}
       </tr>
     </table>
   </td></tr>
+
+  ${alerts.length > 0 ? `
+  <!-- gap -->
+  <tr><td style="height:8px;background:#EEF2F7;"></td></tr>
+
+  <!-- ══ ALERTAS DEL SISTEMA ══ -->
+  <tr><td style="background:#FFFFFF;border:1px solid #E2E8F0;padding:0;">
+    <table width="100%" cellpadding="0" cellspacing="0">
+      <tr>
+        <td style="padding:12px 16px 8px;border-bottom:1px solid #F1F5F9;">
+          <p style="margin:0;font-size:12px;font-weight:700;color:#0A2540;text-transform:uppercase;letter-spacing:0.8px;">Alertas del Sistema</p>
+        </td>
+      </tr>
+      ${alerts.map(a => `<tr><td style="padding:9px 16px;">
+        <p style="margin:0;font-size:12px;color:#374151;line-height:1.6;">${a.icon}&nbsp; ${a.html}</p>
+      </td></tr>`).join('')}
+      <tr><td style="height:6px;"></td></tr>
+    </table>
+  </td></tr>
+  ` : ''}
+
+  <!-- gap before footer -->
+  <tr><td style="height:8px;background:#EEF2F7;"></td></tr>
 
   <!-- ══ FOOTER ══ -->
   <tr><td style="background:#0A2540;border-radius:0 0 10px 10px;padding:12px 28px;">
     <table width="100%" cellpadding="0" cellspacing="0">
       <tr>
-        <td><p style="margin:0;font-size:10px;color:rgba(255,255,255,0.4);">FastRevenue — Tu partner de inteligencia hotelera</p></td>
+        <td><p style="margin:0;font-size:10px;color:rgba(255,255,255,0.4);">FastRevenue — Tu Partner de Inteligencia Hotelera</p></td>
         <td align="right">
-          <a href="https://fastrevenue.app/home" style="font-size:10px;color:#D4A017;text-decoration:none;font-weight:600;">Abrir dashboard →</a>
+          <a href="https://fastrevenue.app/home" style="font-size:10px;color:#D4A017;text-decoration:none;font-weight:600;">Abrir dashboard &#8594;</a>
         </td>
       </tr>
     </table>
   </td></tr>
 
   <tr><td align="center" style="padding:14px 0 0;">
-    <p style="margin:0;font-size:10px;color:#9CA3AF;">
-      <a href="mailto:info@fastrevenue.app" style="color:#9CA3AF;text-decoration:none;">info@fastrevenue.app</a>
-      &nbsp;·&nbsp;
-      <a href="https://fastrevenue.app/privacidad" style="color:#9CA3AF;text-decoration:none;">Privacidad</a>
+    <p style="margin:0;font-size:10px;color:#94A3B8;">
+      <a href="mailto:info@fastrevenue.app" style="color:#94A3B8;text-decoration:none;">info@fastrevenue.app</a>
+      &nbsp;&#183;&nbsp;
+      <a href="https://fastrevenue.app/privacidad" style="color:#94A3B8;text-decoration:none;">Privacidad</a>
     </p>
   </td></tr>
 

@@ -1029,14 +1029,15 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
         const pickupAyer = pickupRows.filter(p => String(p.fecha_pickup || '').slice(0,10) === ayerStr);
         const nuevasAyer = pickupAyer.filter(p => p.estado !== 'cancelada').reduce((a,p) => a + (p.num_reservas||1), 0);
         const cancelAyer = pickupAyer.filter(p => p.estado === 'cancelada').reduce((a,p) => a + (p.num_reservas||1), 0);
-        const revPickupAyer = pickupAyer.filter(p => p.estado !== 'cancelada').reduce((a,p) => a + (p.precio_total||0), 0);
+        // Revenue pickup: usa precio_total si existe, sino estima num_reservas * ADR del día
+        const revPickupAyer = pickupAyer
+          .filter(p => p.estado !== 'cancelada')
+          .reduce((a, p) => a + (p.precio_total || (p.num_reservas || 1) * (ultimoDia.adr || 0)), 0);
 
-        // Día anterior (para comparativa)
-        const ordenados = [...produccionRows].sort((a, b) => a.fecha.localeCompare(b.fecha));
-        const idxUltimo = ordenados.length - 1;
-        const anteriorDia = idxUltimo > 0 ? ordenados[idxUltimo - 1] : null;
-        const prevOcc = anteriorDia && anteriorDia.hab_disponibles > 0
-          ? (anteriorDia.hab_ocupadas / anteriorDia.hab_disponibles * 100) : null;
+        // LY: mismo día del año anterior
+        const lyFecha = `${anioActual - 1}-${ultimoDia.fecha.slice(5)}`;
+        const lyDia   = produccionRows.find(d => d.fecha === lyFecha);
+        const lyOcc   = lyDia && lyDia.hab_disponibles > 0 ? (lyDia.hab_ocupadas / lyDia.hab_disponibles * 100) : null;
 
         fetch('/api/import-report', {
           method: 'POST',
@@ -1060,10 +1061,10 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
               revenueAcumulado,
               presupuestoMensual,
               total_registros: produccionRows.length,
-              prev_occ: prevOcc,
-              prev_adr: anteriorDia?.adr,
-              prev_revpar: anteriorDia?.revpar,
-              prev_trevpar: anteriorDia?.trevpar,
+              ly_occ:    lyOcc,
+              ly_adr:    lyDia?.adr    ?? null,
+              ly_revpar: lyDia?.revpar ?? null,
+              ly_trevpar:lyDia?.trevpar?? null,
             },
           }),
         }).catch(() => {});
