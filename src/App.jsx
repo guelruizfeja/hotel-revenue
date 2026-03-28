@@ -716,7 +716,7 @@ function EmptyState({ mensaje }) {
 }
 
 // ─── IMPORTAR EXCEL ───────────────────────────────────────────────
-function ImportarExcel({ onClose, session, onImportado }) {
+function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombreProp }) {
   const t = useT();
   const [loading, setLoading] = useState(false);
   const [resultado, setResultado] = useState(null);
@@ -1006,23 +1006,64 @@ function ImportarExcel({ onClose, session, onImportado }) {
       // Enviar informe por email (fire & forget)
       const ultimoDia = [...produccionRows].sort((a, b) => b.fecha.localeCompare(a.fecha))[0];
       if (ultimoDia && session?.user?.email) {
+        const mesActual  = parseInt(ultimoDia.fecha.split('-')[1]);
+        const anioActual = parseInt(ultimoDia.fecha.split('-')[0]);
+        const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+        // Revenue acumulado del mes día a día
+        const datosMes = produccionRows
+          .filter(d => { const [y,m] = d.fecha.split('-').map(Number); return m === mesActual && y === anioActual; })
+          .sort((a, b) => a.fecha.localeCompare(b.fecha));
+        let acum = 0;
+        const revenueAcumulado = datosMes.map(d => {
+          acum += d.revenue_hab || 0;
+          return { dia: parseInt(d.fecha.split('-')[2]), acum: Math.round(acum) };
+        });
+
+        // Presupuesto mensual
+        const pptoMes = presupuestoRows.find(p => p.mes === mesActual && p.anio === anioActual);
+        const presupuestoMensual = pptoMes?.rev_total_ppto || null;
+
+        // Pickup de ayer
+        const ayerStr = ultimoDia.fecha;
+        const pickupAyer = pickupRows.filter(p => String(p.fecha_pickup || '').slice(0,10) === ayerStr);
+        const nuevasAyer = pickupAyer.filter(p => p.estado !== 'cancelada').reduce((a,p) => a + (p.num_reservas||1), 0);
+        const cancelAyer = pickupAyer.filter(p => p.estado === 'cancelada').reduce((a,p) => a + (p.num_reservas||1), 0);
+        const revPickupAyer = pickupAyer.filter(p => p.estado !== 'cancelada').reduce((a,p) => a + (p.precio_total||0), 0);
+
+        // Día anterior (para comparativa)
+        const ordenados = [...produccionRows].sort((a, b) => a.fecha.localeCompare(b.fecha));
+        const idxUltimo = ordenados.length - 1;
+        const anteriorDia = idxUltimo > 0 ? ordenados[idxUltimo - 1] : null;
+        const prevOcc = anteriorDia && anteriorDia.hab_disponibles > 0
+          ? (anteriorDia.hab_ocupadas / anteriorDia.hab_disponibles * 100) : null;
+
         fetch('/api/import-report', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             email: session.user.email,
-            hotelNombre: hotelRows?.[1]?.[1] || null,
+            hotelNombre: hotelNombreProp || null,
             kpis: {
               fecha: ultimoDia.fecha,
-              occ: ultimoDia.hab_disponibles > 0 ? (ultimoDia.hab_ocupadas / ultimoDia.hab_disponibles * 100).toFixed(1) : null,
+              mesNombre: MESES[mesActual - 1],
+              occ: ultimoDia.hab_disponibles > 0 ? (ultimoDia.hab_ocupadas / ultimoDia.hab_disponibles * 100) : null,
               adr: ultimoDia.adr,
               revpar: ultimoDia.revpar,
+              trevpar: ultimoDia.trevpar,
               revenue_hab: ultimoDia.revenue_hab,
-              revenue_total: ultimoDia.revenue_total,
               hab_ocupadas: ultimoDia.hab_ocupadas,
               hab_disponibles: ultimoDia.hab_disponibles,
+              pickup_neto: nuevasAyer,
+              cancelaciones: cancelAyer,
+              revenue_pickup_ayer: revPickupAyer,
+              revenueAcumulado,
+              presupuestoMensual,
               total_registros: produccionRows.length,
-              pickup_nuevos: pickupRows.length,
+              prev_occ: prevOcc,
+              prev_adr: anteriorDia?.adr,
+              prev_revpar: anteriorDia?.revpar,
+              prev_trevpar: anteriorDia?.trevpar,
             },
           }),
         }).catch(() => {});
@@ -4108,7 +4149,7 @@ export default function App() {
           </div>
         </div>
       )}
-      {importar && <ImportarExcel onClose={() => setImportar(false)} session={session} onImportado={() => { localStorage.removeItem("fr_datos_cache"); localStorage.removeItem("fr_datos_ts"); localStorage.removeItem("fr_scroll"); cargarDatos(true); }} />}
+      {importar && <ImportarExcel onClose={() => setImportar(false)} session={session} hotelNombre={datos.hotel?.nombre || ''} onImportado={() => { localStorage.removeItem("fr_datos_cache"); localStorage.removeItem("fr_datos_ts"); localStorage.removeItem("fr_scroll"); cargarDatos(true); }} />}
       {onboardingStep !== null && <OnboardingOverlay step={onboardingStep} onNext={handleOnboardingNext} onSkip={handleOnboardingSkip} />}
     </div>
     </LangContext.Provider>
