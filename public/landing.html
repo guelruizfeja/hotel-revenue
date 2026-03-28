@@ -35,9 +35,9 @@
     position: fixed; top: 0; left: 0; right: 0; z-index: 100;
     display: flex; align-items: center; justify-content: space-between;
     padding: 0 6vw; height: 60px;
-    background: rgba(255,255,255,0.95);
+    background: rgba(235,240,248,0.97);
     backdrop-filter: blur(16px);
-    border-bottom: 1px solid var(--gray-light);
+    border-bottom: 1px solid rgba(200,212,228,0.8);
   }
   .nav-logo { display: flex; align-items: center; gap: 10px; }
   .nav-logo img { height: 88px; width: auto; }
@@ -499,6 +499,20 @@
     .nav-links { display: none; }
     .price-card { padding: 36px 28px; }
   }
+
+  /* ── SCROLL REVEAL ── */
+  .reveal {
+    opacity: 0;
+    transform: translateY(28px);
+    transition: opacity 0.65s ease, transform 0.65s ease;
+  }
+  .reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .reveal-delay-1 { transition-delay: 0.1s; }
+  .reveal-delay-2 { transition-delay: 0.2s; }
+  .reveal-delay-3 { transition-delay: 0.3s; }
 </style>
 </head>
 <body>
@@ -588,7 +602,7 @@
 
 <!-- STATS -->
 <div class="stats-bar">
-  <div class="stats-inner">
+  <div class="stats-inner reveal">
     <div class="stat-item">
       <div class="stat-num">5+</div>
       <div class="stat-label">Módulos en un solo espacio</div>
@@ -605,7 +619,7 @@
 </div>
 
 <!-- MOCKUP -->
-<section class="mockup-section" id="producto">
+<section class="mockup-section reveal" id="producto">
   <div class="section-eyebrow">El producto</div>
   <h2 class="section-title">Un único espacio<br>para todo tu hotel</h2>
   <p class="section-sub">Importa tu Excel y en segundos tienes ocupación, revenue, pickup, presupuesto y grupos centralizados e interactivos.</p>
@@ -685,7 +699,7 @@
 </section>
 
 <!-- FEATURES -->
-<section class="features-section" id="funciones">
+<section class="features-section reveal" id="funciones">
   <div class="section-eyebrow">Gestión inteligente de tu hotel</div>
   <h2 class="section-title">Gestión inteligente<br>de tu hotel</h2>
   <p class="section-sub">Cinco módulos interactivos que centralizan toda la información de tu hotel. Sin dispersión, sin hojas sueltas, sin perder el hilo.</p>
@@ -933,7 +947,7 @@ document.querySelectorAll('.module-tab').forEach(tab => {
 </script>
 
 <!-- PRICING -->
-<section class="pricing-section" id="precios">
+<section class="pricing-section reveal" id="precios">
   <div class="section-eyebrow">Precios</div>
   <h2 class="section-title">Todo el hotel centralizado<br>por menos de lo que cuesta<br>un canal de distribución</h2>
   <p class="section-sub">Un solo plan. Todos los módulos incluidos. Sin sorpresas.</p>
@@ -960,7 +974,7 @@ document.querySelectorAll('.module-tab').forEach(tab => {
 </section>
 
 <!-- CONSULTA -->
-<section class="contact-section" id="consulta">
+<section class="contact-section reveal" id="consulta">
   <div class="contact-wrap">
     <div class="section-eyebrow">Primera consulta</div>
     <h2 class="section-title">Hablamos de tu hotel</h2>
@@ -1026,5 +1040,12 @@ document.getElementById('contactForm').addEventListener('submit', async function
   </div>
   <p style="margin-top:12px;">© 2025 FastRevenue · Miguel Ruiz</p>
 </footer>
+
+<script>
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target); } });
+}, { threshold: 0.1 });
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+</script>
 </body>
 </html>
