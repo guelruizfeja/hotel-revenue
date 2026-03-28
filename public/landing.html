@@ -39,6 +39,8 @@
     backdrop-filter: blur(16px);
     border-bottom: 1px solid var(--gray-light);
   }
+  .nav-logo { display: flex; align-items: center; gap: 10px; }
+  .nav-logo img { height: 36px; width: auto; }
   .nav-logo span { font-family: 'Cormorant Garamond', serif; font-size: 26px; font-weight: 700; color: var(--accent); letter-spacing: -0.5px; }
   .nav-links { display: flex; gap: 28px; align-items: center; }
   .nav-links a {
@@ -362,7 +364,7 @@
 <body>
 
 <nav>
-  <div class="nav-logo"><span>FastRevenue</span></div>
+  <div class="nav-logo"><img src="/fastrev-logo.png" alt="FastRevenue"><span>FastRevenue</span></div>
   <div class="nav-links">
     <a href="#producto">Producto</a>
     <a href="#funciones">Funciones</a>
