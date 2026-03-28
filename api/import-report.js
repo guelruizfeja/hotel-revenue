@@ -165,8 +165,11 @@ export default async function handler(req, res) {
     total_registros,
   } = kpis;
 
-  const chart = buildChart(revenueAcumulado, presupuestoMensual);
-  const cumplimiento = buildCumplimiento(revenueAcumulado, presupuestoMensual);
+  let chart = '', cumplimiento = '';
+  try { chart = buildChart(revenueAcumulado, presupuestoMensual); } catch(e) { console.error('buildChart error:', e); }
+  try { cumplimiento = buildCumplimiento(revenueAcumulado, presupuestoMensual); } catch(e) { console.error('buildCumplimiento error:', e); }
+
+  console.log('import-report payload:', JSON.stringify({ email, fecha, mesNombre, occ, adr, revpar, pickup_neto, revenueAcumuladoLen: revenueAcumulado?.length, presupuestoMensual }));
 
   const html = `<!DOCTYPE html>
 <html lang="es">
