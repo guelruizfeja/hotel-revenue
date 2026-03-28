@@ -1002,6 +1002,31 @@ function ImportarExcel({ onClose, session, onImportado }) {
       setProgresoPct(100);
       setResultado({ produccion: produccionRows.length, pickup: pickupRows.length, presupuesto: presupuestoRows.length });
       if (onImportado) onImportado();
+
+      // Enviar informe por email (fire & forget)
+      const ultimoDia = [...produccionRows].sort((a, b) => b.fecha.localeCompare(a.fecha))[0];
+      if (ultimoDia && session?.user?.email) {
+        fetch('/api/import-report', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: session.user.email,
+            hotelNombre: hotelRows?.[1]?.[1] || null,
+            kpis: {
+              fecha: ultimoDia.fecha,
+              occ: ultimoDia.hab_disponibles > 0 ? (ultimoDia.hab_ocupadas / ultimoDia.hab_disponibles * 100).toFixed(1) : null,
+              adr: ultimoDia.adr,
+              revpar: ultimoDia.revpar,
+              revenue_hab: ultimoDia.revenue_hab,
+              revenue_total: ultimoDia.revenue_total,
+              hab_ocupadas: ultimoDia.hab_ocupadas,
+              hab_disponibles: ultimoDia.hab_disponibles,
+              total_registros: produccionRows.length,
+              pickup_nuevos: pickupRows.length,
+            },
+          }),
+        }).catch(() => {});
+      }
     } catch (e) {
       setError(e.message);
       setProgresoPct(0);
