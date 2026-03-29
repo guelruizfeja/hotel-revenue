@@ -64,6 +64,10 @@ const TRANSLATIONS = {
     noches_media:"noches media", precio_medio_reserva:"Precio medio reserva",
     revenue_medio:"Revenue medio por reserva confirmada", precio_medio:"precio medio",
     dia_pico:"Día pico", res_abrev:"res.",
+    fechas_calientes:"Fechas Calientes", sin_futuras:"Sin reservas futuras",
+    ventana_reserva:"Ventana de reserva", dias_label:"días",
+    este_mes_label:"Este mes", anio_ant_abrev:"Año ant.", variacion_label:"Variación",
+    demanda_debil:"↓ Señal de demanda débil", demanda_adelantada:"↑ Demanda adelantada",
     // Budget
     rev_real_ytd:"Revenue Real YTD", forecast_cierre_anio:"Forecast Cierre Año",
     presupuesto_anio:"Presupuesto Año", detalle_mensual:"Detalle mensual",
@@ -159,6 +163,10 @@ const TRANSLATIONS = {
     noches_media:"avg nights", precio_medio_reserva:"Average booking price",
     revenue_medio:"Average revenue per confirmed booking", precio_medio:"avg price",
     dia_pico:"Peak day", res_abrev:"bkgs.",
+    fechas_calientes:"Hot Dates", sin_futuras:"No future bookings",
+    ventana_reserva:"Booking window", dias_label:"days",
+    este_mes_label:"This month", anio_ant_abrev:"Prev. year", variacion_label:"Change",
+    demanda_debil:"↓ Weaker demand signal", demanda_adelantada:"↑ Stronger demand",
     rev_real_ytd:"Actual Revenue YTD", forecast_cierre_anio:"Year-End Forecast",
     presupuesto_anio:"Annual Budget", detalle_mensual:"Monthly detail",
     th_adr_ppto:"Budget ADR", th_adr_real:"Actual ADR", th_desv_adr:"ADR Dev.",
@@ -249,6 +257,10 @@ const TRANSLATIONS = {
     noches_media:"nuits moy.", precio_medio_reserva:"Prix moyen réservation",
     revenue_medio:"Revenu moyen par réservation confirmée", precio_medio:"prix moy.",
     dia_pico:"Jour pic", res_abrev:"rés.",
+    fechas_calientes:"Dates Chaudes", sin_futuras:"Aucune réservation future",
+    ventana_reserva:"Fenêtre de réservation", dias_label:"jours",
+    este_mes_label:"Ce mois", anio_ant_abrev:"Année préc.", variacion_label:"Variation",
+    demanda_debil:"↓ Signal de demande faible", demanda_adelantada:"↑ Demande anticipée",
     rev_real_ytd:"Revenu Réel YTD", forecast_cierre_anio:"Prévision Clôture Année",
     presupuesto_anio:"Budget Annuel", detalle_mensual:"Détail mensuel",
     th_adr_ppto:"ADR Budget", th_adr_real:"ADR Réel", th_desv_adr:"Écart ADR",
@@ -2486,56 +2498,40 @@ function PickupView({ datos }) {
 
       {/* ── GRÁFICA + DÍA MÁS RESERVADO ── */}
       <div className="pickup-chart-row" style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:12, padding:"24px 28px", display:"flex", gap:40 }}>
-        {/* Col izquierda: días más reservados */}
-        <div style={{ display:"flex", flexDirection:"column", gap:12, minWidth:190, paddingRight:24, borderRight:`1px solid ${C.border}` }}>
-          <p style={{ fontSize:11, fontWeight:700, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:4 }}>🏆 {t("dia_pico")}</p>
-          {(pickupEntries && pickupEntries.length > 0) && (() => {
-            const porDia = {};
+        {/* Col izquierda: Fechas Calientes */}
+        <div style={{ display:"flex", flexDirection:"column", gap:10, minWidth:190, paddingRight:24, borderRight:`1px solid ${C.border}` }}>
+          <p style={{ fontSize:11, fontWeight:700, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:4 }}>🔥 {t("fechas_calientes")}</p>
+          {(() => {
+            const padL = n => String(n).padStart(2,"0");
+            const hoyStr = `${hoy.getFullYear()}-${padL(hoy.getMonth()+1)}-${padL(hoy.getDate())}`;
+            // OTB acumulado por fecha futura (pickup ya recibido, no cancelada)
+            const otbPorDia = {};
             (pickupEntries || []).forEach(e => {
-              const f = String(e.fecha_llegada || "").slice(0, 10);
-              if (!f || f.length < 10) return;
-              porDia[f] = (porDia[f] || 0) + (e.num_reservas || 1);
+              const fl = String(e.fecha_llegada || "").slice(0, 10);
+              const fp = String(e.fecha_pickup  || "").slice(0, 10);
+              if (fl.length < 10 || fp.length < 10) return;
+              if (fl <= hoyStr) return;   // solo fechas futuras
+              if (fp > hoyStr) return;    // solo pickup ya recibido hoy o antes
+              if ((e.estado || "confirmada") === "cancelada") return;
+              otbPorDia[fl] = (otbPorDia[fl] || 0) + (e.num_reservas || 1);
             });
-            const findPeak = (desde, hasta) => {
-              let best = null, bestVal = 0;
-              Object.entries(porDia).forEach(([fecha, val]) => {
-                if (fecha >= desde && fecha <= hasta && val > bestVal) { bestVal = val; best = fecha; }
-              });
-              return best ? { fecha: best, reservas: bestVal } : null;
-            };
-            const fmt = (isoStr) => {
-              const [y, m, d] = isoStr.split("-");
-              const diasA  = t("dias_abrev");
-              const mesesA = t("meses_corto");
+            const top5 = Object.entries(otbPorDia).sort((a,b) => b[1]-a[1]).slice(0,5);
+            if (top5.length === 0) return <p style={{ fontSize:11, color:C.textLight }}>{t("sin_futuras")}</p>;
+            const maxVal = top5[0][1] || 1;
+            const fmt = (iso) => {
+              const [y,m,d] = iso.split("-");
               const dt = new Date(Number(y), Number(m)-1, Number(d));
-              return `${diasA[dt.getDay()]} ${Number(d)} ${mesesA[Number(m)-1]}`;
+              return `${t("dias_abrev")[dt.getDay()]} ${Number(d)} ${t("meses_corto")[Number(m)-1]}`;
             };
-            const pad = n => String(n).padStart(2,"0");
-            const hoyStr    = `${hoy.getFullYear()}-${pad(hoy.getMonth()+1)}-${pad(hoy.getDate())}`;
-            const semFin    = new Date(hoy); semFin.setDate(semFin.getDate()+7);
-            const semFinStr = `${semFin.getFullYear()}-${pad(semFin.getMonth()+1)}-${pad(semFin.getDate())}`;
-            const mesSig    = new Date(hoy.getFullYear(), hoy.getMonth()+1, 1);
-            const mesSigFin = new Date(hoy.getFullYear(), hoy.getMonth()+2, 0);
-            const mesDesde  = `${mesSig.getFullYear()}-${pad(mesSig.getMonth()+1)}-01`;
-            const mesHasta  = `${mesSigFin.getFullYear()}-${pad(mesSigFin.getMonth()+1)}-${pad(mesSigFin.getDate())}`;
-            const anioDesde = `${hoy.getFullYear()}-01-01`;
-            const anioHasta = `${hoy.getFullYear()}-12-31`;
-            const tarjetas  = [
-              { label:t("prox_semana"), icon:"📅", peak: findPeak(hoyStr,    semFinStr) },
-              { label:t("prox_mes"),    icon:"🗓️",  peak: findPeak(mesDesde,  mesHasta)  },
-              { label:t("anio_actual"), icon:"📆",  peak: findPeak(anioDesde, anioHasta) },
-            ];
-            return tarjetas.map(({ label, icon, peak }) => (
-              <div key={label} style={{ borderLeft:`3px solid ${COL_OTB}`, paddingLeft:12 }}>
-                <p style={{ fontSize:10, color:C.textLight, fontWeight:600, marginBottom:4 }}>{icon} {label}</p>
-                {peak ? (
-                  <>
-                    <p style={{ fontSize:15, fontWeight:800, color:C.text, fontFamily:"'Plus Jakarta Sans',sans-serif", letterSpacing:-0.3 }}>{fmt(peak.fecha)}</p>
-                    <p style={{ fontSize:11, color:C.textMid, marginTop:2 }}><span style={{ fontWeight:700, color:COL_PPTO }}>{peak.reservas}</span> {t("reservas_captadas")}</p>
-                  </>
-                ) : (
-                  <p style={{ fontSize:11, color:C.textLight }}>{t("sin_datos")}</p>
-                )}
+            return top5.map(([fecha, otb]) => (
+              <div key={fecha} style={{ display:"flex", flexDirection:"column", gap:3 }}>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"baseline" }}>
+                  <span style={{ fontSize:12, fontWeight:700, color:C.text }}>{fmt(fecha)}</span>
+                  <span style={{ fontSize:13, fontWeight:800, color:COL_OTB, fontFamily:"'Plus Jakarta Sans',sans-serif" }}>{otb} {t("res_abrev")}</span>
+                </div>
+                <div style={{ width:"100%", height:4, background:C.border, borderRadius:2 }}>
+                  <div style={{ width:`${Math.round(otb/maxVal*100)}%`, height:"100%", background:COL_OTB, borderRadius:2 }} />
+                </div>
               </div>
             ));
           })()}
@@ -2607,6 +2603,80 @@ function PickupView({ datos }) {
         )}
         </div>{/* fin col derecha */}
       </div>{/* fin card gráfica+pico */}
+
+      {/* ── VENTANA DE RESERVA ── */}
+      {(() => {
+        const padV = n => String(n).padStart(2,"0");
+        const mesActual = hoy.getMonth();
+        const anioActual = hoy.getFullYear();
+        const mesStr   = `${anioActual}-${padV(mesActual+1)}`;
+        const mesStrLY = `${anioActual-1}-${padV(mesActual+1)}`;
+
+        const calcVentana = (mesStrFiltro) => {
+          let totalDias = 0, count = 0;
+          (pickupEntries || []).forEach(e => {
+            const fl = String(e.fecha_llegada || "").slice(0, 10);
+            const fp = String(e.fecha_pickup  || "").slice(0, 10);
+            if (fl.slice(0,7) !== mesStrFiltro) return;
+            if ((e.estado || "confirmada") === "cancelada") return;
+            if (fl.length < 10 || fp.length < 10) return;
+            const dias = Math.round((new Date(fl+"T00:00:00") - new Date(fp+"T00:00:00")) / 86400000);
+            if (dias < 0 || dias > 365) return;
+            const n = e.num_reservas || 1;
+            totalDias += dias * n;
+            count += n;
+          });
+          return count > 0 ? Math.round(totalDias / count) : null;
+        };
+
+        const vActual = calcVentana(mesStr);
+        const vLY     = calcVentana(mesStrLY);
+        if (vActual == null && vLY == null) return null;
+
+        const diff      = (vActual != null && vLY != null) ? vActual - vLY : null;
+        const mesNombre = t("meses_full")[mesActual];
+
+        return (
+          <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:12, padding:"20px 28px" }}>
+            <p style={{ fontSize:11, fontWeight:700, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:16 }}>⏱ {t("ventana_reserva")} · {mesNombre}</p>
+            <div style={{ display:"flex", gap:32, alignItems:"center", flexWrap:"wrap" }}>
+              <div>
+                <p style={{ fontSize:11, color:C.textLight, marginBottom:4 }}>{t("este_mes_label")}</p>
+                <p style={{ fontSize:28, fontWeight:800, color:C.text, fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1 }}>
+                  {vActual != null ? vActual : "—"}
+                  <span style={{ fontSize:13, fontWeight:400, color:C.textMid }}> {t("dias_label")}</span>
+                </p>
+              </div>
+              {vLY != null && (
+                <>
+                  <div style={{ height:40, width:1, background:C.border }} />
+                  <div>
+                    <p style={{ fontSize:11, color:C.textLight, marginBottom:4 }}>{t("anio_ant_abrev")}</p>
+                    <p style={{ fontSize:22, fontWeight:600, color:C.textMid, fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1 }}>
+                      {vLY}
+                      <span style={{ fontSize:12, fontWeight:400 }}> {t("dias_label")}</span>
+                    </p>
+                  </div>
+                </>
+              )}
+              {diff != null && (
+                <>
+                  <div style={{ height:40, width:1, background:C.border }} />
+                  <div>
+                    <p style={{ fontSize:11, color:C.textLight, marginBottom:4 }}>{t("variacion_label")}</p>
+                    <p style={{ fontSize:20, fontWeight:800, color: diff >= 0 ? C.green : C.red, fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1 }}>
+                      {diff >= 0 ? "+" : ""}{diff} {t("dias_label")}
+                    </p>
+                    <p style={{ fontSize:10, fontWeight:600, color: diff < 0 ? C.red : C.green, marginTop:4 }}>
+                      {diff < 0 ? t("demanda_debil") : t("demanda_adelantada")}
+                    </p>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* ── PACE ── */}
       {(() => {
