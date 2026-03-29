@@ -3490,7 +3490,7 @@ function GruposView({ datos, onRecargar }) {
               })()}
 
               {/* ── ANÁLISIS DE DESPLAZAMIENTO ── */}
-              {form.fecha_inicio && form.fecha_fin && (parseInt(form.habitaciones)||0) > 0 && (parseFloat(form.adr_grupo)||0) > 0 && (() => {
+              {form.fecha_inicio && form.fecha_fin && (parseInt(form.habitaciones)||0) > 0 && (() => {
                 const produccion  = datos.produccion  || [];
                 const presupuesto = datos.presupuesto || [];
                 const noches = Math.max(1, Math.round((new Date(form.fecha_fin) - new Date(form.fecha_inicio)) / 86400000));
@@ -3522,31 +3522,45 @@ function GruposView({ datos, onRecargar }) {
                   factorOcc    = 0.65;
                   fuenteLY     = false;
                 }
-                if (!adrTransient) return null;
+                // Sin referencia de precio: mostrar aviso
+                if (!adrTransient) return (
+                  <div style={{ background:"#F5F5F5", border:`1px solid ${C.border}`, borderRadius:8, padding:"12px 16px" }}>
+                    <p style={{ fontSize:11, fontWeight:700, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:6 }}>📊 {t("analisis_desplazamiento")}</p>
+                    <p style={{ fontSize:12, color:C.textLight }}>{t("sin_datos_ly")} — importa producción o presupuesto para activar este análisis.</p>
+                  </div>
+                );
 
-                const contribucion       = rooms * adrGrupo   * noches + revFnb + revSala;
+                const contribucion        = rooms * adrGrupo * noches + revFnb + revSala;
                 const costeDesplazamiento = rooms * adrTransient * noches * factorOcc;
-                const valorNeto          = contribucion - costeDesplazamiento;
-                const isPos              = valorNeto >= 0;
+                const valorNeto           = contribucion - costeDesplazamiento;
+                const isPos               = adrGrupo > 0 ? valorNeto >= 0 : false;
 
                 // ADR mínimo para que el grupo sea rentable (valor neto ≥ 0)
                 const breakEvenHab = costeDesplazamiento - revFnb - revSala;
                 const breakEvenAdr = rooms > 0 && noches > 0 && breakEvenHab > 0
                   ? Math.round(breakEvenHab / (rooms * noches)) : null;
 
-                const borderColor = isPos ? "#1A7A3C33" : "#E85D0433";
-                const bgColor     = isPos ? "#F0FBF4"   : "#FFF8F0";
+                const sinAdr      = adrGrupo === 0;
+                const borderColor = sinAdr ? "#2B7EC133" : isPos ? "#1A7A3C33" : "#E85D0433";
+                const bgColor     = sinAdr ? "#EEF4FB"   : isPos ? "#F0FBF4"   : "#FFF8F0";
 
                 return (
                   <div style={{ background:bgColor, border:`1px solid ${borderColor}`, borderRadius:8, padding:"14px 16px" }}>
                     <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
                       <p style={{ fontSize:11, fontWeight:700, color:C.textLight, textTransform:"uppercase", letterSpacing:1 }}>📊 {t("analisis_desplazamiento")}</p>
-                      <span style={{ fontSize:12, fontWeight:700, padding:"3px 10px", borderRadius:6,
-                        background: isPos ? C.greenLight : "#FDECEA", color: isPos ? C.green : C.red }}>
-                        {isPos ? t("acepta_grupo") : t("revisar_grupo")}
-                      </span>
+                      {!sinAdr && (
+                        <span style={{ fontSize:12, fontWeight:700, padding:"3px 10px", borderRadius:6,
+                          background: isPos ? C.greenLight : "#FDECEA", color: isPos ? C.green : C.red }}>
+                          {isPos ? t("acepta_grupo") : t("revisar_grupo")}
+                        </span>
+                      )}
                     </div>
 
+                    {sinAdr ? (
+                      <p style={{ fontSize:12, color:"#2B7EC1", marginBottom:12 }}>
+                        Rellena el ADR del grupo para ver el análisis completo.
+                      </p>
+                    ) : (
                     <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8, marginBottom:12 }}>
                       {[
                         { label: t("contrib_grupo"),   val: `€${Math.round(contribucion).toLocaleString("es-ES")}`,        color: C.text },
@@ -3559,6 +3573,7 @@ function GruposView({ datos, onRecargar }) {
                         </div>
                       ))}
                     </div>
+                    )}
 
                     <div style={{ display:"flex", gap:16, flexWrap:"wrap", borderTop:`1px solid ${C.border}`, paddingTop:10 }}>
                       <div>
