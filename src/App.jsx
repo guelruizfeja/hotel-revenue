@@ -2785,13 +2785,19 @@ function BudgetView({ datos, anio: anioProp }) {
     // Revenue forecast = reservas * ADR año anterior
     const forecastRev = Math.round(forecastRes * adrLY);
 
+    // ADR forecast = ADR del año anterior (es el ADR implícito en el modelo)
+    const forecastAdr = Math.round(adrLY);
+
+    // RevPAR forecast = forecastRev / hab_disponibles del año anterior
+    const habDisLY = diasLY.reduce((a, r) => a + (r.hab_disponibles || 0), 0);
+    const forecastRevpar = habDisLY > 0 ? Math.round(forecastRev / habDisLY) : null;
 
     // Confianza: % del mes transcurrido
     const diasMes    = ultimoDia.getDate();
     const diaActual  = primerDia > hoy ? 0 : Math.min(hoy.getDate(), diasMes);
     const confianza  = Math.round((diaActual / diasMes) * 100);
 
-    return { forecastRev, otbRes, etpRes, paceFactor: paceFactor.toFixed(2), confianza };
+    return { forecastRev, forecastAdr, forecastRevpar, otbRes, etpRes, paceFactor: paceFactor.toFixed(2), confianza };
   };
 
   // ── REALES POR MES ────────────────────────────────────────────
@@ -2820,10 +2826,10 @@ function BudgetView({ datos, anio: anioProp }) {
       // Si cerrado → forecast = real; si en curso/futuro → OTB+ETP
       const ultimoDiaMes = new Date(anio, p.mes, 0);
       const mesCerrado   = ultimoDiaMes < hoy;
-      const forecast_rev = mesCerrado
-        ? real.rev_total_real
-        : (fcData ? fcData.forecastRev : null);
-      const confianza    = mesCerrado ? 100 : (fcData ? fcData.confianza : null);
+      const forecast_rev    = mesCerrado ? real.rev_total_real    : (fcData ? fcData.forecastRev    : null);
+      const forecast_adr    = mesCerrado ? real.adr_real          : (fcData ? fcData.forecastAdr    : null);
+      const forecast_revpar = mesCerrado ? real.revpar_real       : (fcData ? fcData.forecastRevpar : null);
+      const confianza       = mesCerrado ? 100 : (fcData ? fcData.confianza : null);
 
       const adr_dev       = real.adr_real != null       ? Math.round((real.adr_real - p.adr_ppto) * 100) / 100     : null;
       const revpar_dev    = real.revpar_real != null     ? Math.round((real.revpar_real - p.revpar_ppto) * 100) / 100 : null;
@@ -2839,7 +2845,7 @@ function BudgetView({ datos, anio: anioProp }) {
         revpar_dev_pct: p.revpar_ppto > 0 && revpar_dev != null ? ((revpar_dev / p.revpar_ppto) * 100).toFixed(1) : null,
         rev_total_ppto: p.rev_total_ppto, rev_total_real: real.rev_total_real, revtotal_dev,
         revtotal_dev_pct: p.rev_total_ppto > 0 && revtotal_dev != null ? ((revtotal_dev / p.rev_total_ppto) * 100).toFixed(1) : null,
-        forecast_rev, forecast_dev, forecast_dev_pct, confianza, mesCerrado,
+        forecast_rev, forecast_adr, forecast_revpar, forecast_dev, forecast_dev_pct, confianza, mesCerrado,
         otbRes: fcData?.otbRes, etpRes: fcData?.etpRes, paceFactor: fcData?.paceFactor,
       };
     });
@@ -2888,7 +2894,6 @@ function BudgetView({ datos, anio: anioProp }) {
   const kpiOpts = [
     { key: "revenue", label: t("rev_total_label") },
     { key: "adr",     label: "ADR" },
-    { key: "revpar",  label: "RevPAR" },
   ];
 
   const chartUnificado = filas.map(f => ({
@@ -2897,8 +2902,11 @@ function BudgetView({ datos, anio: anioProp }) {
          : kpiChart==="adr"     ? f.adr_ppto : f.revpar_ppto,
     Real: kpiChart==="revenue" ? (f.rev_total_real ? Math.round(f.rev_total_real/1000) : null)
          : kpiChart==="adr"     ? f.adr_real : f.revpar_real,
-    Forecast: kpiChart==="revenue" && !f.mesCerrado && f.forecast_rev
-      ? Math.round(f.forecast_rev / 1000) : null,
+    Forecast: !f.mesCerrado
+      ? (kpiChart==="revenue" && f.forecast_rev ? Math.round(f.forecast_rev / 1000)
+        : kpiChart==="adr"    ? (f.forecast_adr ?? null)
+        : null)
+      : null,
   }));
 
   const chartUnit  = kpiChart==="revenue" ? "k€" : "€";
@@ -2966,7 +2974,7 @@ function BudgetView({ datos, anio: anioProp }) {
             <Legend wrapperStyle={{fontSize:11, color:C.textMid, paddingTop:8}}/>
             <Bar dataKey="Ppto"     name={t("ppto_abrev")} fill="#2E9C5588" radius={[3,3,0,0]}/>
             <Bar dataKey="Real"     name={t("real_label")} fill="#1A7A3C"   radius={[3,3,0,0]}/>
-            <Bar dataKey="Forecast" name="Forecast"         fill="#B8860B88" radius={[3,3,0,0]} legendType={kpiChart==="revenue" ? "square" : "none"}/>
+            <Bar dataKey="Forecast" name="Forecast"         fill="#B8860B88" radius={[3,3,0,0]}/>
           </BarChart>
         </ResponsiveContainer>
       </Card>
