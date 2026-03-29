@@ -68,6 +68,11 @@ const TRANSLATIONS = {
     ventana_reserva:"Ventana de reserva", dias_label:"días",
     este_mes_label:"Este mes", anio_ant_abrev:"Año ant.", variacion_label:"Variación",
     demanda_debil:"↓ Señal de demanda débil", demanda_adelantada:"↑ Demanda adelantada",
+    analisis_desplazamiento:"Análisis de Desplazamiento",
+    contrib_grupo:"Contrib. grupo", coste_desplaz:"Coste desplaz.", valor_neto:"Valor neto",
+    adr_transient_ref:"ADR transient ref.", occ_hist_ly:"Occ. hist. LY",
+    adr_minimo_rentable:"ADR mínimo rentable", acepta_grupo:"✓ Aceptar", revisar_grupo:"⚠ Revisar",
+    sin_datos_ly:"Sin datos LY — usando ppto.", fuente_ppto:"fuente: ppto.",
     // Budget
     rev_real_ytd:"Revenue Real YTD", forecast_cierre_anio:"Forecast Cierre Año",
     presupuesto_anio:"Presupuesto Año", detalle_mensual:"Detalle mensual",
@@ -167,6 +172,11 @@ const TRANSLATIONS = {
     ventana_reserva:"Booking window", dias_label:"days",
     este_mes_label:"This month", anio_ant_abrev:"Prev. year", variacion_label:"Change",
     demanda_debil:"↓ Weaker demand signal", demanda_adelantada:"↑ Stronger demand",
+    analisis_desplazamiento:"Displacement Analysis",
+    contrib_grupo:"Group contrib.", coste_desplaz:"Displacement cost", valor_neto:"Net value",
+    adr_transient_ref:"Transient ADR ref.", occ_hist_ly:"Hist. occ. LY",
+    adr_minimo_rentable:"Min. profitable ADR", acepta_grupo:"✓ Accept", revisar_grupo:"⚠ Review",
+    sin_datos_ly:"No LY data — using budget", fuente_ppto:"source: budget",
     rev_real_ytd:"Actual Revenue YTD", forecast_cierre_anio:"Year-End Forecast",
     presupuesto_anio:"Annual Budget", detalle_mensual:"Monthly detail",
     th_adr_ppto:"Budget ADR", th_adr_real:"Actual ADR", th_desv_adr:"ADR Dev.",
@@ -261,6 +271,11 @@ const TRANSLATIONS = {
     ventana_reserva:"Fenêtre de réservation", dias_label:"jours",
     este_mes_label:"Ce mois", anio_ant_abrev:"Année préc.", variacion_label:"Variation",
     demanda_debil:"↓ Signal de demande faible", demanda_adelantada:"↑ Demande anticipée",
+    analisis_desplazamiento:"Analyse de Déplacement",
+    contrib_grupo:"Contrib. groupe", coste_desplaz:"Coût déplac.", valor_neto:"Valeur nette",
+    adr_transient_ref:"ADR transient réf.", occ_hist_ly:"Occ. hist. LY",
+    adr_minimo_rentable:"ADR min. rentable", acepta_grupo:"✓ Accepter", revisar_grupo:"⚠ Réviser",
+    sin_datos_ly:"Pas de données LY — budget utilisé", fuente_ppto:"source : budget",
     rev_real_ytd:"Revenu Réel YTD", forecast_cierre_anio:"Prévision Clôture Année",
     presupuesto_anio:"Budget Annuel", detalle_mensual:"Détail mensuel",
     th_adr_ppto:"ADR Budget", th_adr_real:"ADR Réel", th_desv_adr:"Écart ADR",
@@ -3472,6 +3487,97 @@ function GruposView({ datos, onRecargar }) {
                     <p style={{ fontSize:18, fontWeight:800, color:"#1A7A3C" }}>€{Math.round(total).toLocaleString("es-ES")}</p>
                   </div>
                 ) : null;
+              })()}
+
+              {/* ── ANÁLISIS DE DESPLAZAMIENTO ── */}
+              {form.fecha_inicio && form.fecha_fin && (parseInt(form.habitaciones)||0) > 0 && (parseFloat(form.adr_grupo)||0) > 0 && (() => {
+                const produccion  = datos.produccion  || [];
+                const presupuesto = datos.presupuesto || [];
+                const noches = Math.max(1, Math.round((new Date(form.fecha_fin) - new Date(form.fecha_inicio)) / 86400000));
+                const rooms    = parseInt(form.habitaciones) || 0;
+                const adrGrupo = parseFloat(form.adr_grupo)  || 0;
+                const revFnb   = parseFloat(form.revenue_fnb)  || 0;
+                const revSala  = parseFloat(form.revenue_sala) || 0;
+
+                // Periodo LY equivalente
+                const anioEvt = parseInt(form.fecha_inicio.slice(0,4));
+                const iniLY   = `${anioEvt-1}${form.fecha_inicio.slice(4)}`;
+                const finLY   = `${anioEvt-1}${form.fecha_fin.slice(4)}`;
+
+                const diasLY   = produccion.filter(r => { const f = String(r.fecha||"").slice(0,10); return f >= iniLY && f <= finLY; });
+                const habOcuLY = diasLY.reduce((a,r) => a+(r.hab_ocupadas||0), 0);
+                const revHabLY = diasLY.reduce((a,r) => a+(r.revenue_hab||0), 0);
+                const habDisLY = diasLY.reduce((a,r) => a+(r.hab_disponibles||0), 0);
+
+                let adrTransient, factorOcc, fuenteLY = true;
+                if (habOcuLY > 0) {
+                  adrTransient = Math.round(revHabLY / habOcuLY);
+                  factorOcc    = habDisLY > 0 ? Math.min(1, habOcuLY / habDisLY) : 0.7;
+                } else {
+                  // Fallback: presupuesto del mes de inicio
+                  const mesIni = parseInt(form.fecha_inicio.slice(5,7));
+                  const pptoM  = presupuesto.find(p => p.mes === mesIni && p.anio === anioEvt)
+                              || presupuesto.find(p => p.mes === mesIni);
+                  adrTransient = pptoM?.adr_ppto || null;
+                  factorOcc    = 0.65;
+                  fuenteLY     = false;
+                }
+                if (!adrTransient) return null;
+
+                const contribucion       = rooms * adrGrupo   * noches + revFnb + revSala;
+                const costeDesplazamiento = rooms * adrTransient * noches * factorOcc;
+                const valorNeto          = contribucion - costeDesplazamiento;
+                const isPos              = valorNeto >= 0;
+
+                // ADR mínimo para que el grupo sea rentable (valor neto ≥ 0)
+                const breakEvenHab = costeDesplazamiento - revFnb - revSala;
+                const breakEvenAdr = rooms > 0 && noches > 0 && breakEvenHab > 0
+                  ? Math.round(breakEvenHab / (rooms * noches)) : null;
+
+                const borderColor = isPos ? "#1A7A3C33" : "#E85D0433";
+                const bgColor     = isPos ? "#F0FBF4"   : "#FFF8F0";
+
+                return (
+                  <div style={{ background:bgColor, border:`1px solid ${borderColor}`, borderRadius:8, padding:"14px 16px" }}>
+                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
+                      <p style={{ fontSize:11, fontWeight:700, color:C.textLight, textTransform:"uppercase", letterSpacing:1 }}>📊 {t("analisis_desplazamiento")}</p>
+                      <span style={{ fontSize:12, fontWeight:700, padding:"3px 10px", borderRadius:6,
+                        background: isPos ? C.greenLight : "#FDECEA", color: isPos ? C.green : C.red }}>
+                        {isPos ? t("acepta_grupo") : t("revisar_grupo")}
+                      </span>
+                    </div>
+
+                    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8, marginBottom:12 }}>
+                      {[
+                        { label: t("contrib_grupo"),   val: `€${Math.round(contribucion).toLocaleString("es-ES")}`,        color: C.text },
+                        { label: t("coste_desplaz"),   val: `€${Math.round(costeDesplazamiento).toLocaleString("es-ES")}`, color: "#E85D04" },
+                        { label: t("valor_neto"),      val: `${isPos?"+":""}€${Math.round(valorNeto).toLocaleString("es-ES")}`, color: isPos ? C.green : C.red },
+                      ].map(({ label, val, color }) => (
+                        <div key={label} style={{ background:C.bgCard, borderRadius:6, padding:"8px 10px" }}>
+                          <p style={{ fontSize:10, color:C.textLight, marginBottom:3 }}>{label}</p>
+                          <p style={{ fontSize:13, fontWeight:800, color }}>{val}</p>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div style={{ display:"flex", gap:16, flexWrap:"wrap", borderTop:`1px solid ${C.border}`, paddingTop:10 }}>
+                      <div>
+                        <p style={{ fontSize:10, color:C.textLight }}>{t("adr_transient_ref")} {!fuenteLY && <span style={{ color:"#E85D04" }}>({t("fuente_ppto")})</span>}</p>
+                        <p style={{ fontSize:12, fontWeight:600, color:C.textMid }}>€{adrTransient}</p>
+                      </div>
+                      <div>
+                        <p style={{ fontSize:10, color:C.textLight }}>{t("occ_hist_ly")}</p>
+                        <p style={{ fontSize:12, fontWeight:600, color:C.textMid }}>{Math.round(factorOcc*100)}%</p>
+                      </div>
+                      {breakEvenAdr != null && (
+                        <div>
+                          <p style={{ fontSize:10, color:C.textLight }}>{t("adr_minimo_rentable")}</p>
+                          <p style={{ fontSize:12, fontWeight:700, color: adrGrupo >= breakEvenAdr ? C.green : C.red }}>€{breakEvenAdr}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
               })()}
 
               <div style={{ display:"flex", justifyContent:"space-between", marginTop:4 }}>
