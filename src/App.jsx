@@ -976,50 +976,7 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
       await Promise.all(insertPromises);
       setProgresoPct(90);
 
-      // ── Grupos & Eventos ──
-      const wsGr = wb.Sheets["🎪 Grupos y Eventos"];
-      if (wsGr) {
-        const rowsGr = XLSX.utils.sheet_to_json(wsGr, { header: 1, raw: true });
-        const gruposRows = [];
-        for (const row of rowsGr) {
-          if (!row || !row[0] || typeof row[0] !== "string" || row[0].startsWith("GRUPOS") || row[0].startsWith("Estado")) continue;
-          if (row[0] === "nombre") continue; // cabecera
-          const serialToDate = (v) => {
-            if (!v) return null;
-            if (typeof v === "string" && v.match(/^\d{4}-\d{2}-\d{2}$/)) return v;
-            if (typeof v === "number" && v > 40000) {
-              const d = new Date(Date.UTC(1899, 11, 30) + Math.floor(v) * 86400000);
-              return d.toISOString().slice(0,10);
-            }
-            return null;
-          };
-          const fi = serialToDate(row[3]);
-          const ff = serialToDate(row[4]);
-          if (!fi || !ff) continue;
-          const estados_validos = ["confirmado","tentativo","cotizacion","cancelado"];
-          const cats_validas    = ["corporativo","boda","feria","deportivo","otros"];
-          gruposRows.push({
-            hotel_id:       session.user.id,
-            nombre:         String(row[0]),
-            categoria:      cats_validas.includes(row[1]) ? row[1] : "otros",
-            estado:         estados_validos.includes(row[2]) ? row[2] : "cotizacion",
-            fecha_inicio:   fi,
-            fecha_fin:      ff,
-            habitaciones:   parseInt(row[5])||0,
-            adr_grupo:      parseFloat(row[6])||0,
-            revenue_fnb:    parseFloat(row[7])||0,
-            revenue_sala:   parseFloat(row[8])||0,
-            notas:          row[9] ? String(row[9]) : null,
-            motivo_perdida: row[10] ? String(row[10]) : null,
-          });
-        }
-        if (gruposRows.length > 0) {
-          await supabase.from("grupos_eventos").delete().eq("hotel_id", session.user.id);
-          const { error: errGr } = await supabase.from("grupos_eventos").insert(gruposRows);
-          if (errGr) throw new Error("Error al guardar grupos: " + errGr.message);
-          setProgreso(`${gruposRows.length} grupos/eventos importados`);
-        }
-      }
+      // M&E se gestiona directamente desde la web (sin importación Excel)
 
       // Actualizar habitaciones en hoteles si viene del Excel
       if (totalHab) {
@@ -3164,7 +3121,7 @@ function GruposView({ datos, onRecargar }) {
   const [vistaActiva, setVistaActiva] = useState("calendario"); // calendario | lista | pipeline
 
   // ── Formulario estado ──
-  const FORM_VACIO = { nombre:"", categoria:"corporativo", estado:"cotizacion", fecha_inicio:"", fecha_fin:"", habitaciones:"", adr_grupo:"", revenue_fnb:"", revenue_sala:"", notas:"", motivo_perdida:"" };
+  const FORM_VACIO = { nombre:"", categoria:"corporativo", estado:"cotizacion", fecha_inicio:"", fecha_fin:"", habitaciones:"", pax:"", adr_grupo:"", revenue_fnb:"", revenue_sala:"", notas:"", motivo_perdida:"" };
   const [form, setForm] = useState(FORM_VACIO);
 
   const abrirNuevo = (fecha = "") => {
@@ -3176,7 +3133,7 @@ function GruposView({ datos, onRecargar }) {
     setForm({
       nombre: g.nombre||"", categoria: g.categoria||"corporativo", estado: g.estado||"cotizacion",
       fecha_inicio: g.fecha_inicio||"", fecha_fin: g.fecha_fin||"",
-      habitaciones: g.habitaciones||"", adr_grupo: g.adr_grupo||"",
+      habitaciones: g.habitaciones||"", pax: g.pax||"", adr_grupo: g.adr_grupo||"",
       revenue_fnb: g.revenue_fnb||"", revenue_sala: g.revenue_sala||"",
       notas: g.notas||"", motivo_perdida: g.motivo_perdida||"",
     });
@@ -3194,6 +3151,7 @@ function GruposView({ datos, onRecargar }) {
       fecha_inicio: form.fecha_inicio,
       fecha_fin: form.fecha_fin,
       habitaciones: parseInt(form.habitaciones)||0,
+      pax: parseInt(form.pax)||0,
       adr_grupo: parseFloat(form.adr_grupo)||0,
       revenue_fnb: parseFloat(form.revenue_fnb)||0,
       revenue_sala: parseFloat(form.revenue_sala)||0,
@@ -3438,10 +3396,23 @@ function GruposView({ datos, onRecargar }) {
                 </div>
               </div>
 
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
+              {form.fecha_inicio && form.fecha_fin && (() => {
+                const noches = Math.max(0, Math.round((new Date(form.fecha_fin) - new Date(form.fecha_inicio)) / 86400000));
+                return noches > 0 ? (
+                  <div style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:7, padding:"7px 12px", fontSize:12, color:C.textMid, display:"flex", alignItems:"center", gap:6 }}>
+                    <span style={{ fontWeight:700, color:C.text }}>{noches}</span> noche{noches !== 1 ? "s" : ""} de duración
+                  </div>
+                ) : null;
+              })()}
+
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:10 }}>
                 <div>
                   <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>{t("form_habitaciones")}</p>
                   <input style={inp} type="number" placeholder="20" value={form.habitaciones} onChange={e=>setForm(f=>({...f,habitaciones:e.target.value}))}/>
+                </div>
+                <div>
+                  <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>PAX</p>
+                  <input style={inp} type="number" placeholder="40" value={form.pax} onChange={e=>setForm(f=>({...f,pax:e.target.value}))}/>
                 </div>
                 <div>
                   <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>{t("form_adr")}</p>
@@ -4126,10 +4097,12 @@ export default function App() {
 
         {/* Botones + Email + logout */}
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginLeft: "auto" }}>
-          <button id="ob-importar" onClick={() => setImportar(true)} style={{ background: C.accent, color: "#fff", border: "none", borderRadius: 7, padding: "5px 10px", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "'Plus Jakarta Sans',sans-serif", whiteSpace: "nowrap" }}>
-            <span className="topbar-importar-label">{t("importar")}</span>
-            <span style={{ display:"none" }} className="topbar-importar-icon">↑</span>
-          </button>
+          {view === "dashboard" && (
+            <button id="ob-importar" onClick={() => setImportar(true)} style={{ background: C.accent, color: "#fff", border: "none", borderRadius: 7, padding: "5px 10px", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "'Plus Jakarta Sans',sans-serif", whiteSpace: "nowrap", display:"flex", alignItems:"center", gap:5 }}>
+              <span>✏️</span>
+              <span className="topbar-importar-label">Actualizar datos</span>
+            </button>
+          )}
 
 
           {/* Menú Mi Perfil */}
