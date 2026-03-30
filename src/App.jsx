@@ -3115,11 +3115,15 @@ function GruposView({ datos, onRecargar }) {
   const MESES_FULL = t("meses_full");
 
   const [anio, setAnio] = useState(new Date().getFullYear());
+  const [mes, setMes] = useState(new Date().getMonth());
   const [filtroEstado, setFiltroEstado] = useState("todos");
   const [modalGrupo, setModalGrupo] = useState(null); // null | {} (nuevo) | {id,...} (editar)
   const [detalleGrupo, setDetalleGrupo] = useState(null); // evento para panel de métricas
   const [guardando, setGuardando] = useState(false);
-  const [vistaActiva, setVistaActiva] = useState("calendario"); // calendario | lista | pipeline
+  const [vistaActiva, setVistaActiva] = useState("calendario"); // calendario | tabla
+
+  const prevMes = () => { if (mes === 0) { setMes(11); setAnio(a => a - 1); } else setMes(m => m - 1); };
+  const nextMes = () => { if (mes === 11) { setMes(0); setAnio(a => a + 1); } else setMes(m => m + 1); };
 
   // ── Formulario estado ──
   const FORM_VACIO = { nombre:"", categoria:"corporativo", estado:"cotizacion", fecha_inicio:"", fecha_fin:"", habitaciones:"", pax:"", adr_grupo:"", revenue_fnb:"", revenue_sala:"", notas:"", motivo_perdida:"" };
@@ -3176,13 +3180,6 @@ function GruposView({ datos, onRecargar }) {
     onRecargar();
   };
 
-  // ── Cálculos KPIs ──
-  const gruposAnio = grupos.filter(g => g.fecha_inicio?.slice(0,4) === String(anio) || g.fecha_fin?.slice(0,4) === String(anio));
-  const confirmados = gruposAnio.filter(g => g.estado === "confirmado");
-  const tentativos  = gruposAnio.filter(g => g.estado === "tentativo");
-  const pipeline    = gruposAnio.filter(g => g.estado === "cotizacion");
-  const cancelados  = gruposAnio.filter(g => g.estado === "cancelado");
-
   const calcRevTotal = (g) => {
     const noches = g.fecha_inicio && g.fecha_fin
       ? Math.max(1, Math.round((new Date(g.fecha_fin) - new Date(g.fecha_inicio)) / 86400000))
@@ -3190,18 +3187,31 @@ function GruposView({ datos, onRecargar }) {
     return (g.habitaciones||0) * (g.adr_grupo||0) * noches + (g.revenue_fnb||0) + (g.revenue_sala||0);
   };
 
+  // ── Cálculos KPIs del mes activo ──
+  const gruposAnio = grupos.filter(g => g.fecha_inicio?.slice(0,4) === String(anio) || g.fecha_fin?.slice(0,4) === String(anio));
+  const mesStr = String(anio) + "-" + String(mes + 1).padStart(2, "0");
+  const gruposMes = grupos.filter(g => g.fecha_inicio?.slice(0,7) === mesStr || g.fecha_fin?.slice(0,7) === mesStr);
+  const confirmados = gruposMes.filter(g => g.estado === "confirmado");
+  const tentativos  = gruposMes.filter(g => g.estado === "tentativo");
+  const pipeline    = gruposMes.filter(g => g.estado === "cotizacion");
+  const cancelados  = gruposMes.filter(g => g.estado === "cancelado");
+
   const revConfirmado = confirmados.reduce((a,g) => a + calcRevTotal(g), 0);
   const revTentativo  = tentativos.reduce((a,g)  => a + calcRevTotal(g) * 0.5, 0);
   const revPipeline   = pipeline.reduce((a,g)    => a + calcRevTotal(g), 0);
 
-  // ── Calendario mensual ──
-  const eventosPorMes = MESES.map((_, mi) => 
-    gruposAnio.filter(g => {
-      const ini = new Date(g.fecha_inicio+"T00:00:00");
-      const fin = new Date(g.fecha_fin+"T00:00:00");
-      return ini.getMonth() <= mi && fin.getMonth() >= mi;
-    })
-  );
+  // ── Datos para gráfico de evolución anual ──
+  const produccion = datos.produccion || [];
+  const chartRevMensual = MESES.map((_, mi) => {
+    const mStr = String(anio) + "-" + String(mi + 1).padStart(2, "0");
+    const diasMes = produccion.filter(d => d.fecha?.slice(0,7) === mStr);
+    const revHab = diasMes.reduce((a, d) => a + (d.revenue_hab || 0), 0);
+    const revME  = grupos
+      .filter(g => g.estado === "confirmado" && g.fecha_inicio?.slice(0,7) === mStr)
+      .reduce((a, g) => a + calcRevTotal(g), 0);
+    const tieneDatos = diasMes.length > 0;
+    return { mes: MESES[mi], revHab: tieneDatos ? Math.round(revHab) : null, revME: revME > 0 ? Math.round(revME) : null };
+  });
 
   const gruposFiltrados = filtroEstado === "todos"
     ? gruposAnio.filter(g => g.estado !== "cancelado")
@@ -3231,14 +3241,20 @@ function GruposView({ datos, onRecargar }) {
       {/* ── Toolbar ── */}
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", gap:12, flexWrap:"wrap" }}>
         <div style={{ display:"flex", gap:6, alignItems:"center" }}>
-          {/* Selector año */}
-          <button onClick={()=>setAnio(a=>a-1)} style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:6, width:28, height:28, cursor:"pointer", color:C.textMid, display:"flex", alignItems:"center", justifyContent:"center", fontSize:16, padding:0 }}>‹</button>
-          <span style={{ fontSize:14, fontWeight:700, color:C.text, minWidth:40, textAlign:"center" }}>{anio}</span>
-          <button onClick={()=>setAnio(a=>a+1)} style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:6, width:28, height:28, cursor:"pointer", color:C.textMid, display:"flex", alignItems:"center", justifyContent:"center", fontSize:16, padding:0 }}>›</button>
+          {/* Navegación mes (solo en vista calendario) */}
+          {vistaActiva === "calendario" ? (<>
+            <button onClick={prevMes} style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:6, width:28, height:28, cursor:"pointer", color:C.textMid, display:"flex", alignItems:"center", justifyContent:"center", fontSize:16, padding:0 }}>‹</button>
+            <span style={{ fontSize:14, fontWeight:700, color:C.text, minWidth:120, textAlign:"center" }}>{MESES_FULL[mes]} {anio}</span>
+            <button onClick={nextMes} style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:6, width:28, height:28, cursor:"pointer", color:C.textMid, display:"flex", alignItems:"center", justifyContent:"center", fontSize:16, padding:0 }}>›</button>
+          </>) : (<>
+            <button onClick={()=>setAnio(a=>a-1)} style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:6, width:28, height:28, cursor:"pointer", color:C.textMid, display:"flex", alignItems:"center", justifyContent:"center", fontSize:16, padding:0 }}>‹</button>
+            <span style={{ fontSize:14, fontWeight:700, color:C.text, minWidth:40, textAlign:"center" }}>{anio}</span>
+            <button onClick={()=>setAnio(a=>a+1)} style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:6, width:28, height:28, cursor:"pointer", color:C.textMid, display:"flex", alignItems:"center", justifyContent:"center", fontSize:16, padding:0 }}>›</button>
+          </>)}
           {/* Selector vista */}
           <select value={vistaActiva} onChange={e=>setVistaActiva(e.target.value)}
             style={{ marginLeft:8, padding:"5px 10px", borderRadius:7, border:`1.5px solid ${C.border}`, fontSize:12, fontWeight:600, color:C.text, background:C.bg, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", outline:"none" }}>
-            {[["calendario","📅 Calendario"],["pipeline","🔮 Pipeline"],["tabla","⊞ Tabla"]].map(([k,label])=>(
+            {[["calendario","📅 Calendario"],["tabla","⊞ Tabla"]].map(([k,label])=>(
               <option key={k} value={k}>{label}</option>
             ))}
           </select>
@@ -3248,67 +3264,99 @@ function GruposView({ datos, onRecargar }) {
         </button>
       </div>
 
-      {/* ── VISTA CALENDARIO ── */}
-      {vistaActiva === "calendario" && (
-        <Card>
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:10 }}>
-            {MESES.map((mes, mi) => {
-              const evs = eventosPorMes[mi];
-              return (
-                <div key={mi} style={{ border:`1px solid ${C.border}`, borderRadius:8, padding:"10px 12px", minHeight:90, cursor:"pointer", background: evs.length>0?C.bg:C.bgCard }}
-                  onClick={()=>abrirNuevo(`${anio}-${String(mi+1).padStart(2,"0")}-01`)}>
-                  <p style={{ fontSize:11, fontWeight:700, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:6 }}>{MESES_FULL[mi]}</p>
-                  {evs.length === 0
-                    ? <p style={{ fontSize:10, color:C.border }}>{t("sin_eventos")}</p>
-                    : evs.map((g,i) => (
-                        <div key={i} onClick={e=>{e.stopPropagation();setDetalleGrupo(g);}}
-                          style={{ display:"flex", alignItems:"center", gap:5, marginBottom:4, padding:"3px 6px", borderRadius:4, background:ESTADOS[g.estado]?.bg||"#f5f5f5", border:`1px solid ${ESTADOS[g.estado]?.color||"#ddd"}33`, cursor:"pointer" }}>
-                          <span style={{ fontSize:11 }}>{CATS[g.categoria]?.icon||"✨"}</span>
-                          <span style={{ fontSize:10, fontWeight:600, color:ESTADOS[g.estado]?.color||C.text, flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{g.nombre}</span>
-                          <span style={{ fontSize:9, color:C.textLight }}>{g.habitaciones||0}h</span>
-                        </div>
-                      ))
-                  }
-                </div>
-              );
-            })}
-          </div>
-        </Card>
-      )}
+      {/* ── VISTA CALENDARIO — lista eventos del mes ── */}
+      {vistaActiva === "calendario" && (() => {
+        const mesIni = new Date(anio, mes, 1);
+        const mesFin = new Date(anio, mes + 1, 0);
+        const evsMes = grupos
+          .filter(g => {
+            if (!g.fecha_inicio || !g.fecha_fin) return false;
+            const ini = new Date(g.fecha_inicio + "T00:00:00");
+            const fin = new Date(g.fecha_fin + "T00:00:00");
+            return ini <= mesFin && fin >= mesIni;
+          })
+          .sort((a, b) => a.fecha_inicio.localeCompare(b.fecha_inicio));
 
-      {/* ── VISTA PIPELINE ── */}
-      {vistaActiva === "pipeline" && (
-        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(260px,1fr))", gap:16 }}>
-          {["cotizacion","tentativo","confirmado"].map(estado => {
-            const evs = gruposAnio.filter(g=>g.estado===estado).sort((a,b)=>a.fecha_inicio?.localeCompare(b.fecha_inicio));
-            const revTotal = evs.reduce((a,g)=>a+calcRevTotal(g),0);
-            return (
-              <div key={estado} style={{ background:C.bgCard, border:`1px solid ${C.border}`, borderRadius:10, overflow:"hidden" }}>
-                <div style={{ padding:"12px 16px", background:ESTADOS[estado]?.bg, borderBottom:`1px solid ${C.border}` }}>
-                  <p style={{ fontSize:12, fontWeight:700, color:ESTADOS[estado]?.color, textTransform:"uppercase", letterSpacing:1 }}>{ESTADOS[estado]?.label}</p>
-                  <p style={{ fontSize:11, color:C.textLight }}>{evs.length} eventos · €{Math.round(revTotal).toLocaleString("es-ES")}</p>
-                </div>
-                <div style={{ padding:"10px 12px", display:"flex", flexDirection:"column", gap:8, minHeight:120 }}>
-                  {evs.length === 0
-                    ? <p style={{ fontSize:11, color:C.border, textAlign:"center", paddingTop:16 }}>{t("sin_eventos")}</p>
-                    : evs.map(g => (
-                        <div key={g.id} onClick={()=>setDetalleGrupo(g)} style={{ padding:"8px 10px", borderRadius:7, border:`1px solid ${C.border}`, cursor:"pointer", background:C.bg }}
-                          onMouseEnter={e=>e.currentTarget.style.borderColor=ESTADOS[estado]?.color}
-                          onMouseLeave={e=>e.currentTarget.style.borderColor=C.border}>
-                          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
-                            <p style={{ fontSize:12, fontWeight:600, color:C.text }}>{CATS[g.categoria]?.icon} {g.nombre}</p>
-                            <p style={{ fontSize:11, fontWeight:700, color:"#1A7A3C" }}>€{Math.round(calcRevTotal(g)).toLocaleString("es-ES")}</p>
-                          </div>
-                          <p style={{ fontSize:10, color:C.textLight, marginTop:2 }}>{g.fecha_inicio} · {g.habitaciones||0} hab.</p>
+        return (
+          <Card>
+            {evsMes.length === 0
+              ? <p style={{ textAlign:"center", color:C.textLight, padding:"32px 0", fontSize:13 }}>No hay eventos disponibles</p>
+              : <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                  {evsMes.map(g => {
+                    const noches = g.fecha_inicio && g.fecha_fin
+                      ? Math.max(1, Math.round((new Date(g.fecha_fin) - new Date(g.fecha_inicio)) / 86400000))
+                      : 1;
+                    return (
+                      <div key={g.id} onClick={() => setDetalleGrupo(g)}
+                        style={{ display:"flex", alignItems:"center", gap:12, padding:"12px 16px", borderRadius:8, border:`1px solid ${C.border}`, background:C.bg, cursor:"pointer", transition:"border-color 0.15s" }}
+                        onMouseEnter={e => e.currentTarget.style.borderColor = ESTADOS[g.estado]?.color || "#7C3AED"}
+                        onMouseLeave={e => e.currentTarget.style.borderColor = C.border}>
+                        <span style={{ fontSize:20, flexShrink:0 }}>{CATS[g.categoria]?.icon || "✨"}</span>
+                        <div style={{ flex:1, minWidth:0 }}>
+                          <p style={{ fontSize:13, fontWeight:700, color:C.text, marginBottom:2, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{g.nombre}</p>
+                          <p style={{ fontSize:11, color:C.textLight }}>{g.fecha_inicio} → {g.fecha_fin} · {noches} noche{noches !== 1 ? "s" : ""} · {g.habitaciones || 0} hab.</p>
                         </div>
-                      ))
-                  }
+                        <span style={{ fontSize:10, fontWeight:700, padding:"3px 10px", borderRadius:10, background:ESTADOS[g.estado]?.bg, color:ESTADOS[g.estado]?.color, whiteSpace:"nowrap", flexShrink:0 }}>
+                          {ESTADOS[g.estado]?.label}
+                        </span>
+                        <p style={{ fontSize:13, fontWeight:800, color:"#1A7A3C", whiteSpace:"nowrap", flexShrink:0 }}>€{Math.round(calcRevTotal(g)).toLocaleString("es-ES")}</p>
+                      </div>
+                    );
+                  })}
                 </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
+            }
+          </Card>
+        );
+      })()}
+
+      {/* ── PRÓXIMOS EVENTOS CONFIRMADOS ── */}
+      {(() => {
+        const hoyStr = new Date().toISOString().slice(0, 10);
+        const proximos = grupos
+          .filter(g => g.estado === "confirmado" && g.fecha_inicio >= hoyStr)
+          .sort((a, b) => a.fecha_inicio.localeCompare(b.fecha_inicio))
+          .slice(0, 3);
+        return (
+          <Card>
+            <p style={{ fontSize:12, fontWeight:700, color:C.textLight, textTransform:"uppercase", letterSpacing:1.5, marginBottom:12 }}>Próximos eventos confirmados</p>
+            {proximos.length === 0
+              ? <p style={{ textAlign:"center", color:C.textLight, padding:"20px 0", fontSize:13 }}>No hay eventos confirmados próximos</p>
+              : <div style={{ overflowX:"auto" }}>
+                  <table style={{ width:"100%", borderCollapse:"collapse", fontSize:12 }}>
+                    <thead>
+                      <tr style={{ borderBottom:`2px solid ${C.border}` }}>
+                        {["Evento","Entrada","Salida","Noches","Habs","ADR","Revenue"].map(h => (
+                          <th key={h} style={{ padding:"7px 12px", textAlign:"left", fontSize:10, fontWeight:700, color:C.textLight, textTransform:"uppercase", letterSpacing:1, whiteSpace:"nowrap" }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {proximos.map(g => {
+                        const noches = g.fecha_inicio && g.fecha_fin
+                          ? Math.max(1, Math.round((new Date(g.fecha_fin) - new Date(g.fecha_inicio)) / 86400000))
+                          : 1;
+                        return (
+                          <tr key={g.id} onClick={() => setDetalleGrupo(g)}
+                            style={{ borderBottom:`1px solid ${C.border}`, cursor:"pointer" }}
+                            onMouseEnter={e => e.currentTarget.style.background = C.bg}
+                            onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                            <td style={{ padding:"10px 12px", fontWeight:600, color:C.text, whiteSpace:"nowrap" }}>{CATS[g.categoria]?.icon} {g.nombre}</td>
+                            <td style={{ padding:"10px 12px", color:C.textMid, whiteSpace:"nowrap" }}>{g.fecha_inicio}</td>
+                            <td style={{ padding:"10px 12px", color:C.textMid, whiteSpace:"nowrap" }}>{g.fecha_fin}</td>
+                            <td style={{ padding:"10px 12px", color:C.textMid, textAlign:"center" }}>{noches}</td>
+                            <td style={{ padding:"10px 12px", color:C.textMid, textAlign:"center" }}>{g.habitaciones || 0}</td>
+                            <td style={{ padding:"10px 12px", color:C.textMid, textAlign:"right" }}>€{(g.adr_grupo || 0).toLocaleString("es-ES")}</td>
+                            <td style={{ padding:"10px 12px", fontWeight:700, color:"#1A7A3C", textAlign:"right", whiteSpace:"nowrap" }}>€{Math.round(calcRevTotal(g)).toLocaleString("es-ES")}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+            }
+          </Card>
+        );
+      })()}
 
       {/* ── VISTA TABLA ── */}
       {vistaActiva === "tabla" && (
@@ -3362,6 +3410,27 @@ function GruposView({ datos, onRecargar }) {
           </div>
         </Card>
       )}
+
+      {/* ── GRÁFICO EVOLUCIÓN REVENUE ANUAL ── */}
+      <Card>
+        <p style={{ fontSize:12, fontWeight:700, color:C.textLight, textTransform:"uppercase", letterSpacing:1.5, marginBottom:12 }}>Evolución revenue {anio}</p>
+        <ResponsiveContainer width="100%" height={220}>
+          <BarChart data={chartRevMensual} barSize={22} margin={{ top:4, right:8, left:8, bottom:0 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke={C.border} vertical={false} />
+            <XAxis dataKey="mes" tick={{ fontSize:10, fill:C.textLight }} axisLine={false} tickLine={false} />
+            <YAxis tick={{ fontSize:10, fill:C.textLight }} axisLine={false} tickLine={false} tickFormatter={v => v >= 1000 ? `€${(v/1000).toFixed(0)}k` : `€${v}`} width={48} />
+            <Tooltip
+              formatter={(value, name) => [value != null ? `€${Math.round(value).toLocaleString("es-ES")}` : "—", name === "revHab" ? "Habitaciones" : "M&E"]}
+              labelFormatter={label => label}
+              contentStyle={{ fontSize:11, borderRadius:8, border:`1px solid ${C.border}` }}
+              cursor={{ fill: C.accentLight }}
+            />
+            <Legend formatter={name => name === "revHab" ? "Habitaciones" : "M&E"} iconType="square" wrapperStyle={{ fontSize:11 }} />
+            <Bar dataKey="revHab" stackId="a" fill="#2B7EC1" radius={[0,0,0,0]} name="revHab" />
+            <Bar dataKey="revME"  stackId="a" fill="#7C3AED" radius={[3,3,0,0]} name="revME" />
+          </BarChart>
+        </ResponsiveContainer>
+      </Card>
 
       {/* ── PANEL DETALLE EVENTO (desde calendario) ── */}
       {detalleGrupo !== null && (
