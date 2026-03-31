@@ -1695,6 +1695,15 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
   useEffect(() => {
     if (kpiModalExterno) { setKpiModal(kpiModalExterno); onKpiModalExternoHandled && onKpiModalExternoHandled(); }
   }, [kpiModalExterno]);
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.key !== "Escape") return;
+      if (modalDiario) { setModalDiario(null); return; }
+      if (hmMesSel !== null) { setHmMesSel(null); return; }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [modalDiario, hmMesSel]);
 
   if (!produccion || produccion.length === 0) return <EmptyState />;
 
@@ -2097,7 +2106,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
       })()}
 
       <Card>
-        <p style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 700, fontSize: 16, color: C.text, marginBottom: 16 }}>
+        <p style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 700, fontSize: 20, color: C.text, marginBottom: 16 }}>
           {t("ultimos_12m")}
         </p>
         <div style={{ overflowX: "auto" }}>
@@ -2216,6 +2225,12 @@ function PickupView({ datos }) {
     }
   }, [pickupEntries.length]);
 
+  useEffect(() => {
+    const handler = (e) => { if (e.key === "Escape" && trimSel !== null) setTrimSel(null); };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [trimSel]);
+
   // ── OTB por mes (suma num_reservas por fecha_llegada) ──
   const otbPorMes = {};
   (pickupEntries || []).forEach(e => {
@@ -2257,10 +2272,23 @@ function PickupView({ datos }) {
   const aniosPptoDisp   = (presupuesto || []).map(p => p.anio).filter(Boolean);
   const aniosDisp = [...new Set([...aniosPickupDisp, ...aniosPptoDisp, anio])].sort();
 
-  // ── Colores gráfica: tonos dorados ──
-  const COL_OTB  = "#7A5200";  // dorado muy oscuro
-  const COL_PPTO = "#C9973A";  // dorado medio
-  const COL_LY   = "#F0D090";  // dorado muy claro
+  // ── Colores gráfica: dorados con rango amplio ──
+  const COL_OTB  = "#5C3300";  // marrón dorado oscuro — OTB actual
+  const COL_PPTO = "#C8850C";  // naranja dorado medio — presupuesto
+  const COL_LY   = "#F2D06B";  // amarillo dorado claro — año anterior
+
+  // ── Drill-down por trimestre ──
+  const [trimSel, setTrimSel] = useState(null); // null | 0-3
+  const MESES_CORTO_PU = t("meses_corto");
+  const datosDetalle = trimSel !== null ? [0,1,2].map(offset => {
+    const mi = trimSel * 3 + offset;
+    const key   = `${anio}-${String(mi+1).padStart(2,"0")}`;
+    const keyLY = `${anio-1}-${String(mi+1).padStart(2,"0")}`;
+    const otb  = otbPorMes[key]  || 0;
+    const ly   = otbPorMes[keyLY] || 0;
+    const ppto = pptoPorMes[key] ?? null;
+    return { mes: MESES_CORTO_PU[mi], otb: otb||null, ppto, ly: ly||null };
+  }) : [];
 
   // ── Calcular máximo para escala ──
   const maxVal = Math.max(
@@ -2411,9 +2439,17 @@ function PickupView({ datos }) {
                 return (
                   <div style={{ display:"flex", alignItems:"center", gap:16 }}>
                     <PieChart width={110} height={110}>
+                      <defs>
+                        {pieData.map((entry, i) => (
+                          <linearGradient key={i} id={`pieGrad_${i}`} x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor={entry.color} stopOpacity={1}/>
+                            <stop offset="100%" stopColor={entry.color} stopOpacity={0.65}/>
+                          </linearGradient>
+                        ))}
+                      </defs>
                       <Pie data={pieData} cx={50} cy={50} innerRadius={28} outerRadius={50}
                         dataKey="value" startAngle={90} endAngle={-270} paddingAngle={2}>
-                        {pieData.map((entry, i) => <Cell key={i} fill={entry.color} stroke="none"/>)}
+                        {pieData.map((entry, i) => <Cell key={i} fill={`url(#pieGrad_${i})`} stroke="none"/>)}
                       </Pie>
                     </PieChart>
                     <div style={{ display:"flex", flexDirection:"column", gap:6, flex:1 }}>
@@ -2598,68 +2634,73 @@ function PickupView({ datos }) {
         {/* Col derecha: gráfica */}
         <div style={{ flex:1 }}>
 
-        {/* Leyenda */}
-        <div style={{ display:"flex", gap:20, marginBottom:24, flexWrap:"wrap" }}>
-          {[[t("otb_actual"), COL_OTB], [t("nav_budget"), COL_PPTO], [t("anio_anterior"), COL_LY]].map(([label, color]) => (
-            <div key={label} style={{ display:"flex", alignItems:"center", gap:7 }}>
-              <div style={{ width:14, height:14, background:color, borderRadius:2 }} />
-              <span style={{ fontSize:12, fontWeight:600, color:C.textMid }}>{label}</span>
-            </div>
-          ))}
+        {/* Leyenda + breadcrumb */}
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:24, flexWrap:"wrap", gap:8 }}>
+          <div style={{ display:"flex", gap:20, flexWrap:"wrap" }}>
+            {[[t("otb_actual"), COL_OTB], [t("nav_budget"), COL_PPTO], [t("anio_anterior"), COL_LY]].map(([label, color]) => (
+              <div key={label} style={{ display:"flex", alignItems:"center", gap:7 }}>
+                <div style={{ width:14, height:14, background:color, borderRadius:2 }} />
+                <span style={{ fontSize:12, fontWeight:600, color:C.textMid }}>{label}</span>
+              </div>
+            ))}
+          </div>
+          {trimSel !== null && (
+            <button onClick={() => setTrimSel(null)}
+              style={{ display:"flex", alignItems:"center", gap:6, background:"none", border:`1px solid ${C.border}`, borderRadius:6, padding:"4px 12px", cursor:"pointer", fontSize:11, color:C.textMid, fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+              ← Volver
+            </button>
+          )}
         </div>
 
         {!hayDatos ? (
           <div style={{ textAlign:"center", padding:"60px 0", color:C.textLight, fontSize:13 }}>
             {t("sin_datos_pickup")}
           </div>
-        ) : (
+        ) : (() => {
+          const vista = trimSel !== null ? datosDetalle : datosGrafica;
+          const vMax  = Math.ceil(Math.max(...vista.map(d => Math.max(d.otb||0, d.ppto||0, d.ly||0)), 10) * 1.15 / 10) * 10;
+          const bH    = (val) => val && vMax > 0 ? `${Math.min((val/vMax)*100, 100)}%` : "0%";
+          return (
           <div style={{ display:"flex", gap:0, alignItems:"flex-end", height:280, position:"relative" }}>
-
-            {/* Escala Y solo números, sin líneas */}
-            {[0,25,50,75,100].map(p => {
-              const val = Math.round(yMax * p / 100);
-              return (
-                <div key={p} style={{ position:"absolute", left:0, bottom:`${p}%`, display:"flex", alignItems:"center" }}>
-                  <span style={{ fontSize:10, color:C.textLight, lineHeight:1 }}>{val}</span>
-                </div>
-              );
-            })}
-
-            {/* Barras por mes */}
-            <div style={{ display:"flex", flex:1, alignItems:"flex-end", height:"100%", paddingLeft:36, gap:24 }}>
-              {datosGrafica.map((d, i) => (
-                <div key={i} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", height:"100%", justifyContent:"flex-end", gap:2 }}>
+            {/* Escala Y */}
+            {[0,25,50,75,100].map(p => (
+              <div key={p} style={{ position:"absolute", left:0, bottom:`${p}%`, display:"flex", alignItems:"center" }}>
+                <span style={{ fontSize:10, color:C.textLight, lineHeight:1 }}>{Math.round(vMax * p / 100)}</span>
+              </div>
+            ))}
+            {/* Barras */}
+            <div style={{ display:"flex", flex:1, alignItems:"flex-end", height:"100%", paddingLeft:36, gap: trimSel !== null ? 40 : 24 }}>
+              {vista.map((d, i) => (
+                <div key={i}
+                  onClick={() => trimSel === null && setTrimSel(i)}
+                  style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", height:"100%", justifyContent:"flex-end", gap:2, cursor: trimSel === null ? "pointer" : "default" }}
+                  title={trimSel === null ? `Ver desglose ${d.mes}` : ""}>
                   {/* Grupo de 3 barras */}
                   <div style={{ display:"flex", alignItems:"flex-end", gap:2, width:"100%", height:"calc(100% - 20px)", justifyContent:"center" }}>
                     {/* OTB */}
                     <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"flex-end", height:"100%" }}>
-                      {d.otb > 0 && (
-                        <span style={{ fontSize:9, fontWeight:700, color:COL_OTB, marginBottom:2, lineHeight:1 }}>{d.otb}</span>
-                      )}
-                      <div title={`OTB: ${d.otb||0}`} style={{ width:"100%", height:barH(d.otb), background:COL_OTB, borderRadius:"3px 3px 0 0", minHeight: d.otb>0?4:0, transition:"height 0.3s" }} />
+                      {d.otb > 0 && <span style={{ fontSize:9, fontWeight:700, color:COL_OTB, marginBottom:2, lineHeight:1 }}>{d.otb}</span>}
+                      <div title={`OTB: ${d.otb||0}`} style={{ width:"100%", height:bH(d.otb), background:`linear-gradient(to top, ${COL_OTB}AA, ${COL_OTB})`, borderRadius:"3px 3px 0 0", minHeight:d.otb>0?4:0, transition:"height 0.3s" }} />
                     </div>
                     {/* PPTO */}
                     <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"flex-end", height:"100%" }}>
-                      {d.ppto > 0 && (
-                        <span style={{ fontSize:9, fontWeight:700, color:COL_PPTO, marginBottom:2, lineHeight:1 }}>{d.ppto}</span>
-                      )}
-                      <div title={`Ppto: ${d.ppto||0}`} style={{ width:"100%", height:barH(d.ppto), background:COL_PPTO, borderRadius:"3px 3px 0 0", minHeight: d.ppto>0?4:0, transition:"height 0.3s" }} />
+                      {d.ppto > 0 && <span style={{ fontSize:9, fontWeight:700, color:COL_PPTO, marginBottom:2, lineHeight:1 }}>{d.ppto}</span>}
+                      <div title={`Ppto: ${d.ppto||0}`} style={{ width:"100%", height:bH(d.ppto), background:`linear-gradient(to top, ${COL_PPTO}AA, ${COL_PPTO})`, borderRadius:"3px 3px 0 0", minHeight:d.ppto>0?4:0, transition:"height 0.3s" }} />
                     </div>
                     {/* LY */}
                     <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"flex-end", height:"100%" }}>
-                      {d.ly > 0 && (
-                        <span style={{ fontSize:9, fontWeight:700, color:COL_LY, marginBottom:2, lineHeight:1 }}>{d.ly}</span>
-                      )}
-                      <div title={`LY: ${d.ly||0}`} style={{ width:"100%", height:barH(d.ly), background:COL_LY, borderRadius:"3px 3px 0 0", minHeight: d.ly>0?4:0, transition:"height 0.3s" }} />
+                      {d.ly > 0 && <span style={{ fontSize:9, fontWeight:700, color:COL_LY, marginBottom:2, lineHeight:1 }}>{d.ly}</span>}
+                      <div title={`LY: ${d.ly||0}`} style={{ width:"100%", height:bH(d.ly), background:`linear-gradient(to top, ${COL_LY}AA, ${COL_LY})`, borderRadius:"3px 3px 0 0", minHeight:d.ly>0?4:0, transition:"height 0.3s" }} />
                     </div>
                   </div>
-                  {/* Label mes */}
-                  <span style={{ fontSize:10, color:C.textLight, fontWeight:600, marginTop:6 }}>{d.mes}</span>
+                  {/* Label */}
+                  <span style={{ fontSize:10, fontWeight:700, marginTop:6, color: trimSel === null ? COL_OTB : C.textLight }}>{d.mes}</span>
                 </div>
               ))}
             </div>
           </div>
-        )}
+          );
+        })()}
         </div>{/* fin col derecha */}
       </div>{/* fin card gráfica+pico */}
 
@@ -3258,6 +3299,15 @@ function GruposView({ datos, onRecargar }) {
   const [detalleGrupo, setDetalleGrupo] = useState(null); // evento para panel de métricas
   const [guardando, setGuardando] = useState(false);
   const [vistaActiva, setVistaActiva] = useState("calendario"); // calendario | tabla
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.key !== "Escape") return;
+      if (modalGrupo)    { setModalGrupo(null); return; }
+      if (detalleGrupo)  { setDetalleGrupo(null); return; }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [modalGrupo, detalleGrupo]);
 
   const prevMes = () => { if (mes === 0) { setMes(11); setAnio(a => a - 1); } else setMes(m => m - 1); };
   const nextMes = () => { if (mes === 11) { setMes(0); setAnio(a => a + 1); } else setMes(m => m + 1); };
@@ -4309,6 +4359,19 @@ export default function App() {
   const [perfilSeccion, setPerfilSeccion] = useState(null); // null | "suscripcion" | "extranets"
   const [kpiModalApp, setKpiModalApp] = useState(null);
   const [kpiModal, setKpiModal] = useState(null);
+
+  // Escape global: cierra modales en orden de prioridad o vuelve a la vista anterior
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.key !== "Escape") return;
+      if (kpiModal)        { setKpiModal(null); return; }
+      if (importar)        { setImportar(false); return; }
+      if (perfilSeccion)   { setPerfilSeccion(null); setConfirmCancelar(false); return; }
+      if (mesDetalle)      { setMesDetalle(null); return; }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [kpiModal, importar, perfilSeccion, mesDetalle]);
   const [lang, setLang] = useState(() => localStorage.getItem("fr_lang") || "es");
   const t = useT();
   const [sidebarOpen, setSidebarOpen] = useState(false);
