@@ -2213,6 +2213,7 @@ function PickupView({ datos }) {
   const pickupEntries = datos.pickupEntries || [];
   const cargando = false;
   const [anio, setAnio]                   = useState(new Date().getFullYear());
+  const [trimSel, setTrimSel] = useState(null);
 
   const hoy     = new Date();
   const MESES   = t("meses_corto");
@@ -2278,7 +2279,6 @@ function PickupView({ datos }) {
   const COL_LY   = "#F2D06B";  // amarillo dorado claro — año anterior
 
   // ── Drill-down por trimestre ──
-  const [trimSel, setTrimSel] = useState(null); // null | 0-3
   const MESES_CORTO_PU = t("meses_corto");
   const datosDetalle = trimSel !== null ? [0,1,2].map(offset => {
     const mi = trimSel * 3 + offset;
@@ -2662,10 +2662,11 @@ function PickupView({ datos }) {
           const bH    = (val) => val && vMax > 0 ? `${Math.min((val/vMax)*100, 100)}%` : "0%";
           return (
           <div style={{ display:"flex", gap:0, alignItems:"flex-end", height:280, position:"relative" }}>
-            {/* Escala Y */}
+            {/* Escala Y + líneas horizontales */}
             {[0,25,50,75,100].map(p => (
-              <div key={p} style={{ position:"absolute", left:0, bottom:`${p}%`, display:"flex", alignItems:"center" }}>
-                <span style={{ fontSize:10, color:C.textLight, lineHeight:1 }}>{Math.round(vMax * p / 100)}</span>
+              <div key={p} style={{ position:"absolute", left:0, right:0, bottom:`${p}%`, display:"flex", alignItems:"center" }}>
+                <span style={{ fontSize:10, color:C.textLight, lineHeight:1, width:32, flexShrink:0 }}>{Math.round(vMax * p / 100)}</span>
+                {p > 0 && <div style={{ flex:1, height:1, background:C.border, opacity:0.5, borderTop:"1px dashed "+C.border }} />}
               </div>
             ))}
             {/* Barras */}
