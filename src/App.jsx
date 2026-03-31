@@ -1052,6 +1052,53 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
             },
           }),
         }).catch(() => {});
+
+        // Informe mensual: solo el último día del mes
+        const lastDayOfMonth = new Date(anioActual, mesActual, 0).getDate();
+        if (parseInt(ultimoDia.fecha.split('-')[2]) === lastDayOfMonth) {
+          const totalHabOcup = datosMes.reduce((a, d) => a + (d.hab_ocupadas  || 0), 0);
+          const totalHabDisp = datosMes.reduce((a, d) => a + (d.hab_disponibles || 0), 0);
+          const totalRevHab  = datosMes.reduce((a, d) => a + (d.revenue_hab   || 0), 0);
+          const totalRevTot  = datosMes.reduce((a, d) => a + (d.revenue_total || 0), 0);
+          const occMes    = totalHabDisp > 0 ? totalHabOcup / totalHabDisp * 100 : null;
+          const adrMes    = totalHabOcup > 0 ? totalRevHab  / totalHabOcup       : null;
+          const revparMes = totalHabDisp > 0 ? totalRevHab  / totalHabDisp       : null;
+          const trevparMes= totalHabDisp > 0 ? totalRevTot  / totalHabDisp       : null;
+
+          const datosMesLY   = produccionRows.filter(d => { const [y,m] = d.fecha.split('-').map(Number); return m === mesActual && y === anioActual - 1; });
+          const lyHabOcup = datosMesLY.reduce((a, d) => a + (d.hab_ocupadas  || 0), 0);
+          const lyHabDisp = datosMesLY.reduce((a, d) => a + (d.hab_disponibles || 0), 0);
+          const lyRevHab  = datosMesLY.reduce((a, d) => a + (d.revenue_hab   || 0), 0);
+          const lyRevTot  = datosMesLY.reduce((a, d) => a + (d.revenue_total || 0), 0);
+
+          fetch('/api/monthly-report', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email: session.user.email,
+              hotelNombre: hotelNombreProp || null,
+              kpis: {
+                mes: mesActual,
+                anio: anioActual,
+                mesNombre: MESES[mesActual - 1],
+                occ:     occMes,
+                adr:     adrMes,
+                revpar:  revparMes,
+                trevpar: trevparMes,
+                revenue_hab:   totalRevHab,
+                revenue_total: totalRevTot,
+                hab_ocupadas:  totalHabOcup,
+                hab_disponibles: totalHabDisp,
+                presupuesto: presupuestoMensual,
+                ly_occ:           lyHabDisp > 0 ? lyHabOcup / lyHabDisp * 100 : null,
+                ly_adr:           lyHabOcup > 0 ? lyRevHab  / lyHabOcup       : null,
+                ly_revpar:        lyHabDisp > 0 ? lyRevHab  / lyHabDisp       : null,
+                ly_trevpar:       lyHabDisp > 0 ? lyRevTot  / lyHabDisp       : null,
+                ly_revenue_total: lyRevTot > 0 ? lyRevTot : null,
+              },
+            }),
+          }).catch(() => {});
+        }
       }
     } catch (e) {
       setError(e.message);
@@ -2242,7 +2289,7 @@ function PickupView({ datos }) {
   });
 
   // ── Duración media de estancia ──
-  const conNoches = pickupEntries.filter(e => e.noches && e.noches > 0 && (e.estado||"confirmada") !== "cancelada");
+  const conNoches = pickupEntries.filter(e => e.noches && e.noches > 0 && (e.estado||"confirmada") !== "cancelada" && normCanal(e.canal) !== "M&E");
   const nochesMed = conNoches.length > 0
     ? (conNoches.reduce((a,e)=>a+(e.noches||0),0) / conNoches.length).toFixed(1)
     : null;
@@ -2259,7 +2306,7 @@ function PickupView({ datos }) {
     .sort((a,b) => b.media - a.media);
 
   // ── Precio medio por reserva ──
-  const conPrecio = pickupEntries.filter(e => e.precio_total && e.precio_total > 0 && (e.estado||"confirmada") !== "cancelada");
+  const conPrecio = pickupEntries.filter(e => e.precio_total && e.precio_total > 0 && (e.estado||"confirmada") !== "cancelada" && normCanal(e.canal) !== "M&E");
   const precioMed = conPrecio.length > 0
     ? Math.round(conPrecio.reduce((a,e)=>a+(e.precio_total||0),0) / conPrecio.length)
     : null;
