@@ -2543,25 +2543,14 @@ function PickupView({ datos }) {
                 {canalMetric === "adr" ? t("revenue_medio") : t("noches_reserva")}
               </p>
             </div>
-            <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-              {/* KPI badge */}
-              <div style={{ background: canalMetric==="adr" ? "#1A7A3C15" : `${C.accent}15`, border:`1px solid ${canalMetric==="adr"?"#1A7A3C33":C.accent+"33"}`, borderRadius:10, padding:"8px 16px", textAlign:"center" }}>
-                <p style={{ fontSize:24, fontWeight:800, color: canalMetric==="adr" ? C.green : C.accent, fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1 }}>
-                  {canalMetric==="adr" ? (precioMed ? `€${precioMed.toLocaleString("es-ES")}` : "—") : (nochesMed ?? "—")}
-                </p>
-                <p style={{ fontSize:9, fontWeight:600, textTransform:"uppercase", letterSpacing:0.8, marginTop:3, color: canalMetric==="adr" ? C.green : C.accent }}>
-                  {canalMetric==="adr" ? t("precio_medio") : t("noches_media")}
-                </p>
-              </div>
-              {/* Toggle */}
-              <div style={{ display:"flex", borderRadius:8, overflow:"hidden", border:`1px solid ${C.border}` }}>
+            {/* Toggle */}
+            <div style={{ display:"flex", borderRadius:8, overflow:"hidden", border:`1px solid ${C.border}` }}>
                 {[["adr","ADR"], ["noches","Noches"]].map(([key, label]) => (
                   <button key={key} onClick={() => setCanalMetric(key)}
                     style={{ padding:"6px 14px", fontSize:11, fontWeight:700, cursor:"pointer", border:"none", background: canalMetric===key ? C.accent : "transparent", color: canalMetric===key ? "#fff" : C.textMid, transition:"background 0.2s" }}>
                     {label}
                   </button>
                 ))}
-              </div>
             </div>
           </div>
           {/* Gráfica de barras recharts */}
