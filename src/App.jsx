@@ -2838,8 +2838,9 @@ function BudgetView({ datos, anio: anioProp }) {
     const mesStr    = `${anioF}-${pad(mesIdx + 1)}`;
     const mesStrLY  = `${anioF - 1}-${pad(mesIdx + 1)}`;
 
-    // Mes ya cerrado → no hay forecast, devuelve null
-    if (ultimoDia < hoy) return null;
+    // Mes ya cerrado → no se recalcula; el forecast se recupera de localStorage
+    const hoyMidnight = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
+    if (ultimoDia < hoyMidnight) return null;
 
     // ADR medio del año anterior para este mes
     const diasLY = (produccion || []).filter(r => String(r.fecha || "").slice(0, 7) === mesStrLY);
@@ -2919,11 +2920,26 @@ function BudgetView({ datos, anio: anioProp }) {
       const fcData    = calcForecastRevenue(p.mes - 1, anio);
       // Si cerrado → forecast = real; si en curso/futuro → OTB+ETP
       const ultimoDiaMes = new Date(anio, p.mes, 0);
-      const mesCerrado   = ultimoDiaMes < hoy;
-      const forecast_rev    = mesCerrado ? real.rev_total_real    : (fcData ? fcData.forecastRev    : null);
-      const forecast_adr    = mesCerrado ? real.adr_real          : (fcData ? fcData.forecastAdr    : null);
-      const forecast_revpar = mesCerrado ? real.revpar_real       : (fcData ? fcData.forecastRevpar : null);
-      const confianza       = mesCerrado ? 100 : (fcData ? fcData.confianza : null);
+      const hoyMidnight  = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
+      const mesCerrado   = ultimoDiaMes < hoyMidnight;
+      const fcKey = `fr_fc_${anio}_${p.mes}`;
+      let forecast_rev, forecast_adr, forecast_revpar, confianza;
+      if (!mesCerrado && fcData) {
+        forecast_rev    = fcData.forecastRev;
+        forecast_adr    = fcData.forecastAdr;
+        forecast_revpar = fcData.forecastRevpar;
+        confianza       = fcData.confianza;
+        try { localStorage.setItem(fcKey, JSON.stringify({ forecast_rev, forecast_adr, forecast_revpar, confianza })); } catch(_) {}
+      } else if (mesCerrado) {
+        let saved = null;
+        try { saved = JSON.parse(localStorage.getItem(fcKey)); } catch(_) {}
+        forecast_rev    = saved?.forecast_rev    ?? null;
+        forecast_adr    = saved?.forecast_adr    ?? null;
+        forecast_revpar = saved?.forecast_revpar ?? null;
+        confianza       = saved?.confianza       ?? null;
+      } else {
+        forecast_rev = forecast_adr = forecast_revpar = confianza = null;
+      }
 
       const adr_dev       = real.adr_real != null       ? Math.round((real.adr_real - p.adr_ppto) * 100) / 100     : null;
       const revpar_dev    = real.revpar_real != null     ? Math.round((real.revpar_real - p.revpar_ppto) * 100) / 100 : null;
@@ -2996,11 +3012,9 @@ function BudgetView({ datos, anio: anioProp }) {
          : kpiChart==="adr"     ? f.adr_ppto : f.revpar_ppto,
     Real: kpiChart==="revenue" ? (f.rev_total_real ? Math.round(f.rev_total_real/1000) : null)
          : kpiChart==="adr"     ? f.adr_real : f.revpar_real,
-    Forecast: !f.mesCerrado
-      ? (kpiChart==="revenue" && f.forecast_rev ? Math.round(f.forecast_rev / 1000)
-        : kpiChart==="adr"    ? (f.forecast_adr ?? null)
-        : null)
-      : null,
+    Forecast: kpiChart==="revenue" && f.forecast_rev ? Math.round(f.forecast_rev / 1000)
+            : kpiChart==="adr"    ? (f.forecast_adr ?? null)
+            : null,
   }));
 
   const chartUnit  = kpiChart==="revenue" ? "k€" : "€";
