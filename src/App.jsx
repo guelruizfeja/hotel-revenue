@@ -619,11 +619,17 @@ function KpiModal({ kpi, datos, mes, anio, onClose }) {
             </div>
             <ResponsiveContainer width="100%" height={220}>
               <ComposedChart data={chartData}>
+                <defs>
+                  <linearGradient id="kpiGradBar" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={C.accent} stopOpacity={1}/>
+                    <stop offset="100%" stopColor={C.accent} stopOpacity={0.6}/>
+                  </linearGradient>
+                </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke={C.border} vertical={false}/>
                 <XAxis dataKey="dia" tick={{ fill: C.textLight, fontSize: 11 }} axisLine={false} tickLine={false} interval={modoVista==="mes"?1:4}/>
                 <YAxis tick={{ fill: C.textLight, fontSize: 11 }} axisLine={false} tickLine={false} unit={unit}/>
                 <Tooltip content={<CustomTooltip unit={unit}/>} cursor={{ fill: "rgba(10,37,64,0.04)" }}/>
-                <Bar dataKey={fieldKey} name={kpi} fill="url(#gradReal)" radius={[4,4,0,0]} barSize={modoVista==="mes"?10:6}/>
+                <Bar dataKey={fieldKey} name={kpi} fill="url(#kpiGradBar)" radius={[4,4,0,0]} barSize={modoVista==="mes"?10:6}/>
                 <Line type="monotone" dataKey="ly" name="Año anterior" stroke="#E85D04" strokeWidth={1.5} dot={false} connectNulls/>
               </ComposedChart>
             </ResponsiveContainer>
