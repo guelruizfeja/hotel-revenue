@@ -3044,6 +3044,7 @@ function BudgetView({ datos, anio: anioProp }) {
 
   const chartUnificado = filas.map(f => ({
     mes: f.mes,
+    mesFull: t("meses_full")[f.mesIdx],
     Ppto: kpiChart==="revenue" ? (f.rev_total_ppto ? Math.round(f.rev_total_ppto/1000) : null)
          : kpiChart==="adr"     ? f.adr_ppto : f.revpar_ppto,
     Real: kpiChart==="revenue" ? (f.rev_total_real ? Math.round(f.rev_total_real/1000) : null)
@@ -3132,15 +3133,17 @@ function BudgetView({ datos, anio: anioProp }) {
             <YAxis tick={{ fill: C.textLight, fontSize: 11 }} axisLine={false} tickLine={false} unit={chartUnit} width={54}/>
             <Tooltip
               cursor={{ fill:"rgba(10,37,64,0.04)" }}
-              content={({ active, payload, label }) => {
+              content={({ active, payload }) => {
                 if (!active || !payload?.length) return null;
+                const colorMap = { Ppto:"#64748B", Real:"#1A7A3C", Forecast:"#B8860B" };
+                const mesNombre = payload[0]?.payload?.mesFull || payload[0]?.payload?.mes || "";
                 return (
                   <div style={{ background:"#0A2540", borderRadius:10, padding:"12px 16px", boxShadow:"0 8px 24px rgba(0,0,0,0.22)", minWidth:164 }}>
-                    <p style={{ margin:"0 0 10px", fontSize:10, fontWeight:700, color:"#D4A017", textTransform:"uppercase", letterSpacing:"1.5px" }}>{label}</p>
+                    <p style={{ margin:"0 0 10px", fontSize:10, fontWeight:700, color:"#D4A017", textTransform:"uppercase", letterSpacing:"1.5px" }}>{mesNombre}</p>
                     {payload.map((p, i) => p.value != null && (
                       <div key={i} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", gap:20, marginBottom:4 }}>
                         <span style={{ display:"flex", alignItems:"center", gap:6 }}>
-                          <span style={{ display:"inline-block", width:8, height:8, borderRadius:2, background:p.color }} />
+                          <span style={{ display:"inline-block", width:8, height:8, borderRadius:2, background:colorMap[p.dataKey] || "#888" }} />
                           <span style={{ fontSize:11, color:"rgba(255,255,255,0.6)" }}>{p.name}</span>
                         </span>
                         <span style={{ fontSize:12, fontWeight:700, color:"#FFFFFF" }}>
