@@ -2338,7 +2338,7 @@ function PickupView({ datos }) {
   });
 
   const CANAL_COLORS = {
-    "Booking.com": "#0052CC", "Expedia": "#FF6B00",
+    "Booking.com": "#0052CC", "Expedia": "#FFD700",
     "Directo": "#555555", "Agencia": "#7C3AED"
   };
 
@@ -2563,14 +2563,14 @@ function PickupView({ datos }) {
                     </linearGradient>
                   ))}
                 </defs>
-                <CartesianGrid vertical={false} stroke={C.border} strokeDasharray="4 4" opacity={0.5}/>
+                <CartesianGrid vertical={false} stroke={C.border} strokeDasharray="4 4" opacity={1}/>
                 <XAxis dataKey="canal" tick={{ fill:C.textMid, fontSize:11, fontWeight:600 }} axisLine={false} tickLine={false}/>
                 <YAxis domain={[0, yMax]} tickFormatter={fmt} tick={{ fill:C.textLight, fontSize:10 }} axisLine={false} tickLine={false} width={44}/>
                 <Tooltip
                   formatter={(v) => [fmt(v), canalMetric==="adr"?"ADR":"Noches"]}
                   contentStyle={{ background:"#0A2540", border:`1px solid ${C.border}`, borderRadius:8, fontSize:12 }}
                   labelStyle={{ color:"#D4A017", fontWeight:700 }}
-                  itemStyle={{ color:C.text }}
+                  itemStyle={{ color:"#ffffff" }}
                   cursor={{ fill:`${C.border}44` }}
                 />
                 <Bar dataKey="valor" radius={[4,4,0,0]} maxBarSize={56}>
