@@ -2214,6 +2214,7 @@ function PickupView({ datos }) {
   const cargando = false;
   const [anio, setAnio]                   = useState(new Date().getFullYear());
   const [trimSel, setTrimSel] = useState(null);
+  const [canalMetric, setCanalMetric]     = useState("adr"); // "adr" | "noches"
 
   const hoy     = new Date();
   const MESES   = t("meses_corto");
@@ -2503,75 +2504,84 @@ function PickupView({ datos }) {
           )}
         </Card>
 
-        {/* DURACIÓN MEDIA DE ESTANCIA */}
-        <Card>
-          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:14 }}>
+        {/* ADR / DURACIÓN MEDIA POR CANAL — gráfica combinada */}
+        <Card style={{ gridColumn:"span 2" }}>
+          {/* Cabecera con toggle */}
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:18 }}>
             <div>
-              <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:16, color:C.text }}>{t("duracion_media")}</p>
-              <p style={{ fontSize:11, color:C.textLight, marginTop:2 }}>{t("noches_reserva")}</p>
-            </div>
-            <div style={{ background:`${C.accent}15`, border:`1px solid ${C.accent}33`, borderRadius:10, padding:"10px 20px", textAlign:"center" }}>
-              <p style={{ fontSize:28, fontWeight:800, color:C.accent, fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1 }}>{nochesMed ?? "—"}</p>
-              <p style={{ fontSize:10, fontWeight:600, textTransform:"uppercase", letterSpacing:0.8, marginTop:3, color:C.accent }}>{t("noches_media")}</p>
-            </div>
-          </div>
-          {nochesCanalData.length > 0 && (
-            <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
-              <p style={{ fontSize:11, fontWeight:700, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:4 }}>{t("por_canal")}</p>
-              {nochesCanalData.slice(0,5).map((d,i) => {
-                const maxNoches = parseFloat(nochesCanalData[0].media);
-                const pct = maxNoches > 0 ? parseFloat(d.media)/maxNoches : 0;
-                const color = CANAL_COLORS[d.canal] || C.accent;
-                return (
-                  <div key={i}>
-                    <div style={{ display:"flex", justifyContent:"space-between", marginBottom:3 }}>
-                      <span style={{ fontSize:12, color:C.textMid }}>{d.canal}</span>
-                      <span style={{ fontSize:12, fontWeight:700, color }}>{d.media} noches</span>
-                    </div>
-                    <div style={{ height:5, borderRadius:3, background:C.border }}>
-                      <div style={{ height:5, borderRadius:3, background:color, width:`${pct*100}%`, transition:"width 0.4s" }}/>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </Card>
-
-        {/* PRECIO MEDIO POR RESERVA */}
-        <Card>
-          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:14 }}>
-            <div>
-              <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:16, color:C.text }}>{t("precio_medio_reserva")}</p>
-              <p style={{ fontSize:11, color:C.textLight, marginTop:2 }}>{t("revenue_medio")}</p>
-            </div>
-            <div style={{ background:"#1A7A3C15", border:"1px solid #1A7A3C33", borderRadius:10, padding:"10px 20px", textAlign:"center" }}>
-              <p style={{ fontSize:28, fontWeight:800, color:C.green, fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1 }}>
-                {precioMed ? `€${precioMed.toLocaleString("es-ES")}` : "—"}
+              <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:16, color:C.text }}>
+                {canalMetric === "adr" ? t("precio_medio_reserva") : t("duracion_media")}
               </p>
-              <p style={{ fontSize:10, fontWeight:600, textTransform:"uppercase", letterSpacing:0.8, marginTop:3, color:C.green }}>{t("precio_medio")}</p>
+              <p style={{ fontSize:11, color:C.textLight, marginTop:2 }}>
+                {canalMetric === "adr" ? t("revenue_medio") : t("noches_reserva")}
+              </p>
+            </div>
+            <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+              {/* KPI badge */}
+              <div style={{ background: canalMetric==="adr" ? "#1A7A3C15" : `${C.accent}15`, border:`1px solid ${canalMetric==="adr"?"#1A7A3C33":C.accent+"33"}`, borderRadius:10, padding:"8px 16px", textAlign:"center" }}>
+                <p style={{ fontSize:24, fontWeight:800, color: canalMetric==="adr" ? C.green : C.accent, fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1 }}>
+                  {canalMetric==="adr" ? (precioMed ? `€${precioMed.toLocaleString("es-ES")}` : "—") : (nochesMed ?? "—")}
+                </p>
+                <p style={{ fontSize:9, fontWeight:600, textTransform:"uppercase", letterSpacing:0.8, marginTop:3, color: canalMetric==="adr" ? C.green : C.accent }}>
+                  {canalMetric==="adr" ? t("precio_medio") : t("noches_media")}
+                </p>
+              </div>
+              {/* Toggle */}
+              <div style={{ display:"flex", borderRadius:8, overflow:"hidden", border:`1px solid ${C.border}` }}>
+                {[["adr","ADR"], ["noches","Noches"]].map(([key, label]) => (
+                  <button key={key} onClick={() => setCanalMetric(key)}
+                    style={{ padding:"6px 14px", fontSize:11, fontWeight:700, cursor:"pointer", border:"none", background: canalMetric===key ? C.accent : "transparent", color: canalMetric===key ? "#fff" : C.textMid, transition:"background 0.2s" }}>
+                    {label}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
-          {precioCanalData.length > 0 && (
-            <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
-              <p style={{ fontSize:11, fontWeight:700, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:4 }}>{t("por_canal")}</p>
-              {precioCanalData.slice(0,5).map((d,i) => {
-                const maxPrecio = precioCanalData[0].media;
-                const pct = maxPrecio > 0 ? d.media/maxPrecio : 0;
-                return (
-                  <div key={i}>
-                    <div style={{ display:"flex", justifyContent:"space-between", marginBottom:3 }}>
-                      <span style={{ fontSize:12, color:C.textMid }}>{d.canal}</span>
-                      <span style={{ fontSize:12, fontWeight:700, color:d.color }}>€{d.media.toLocaleString("es-ES")}</span>
-                    </div>
-                    <div style={{ height:5, borderRadius:3, background:C.border }}>
-                      <div style={{ height:5, borderRadius:3, background:d.color, width:`${pct*100}%`, transition:"width 0.4s" }}/>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+          {/* Gráfica de barras recharts */}
+          {(() => {
+            const rawData = canalMetric === "adr" ? precioCanalData : nochesCanalData.map(d => ({ ...d, color: CANAL_COLORS[d.canal]||C.accent }));
+            if (rawData.length === 0) return <p style={{ fontSize:12, color:C.textLight, textAlign:"center", padding:"30px 0" }}>{t("sin_datos")}</p>;
+            const chartData = rawData.slice(0,7).map(d => ({
+              canal: d.canal,
+              valor: canalMetric === "adr" ? d.media : parseFloat(d.media),
+              color: d.color || CANAL_COLORS[d.canal] || C.accent
+            }));
+            const maxVal = Math.max(...chartData.map(d=>d.valor));
+            const yMax   = canalMetric === "adr"
+              ? Math.ceil(maxVal * 1.15 / 50) * 50
+              : Math.ceil(maxVal * 1.3);
+            const fmt = v => canalMetric === "adr" ? `€${v.toLocaleString("es-ES")}` : `${v}n`;
+            return (
+              <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={chartData}
+                margin={{ top:16, right:16, left:8, bottom:8 }}>
+                <defs>
+                  {chartData.map((d,i) => (
+                    <linearGradient key={i} id={`cg_${i}`} x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor={d.color} stopOpacity={1}/>
+                      <stop offset="100%" stopColor={d.color} stopOpacity={0.55}/>
+                    </linearGradient>
+                  ))}
+                </defs>
+                <CartesianGrid vertical={false} stroke={C.border} strokeDasharray="4 4" opacity={0.5}/>
+                <XAxis dataKey="canal" tick={{ fill:C.textMid, fontSize:11, fontWeight:600 }} axisLine={false} tickLine={false}/>
+                <YAxis domain={[0, yMax]} tickFormatter={fmt} tick={{ fill:C.textLight, fontSize:10 }} axisLine={false} tickLine={false} width={44}/>
+                <Tooltip
+                  formatter={(v) => [fmt(v), canalMetric==="adr"?"ADR":"Noches"]}
+                  contentStyle={{ background:"#0A2540", border:`1px solid ${C.border}`, borderRadius:8, fontSize:12 }}
+                  labelStyle={{ color:"#D4A017", fontWeight:700 }}
+                  itemStyle={{ color:C.text }}
+                  cursor={{ fill:`${C.border}44` }}
+                />
+                <Bar dataKey="valor" radius={[4,4,0,0]} maxBarSize={56}>
+                  {chartData.map((d,i) => (
+                    <Cell key={i} fill={`url(#cg_${i})`}/>
+                  ))}
+                </Bar>
+              </BarChart>
+              </ResponsiveContainer>
+            );
+          })()}
         </Card>
 
       </div>
