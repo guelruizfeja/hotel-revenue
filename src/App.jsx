@@ -2482,11 +2482,11 @@ function PickupView({ datos }) {
           <p style={{ fontSize:11, color:C.textLight, marginBottom:14 }}>
             {ayerD.toLocaleDateString("es-ES",{weekday:"long",day:"numeric",month:"long"}).replace(/^\w/,c=>c.toUpperCase())}
           </p>
-          {/* KPI badge arriba */}
-          <div style={{ display:"flex", gap:10, marginBottom:16 }}>
-            <div style={{ flex:1, background: cancelTotal>0?C.redLight:"#E6F7EE", border:`1px solid ${cancelTotal>0?"#D32F2F44":"#1A7A3C44"}`, borderRadius:8, padding:"10px 14px", textAlign:"center" }}>
-              <p style={{ fontSize:26, fontWeight:800, color:cancelTotal>0?C.red:C.green, fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1 }}>{cancelTotal}</p>
-              <p style={{ fontSize:9, fontWeight:600, textTransform:"uppercase", letterSpacing:0.8, marginTop:3, color:cancelTotal>0?C.red:C.green }}>{t("cancelaciones")}</p>
+          {/* KPI badge arriba izquierda */}
+          <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:16 }}>
+            <div style={{ background: cancelTotal>0?C.redLight:"#E6F7EE", border:`1px solid ${cancelTotal>0?"#D32F2F44":"#1A7A3C44"}`, borderRadius:8, padding:"6px 14px", display:"flex", alignItems:"baseline", gap:6 }}>
+              <span style={{ fontSize:20, fontWeight:800, color:cancelTotal>0?C.red:C.green, fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1 }}>{cancelTotal}</span>
+              <span style={{ fontSize:10, fontWeight:600, textTransform:"uppercase", letterSpacing:0.8, color:cancelTotal>0?C.red:C.green }}>{cancelTotal===1?"cancelación":"cancelaciones"}</span>
             </div>
           </div>
           {/* Tabla */}
