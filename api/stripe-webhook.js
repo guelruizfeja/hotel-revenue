@@ -34,6 +34,10 @@ export default async function handler(req, res) {
   if (type === 'checkout.session.completed') {
     const session = data.object;
     const user_id = session.metadata?.user_id;
+    if (!user_id) {
+      console.error('checkout.session.completed: metadata.user_id missing', session.id);
+      return res.status(200).json({ received: true });
+    }
     const subscription = await stripe.subscriptions.retrieve(session.subscription);
     const trial_end = subscription.trial_end ? new Date(subscription.trial_end * 1000).toISOString() : null;
     const periodo_fin = new Date(subscription.current_period_end * 1000).toISOString();
@@ -53,6 +57,10 @@ export default async function handler(req, res) {
     const invoice = data.object;
     const subscription = await stripe.subscriptions.retrieve(invoice.subscription);
     const user_id = subscription.metadata?.user_id;
+    if (!user_id) {
+      console.error('invoice.payment_succeeded: metadata.user_id missing', invoice.id);
+      return res.status(200).json({ received: true });
+    }
     const periodo_fin = new Date(subscription.current_period_end * 1000).toISOString();
 
     await supabase.from('suscripciones').update({

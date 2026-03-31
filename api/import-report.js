@@ -129,6 +129,7 @@ export default async function handler(req, res) {
 
   const { email, hotelNombre, kpis } = req.body;
   if (!email || !kpis) return res.status(400).json({ error: 'Faltan datos' });
+  if (!/^[^\s@]{1,64}@[^\s@]+\.[^\s@]{2,}$/.test(email)) return res.status(400).json({ error: 'Email inválido' });
 
   const hotel = hotelNombre || 'FastRevenue';
   const {
@@ -140,12 +141,7 @@ export default async function handler(req, res) {
     ly_occ, ly_adr, ly_revpar, ly_trevpar,
   } = kpis;
 
-  console.log('import-report:', JSON.stringify({
-    email, hotel, fecha, occ, adr, revpar, trevpar,
-    pickup_neto, cancelaciones, revenue_pickup_ayer,
-    revenueAcumuladoLen: revenueAcumulado?.length,
-    presupuestoMensual,
-  }));
+  console.log('import-report:', hotel, fecha);
 
   let progressBar = '';
   try { progressBar = buildProgressBar(revenueAcumulado, presupuestoMensual); } catch (e) { console.error('progressBar error:', e); }
@@ -348,6 +344,6 @@ export default async function handler(req, res) {
     res.status(200).json({ ok: true });
   } catch (e) {
     console.error('Error enviando informe:', e);
-    res.status(500).json({ error: e.message });
+    res.status(500).json({ error: 'Error interno' });
   }
 }

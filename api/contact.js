@@ -1,42 +1,68 @@
 import { Resend } from 'resend';
+import { rateLimit, getIP } from './_ratelimit.js';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
+const EMAIL_RE = /^[^\s@]{1,64}@[^\s@]+\.[^\s@]{2,}$/;
+
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;');
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
+
+  // Rate limit: 5 envíos por IP cada 10 minutos
+  if (!rateLimit(getIP(req), 5, 10 * 60_000)) {
+    return res.status(429).json({ error: 'Demasiadas solicitudes' });
+  }
 
   const { nombre, hotel, email, mensaje } = req.body;
   if (!nombre || !hotel || !email) {
     return res.status(400).json({ error: 'Faltan campos obligatorios' });
   }
+  if (!EMAIL_RE.test(email)) {
+    return res.status(400).json({ error: 'Email inválido' });
+  }
+
+  // Escapar todo el input antes de embeber en HTML
+  const sNombre  = escapeHtml(nombre);
+  const sHotel   = escapeHtml(hotel);
+  const sEmail   = escapeHtml(email);
+  const sMensaje = mensaje ? escapeHtml(mensaje).replace(/\n/g, '<br>') : null;
 
   try {
     const { error } = await resend.emails.send({
       from: 'FastRevenue <info@fastrevenue.app>',
       to: 'info@fastrevenue.app',
-      reply_to: email,
-      subject: `Nueva consulta — ${nombre} (${hotel})`,
+      reply_to: sEmail,
+      subject: `Nueva consulta — ${sNombre} (${sHotel})`,
       html: `
         <div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:32px;background:#f9f9f9;border-radius:10px;">
           <h2 style="color:#0A2540;margin-bottom:24px;">Nueva solicitud de consulta gratuita</h2>
           <table style="width:100%;border-collapse:collapse;">
             <tr>
               <td style="padding:10px 0;font-size:13px;color:#6B7280;width:90px;">Nombre</td>
-              <td style="padding:10px 0;font-size:14px;color:#111827;font-weight:600;">${nombre}</td>
+              <td style="padding:10px 0;font-size:14px;color:#111827;font-weight:600;">${sNombre}</td>
             </tr>
             <tr>
               <td style="padding:10px 0;font-size:13px;color:#6B7280;">Hotel</td>
-              <td style="padding:10px 0;font-size:14px;color:#111827;font-weight:600;">${hotel}</td>
+              <td style="padding:10px 0;font-size:14px;color:#111827;font-weight:600;">${sHotel}</td>
             </tr>
             <tr>
               <td style="padding:10px 0;font-size:13px;color:#6B7280;">Email</td>
               <td style="padding:10px 0;font-size:14px;color:#111827;">
-                <a href="mailto:${email}" style="color:#004B87;">${email}</a>
+                <a href="mailto:${sEmail}" style="color:#004B87;">${sEmail}</a>
               </td>
             </tr>
-            ${mensaje ? `<tr>
+            ${sMensaje ? `<tr>
               <td style="padding:10px 0;font-size:13px;color:#6B7280;vertical-align:top;">Mensaje</td>
-              <td style="padding:10px 0;font-size:14px;color:#111827;line-height:1.6;">${mensaje.replace(/\n/g, '<br>')}</td>
+              <td style="padding:10px 0;font-size:14px;color:#111827;line-height:1.6;">${sMensaje}</td>
             </tr>` : ''}
           </table>
         </div>
@@ -46,7 +72,7 @@ export default async function handler(req, res) {
     if (error) throw new Error(error.message);
     res.status(200).json({ ok: true });
   } catch (e) {
-    console.error('Error enviando contacto:', e);
-    res.status(500).json({ error: e.message });
+    console.error('Error enviando contacto');
+    res.status(500).json({ error: 'Error interno' });
   }
 }

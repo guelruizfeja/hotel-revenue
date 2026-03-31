@@ -81,6 +81,7 @@ export default async function handler(req, res) {
 
   const { email, hotelNombre, kpis } = req.body;
   if (!email || !kpis) return res.status(400).json({ error: 'Faltan datos' });
+  if (!/^[^\s@]{1,64}@[^\s@]+\.[^\s@]{2,}$/.test(email)) return res.status(400).json({ error: 'Email inválido' });
 
   const hotel = hotelNombre || 'FastRevenue';
   const {
@@ -92,7 +93,7 @@ export default async function handler(req, res) {
     ly_occ, ly_adr, ly_revpar, ly_trevpar, ly_revenue_total,
   } = kpis;
 
-  console.log('monthly-report:', JSON.stringify({ email, hotel, mes, anio, occ, adr, revpar, trevpar, revenue_total, presupuesto }));
+  console.log('monthly-report:', hotel, mes, anio);
 
   let budgetBlock = '';
   try { budgetBlock = buildBudgetBlock(revenue_total, presupuesto); } catch (e) { console.error('budgetBlock error:', e); }
@@ -256,6 +257,6 @@ export default async function handler(req, res) {
     res.status(200).json({ ok: true });
   } catch (e) {
     console.error('Error enviando informe mensual:', e);
-    res.status(500).json({ error: e.message });
+    res.status(500).json({ error: 'Error interno' });
   }
 }

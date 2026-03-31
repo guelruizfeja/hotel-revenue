@@ -773,6 +773,12 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
   const procesarExcel = async (file) => {
     setLoading(true); setError(""); setResultado(null); setProgresoPct(0);
     try {
+      const MAX_SIZE = 10 * 1024 * 1024; // 10 MB
+      if (file.size > MAX_SIZE) throw new Error("El archivo es demasiado grande (máx. 10 MB)");
+      const TIPOS_VALIDOS = ["application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "application/vnd.ms-excel"];
+      if (!TIPOS_VALIDOS.includes(file.type) && !file.name.endsWith(".xlsx") && !file.name.endsWith(".xls")) {
+        throw new Error("Formato de archivo no válido. Sube un archivo .xlsx");
+      }
       setProgreso(t("leyendo")); setProgresoPct(5);
       const XLSX = await import("xlsx");
       const data = await file.arrayBuffer();
@@ -3955,7 +3961,7 @@ function PantallaSubscripcion({ session, onPagar }) {
     try {
       const res = await fetch("/api/create-checkout-session", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${session.access_token}` },
         body: JSON.stringify({ user_id: session.user.id, email: session.user.email }),
       });
       const { url, error } = await res.json();
@@ -4549,7 +4555,7 @@ export default function App() {
                       try {
                         const res = await fetch("/api/cancel-subscription", {
                           method: "POST",
-                          headers: { "Content-Type": "application/json" },
+                          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${session.access_token}` },
                           body: JSON.stringify({ user_id: session.user.id }),
                         });
                         const json = await res.json();
