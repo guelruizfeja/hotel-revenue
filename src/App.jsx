@@ -2705,6 +2705,98 @@ function PickupView({ datos }) {
         </div>{/* fin col derecha */}
       </div>{/* fin card gráfica+pico */}
 
+      {/* ── DÍAS CALIENTES EXPANDIDO ── */}
+      {(() => {
+        const padL2 = n => String(n).padStart(2,"0");
+        const hoyStr2 = `${hoy.getFullYear()}-${padL2(hoy.getMonth()+1)}-${padL2(hoy.getDate())}`;
+        const hab = datos.hotel?.habitaciones || 30;
+        // OTB por día futuro
+        const otbPorDia2 = {};
+        (pickupEntries || []).forEach(e => {
+          const fl = String(e.fecha_llegada || "").slice(0,10);
+          const fp = String(e.fecha_pickup  || "").slice(0,10);
+          if (fl.length < 10 || fp.length < 10) return;
+          if (fl <= hoyStr2) return;
+          if (fp > hoyStr2) return;
+          if ((e.estado || "confirmada") === "cancelada") return;
+          otbPorDia2[fl] = (otbPorDia2[fl] || 0) + (e.num_reservas || 1);
+        });
+        // OTB LY por día
+        const otbPorDiaLY = {};
+        (pickupEntries || []).forEach(e => {
+          const fl = String(e.fecha_llegada || "").slice(0,10);
+          const fp = String(e.fecha_pickup  || "").slice(0,10);
+          if (fl.length < 10 || fp.length < 10) return;
+          // LY: fecha llegada es el año pasado, pero mismo "día del año"
+          const flLY = `${Number(fl.slice(0,4))+1}${fl.slice(4)}`; // shift +1y → this year equivalent
+          if (flLY <= hoyStr2) return;
+          if (fp > hoyStr2) return;
+          if ((e.estado || "confirmada") === "cancelada") return;
+          otbPorDiaLY[flLY] = (otbPorDiaLY[flLY] || 0) + (e.num_reservas || 1);
+        });
+        const top10 = Object.entries(otbPorDia2).sort((a,b) => b[1]-a[1]).slice(0,10);
+        if (top10.length === 0) return null;
+        const maxOtb = top10[0][1] || 1;
+        const fmtFull = (iso) => {
+          const [y,m,d] = iso.split("-");
+          const dt = new Date(Number(y), Number(m)-1, Number(d));
+          const dias = t("dias_abrev");
+          const meses = t("meses_corto");
+          return { dow: dias[dt.getDay()], day: Number(d), mon: meses[Number(m)-1], iso };
+        };
+        return (
+          <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:12, padding:"24px 28px" }}>
+            <p style={{ fontSize:11, fontWeight:700, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:18 }}>🔥 {t("fechas_calientes")} — Top {top10.length}</p>
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(260px,1fr))", gap:"14px 24px" }}>
+              {top10.map(([fecha, otb], idx) => {
+                const { dow, day, mon } = fmtFull(fecha);
+                const occ = Math.round(otb / hab * 100);
+                const ly  = otbPorDiaLY[fecha] || 0;
+                const lyOcc = Math.round(ly / hab * 100);
+                const diff = otb - ly;
+                const barW = Math.round(otb / maxOtb * 100);
+                const occColor = occ >= 85 ? "#E53935" : occ >= 70 ? "#FF7043" : occ >= 55 ? "#FFC107" : "#4CAF50";
+                return (
+                  <div key={fecha} style={{ background:C.bgDeep, border:`1px solid ${C.border}`, borderRadius:10, padding:"12px 16px", display:"flex", flexDirection:"column", gap:8 }}>
+                    {/* Fila top: fecha + ranking */}
+                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                      <div style={{ display:"flex", alignItems:"baseline", gap:6 }}>
+                        <span style={{ fontSize:10, fontWeight:700, color:C.textLight, textTransform:"uppercase", letterSpacing:0.8 }}>{dow}</span>
+                        <span style={{ fontSize:15, fontWeight:800, color:C.text, fontFamily:"'Plus Jakarta Sans',sans-serif" }}>{day} {mon}</span>
+                      </div>
+                      <span style={{ fontSize:10, fontWeight:700, color:C.textLight, background:C.border, borderRadius:4, padding:"2px 7px" }}>#{idx+1}</span>
+                    </div>
+                    {/* Barra OTB con gradiente */}
+                    <div style={{ width:"100%", height:6, background:C.border, borderRadius:3 }}>
+                      <div style={{ width:`${barW}%`, height:"100%", background:`linear-gradient(to right, ${occColor}88, ${occColor})`, borderRadius:3, transition:"width 0.3s" }} />
+                    </div>
+                    {/* Métricas */}
+                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                      <div style={{ display:"flex", alignItems:"baseline", gap:5 }}>
+                        <span style={{ fontSize:18, fontWeight:800, color:COL_OTB, fontFamily:"'Plus Jakarta Sans',sans-serif" }}>{otb}</span>
+                        <span style={{ fontSize:10, color:C.textLight }}>{t("res_abrev")}</span>
+                      </div>
+                      <div style={{ textAlign:"right" }}>
+                        <div style={{ fontSize:14, fontWeight:800, color:occColor, fontFamily:"'Plus Jakarta Sans',sans-serif" }}>{occ}%</div>
+                        <div style={{ fontSize:9, color:C.textLight }}>ocup.</div>
+                      </div>
+                    </div>
+                    {/* Comparativa LY */}
+                    {ly > 0 && (
+                      <div style={{ display:"flex", alignItems:"center", gap:6, borderTop:`1px solid ${C.border}`, paddingTop:7, marginTop:2 }}>
+                        <span style={{ fontSize:10, color:C.textLight }}>LY: {ly} res ({lyOcc}%)</span>
+                        <span style={{ marginLeft:"auto", fontSize:11, fontWeight:700, color: diff>0?"#4CAF50": diff<0?"#E53935":C.textLight }}>
+                          {diff>0 ? "▲" : diff<0 ? "▼" : "="} {Math.abs(diff)}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* ── PACE ── */}
       {(() => {
