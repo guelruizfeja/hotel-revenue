@@ -2477,52 +2477,71 @@ function PickupView({ datos }) {
 
         {/* CANCELACIONES DE AYER */}
         <Card>
-          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:14 }}>
-            <div>
-              <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:16, color:C.text }}>{t("cancelaciones_ayer")}</p>
-              <p style={{ fontSize:11, color:C.textLight, marginTop:2 }}>
-                {ayerD.toLocaleDateString("es-ES",{weekday:"long",day:"numeric",month:"long"}).replace(/^\w/,c=>c.toUpperCase())}
-              </p>
+          {/* Título */}
+          <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:16, color:C.text, marginBottom:2 }}>{t("cancelaciones_ayer")}</p>
+          <p style={{ fontSize:11, color:C.textLight, marginBottom:14 }}>
+            {ayerD.toLocaleDateString("es-ES",{weekday:"long",day:"numeric",month:"long"}).replace(/^\w/,c=>c.toUpperCase())}
+          </p>
+          {/* KPI badge arriba */}
+          <div style={{ display:"flex", gap:10, marginBottom:16 }}>
+            <div style={{ flex:1, background: cancelTotal>0?C.redLight:"#E6F7EE", border:`1px solid ${cancelTotal>0?"#D32F2F44":"#1A7A3C44"}`, borderRadius:8, padding:"10px 14px", textAlign:"center" }}>
+              <p style={{ fontSize:26, fontWeight:800, color:cancelTotal>0?C.red:C.green, fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1 }}>{cancelTotal}</p>
+              <p style={{ fontSize:9, fontWeight:600, textTransform:"uppercase", letterSpacing:0.8, marginTop:3, color:cancelTotal>0?C.red:C.green }}>{t("cancelaciones")}</p>
             </div>
-            <div style={{ background: cancelTotal>0?"#FDECEA":"#E6F7EE", border:`1px solid ${cancelTotal>0?"#D32F2F44":"#1A7A3C44"}`, borderRadius:10, padding:"10px 20px", textAlign:"center" }}>
-              <p style={{ fontSize:28, fontWeight:800, color:cancelTotal>0?C.red:C.green, fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1 }}>{cancelTotal}</p>
-              <p style={{ fontSize:10, fontWeight:600, textTransform:"uppercase", letterSpacing:0.8, marginTop:3, color:cancelTotal>0?C.red:C.green }}>{t("cancelaciones")}</p>
-            </div>
+            {cancelTotal > 0 && (() => {
+              const totalADR = cancelacionesAyer.reduce((acc, e) => {
+                const adr = e.precio_total && e.noches > 0 ? e.precio_total / e.noches : e.precio_total || 0;
+                return acc + adr;
+              }, 0);
+              const mediaADR = Math.round(totalADR / cancelTotal);
+              return (
+                <div style={{ flex:1, background:C.redLight, border:"1px solid #D32F2F44", borderRadius:8, padding:"10px 14px", textAlign:"center" }}>
+                  <p style={{ fontSize:26, fontWeight:800, color:C.red, fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1 }}>€{mediaADR.toLocaleString("es-ES")}</p>
+                  <p style={{ fontSize:9, fontWeight:600, textTransform:"uppercase", letterSpacing:0.8, marginTop:3, color:C.red }}>ADR medio</p>
+                </div>
+              );
+            })()}
           </div>
+          {/* Tabla */}
           {cancelTotal === 0 ? (
             <p style={{ color:C.green, fontSize:13, textAlign:"center", padding:"12px 0" }}>✅ {t("sin_cancelaciones")}</p>
-          ) : (
-            <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
-              {cancelacionesAyer.map((e, i) => {
-                const fmtFecha = (iso) => {
-                  if (!iso) return "—";
-                  const [y,m,d] = String(iso).slice(0,10).split("-");
-                  const dt = new Date(Number(y), Number(m)-1, Number(d));
-                  const dias = t("dias_abrev");
-                  const meses = t("meses_corto");
-                  return `${dias[dt.getDay()]} ${Number(d)} ${meses[Number(m)-1]} ${y}`;
-                };
-                const canal = normCanal(e.canal) || "—";
-                const adr = e.precio_total && e.noches > 0
-                  ? Math.round(e.precio_total / e.noches)
-                  : e.precio_total
-                  ? Math.round(e.precio_total)
-                  : null;
-                const canalColor = CANAL_COLORS[canal] || C.textMid;
-                return (
-                  <div key={i} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"8px 10px", background:C.redLight, borderRadius:6, gap:8 }}>
-                    <div style={{ display:"flex", flexDirection:"column", gap:2 }}>
-                      <span style={{ fontSize:12, fontWeight:700, color:C.text }}>{fmtFecha(e.fecha_llegada)}</span>
-                      <span style={{ fontSize:10, fontWeight:700, color:canalColor }}>{canal}</span>
-                    </div>
-                    <div style={{ textAlign:"right" }}>
-                      {adr !== null && <span style={{ fontSize:13, fontWeight:800, color:C.red }}>€{adr.toLocaleString("es-ES")}<span style={{ fontSize:9, fontWeight:400, color:C.textLight }}> /noche</span></span>}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+          ) : (() => {
+            const fmtFecha = (iso) => {
+              if (!iso) return "—";
+              const [y,m,d] = String(iso).slice(0,10).split("-");
+              const dt = new Date(Number(y), Number(m)-1, Number(d));
+              return `${t("dias_abrev")[dt.getDay()]} ${Number(d)} ${t("meses_corto")[Number(m)-1]} ${y}`;
+            };
+            const thS = { fontSize:9, fontWeight:700, color:C.textLight, textTransform:"uppercase", letterSpacing:0.7, padding:"0 8px 8px", textAlign:"left", borderBottom:`1px solid ${C.border}` };
+            const tdS = { fontSize:11, padding:"7px 8px", verticalAlign:"middle" };
+            return (
+              <table style={{ width:"100%", borderCollapse:"collapse" }}>
+                <thead>
+                  <tr>
+                    <th style={thS}>Fecha llegada</th>
+                    <th style={thS}>Canal</th>
+                    <th style={{ ...thS, textAlign:"right" }}>ADR</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {cancelacionesAyer.map((e, i) => {
+                    const canal = normCanal(e.canal) || "—";
+                    const adr = e.precio_total && e.noches > 0
+                      ? Math.round(e.precio_total / e.noches)
+                      : e.precio_total ? Math.round(e.precio_total) : null;
+                    const canalColor = CANAL_COLORS[canal] || C.textMid;
+                    return (
+                      <tr key={i} style={{ background: i%2===0?"transparent":C.redLight+"88" }}>
+                        <td style={{ ...tdS, color:C.text, fontWeight:600 }}>{fmtFecha(e.fecha_llegada)}</td>
+                        <td style={{ ...tdS, color:canalColor, fontWeight:700 }}>{canal}</td>
+                        <td style={{ ...tdS, textAlign:"right", fontWeight:800, color:C.red }}>{adr !== null ? `€${adr.toLocaleString("es-ES")}` : "—"}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            );
+          })()}
         </Card>
 
         {/* ADR / DURACIÓN MEDIA POR CANAL — gráfica combinada */}
