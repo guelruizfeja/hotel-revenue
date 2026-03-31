@@ -3051,38 +3051,74 @@ function BudgetView({ datos, anio: anioProp }) {
 
       {/* Gráfica */}
       <Card>
-        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:18 }}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:20 }}>
           <div>
-            <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:17, color:C.text }}>{chartTitle}</p>
-            <p style={{ fontSize:11, color:C.textLight, marginTop:2 }}>Ppto. vs Real vs Forecast · {anio}</p>
+            <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:18, color:C.text }}>{chartTitle}</p>
+            <p style={{ fontSize:11, color:C.textLight, marginTop:3, letterSpacing:"0.3px" }}>Presupuesto · Real · Forecast &mdash; {anio}</p>
           </div>
-          <div style={{ display:"flex", gap:6 }}>
-            {kpiOpts.map(o => (
-              <button key={o.key} onClick={()=>setKpiChart(o.key)}
-                style={{ padding:"5px 14px", borderRadius:7, border:`1.5px solid ${kpiChart===o.key?"#1A7A3C":C.border}`, background:kpiChart===o.key?"#1A7A3C18":"transparent", color:kpiChart===o.key?"#1A7A3C":C.textLight, fontSize:12, fontWeight:kpiChart===o.key?700:400, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", transition:"all 0.15s" }}>
-                {o.label}
-              </button>
-            ))}
+          <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:10 }}>
+            <div style={{ display:"flex", gap:6 }}>
+              {kpiOpts.map(o => (
+                <button key={o.key} onClick={()=>setKpiChart(o.key)}
+                  style={{ padding:"5px 14px", borderRadius:7, border:`1.5px solid ${kpiChart===o.key?"#1A7A3C":C.border}`, background:kpiChart===o.key?"#1A7A3C18":"transparent", color:kpiChart===o.key?"#1A7A3C":C.textLight, fontSize:12, fontWeight:kpiChart===o.key?700:400, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", transition:"all 0.15s" }}>
+                  {o.label}
+                </button>
+              ))}
+            </div>
+            <div style={{ display:"flex", gap:16 }}>
+              {[
+                { color:"#64748B", opacity:0.55, label:t("ppto_abrev") },
+                { color:"#1A7A3C", opacity:1,    label:t("real_label") },
+                { color:"#B8860B", opacity:0.85,  label:"Forecast" },
+              ].map((item, i) => (
+                <div key={i} style={{ display:"flex", alignItems:"center", gap:5 }}>
+                  <div style={{ width:10, height:10, borderRadius:2, background:item.color, opacity:item.opacity }} />
+                  <span style={{ fontSize:10, color:C.textLight, fontWeight:500, letterSpacing:"0.5px", textTransform:"uppercase" }}>{item.label}</span>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
-        <ResponsiveContainer width="100%" height={260}>
-          <BarChart data={chartUnificado} barSize={14} barGap={3}>
-            <CartesianGrid strokeDasharray="3 3" stroke={C.border} vertical={false}/>
-            <XAxis dataKey="mes" tick={{fill:C.textLight, fontSize:10}} axisLine={false} tickLine={false}/>
-            <YAxis tick={{fill:C.textLight, fontSize:11}} axisLine={false} tickLine={false} unit={chartUnit}/>
+        <ResponsiveContainer width="100%" height={310}>
+          <BarChart data={chartUnificado} barSize={16} barGap={3} barCategoryGap="32%">
+            <defs>
+              <linearGradient id="gradReal" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#1A7A3C" stopOpacity={1}/>
+                <stop offset="100%" stopColor="#1A7A3C" stopOpacity={0.75}/>
+              </linearGradient>
+              <linearGradient id="gradForecast" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#B8860B" stopOpacity={0.9}/>
+                <stop offset="100%" stopColor="#B8860B" stopOpacity={0.55}/>
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke="#F0F0F0" vertical={false}/>
+            <XAxis dataKey="mes" tick={{fill:C.textLight, fontSize:11, fontFamily:"'Plus Jakarta Sans',sans-serif"}} axisLine={false} tickLine={false}/>
+            <YAxis tick={{fill:C.textLight, fontSize:11, fontFamily:"'Plus Jakarta Sans',sans-serif"}} axisLine={false} tickLine={false} unit={chartUnit} width={54}/>
             <Tooltip
-              formatter={(val, name) => {
-                if (val == null) return ["—", name];
-                const num = kpiChart==="revenue" ? Math.round(val*1000) : Math.round(val);
-                return [`€${num.toLocaleString("es-ES")}`, name];
+              cursor={{ fill:"rgba(10,37,64,0.04)" }}
+              content={({ active, payload, label }) => {
+                if (!active || !payload?.length) return null;
+                return (
+                  <div style={{ background:"#0A2540", borderRadius:10, padding:"12px 16px", boxShadow:"0 8px 24px rgba(0,0,0,0.22)", minWidth:164 }}>
+                    <p style={{ margin:"0 0 10px", fontSize:10, fontWeight:700, color:"#D4A017", textTransform:"uppercase", letterSpacing:"1.5px" }}>{label}</p>
+                    {payload.map((p, i) => p.value != null && (
+                      <div key={i} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", gap:20, marginBottom:4 }}>
+                        <span style={{ display:"flex", alignItems:"center", gap:6 }}>
+                          <span style={{ display:"inline-block", width:8, height:8, borderRadius:2, background:p.color }} />
+                          <span style={{ fontSize:11, color:"rgba(255,255,255,0.6)" }}>{p.name}</span>
+                        </span>
+                        <span style={{ fontSize:12, fontWeight:700, color:"#FFFFFF" }}>
+                          €{(kpiChart==="revenue" ? Math.round(p.value*1000) : Math.round(p.value)).toLocaleString("es-ES")}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                );
               }}
-              contentStyle={{background:"#fff", border:`1px solid ${C.border}`, borderRadius:8, fontSize:12}}
-              labelStyle={{color:C.accent, fontWeight:700}}
             />
-            <Legend wrapperStyle={{fontSize:11, color:C.textMid, paddingTop:8}}/>
-            <Bar dataKey="Ppto"     name={t("ppto_abrev")} fill="#2E9C5588" radius={[3,3,0,0]}/>
-            <Bar dataKey="Real"     name={t("real_label")} fill="#1A7A3C"   radius={[3,3,0,0]}/>
-            <Bar dataKey="Forecast" name="Forecast"         fill="#B8860B88" radius={[3,3,0,0]}/>
+            <Bar dataKey="Ppto"     name={t("ppto_abrev")} fill="#64748B" fillOpacity={0.45} radius={[4,4,0,0]}/>
+            <Bar dataKey="Real"     name={t("real_label")} fill="url(#gradReal)"     radius={[4,4,0,0]}/>
+            <Bar dataKey="Forecast" name="Forecast"         fill="url(#gradForecast)" radius={[4,4,0,0]}/>
           </BarChart>
         </ResponsiveContainer>
       </Card>
