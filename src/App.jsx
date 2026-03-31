@@ -2492,14 +2492,35 @@ function PickupView({ datos }) {
           {cancelTotal === 0 ? (
             <p style={{ color:C.green, fontSize:13, textAlign:"center", padding:"12px 0" }}>✅ {t("sin_cancelaciones")}</p>
           ) : (
-            <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
-              <p style={{ fontSize:11, fontWeight:700, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:4 }}>{t("por_mes_afectado")}</p>
-              {Object.entries(cancelPorMes).sort((a,b)=>a[0]-b[0]).map(([mi, n]) => (
-                <div key={mi} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"6px 10px", background:C.redLight, borderRadius:6 }}>
-                  <span style={{ fontSize:12, color:C.text, fontWeight:500 }}>{MESES_FULL_PU[parseInt(mi)]}</span>
-                  <span style={{ fontSize:13, fontWeight:700, color:C.red }}>{n} {t("cancel_abrev")}</span>
-                </div>
-              ))}
+            <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
+              {cancelacionesAyer.map((e, i) => {
+                const fmtFecha = (iso) => {
+                  if (!iso) return "—";
+                  const [y,m,d] = String(iso).slice(0,10).split("-");
+                  const dt = new Date(Number(y), Number(m)-1, Number(d));
+                  const dias = t("dias_abrev");
+                  const meses = t("meses_corto");
+                  return `${dias[dt.getDay()]} ${Number(d)} ${meses[Number(m)-1]} ${y}`;
+                };
+                const canal = normCanal(e.canal) || "—";
+                const adr = e.precio_total && e.noches > 0
+                  ? Math.round(e.precio_total / e.noches)
+                  : e.precio_total
+                  ? Math.round(e.precio_total)
+                  : null;
+                const canalColor = CANAL_COLORS[canal] || C.textMid;
+                return (
+                  <div key={i} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"8px 10px", background:C.redLight, borderRadius:6, gap:8 }}>
+                    <div style={{ display:"flex", flexDirection:"column", gap:2 }}>
+                      <span style={{ fontSize:12, fontWeight:700, color:C.text }}>{fmtFecha(e.fecha_llegada)}</span>
+                      <span style={{ fontSize:10, fontWeight:700, color:canalColor }}>{canal}</span>
+                    </div>
+                    <div style={{ textAlign:"right" }}>
+                      {adr !== null && <span style={{ fontSize:13, fontWeight:800, color:C.red }}>€{adr.toLocaleString("es-ES")}<span style={{ fontSize:9, fontWeight:400, color:C.textLight }}> /noche</span></span>}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
         </Card>
