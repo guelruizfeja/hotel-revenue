@@ -2208,6 +2208,11 @@ function PickupView({ datos }) {
 
   const reservasAyer = pickupEntries.filter(e => String(e.fecha_pickup||"").slice(0,10) === ayerStr);
 
+  const normCanal = c => {
+    const aliases = { "Directo Web": "Directo", "Teléfono": "Directo" };
+    return aliases[c] || c || "Directo";
+  };
+
   const ayerPorMes = {};
   const ayerPorCanal = {};
   let ayerTotal = 0;
@@ -2216,14 +2221,14 @@ function PickupView({ datos }) {
     const mes = parseInt(fl.slice(5,7)) - 1;
     const nr = e.num_reservas || 1;
     ayerPorMes[mes] = (ayerPorMes[mes]||0) + nr;
-    const canal = e.canal || "Directo";
+    const canal = normCanal(e.canal);
     ayerPorCanal[canal] = (ayerPorCanal[canal]||0) + nr;
     ayerTotal += nr;
   });
 
   const CANAL_COLORS = {
-    "Booking.com": "#0052CC", "Expedia": "#FF6B00", "Directo Web": "#111111",
-    "Directo": "#111111", "Teléfono": "#059669", "Agencia": "#7C3AED"
+    "Booking.com": "#0052CC", "Expedia": "#FF6B00",
+    "Directo": "#555555", "Agencia": "#7C3AED"
   };
 
   // ── Cancelaciones de ayer ──
@@ -2244,7 +2249,7 @@ function PickupView({ datos }) {
   // Por canal
   const nochesPorCanal = {};
   conNoches.forEach(e => {
-    const c = e.canal || "Directo";
+    const c = normCanal(e.canal);
     if (!nochesPorCanal[c]) nochesPorCanal[c] = { total:0, count:0 };
     nochesPorCanal[c].total  += e.noches||0;
     nochesPorCanal[c].count  += 1;
@@ -2261,7 +2266,7 @@ function PickupView({ datos }) {
   // Por canal
   const precioPorCanal = {};
   conPrecio.forEach(e => {
-    const c = e.canal || "Directo";
+    const c = normCanal(e.canal);
     if (!precioPorCanal[c]) precioPorCanal[c] = { total:0, count:0 };
     precioPorCanal[c].total += e.precio_total||0;
     precioPorCanal[c].count += 1;
