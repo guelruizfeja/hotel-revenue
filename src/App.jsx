@@ -2488,19 +2488,6 @@ function PickupView({ datos }) {
               <p style={{ fontSize:26, fontWeight:800, color:cancelTotal>0?C.red:C.green, fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1 }}>{cancelTotal}</p>
               <p style={{ fontSize:9, fontWeight:600, textTransform:"uppercase", letterSpacing:0.8, marginTop:3, color:cancelTotal>0?C.red:C.green }}>{t("cancelaciones")}</p>
             </div>
-            {cancelTotal > 0 && (() => {
-              const totalADR = cancelacionesAyer.reduce((acc, e) => {
-                const adr = e.precio_total && e.noches > 0 ? e.precio_total / e.noches : e.precio_total || 0;
-                return acc + adr;
-              }, 0);
-              const mediaADR = Math.round(totalADR / cancelTotal);
-              return (
-                <div style={{ flex:1, background:C.redLight, border:"1px solid #D32F2F44", borderRadius:8, padding:"10px 14px", textAlign:"center" }}>
-                  <p style={{ fontSize:26, fontWeight:800, color:C.red, fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1 }}>€{mediaADR.toLocaleString("es-ES")}</p>
-                  <p style={{ fontSize:9, fontWeight:600, textTransform:"uppercase", letterSpacing:0.8, marginTop:3, color:C.red }}>ADR medio</p>
-                </div>
-              );
-            })()}
           </div>
           {/* Tabla */}
           {cancelTotal === 0 ? (
