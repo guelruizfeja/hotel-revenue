@@ -3139,7 +3139,7 @@ function BudgetView({ datos, anio: anioProp }) {
                 const mesNombre = payload[0]?.payload?.mesFull || payload[0]?.payload?.mes || "";
                 return (
                   <div style={{ background:"#0A2540", borderRadius:10, padding:"12px 16px", boxShadow:"0 8px 24px rgba(0,0,0,0.22)", minWidth:164 }}>
-                    <p style={{ margin:"0 0 10px", fontSize:10, fontWeight:700, color:"#D4A017", textTransform:"uppercase", letterSpacing:"1.5px" }}>{mesNombre}</p>
+                    <p style={{ margin:"0 0 10px", fontSize:10, fontWeight:700, color:"#FFFFFF", textTransform:"uppercase", letterSpacing:"1.5px" }}>{mesNombre}</p>
                     {payload.map((p, i) => p.value != null && (
                       <div key={i} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", gap:20, marginBottom:4 }}>
                         <span style={{ display:"flex", alignItems:"center", gap:6 }}>
