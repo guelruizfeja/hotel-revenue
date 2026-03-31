@@ -407,10 +407,9 @@ function KpiModal({ kpi, datos, mes, anio, onClose }) {
         occ:    habDis>0 ? Math.round(d.hab_ocupadas/habDis*100) : 0,
         adr:    d.hab_ocupadas>0 ? Math.round(d.revenue_hab/d.hab_ocupadas) : 0,
         revpar: habDis>0 ? Math.round(d.revenue_hab/habDis) : 0,
-        trevpar:habDis>0 ? Math.round((d.revenue_hab+(d.revenue_fnb||0)+(d.revenue_otros||0))/habDis) : 0,
+        trevpar:habDis>0 ? Math.round((d.revenue_hab+(d.revenue_fnb||0))/habDis) : 0,
         revHab: Math.round(d.revenue_hab||0),
         revFnb: Math.round(d.revenue_fnb||0),
-        revOtros: Math.round(d.revenue_otros||0),
         revTotal: Math.round(d.revenue_total||0),
       };
     });
@@ -422,7 +421,7 @@ function KpiModal({ kpi, datos, mes, anio, onClose }) {
       occ: habDis>0?Math.round(d.hab_ocupadas/habDis*100):0,
       adr: d.hab_ocupadas>0?Math.round(d.revenue_hab/d.hab_ocupadas):0,
       revpar: habDis>0?Math.round(d.revenue_hab/habDis):0,
-      trevpar: habDis>0?Math.round((d.revenue_hab+(d.revenue_fnb||0)+(d.revenue_otros||0))/habDis):0,
+      trevpar: habDis>0?Math.round((d.revenue_hab+(d.revenue_fnb||0))/habDis):0,
       revTotal: Math.round(d.revenue_total||0),
     };
   };
@@ -496,15 +495,13 @@ function KpiModal({ kpi, datos, mes, anio, onClose }) {
         {(kpi === "TRevPAR" || kpi === "Revenue Total") ? (() => {
           const totalHabS  = diasMes.reduce((a,d)=>a+d.revHab,0);
           const totalFnbS  = diasMes.reduce((a,d)=>a+d.revFnb,0);
-          const totalOtrosS= diasMes.reduce((a,d)=>a+d.revOtros,0);
           return (
-            <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:12, marginBottom:20 }}>
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(2,1fr)", gap:12, marginBottom:20 }}>
               {[
-                { label:"Total del mes", value:`€${Math.round(totalHabS+totalFnbS+totalOtrosS).toLocaleString("es-ES")}` },
+                { label:"Total del mes", value:`€${Math.round(totalHabS+totalFnbS).toLocaleString("es-ES")}` },
                 { label:`Vs ${MESES_FULL[mesPrevIdx]}`, value: varComp!==null ? `${parseFloat(varComp)>=0?"+":""}${varComp}%` : "Sin datos", up: varComp!==null?parseFloat(varComp)>=0:true },
                 { label:"Habitaciones", value:`€${Math.round(totalHabS).toLocaleString("es-ES")}`, color:C.accent },
                 { label:"F&B", value:`€${Math.round(totalFnbS).toLocaleString("es-ES")}`, color:"#E85D04" },
-                { label:"Otros", value:`€${Math.round(totalOtrosS).toLocaleString("es-ES")}`, color:C.green },
               ].map((k,i)=>(
                 <div key={i} style={{ background:`${C.accent}0f`, borderRadius:8, padding:"16px", borderLeft:`3px solid ${k.color||C.accent}`, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", textAlign:"center" }}>
                   <p style={{ fontSize:10, color:C.textMid, textTransform:"uppercase", letterSpacing:1.5, marginBottom:6, fontWeight:600 }}>{k.label}</p>
@@ -534,14 +531,12 @@ function KpiModal({ kpi, datos, mes, anio, onClose }) {
           {kpi==="TRevPAR" ? (() => {
             const totalHab  = diasMes.reduce((a,d)=>a+d.revHab,0);
             const totalFnb  = diasMes.reduce((a,d)=>a+d.revFnb,0);
-            const totalOtros= diasMes.reduce((a,d)=>a+d.revOtros,0);
-            const total     = totalHab+totalFnb+totalOtros;
+            const total     = totalHab+totalFnb;
             const pieData   = [
-              { name:"Habitaciones", value:totalHab,   pct: total>0?Math.round(totalHab/total*100):0 },
-              { name:"F&B",          value:totalFnb,   pct: total>0?Math.round(totalFnb/total*100):0 },
-              { name:"Otros",        value:totalOtros, pct: total>0?Math.round(totalOtros/total*100):0 },
+              { name:"Habitaciones", value:totalHab, pct: total>0?Math.round(totalHab/total*100):0 },
+              { name:"F&B",          value:totalFnb, pct: total>0?Math.round(totalFnb/total*100):0 },
             ].filter(d=>d.value>0);
-            const PIE_COLORS = [C.accent, "#E85D04", C.green];
+            const PIE_COLORS = [C.accent, "#E85D04"];
             return (
               <div style={{ display:"flex", alignItems:"center", gap:24 }}>
                 <PieChart width={200} height={200}>
@@ -576,9 +571,8 @@ function KpiModal({ kpi, datos, mes, anio, onClose }) {
                 mes: MESES_SHORT[mIdx],
                 revHab:   Math.round(dias.reduce((a,d)=>a+(d.revenue_hab||0),0)),
                 revFnb:   Math.round(dias.reduce((a,d)=>a+(d.revenue_fnb||0),0)),
-                revOtros: Math.round(dias.reduce((a,d)=>a+(d.revenue_otros||0),0)),
               };
-            }).filter(d=>d.revHab+d.revFnb+d.revOtros>0);
+            }).filter(d=>d.revHab+d.revFnb>0);
             return (
             <ResponsiveContainer width="100%" height={220}>
               <BarChart data={revPorMes} barSize={18} barCategoryGap="32%">
@@ -591,18 +585,13 @@ function KpiModal({ kpi, datos, mes, anio, onClose }) {
                     <stop offset="0%" stopColor="#B8860B" stopOpacity={0.9}/>
                     <stop offset="100%" stopColor="#B8860B" stopOpacity={0.55}/>
                   </linearGradient>
-                  <linearGradient id="gradOtros" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#64748B" stopOpacity={0.7}/>
-                    <stop offset="100%" stopColor="#64748B" stopOpacity={0.35}/>
-                  </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke={C.border} vertical={false}/>
                 <XAxis dataKey="mes" tick={{ fill: C.textLight, fontSize: 11 }} axisLine={false} tickLine={false}/>
                 <YAxis tick={{ fill: C.textLight, fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={v=>v>=1000?`${(v/1000).toFixed(0)}k€`:v} width={48}/>
                 <Tooltip content={<CustomTooltip/>} cursor={{ fill: "rgba(10,37,64,0.04)" }}/>
-                <Bar dataKey="revHab"   name="Hab."   stackId="a" fill="url(#gradHab)"   radius={[0,0,0,0]}/>
-                <Bar dataKey="revFnb"   name="F&B"    stackId="a" fill="url(#gradFnb)"   radius={[0,0,0,0]}/>
-                <Bar dataKey="revOtros" name="Otros"  stackId="a" fill="url(#gradOtros)" radius={[4,4,0,0]}/>
+                <Bar dataKey="revHab" name="Hab."   stackId="a" fill="url(#gradHab)" radius={[0,0,0,0]}/>
+                <Bar dataKey="revFnb" name="F&B"    stackId="a" fill="url(#gradFnb)" radius={[4,4,0,0]}/>
                 <Legend wrapperStyle={{ fontSize: 11, color: C.textMid, paddingTop: 8 }}/>
               </BarChart>
             </ResponsiveContainer>
@@ -819,7 +808,6 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
         const revenue_hab = parseFloat(row[3]) || null;
         const revenue_total = parseFloat(row[4]) || null;
         const revenue_fnb = parseFloat(row[5]) || null;
-        const revenue_otros = parseFloat(row[6]) || null;
         if (!hab_ocupadas && !revenue_hab) continue;
 
         let fechaISO;
@@ -834,12 +822,12 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
 
         const adr = hab_ocupadas > 0 ? revenue_hab / hab_ocupadas : null;
         const revpar = hab_disponibles > 0 ? revenue_hab / hab_disponibles : null;
-        const trevpar = hab_disponibles > 0 ? ((revenue_hab||0)+(revenue_fnb||0)+(revenue_otros||0)) / hab_disponibles : null;
+        const trevpar = hab_disponibles > 0 ? ((revenue_hab||0)+(revenue_fnb||0)) / hab_disponibles : null;
 
         produccionRows.push({
           hotel_id: session.user.id, fecha: fechaISO,
           hab_ocupadas, hab_disponibles, revenue_hab, revenue_total,
-          revenue_fnb, revenue_otros,
+          revenue_fnb,
           adr: adr ? Math.round(adr*100)/100 : null,
           revpar: revpar ? Math.round(revpar*100)/100 : null,
           trevpar: trevpar ? Math.round(trevpar*100)/100 : null,
@@ -1310,13 +1298,12 @@ async function generarReportePDF(datos, mes, anio, hotelNombre) {
     const habDis = d.reduce((a,r)=>a+(r.hab_disponibles||0),0);
     const revH   = d.reduce((a,r)=>a+(r.revenue_hab||0),0);
     const revFnb = d.reduce((a,r)=>a+(r.revenue_fnb||0),0);
-    const revOt  = d.reduce((a,r)=>a+(r.revenue_otros||0),0);
     const revTot = d.reduce((a,r)=>a+(r.revenue_total||0),0);
-    return { d, habOcu, habDis, revH, revFnb, revOt, revTot,
+    return { d, habOcu, habDis, revH, revFnb, revTot,
       occ:    habDis>0 ? (habOcu/habDis*100) : 0,
       adr:    habOcu>0 ? revH/habOcu : 0,
       revpar: habDis>0 ? revH/habDis : 0,
-      trevpar:habDis>0 ? (revH+revFnb+revOt)/habDis : 0,
+      trevpar:habDis>0 ? (revH+revFnb)/habDis : 0,
     };
   };
 
@@ -1625,7 +1612,6 @@ async function generarReportePDF(datos, mes, anio, hotelNombre) {
   const revComponents = [
     { label:"Revenue Habitaciones", value:mesAct.revH, color:azul },
     { label:"Revenue F&B", value:mesAct.revFnb, color:[0,159,77] },
-    { label:"Revenue Otros", value:mesAct.revOt, color:[232,93,4] },
   ].filter(r=>r.value>0);
 
   if(revComponents.length>0) {
@@ -1717,12 +1703,10 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
   const totalRevHab   = datosMes.reduce((a, d) => a + (d.revenue_hab || 0), 0);
   const totalRevTotal = datosMes.reduce((a, d) => a + (d.revenue_total || 0), 0);
   const totalRevFnb   = datosMes.reduce((a, d) => a + (d.revenue_fnb || 0), 0);
-  const totalRevOtros = datosMes.reduce((a, d) => a + (d.revenue_otros || 0), 0);
-
   const occ     = totalHabDisponibles > 0 ? (totalHabOcupadas / totalHabDisponibles * 100).toFixed(1) : 0;
   const adr     = totalHabOcupadas > 0 ? (totalRevHab / totalHabOcupadas).toFixed(0) : 0;
   const revpar  = totalHabDisponibles > 0 ? (totalRevHab / totalHabDisponibles).toFixed(0) : 0;
-  const trevpar = totalHabDisponibles > 0 ? ((totalRevHab + totalRevFnb + totalRevOtros) / totalHabDisponibles).toFixed(0) : 0;
+  const trevpar = totalHabDisponibles > 0 ? ((totalRevHab + totalRevFnb) / totalHabDisponibles).toFixed(0) : 0;
 
   const porMes = Array.from({ length: 12 }, (_, i) => {
     const totalMeses = mes - 11 + i;
@@ -1736,7 +1720,6 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
     const habDis   = d.reduce((a, r) => a + (r.hab_disponibles || 0), 0);
     const revH     = d.reduce((a, r) => a + (r.revenue_hab || 0), 0);
     const revFnb   = d.reduce((a, r) => a + (r.revenue_fnb || 0), 0);
-    const revOtros = d.reduce((a, r) => a + (r.revenue_otros || 0), 0);
     return {
       mes: t("meses_corto")[mIdx],
       mesNombre: t("meses_full")[mIdx],
@@ -1745,7 +1728,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
       occ:     habDis > 0 ? Math.round(habOcu / habDis * 100) : 0,
       adr:     habOcu > 0 ? Math.round(revH / habOcu) : 0,
       revpar:  habDis > 0 ? Math.round(revH / habDis) : 0,
-      trevpar: habDis > 0 ? Math.round((revH + revFnb + revOtros) / habDis) : 0,
+      trevpar: habDis > 0 ? Math.round((revH + revFnb) / habDis) : 0,
       revHab:  Math.round(revH),
       revTotal: d.reduce((a,r) => a+(r.revenue_total||0), 0),
     };
@@ -1774,11 +1757,10 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
   const prevRevHab  = datosPrev.reduce((a, d) => a + (d.revenue_hab || 0), 0);
   const prevRevTot  = datosPrev.reduce((a, d) => a + (d.revenue_total || 0), 0);
   const prevRevFnb  = datosPrev.reduce((a, d) => a + (d.revenue_fnb || 0), 0);
-  const prevRevOtros= datosPrev.reduce((a, d) => a + (d.revenue_otros || 0), 0);
   const prevOcc     = prevHabDis > 0 ? (prevHabOcu / prevHabDis * 100) : null;
   const prevAdr     = prevHabOcu > 0 ? (prevRevHab / prevHabOcu) : null;
   const prevRevpar  = prevHabDis > 0 ? (prevRevHab / prevHabDis) : null;
-  const prevTrevpar = prevHabDis > 0 ? ((prevRevHab + prevRevFnb + prevRevOtros) / prevHabDis) : null;
+  const prevTrevpar = prevHabDis > 0 ? ((prevRevHab + prevRevFnb) / prevHabDis) : null;
 
   const diff = (curr, prev, isEur = false, decimals = 1) => {
     if (prev == null || prev === 0) return { change: t("sin_datos_prev"), up: true, sub: "" };
