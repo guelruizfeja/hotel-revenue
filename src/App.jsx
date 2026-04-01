@@ -93,7 +93,7 @@ const TRANSLATIONS = {
     estado_confirmado:"Confirmado", estado_tentativo:"Tentativo",
     estado_cotizacion:"En cotización", estado_cancelado:"Cancelado",
     form_nombre:"Nombre del evento *", form_categoria:"Categoría", form_estado:"Estado",
-    form_fecha_entrada:"Fecha entrada *", form_fecha_salida:"Fecha salida *",
+    form_fecha_entrada:"Fecha entrada *", form_fecha_salida:"Fecha salida *", form_fecha_confirmacion:"Fecha confirmación",
     form_habitaciones:"Habitaciones", form_adr:"ADR Grupo", form_fnb:"Revenue F&B",
     form_sala:"Revenue Sala", form_notas:"Notas", form_motivo:"Motivo de pérdida",
     form_guardar:"Guardar", form_cancelar:"Cancelar", form_eliminar:"Eliminar", guardando_btn:"Guardando...",
@@ -195,7 +195,7 @@ const TRANSLATIONS = {
     estado_confirmado:"Confirmed", estado_tentativo:"Tentative",
     estado_cotizacion:"In quotation", estado_cancelado:"Cancelled",
     form_nombre:"Event name *", form_categoria:"Category", form_estado:"Status",
-    form_fecha_entrada:"Check-in date *", form_fecha_salida:"Check-out date *",
+    form_fecha_entrada:"Check-in date *", form_fecha_salida:"Check-out date *", form_fecha_confirmacion:"Confirmation date",
     form_habitaciones:"Rooms", form_adr:"Group ADR", form_fnb:"F&B Revenue",
     form_sala:"Meeting Room Revenue", form_notas:"Notes", form_motivo:"Reason for loss",
     form_guardar:"Save", form_cancelar:"Cancel", form_eliminar:"Delete", guardando_btn:"Saving...",
@@ -294,7 +294,7 @@ const TRANSLATIONS = {
     estado_confirmado:"Confirmé", estado_tentativo:"Tentative",
     estado_cotizacion:"En devis", estado_cancelado:"Annulé",
     form_nombre:"Nom de l'événement *", form_categoria:"Catégorie", form_estado:"Statut",
-    form_fecha_entrada:"Date d'arrivée *", form_fecha_salida:"Date de départ *",
+    form_fecha_entrada:"Date d'arrivée *", form_fecha_salida:"Date de départ *", form_fecha_confirmacion:"Date de confirmation",
     form_habitaciones:"Chambres", form_adr:"ADR Groupe", form_fnb:"Revenu F&B",
     form_sala:"Revenu Salle", form_notas:"Notes", form_motivo:"Motif de perte",
     form_guardar:"Enregistrer", form_cancelar:"Annuler", form_eliminar:"Supprimer", guardando_btn:"Enregistrement...",
@@ -3282,7 +3282,7 @@ function GruposView({ datos, onRecargar }) {
   const nextMes = () => { if (mes === 11) { setMes(0); setAnio(a => a + 1); } else setMes(m => m + 1); };
 
   // ── Formulario estado ──
-  const FORM_VACIO = { nombre:"", categoria:"corporativo", estado:"cotizacion", fecha_inicio:"", fecha_fin:"", habitaciones:"", pax:"", adr_grupo:"", revenue_fnb:"", revenue_sala:"", notas:"", motivo_perdida:"" };
+  const FORM_VACIO = { nombre:"", categoria:"corporativo", estado:"cotizacion", fecha_inicio:"", fecha_fin:"", fecha_confirmacion:"", habitaciones:"", pax:"", adr_grupo:"", revenue_fnb:"", revenue_sala:"", notas:"", motivo_perdida:"" };
   const [form, setForm] = useState(FORM_VACIO);
 
   const abrirNuevo = (fecha = "") => {
@@ -3293,7 +3293,7 @@ function GruposView({ datos, onRecargar }) {
   const abrirEditar = (g) => {
     setForm({
       nombre: g.nombre||"", categoria: g.categoria||"corporativo", estado: g.estado||"cotizacion",
-      fecha_inicio: g.fecha_inicio||"", fecha_fin: g.fecha_fin||"",
+      fecha_inicio: g.fecha_inicio||"", fecha_fin: g.fecha_fin||"", fecha_confirmacion: g.fecha_confirmacion||"",
       habitaciones: g.habitaciones||"", pax: g.pax||"", adr_grupo: g.adr_grupo||"",
       revenue_fnb: g.revenue_fnb||"", revenue_sala: g.revenue_sala||"",
       notas: g.notas||"", motivo_perdida: g.motivo_perdida||"",
@@ -3316,6 +3316,7 @@ function GruposView({ datos, onRecargar }) {
       adr_grupo: parseFloat(form.adr_grupo)||0,
       revenue_fnb: parseFloat(form.revenue_fnb)||0,
       revenue_sala: parseFloat(form.revenue_sala)||0,
+      fecha_confirmacion: form.fecha_confirmacion||null,
       notas: form.notas||null,
       motivo_perdida: form.motivo_perdida||null,
     };
@@ -3724,6 +3725,11 @@ function GruposView({ datos, onRecargar }) {
                   <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>{t("form_fecha_salida")}</p>
                   <input style={inp} type="date" value={form.fecha_fin} onChange={e=>setForm(f=>({...f,fecha_fin:e.target.value}))}/>
                 </div>
+              </div>
+
+              <div>
+                <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>{t("form_fecha_confirmacion")}</p>
+                <input style={inp} type="date" value={form.fecha_confirmacion} onChange={e=>setForm(f=>({...f,fecha_confirmacion:e.target.value}))}/>
               </div>
 
               {form.fecha_inicio && form.fecha_fin && (() => {
@@ -4269,7 +4275,7 @@ export default function App() {
         const fecha = d.toISOString().slice(0, 10);
         pickupGrupos.push({
           fecha_llegada:  fecha,
-          fecha_pickup:   hoyIso,
+          fecha_pickup:   g.fecha_confirmacion || hoyIso,
           canal:          "M&E",
           num_reservas:   g.habitaciones || 0,
           fecha_salida:   g.fecha_fin,
