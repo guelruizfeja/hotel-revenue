@@ -127,9 +127,20 @@
   /* Hero visual — right column */
   .hero-visual { position: relative; }
   .hero-visual-card {
-    background: var(--navy);
-    border-radius: 16px; padding: 20px;
+    border-radius: 16px; overflow: hidden; line-height: 0;
     box-shadow: 0 40px 80px rgba(10,37,64,0.22), 0 0 0 1px rgba(255,255,255,0.04);
+    position: relative;
+  }
+  .hero-visual-card img {
+    width: 100%; display: block;
+    filter: blur(4px);
+    transform: scale(1.04);
+    transform-origin: center;
+  }
+  .hero-visual-card-overlay {
+    position: absolute; inset: 0;
+    background: linear-gradient(to bottom, rgba(10,37,64,0.05), rgba(10,37,64,0.2));
+    pointer-events: none;
   }
   .hero-kpis { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-bottom: 12px; }
   .hero-kpi {
@@ -564,55 +575,8 @@
   </div>
   <div class="hero-visual">
     <div class="hero-visual-card">
-      <div class="hero-kpis">
-        <div class="hero-kpi">
-          <div class="hero-kpi-label">Ocupación</div>
-          <div class="hero-kpi-value">74.2%</div>
-          <div class="hero-kpi-delta">+5.4pp vs LY</div>
-        </div>
-        <div class="hero-kpi">
-          <div class="hero-kpi-label">ADR</div>
-          <div class="hero-kpi-value">€118</div>
-          <div class="hero-kpi-delta">+€9 vs LY</div>
-        </div>
-        <div class="hero-kpi">
-          <div class="hero-kpi-label">RevPAR</div>
-          <div class="hero-kpi-value">€87</div>
-          <div class="hero-kpi-delta">+12.3%</div>
-        </div>
-      </div>
-      <div class="hero-chart-row">
-        <div class="hero-chart-box">
-          <div class="hero-chart-label">ADR — Últimos 8 meses</div>
-          <div class="hero-mini-bars">
-            <div class="hero-mini-bar" style="height:45%"></div>
-            <div class="hero-mini-bar hi" style="height:58%"></div>
-            <div class="hero-mini-bar hi" style="height:65%"></div>
-            <div class="hero-mini-bar peak" style="height:74%"></div>
-            <div class="hero-mini-bar peak" style="height:88%"></div>
-            <div class="hero-mini-bar peak" style="height:80%"></div>
-            <div class="hero-mini-bar peak" style="height:94%"></div>
-            <div class="hero-mini-bar peak" style="height:98%"></div>
-          </div>
-        </div>
-        <div class="hero-chart-box">
-          <div class="hero-chart-label">Ocupación mensual</div>
-          <div class="hero-mini-heatmap">
-            <div class="hero-hm-cell" style="background:rgba(0,75,135,0.2)"></div>
-            <div class="hero-hm-cell" style="background:rgba(0,75,135,0.35)"></div>
-            <div class="hero-hm-cell" style="background:rgba(0,75,135,0.5)"></div>
-            <div class="hero-hm-cell" style="background:rgba(0,75,135,0.65)"></div>
-            <div class="hero-hm-cell" style="background:rgba(0,75,135,0.75)"></div>
-            <div class="hero-hm-cell" style="background:rgba(0,75,135,0.9)"></div>
-            <div class="hero-hm-cell" style="background:rgba(0,75,135,1)"></div>
-            <div class="hero-hm-cell" style="background:rgba(0,75,135,0.95)"></div>
-            <div class="hero-hm-cell" style="background:rgba(0,75,135,0.7)"></div>
-            <div class="hero-hm-cell" style="background:rgba(0,75,135,0.5)"></div>
-            <div class="hero-hm-cell" style="background:rgba(0,75,135,0.28)"></div>
-            <div class="hero-hm-cell" style="background:rgba(0,75,135,0.38)"></div>
-          </div>
-        </div>
-      </div>
+      <img src="hero-preview.png" alt="FastRevenue Dashboard">
+      <div class="hero-visual-card-overlay"></div>
     </div>
     <div class="hero-float-badge">
       <div class="hero-float-badge-dot"></div>
