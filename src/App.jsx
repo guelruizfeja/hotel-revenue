@@ -1978,6 +1978,10 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
                     </div>
                   );})}
                 </div>
+                {/* Leyenda */}
+                <p style={{ fontSize:10, color:C.textLight, marginTop:8, display:"flex", alignItems:"center", gap:4 }}>
+                  <span style={{ fontSize:12 }}>⚡</span> Meses con mayor captación en el último día importado &nbsp;·&nbsp; <span style={{ fontSize:10, color:"#7A9CC8", fontWeight:700 }}>OTB</span> Dato estimado por reservas en cartera
+                </p>
             </Card>
 
             {/* ── MODAL HEATMAP DIARIO ── */}
