@@ -1086,12 +1086,21 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
           const lyRevHab  = datosMesLY.reduce((a, d) => a + (d.revenue_hab   || 0), 0);
           const lyRevTot  = datosMesLY.reduce((a, d) => a + (d.revenue_total || 0), 0);
 
+          // Generar PDF en cliente y enviarlo como adjunto
+          let pdfBase64 = null;
+          try {
+            const datosParaPDF = { produccion: produccionRows, presupuesto: presupuestoRows };
+            pdfBase64 = await generarReportePDF(datosParaPDF, mesActual - 1, anioActual, hotelNombreProp || 'Mi Hotel', true);
+          } catch (pdfErr) { console.error('PDF gen error:', pdfErr); }
+
           fetch('/api/monthly-report', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               email: session.user.email,
               hotelNombre: hotelNombreProp || null,
+              pdfBase64,
+              pdfNombre: `Informe_${MESES[mesActual - 1]}_${anioActual}.pdf`,
               kpis: {
                 mes: mesActual,
                 anio: anioActual,
@@ -1288,7 +1297,7 @@ function MonthDetailView({ datos, mes, anio, onBack }) {
 // ─── PDF REPORT ──────────────────────────────────────────────────
 
 
-async function generarReportePDF(datos, mes, anio, hotelNombre) {
+async function generarReportePDF(datos, mes, anio, hotelNombre, returnData = false) {
   const MESES_FULL = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
   const MESES_C    = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
   const { produccion, presupuesto } = datos;
@@ -1647,6 +1656,9 @@ async function generarReportePDF(datos, mes, anio, hotelNombre) {
     doc.text(`${hotelNombre||"FastRev"} · Informe ${MESES_FULL[mes]} ${anio} · Página ${i} de ${pages}`, W/2, 292, {align:"center"});
   }
 
+  if (returnData) {
+    return doc.output('datauristring').split(',')[1];
+  }
   doc.save(`Informe_${MESES_FULL[mes]}_${anio}.pdf`);
 }
 
@@ -1847,7 +1859,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
           // Mes futuro: sumar reservas OTB del pickup
           const mesStr = `${anio}-${_pad(mi+1)}`;
           const primerDia = `${mesStr}-01`;
-          if (primerDia <= _hoyStr) return { label, mi, occ: null, occLY, esOtb: false };
+          if (primerDia < _hoyStr) return { label, mi, occ: null, occLY, esOtb: false };
           const diasMes = new Date(anio, mi+1, 0).getDate();
           // Calcular habH desde produccion si no viene del hotel
           const habFromProd = produccion.length > 0

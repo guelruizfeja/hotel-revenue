@@ -5,98 +5,22 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 const fmt    = (n, dec = 1) => n != null ? Number(n).toFixed(dec) : '—';
 const fmtEur = (n) => n != null ? `€${Math.round(n).toLocaleString('es-ES')}` : '—';
 
-const pctChg = (curr, prev) => {
-  const c = Number(curr), p = Number(prev);
-  if (curr == null || prev == null || p === 0) return null;
-  return ((c - p) / Math.abs(p)) * 100;
-};
-const ppChg  = (curr, prev) => (curr == null || prev == null) ? null : Number(curr) - Number(prev);
-const absChg = (curr, prev) => (curr == null || prev == null) ? null : Number(curr) - Number(prev);
-
-function badge(val, { isPP = false, isAbs = false, prefix = '' } = {}) {
-  if (val == null) return '';
-  const pos   = val >= 0;
-  const color = pos ? '#059669' : '#DC2626';
-  let label;
-  if (isPP) {
-    label = `${pos ? '+' : ''}${val.toFixed(1)} pp`;
-  } else if (isAbs) {
-    const a = Math.abs(val);
-    label = `${pos ? '+' : '-'}${prefix}${a < 100 ? a.toFixed(1) : Math.round(a).toLocaleString('es-ES')}`;
-  } else {
-    label = `${pos ? '+' : ''}${val.toFixed(1)}%`;
-  }
-  return `<p style="margin:4px 0 0;font-size:13px;color:${color};font-weight:700;line-height:1;">${label}</p>`;
-}
-
-function buildBudgetBlock(revenue_total, presupuesto) {
-  if (!presupuesto) {
-    return `<p style="margin:0;font-size:13px;color:#64748B;">Revenue total: <strong style="color:#0A2540;">${fmtEur(revenue_total)}</strong></p>`;
-  }
-  const pct      = Math.min(Math.round((revenue_total / presupuesto) * 100), 200);
-  const pctBar   = Math.min(pct, 100);
-  const restante = revenue_total >= presupuesto ? 0 : Math.round(presupuesto - revenue_total);
-  const color    = pct >= 100 ? '#059669' : pct >= 80 ? '#C49A0A' : '#DC2626';
-
-  return `<table width="100%" cellpadding="0" cellspacing="0">
-  <tr>
-    <td style="padding:6px 0 4px;">
-      <table width="100%" cellpadding="0" cellspacing="0">
-        <tr>
-          <td style="text-align:left;">
-            <p style="margin:0 0 2px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#64748B;">Revenue Total Mes</p>
-            <p style="margin:0;font-size:22px;font-weight:700;color:#0A2540;">${fmtEur(revenue_total)}</p>
-          </td>
-          <td style="text-align:center;">
-            <p style="margin:0 0 2px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#64748B;">Cumplimiento</p>
-            <p style="margin:0;font-size:22px;font-weight:700;color:${color};">${pct}%</p>
-          </td>
-          <td style="text-align:right;">
-            <p style="margin:0 0 2px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#64748B;">Presupuesto</p>
-            <p style="margin:0;font-size:22px;font-weight:700;color:#0A2540;">${fmtEur(presupuesto)}</p>
-          </td>
-        </tr>
-      </table>
-    </td>
-  </tr>
-  <tr>
-    <td style="padding:10px 0 6px;">
-      <table width="100%" cellpadding="0" cellspacing="0" style="border-radius:6px;overflow:hidden;background:#E2E8F0;">
-        <tr>
-          <td style="width:${pctBar}%;background:${color};height:14px;"></td>
-          <td style="background:#E2E8F0;height:14px;"></td>
-        </tr>
-      </table>
-    </td>
-  </tr>
-  ${restante > 0
-    ? `<tr><td><p style="margin:0;font-size:11px;color:#94A3B8;">Faltaron <strong style="color:#0A2540;">${fmtEur(restante)}</strong> para cerrar el mes en objetivo</p></td></tr>`
-    : `<tr><td><p style="margin:0;font-size:11px;color:#059669;font-weight:700;">&#10003; Presupuesto superado</p></td></tr>`
-  }
-</table>`;
-}
-
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
 
-  const { email, hotelNombre, kpis } = req.body;
+  const { email, hotelNombre, kpis, pdfBase64, pdfNombre } = req.body;
   if (!email || !kpis) return res.status(400).json({ error: 'Faltan datos' });
   if (!/^[^\s@]{1,64}@[^\s@]+\.[^\s@]{2,}$/.test(email)) return res.status(400).json({ error: 'Email inválido' });
 
   const hotel = hotelNombre || 'FastRevenue';
-  const {
-    mes, anio, mesNombre,
-    occ, adr, revpar, trevpar,
-    revenue_hab, revenue_total,
-    hab_ocupadas, hab_disponibles,
-    presupuesto,
-    ly_occ, ly_adr, ly_revpar, ly_trevpar, ly_revenue_total,
-  } = kpis;
+  const { mes, anio, mesNombre, occ, adr, revpar, revenue_total, presupuesto } = kpis;
 
   console.log('monthly-report:', hotel, mes, anio);
 
-  let budgetBlock = '';
-  try { budgetBlock = buildBudgetBlock(revenue_total, presupuesto); } catch (e) { console.error('budgetBlock error:', e); }
+  const pct = presupuesto && revenue_total
+    ? Math.round((revenue_total / presupuesto) * 100)
+    : null;
+  const pctColor  = pct == null ? '#0A2540' : pct >= 100 ? '#059669' : pct >= 80 ? '#C49A0A' : '#DC2626';
 
   const html = `<!DOCTYPE html>
 <html lang="es">
@@ -107,13 +31,13 @@ export default async function handler(req, res) {
 </head>
 <body style="margin:0;padding:0;background:#EEF2F7;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;">
 
-<table width="100%" cellpadding="0" cellspacing="0" style="background:#EEF2F7;padding:20px 0;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#EEF2F7;padding:32px 0;">
 <tr><td align="center">
-<table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;">
+<table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;">
 
-  <!-- ══ HEADER ══ -->
-  <tr><td style="background:#0A2540;border-radius:10px 10px 0 0;padding:22px 28px 18px;text-align:center;">
-    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48" style="display:block;margin:0 auto 10px;">
+  <!-- HEADER -->
+  <tr><td style="background:#0A2540;border-radius:10px 10px 0 0;padding:28px 32px 22px;text-align:center;">
+    <svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 48 48" style="display:block;margin:0 auto 10px;">
       <rect x="4" y="28" width="8" height="14" fill="#D4A017" rx="2"/>
       <rect x="15" y="20" width="8" height="22" fill="#D4A017" rx="2"/>
       <rect x="26" y="11" width="8" height="31" fill="#D4A017" rx="2"/>
@@ -121,101 +45,55 @@ export default async function handler(req, res) {
       <text x="40" y="22" text-anchor="middle" font-size="10" font-weight="700" fill="#D4A017" font-family="Helvetica,Arial,sans-serif">$</text>
     </svg>
     <p style="margin:0 0 4px;font-size:11px;font-weight:700;color:rgba(255,255,255,0.5);letter-spacing:2px;text-transform:uppercase;">Cierre Mensual</p>
-    <p style="margin:0 0 6px;font-size:20px;font-weight:700;color:#FFFFFF;letter-spacing:1px;">${mesNombre} ${anio}</p>
+    <p style="margin:0 0 6px;font-size:22px;font-weight:700;color:#FFFFFF;letter-spacing:1px;">${mesNombre} ${anio}</p>
     <p style="margin:0;font-size:12px;color:rgba(255,255,255,0.55);">FastRevenue &nbsp;&#8212;&nbsp; <strong style="color:#FFFFFF;">${hotel}</strong></p>
-    <div style="height:2px;background:linear-gradient(90deg,transparent,#D4A017,transparent);margin-top:16px;"></div>
+    <div style="height:2px;background:linear-gradient(90deg,transparent,#D4A017,transparent);margin-top:18px;"></div>
   </td></tr>
 
-  <!-- ══ KPIs MENSUALES ══ -->
-  <tr><td style="background:#FFFFFF;border:1px solid #E2E8F0;border-top:none;padding:0;">
-    <table width="100%" cellpadding="0" cellspacing="0">
+  <!-- CUERPO -->
+  <tr><td style="background:#FFFFFF;border:1px solid #E2E8F0;border-top:none;padding:32px;">
+
+    <p style="margin:0 0 18px;font-size:15px;color:#374151;line-height:1.7;">
+      Estimado/a equipo de <strong style="color:#0A2540;">${hotel}</strong>,
+    </p>
+    <p style="margin:0 0 18px;font-size:14px;color:#374151;line-height:1.8;">
+      Adjuntamos el <strong>informe mensual de ${mesNombre} ${anio}</strong> con el análisis completo
+      de la actividad de su alojamiento: KPIs del mes, comparativa vs. año anterior, detalle diario,
+      evolución de los últimos 12 meses y más.
+    </p>
+
+    <!-- Resumen rápido de KPIs -->
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin:24px 0;background:#F8FAFC;border-radius:8px;overflow:hidden;">
       <tr>
-        <td colspan="4" style="padding:12px 16px 8px;border-bottom:1px solid #F1F5F9;">
-          <p style="margin:0;font-size:12px;font-weight:700;color:#0A2540;text-transform:uppercase;letter-spacing:0.8px;">
-            KPIs del Mes
-            <span style="font-size:11px;font-weight:400;color:#94A3B8;text-transform:none;letter-spacing:0;">(vs. Mismo Mes Año Anterior)</span>
-          </p>
+        <td style="padding:14px 16px;text-align:center;width:25%;">
+          <p style="margin:0 0 3px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#64748B;">Ocupación</p>
+          <p style="margin:0;font-size:20px;font-weight:700;color:#0A2540;">${fmt(occ)}%</p>
         </td>
-      </tr>
-      <tr>
-        <!-- OCC -->
-        <td style="padding:16px 8px 14px;text-align:center;vertical-align:top;width:25%;">
-          <p style="margin:0 0 5px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:#64748B;">Ocupación</p>
-          <p style="margin:0;font-size:26px;font-weight:700;color:#0A2540;line-height:1;">${fmt(occ)}%</p>
-          ${badge(ppChg(occ, ly_occ), { isPP: true })}
-          ${hab_ocupadas != null && hab_disponibles != null ? `<p style="margin:6px 0 0;font-size:10px;color:#94A3B8;">${Math.round(hab_ocupadas / (new Date(anio, mes, 0).getDate()))} hab/día</p>` : ''}
+        <td style="padding:14px 16px;text-align:center;width:25%;border-left:1px solid #E2E8F0;">
+          <p style="margin:0 0 3px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#64748B;">ADR</p>
+          <p style="margin:0;font-size:20px;font-weight:700;color:#0A2540;">${fmtEur(adr)}</p>
         </td>
-        <!-- ADR -->
-        <td style="padding:16px 8px 14px;text-align:center;vertical-align:top;width:25%;border-left:1px solid #E2E8F0;">
-          <p style="margin:0 0 5px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:#64748B;">ADR</p>
-          <p style="margin:0;font-size:26px;font-weight:700;color:#0A2540;line-height:1;">${fmtEur(adr)}</p>
-          ${badge(absChg(adr, ly_adr), { isAbs: true, prefix: '€' })}
+        <td style="padding:14px 16px;text-align:center;width:25%;border-left:1px solid #E2E8F0;">
+          <p style="margin:0 0 3px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#64748B;">RevPAR</p>
+          <p style="margin:0;font-size:20px;font-weight:700;color:#0A2540;">${fmtEur(revpar)}</p>
         </td>
-        <!-- RevPAR -->
-        <td style="padding:16px 8px 14px;text-align:center;vertical-align:top;width:25%;border-left:1px solid #E2E8F0;">
-          <p style="margin:0 0 5px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:#64748B;">RevPAR</p>
-          <p style="margin:0;font-size:26px;font-weight:700;color:#0A2540;line-height:1;">${fmtEur(revpar)}</p>
-          ${badge(pctChg(revpar, ly_revpar))}
-        </td>
-        <!-- TRevPAR -->
-        <td style="padding:16px 8px 14px;text-align:center;vertical-align:top;width:25%;border-left:1px solid #E2E8F0;">
-          <p style="margin:0 0 5px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:#64748B;">TRevPAR</p>
-          <p style="margin:0;font-size:26px;font-weight:700;color:#0A2540;line-height:1;">${trevpar ? fmtEur(trevpar) : '—'}</p>
-          ${trevpar ? badge(pctChg(trevpar, ly_trevpar)) : ''}
+        <td style="padding:14px 16px;text-align:center;width:25%;border-left:1px solid #E2E8F0;">
+          <p style="margin:0 0 3px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#64748B;">Rev. Total</p>
+          <p style="margin:0;font-size:20px;font-weight:700;color:#0A2540;">${fmtEur(revenue_total)}</p>
+          ${pct != null ? `<p style="margin:3px 0 0;font-size:11px;font-weight:700;color:${pctColor};">${pct}% objetivo</p>` : ''}
         </td>
       </tr>
     </table>
+
+    <p style="margin:0 0 8px;font-size:13px;color:#64748B;line-height:1.7;">
+      El informe completo en PDF se adjunta a este correo.
+      También puede acceder al dashboard en tiempo real desde el enlace de abajo.
+    </p>
+
   </td></tr>
 
-  <!-- gap -->
-  <tr><td style="height:8px;background:#EEF2F7;"></td></tr>
-
-  <!-- ══ REVENUE ══ -->
-  <tr><td style="background:#FFFFFF;border:1px solid #E2E8F0;padding:0;">
-    <table width="100%" cellpadding="0" cellspacing="0">
-      <tr>
-        <td colspan="2" style="padding:12px 16px 8px;border-bottom:1px solid #F1F5F9;">
-          <p style="margin:0;font-size:12px;font-weight:700;color:#0A2540;text-transform:uppercase;letter-spacing:0.8px;">Revenue del Mes vs. Presupuesto</p>
-        </td>
-      </tr>
-      <tr>
-        <td style="padding:12px 16px;">
-          ${budgetBlock || '<p style="margin:0;font-size:12px;color:#94A3B8;">Sin datos de presupuesto</p>'}
-        </td>
-      </tr>
-      ${revenue_hab != null ? `
-      <tr>
-        <td style="padding:0 16px 14px;">
-          <table width="100%" cellpadding="0" cellspacing="0">
-            <tr>
-              <td style="padding:10px 12px;background:#F8FAFC;border-radius:6px;">
-                <table width="100%" cellpadding="0" cellspacing="0">
-                  <tr>
-                    <td>
-                      <p style="margin:0 0 2px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#64748B;">Revenue Habitaciones</p>
-                      <p style="margin:0;font-size:16px;font-weight:700;color:#0A2540;">${fmtEur(revenue_hab)}</p>
-                      ${badge(pctChg(revenue_hab, ly_revenue_total ? ly_revenue_total * (revenue_hab / (revenue_total || 1)) : null))}
-                    </td>
-                    ${ly_revenue_total != null ? `
-                    <td style="text-align:right;">
-                      <p style="margin:0 0 2px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#64748B;">Mismo mes año anterior</p>
-                      <p style="margin:0;font-size:16px;font-weight:700;color:#94A3B8;">${fmtEur(ly_revenue_total)}</p>
-                    </td>` : ''}
-                  </tr>
-                </table>
-              </td>
-            </tr>
-          </table>
-        </td>
-      </tr>` : ''}
-    </table>
-  </td></tr>
-
-  <!-- gap before footer -->
-  <tr><td style="height:8px;background:#EEF2F7;"></td></tr>
-
-  <!-- ══ FOOTER ══ -->
-  <tr><td style="background:#0A2540;border-radius:0 0 10px 10px;padding:12px 28px;">
+  <!-- FOOTER -->
+  <tr><td style="background:#0A2540;border-radius:0 0 10px 10px;padding:14px 32px;">
     <table width="100%" cellpadding="0" cellspacing="0">
       <tr>
         <td><p style="margin:0;font-size:10px;color:rgba(255,255,255,0.4);">FastRevenue — Tu Partner de Inteligencia Hotelera</p></td>
@@ -241,12 +119,23 @@ export default async function handler(req, res) {
 </body>
 </html>`;
 
+  const attachments = [];
+  if (pdfBase64) {
+    try {
+      attachments.push({
+        filename: pdfNombre || `Informe_${mesNombre}_${anio}.pdf`,
+        content: Buffer.from(pdfBase64, 'base64'),
+      });
+    } catch (e) { console.error('PDF attachment error:', e); }
+  }
+
   try {
     const { error } = await resend.emails.send({
       from: 'FastRevenue <info@fastrevenue.app>',
       to: email,
       subject: `Informe Mensual ${mesNombre} ${anio} — ${hotel}`,
       html,
+      attachments,
       headers: {
         'X-Entity-Ref-ID': `monthly-${email}-${anio}-${mes}`,
         'List-Unsubscribe': '<mailto:info@fastrevenue.app?subject=unsubscribe>',
