@@ -3244,11 +3244,11 @@ function GruposView({ datos, onRecargar }) {
   const session = datos.session;
 
   const CATS = {
-    corporativo: { label: t("cat_corporativo"), icon: "🏢", color: "#2B7EC1" },
-    boda:        { label: t("cat_boda"),        icon: "💍", color: "#D4547A" },
-    feria:       { label: t("cat_feria"),       icon: "🎟️", color: "#E85D04" },
-    deportivo:   { label: t("cat_deportivo"),   icon: "🏆", color: "#059669" },
-    otros:       { label: t("cat_otros"),       icon: "✨", color: "#7C3AED" },
+    corporativo: { label: t("cat_corporativo"), color: "#2B7EC1" },
+    boda:        { label: t("cat_boda"),        color: "#D4547A" },
+    feria:       { label: t("cat_feria"),       color: "#E85D04" },
+    deportivo:   { label: t("cat_deportivo"),   color: "#059669" },
+    otros:       { label: t("cat_otros"),       color: "#7C3AED" },
   };
 
   const ESTADOS = {
@@ -3447,7 +3447,6 @@ function GruposView({ datos, onRecargar }) {
                         style={{ display:"flex", alignItems:"center", gap:12, padding:"12px 16px", borderRadius:8, border:`1px solid ${C.border}`, background:C.bg, cursor:"pointer", transition:"border-color 0.15s" }}
                         onMouseEnter={e => e.currentTarget.style.borderColor = ESTADOS[g.estado]?.color || "#7C3AED"}
                         onMouseLeave={e => e.currentTarget.style.borderColor = C.border}>
-                        <span style={{ fontSize:20, flexShrink:0 }}>{CATS[g.categoria]?.icon || "✨"}</span>
                         <div style={{ flex:1, minWidth:0 }}>
                           <p style={{ fontSize:13, fontWeight:700, color:C.text, marginBottom:2, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{g.nombre}</p>
                           <p style={{ fontSize:11, color:C.textLight }}>{g.fecha_inicio} → {g.fecha_fin} · {noches} noche{noches !== 1 ? "s" : ""} · {g.habitaciones || 0} hab.</p>
@@ -3496,7 +3495,7 @@ function GruposView({ datos, onRecargar }) {
                             style={{ borderBottom:`1px solid ${C.border}`, background: i % 2 === 0 ? C.bg : C.bgCard, cursor:"pointer" }}
                             onMouseEnter={e => e.currentTarget.style.background = C.accentLight}
                             onMouseLeave={e => e.currentTarget.style.background = i % 2 === 0 ? C.bg : C.bgCard}>
-                            <td style={{ padding:"9px 14px", fontWeight:600, color:C.text, whiteSpace:"nowrap" }}>{CATS[g.categoria]?.icon} {g.nombre}</td>
+                            <td style={{ padding:"9px 14px", fontWeight:600, color:C.text, whiteSpace:"nowrap" }}>{g.nombre}</td>
                             <td style={{ padding:"9px 14px", color:C.textMid, whiteSpace:"nowrap" }}>{g.fecha_inicio}</td>
                             <td style={{ padding:"9px 14px", color:C.textMid, whiteSpace:"nowrap" }}>{g.fecha_fin}</td>
                             <td style={{ padding:"9px 14px", color:C.textMid, textAlign:"center" }}>{noches}</td>
@@ -3538,7 +3537,7 @@ function GruposView({ datos, onRecargar }) {
                           onMouseEnter={e=>e.currentTarget.style.background=C.accentLight}
                           onMouseLeave={e=>e.currentTarget.style.background= i % 2 === 0 ? C.bg : C.bgCard}>
                           <td style={{ padding:"9px 14px", fontWeight:600, color:C.text, whiteSpace:"nowrap" }}>
-                            {CATS[g.categoria]?.icon} {g.nombre}
+                            {g.nombre}
                           </td>
                           <td style={{ padding:"9px 14px" }}>
                             <span style={{ fontSize:10, fontWeight:700, padding:"2px 8px", borderRadius:10, background:ESTADOS[g.estado]?.bg, color:ESTADOS[g.estado]?.color, whiteSpace:"nowrap" }}>
@@ -3619,7 +3618,6 @@ function GruposView({ datos, onRecargar }) {
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:20 }}>
               <div>
                 <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4 }}>
-                  <span style={{ fontSize:22 }}>{CATS[detalleGrupo.categoria]?.icon||"✨"}</span>
                   <h3 style={{ fontSize:18, fontWeight:700, color:C.text }}>{detalleGrupo.nombre}</h3>
                 </div>
                 <span style={{ fontSize:11, fontWeight:700, padding:"3px 10px", borderRadius:10, background:ESTADOS[detalleGrupo.estado]?.bg, color:ESTADOS[detalleGrupo.estado]?.color }}>
@@ -3647,7 +3645,7 @@ function GruposView({ datos, onRecargar }) {
                     </thead>
                     <tbody>
                       <tr style={{ borderBottom:`1px solid ${C.border}`, background: C.bg }}>
-                        <td style={{ padding:"9px 14px", fontWeight:600, color:C.text, whiteSpace:"nowrap" }}>{CATS[g.categoria]?.icon} {g.nombre}</td>
+                        <td style={{ padding:"9px 14px", fontWeight:600, color:C.text, whiteSpace:"nowrap" }}>{g.nombre}</td>
                         <td style={{ padding:"9px 14px" }}>
                           <span style={{ fontSize:10, fontWeight:700, padding:"2px 8px", borderRadius:10, background:ESTADOS[g.estado]?.bg, color:ESTADOS[g.estado]?.color, whiteSpace:"nowrap" }}>
                             {ESTADOS[g.estado]?.label}
