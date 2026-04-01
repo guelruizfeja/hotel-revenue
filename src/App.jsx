@@ -2990,7 +2990,7 @@ function BudgetView({ datos, anio: anioProp }) {
       const forecast_dev_pct = forecast_dev != null && p.rev_total_ppto > 0 ? ((forecast_dev / p.rev_total_ppto) * 100).toFixed(1) : null;
 
       return {
-        mes: t("meses_corto")[p.mes - 1], mesIdx: p.mes - 1,
+        mes: t("meses_full")[p.mes - 1], mesIdx: p.mes - 1,
         adr_ppto: p.adr_ppto, adr_real: real.adr_real, adr_dev,
         adr_dev_pct: p.adr_ppto > 0 && adr_dev != null ? ((adr_dev / p.adr_ppto) * 100).toFixed(1) : null,
         revpar_ppto: p.revpar_ppto, revpar_real: real.revpar_real, revpar_dev,
