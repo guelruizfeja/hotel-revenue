@@ -336,22 +336,22 @@ const MESES_FULL = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Ag
 
 const AnimatedBar = (props) => {
   const { x, y, width, height, fill, onClick } = props;
-  const [hovered, setHovered] = useState(false);
+  const [animKey, setAnimKey] = useState(0);
   if (!height || height <= 0) return null;
   return (
     <g onClick={onClick} style={{ cursor:"pointer" }}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}>
-      {/* Fondo tenue siempre visible */}
-      <rect x={x} y={y} width={width} height={height} rx={4} ry={4} fill={fill} opacity={0.25}/>
-      {/* Barra animada que sube al hover */}
-      <rect x={x} y={y} width={width} height={height} rx={4} ry={4} fill={fill}
-        style={{
-          transformBox:"fill-box",
-          transformOrigin:"bottom",
-          transform: hovered ? "scaleY(1)" : "scaleY(0)",
-          transition: hovered ? "transform 0.45s cubic-bezier(0.22,1,0.36,1)" : "transform 0.2s ease-in",
-        }}/>
+      onMouseEnter={() => setAnimKey(k => k + 1)}>
+      {/* Barra base — siempre visible a color completo */}
+      <rect x={x} y={y} width={width} height={height} rx={4} ry={4} fill={fill}/>
+      {/* Overlay de relleno animado desde abajo al hover */}
+      {animKey > 0 && (
+        <rect key={animKey} x={x} y={y} width={width} height={height} rx={4} ry={4} fill={fill}
+          style={{
+            transformBox:"fill-box",
+            transformOrigin:"bottom",
+            animation:"bar-fill-up 0.5s cubic-bezier(0.22,1,0.36,1) both",
+          }}/>
+      )}
     </g>
   );
 };
@@ -4422,6 +4422,7 @@ export default function App() {
         ::-webkit-scrollbar-thumb { background: ${C.accentLight}; border-radius: 3px; }
         @keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes pulse-rayo { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(0.8); } }
+        @keyframes bar-fill-up { from { transform: scaleY(0); } to { transform: scaleY(1); } }
         @media (max-width: 640px) {
           /* Contenedor raíz — evita desbordamiento lateral */
           html, body, #root { overflow-x: hidden !important; max-width: 100vw !important; }
