@@ -642,9 +642,9 @@ function KpiModal({ kpi, datos, mes, anio, onClose }) {
                 <CartesianGrid strokeDasharray="3 3" stroke={C.border} vertical={false}/>
                 <XAxis dataKey="mes" tick={{ fill: C.textLight, fontSize: 11 }} axisLine={false} tickLine={false}/>
                 <YAxis tick={{ fill: C.textLight, fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={v=>v>=1000?`${(v/1000).toFixed(0)}k€`:v} width={48}/>
-                <Tooltip content={<CustomTooltip/>} cursor={{ fill: "rgba(10,37,64,0.04)" }}/>
-                <Bar dataKey="revHab" name="Hab."   stackId="a" fill="url(#gradHab)" radius={[0,0,0,0]}/>
-                <Bar dataKey="revFnb" name="F&B"    stackId="a" fill="url(#gradFnb)" radius={[4,4,0,0]}/>
+                <Tooltip content={<CustomTooltip/>} cursor={false}/>
+                <Bar dataKey="revHab" name="Hab."   stackId="a" fill="url(#gradHab)" radius={[0,0,0,0]} activeBar={false}/>
+                <Bar dataKey="revFnb" name="F&B"    stackId="a" fill="url(#gradFnb)" radius={[4,4,0,0]} activeBar={false}/>
                 <Legend wrapperStyle={{ fontSize: 11, color: C.textMid, paddingTop: 8 }}/>
               </BarChart>
             </ResponsiveContainer>
@@ -681,8 +681,8 @@ function KpiModal({ kpi, datos, mes, anio, onClose }) {
                 <CartesianGrid strokeDasharray="3 3" stroke={C.border} vertical={false}/>
                 <XAxis dataKey="dia" tick={{ fill: C.textLight, fontSize: 11 }} axisLine={false} tickLine={false} interval={modoVista==="mes"?1:4}/>
                 <YAxis tick={{ fill: C.textLight, fontSize: 11 }} axisLine={false} tickLine={false} unit={unit}/>
-                <Tooltip content={<CustomTooltip unit={unit}/>} cursor={{ fill: "rgba(10,37,64,0.04)" }}/>
-                <Bar dataKey={fieldKey} name={kpi} fill="url(#kpiGradBar)" radius={[4,4,0,0]} barSize={modoVista==="mes"?10:6}/>
+                <Tooltip content={<CustomTooltip unit={unit}/>} cursor={false}/>
+                <Bar dataKey={fieldKey} name={kpi} fill="url(#kpiGradBar)" radius={[4,4,0,0]} barSize={modoVista==="mes"?10:6} activeBar={false}/>
                 <Line type="monotone" dataKey="ly" name="Año anterior" stroke="#B8860B" strokeWidth={2} dot={{fill:"#B8860B", r:3, strokeWidth:0}} activeDot={{r:4}} connectNulls/>
               </ComposedChart>
             </ResponsiveContainer>
@@ -2021,7 +2021,6 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
           if (occ<85)  return "#E53935";
           return "#B71C1C";
         };
-        const textOnHeat = (occ) => occ==null ? C.text : "#ffffff";
         const heatBg = (occ) => occ!=null
           ? `linear-gradient(to bottom, ${heatColor(occ)}88, ${heatColor(occ)}33)`
           : C.bg;
@@ -2099,7 +2098,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
                       )}
                       <p style={{ fontSize:9, fontWeight:600, color:C.textLight, textTransform:"uppercase", letterSpacing:0.5, marginBottom:3 }}>{label}</p>
                       {occ!=null
-                        ? <p style={{ fontSize:16, fontWeight:800, color:textOnHeat(occ), fontFamily:"'Plus Jakarta Sans',sans-serif", textShadow:"0 1px 4px rgba(0,0,0,0.5)" }}>{occ.toFixed(0)}%</p>
+                        ? <p style={{ fontSize:16, fontWeight:800, color:"#111", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>{occ.toFixed(0)}%</p>
                         : <p style={{ fontSize:12, color:C.border }}>—</p>
                       }
                       {resUltDia !== 0
@@ -2156,12 +2155,12 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
                           {tieneReserva && (
                             <span style={{ position:"absolute", top:2, right:2, fontSize:8, lineHeight:1, animation:"pulse-rayo 1.5s ease-in-out infinite" }}>⚡</span>
                           )}
-                          <p style={{ fontSize:8, fontWeight:600, color:textOnHeat(occ), lineHeight:1, opacity:0.8, textShadow:"0 1px 3px rgba(0,0,0,0.4)" }}>{dia}</p>
+                          <p style={{ fontSize:8, color:C.textLight, lineHeight:1 }}>{dia}</p>
                           {occ!=null
-                            ? <p style={{ fontSize:11, fontWeight:800, color:textOnHeat(occ), lineHeight:1, textShadow:"0 1px 3px rgba(0,0,0,0.45)" }}>{occ.toFixed(0)}%</p>
+                            ? <p style={{ fontSize:11, fontWeight:800, color:heatColor(occ), lineHeight:1 }}>{occ.toFixed(0)}%</p>
                             : <p style={{ fontSize:8, color:C.border }}>—</p>
                           }
-                          {adr && !esFut && <p style={{ fontSize:7, fontWeight:600, color:textOnHeat(occ), lineHeight:1, opacity:0.85, textShadow:"0 1px 3px rgba(0,0,0,0.4)" }}>€{Math.round(adr)}</p>}
+                          {adr && !esFut && <p style={{ fontSize:7, color:C.textLight, lineHeight:1 }}>€{Math.round(adr)}</p>}
                           {resDia!==0 && <p style={{ fontSize:7, color:tieneReserva?"#B8860B":C.red, fontWeight:700, lineHeight:1 }}>{resDia>0?"+":""}{resDia}</p>}
                         </div>
                       );
@@ -2346,9 +2345,9 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
                     <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: C.textLight, fontSize: 11 }} interval={Math.floor(diasData.length/8)}/>
                     <YAxis yAxisId="left"  tick={{ fill: C.textLight, fontSize: 11 }} axisLine={false} tickLine={false} unit="%" domain={[0,100]}/>
                     <YAxis yAxisId="right" orientation="right" tick={{ fill: C.textLight, fontSize: 11 }} axisLine={false} tickLine={false} unit="€"/>
-                    <Tooltip content={<CustomTooltip/>} cursor={{ fill: "rgba(10,37,64,0.04)" }}/>
+                    <Tooltip content={<CustomTooltip/>} cursor={false}/>
                     <Legend wrapperStyle={{ fontSize: 11, color: C.textMid, paddingTop: 8 }}/>
-                    <Bar yAxisId="left" dataKey="occ" name="Ocupación" fill="url(#gradOccDiario)" radius={[4,4,0,0]}/>
+                    <Bar yAxisId="left" dataKey="occ" name="Ocupación" fill="url(#gradOccDiario)" radius={[4,4,0,0]} activeBar={false}/>
                     <Line yAxisId="right" dataKey="adr" name="ADR" type="monotone" stroke="#B8860B" strokeWidth={2} dot={{fill:"#B8860B",r:2,strokeWidth:0}} activeDot={{r:4}}/>
                   </ComposedChart>
                 </ResponsiveContainer>
@@ -2742,9 +2741,9 @@ function PickupView({ datos }) {
                   contentStyle={{ background:"#0A2540", border:`1px solid ${C.border}`, borderRadius:8, fontSize:12 }}
                   labelStyle={{ color:"#D4A017", fontWeight:700 }}
                   itemStyle={{ color:"#ffffff" }}
-                  cursor={{ fill:`${C.border}44` }}
+                  cursor={false}
                 />
-                <Bar dataKey="valor" radius={[4,4,0,0]} maxBarSize={56}>
+                <Bar dataKey="valor" radius={[4,4,0,0]} maxBarSize={56} activeBar={false}>
                   {chartData.map((d,i) => (
                     <Cell key={i} fill={`url(#cg_${i})`}/>
                   ))}
@@ -3290,7 +3289,7 @@ function BudgetView({ datos, anio: anioProp }) {
             <XAxis dataKey="mes" tick={{ fill: C.textLight, fontSize: 11 }} axisLine={false} tickLine={false}/>
             <YAxis tick={{ fill: C.textLight, fontSize: 11 }} axisLine={false} tickLine={false} unit={chartUnit} width={54}/>
             <Tooltip
-              cursor={{ fill:"rgba(10,37,64,0.04)" }}
+              cursor={false}
               content={({ active, payload }) => {
                 if (!active || !payload?.length) return null;
                 const colorMap = { Ppto:"#64748B", Real:"#1A7A3C", Forecast:"#B8860B" };
@@ -3313,9 +3312,9 @@ function BudgetView({ datos, anio: anioProp }) {
                 );
               }}
             />
-            <Bar dataKey="Ppto"     name={t("ppto_abrev")} fill="#64748B" fillOpacity={0.45} radius={[4,4,0,0]}/>
-            <Bar dataKey="Real"     name={t("real_label")} fill="url(#gradReal)"     radius={[4,4,0,0]}/>
-            <Bar dataKey="Forecast" name="Forecast"         fill="url(#gradForecast)" radius={[4,4,0,0]}/>
+            <Bar dataKey="Ppto"     name={t("ppto_abrev")} fill="#64748B" fillOpacity={0.45} radius={[4,4,0,0]} activeBar={false}/>
+            <Bar dataKey="Real"     name={t("real_label")} fill="url(#gradReal)"     radius={[4,4,0,0]} activeBar={false}/>
+            <Bar dataKey="Forecast" name="Forecast"         fill="url(#gradForecast)" radius={[4,4,0,0]} activeBar={false}/>
           </BarChart>
         </ResponsiveContainer>
       </Card>
@@ -3753,9 +3752,9 @@ function GruposView({ datos, onRecargar }) {
             <CartesianGrid strokeDasharray="3 3" stroke={C.border} vertical={false} />
             <XAxis dataKey="mes" tick={{ fontSize: 11, fill: C.textLight }} axisLine={false} tickLine={false} />
             <YAxis tick={{ fontSize: 11, fill: C.textLight }} axisLine={false} tickLine={false} tickFormatter={v => v >= 1000 ? `${(v/1000).toFixed(0)}k€` : `€${v}`} width={48} />
-            <Tooltip content={<CustomTooltip />} cursor={{ fill: "rgba(10,37,64,0.04)" }} />
-            <Bar dataKey="revHab" stackId="a" fill="url(#gradHabGrupos)" radius={[0,0,0,0]} name="Habitaciones" />
-            <Bar dataKey="revME"  stackId="a" fill="url(#gradME)"        radius={[4,4,0,0]} name="M&E" />
+            <Tooltip content={<CustomTooltip />} cursor={false} />
+            <Bar dataKey="revHab" stackId="a" fill="url(#gradHabGrupos)" radius={[0,0,0,0]} name="Habitaciones" activeBar={false}/>
+            <Bar dataKey="revME"  stackId="a" fill="url(#gradME)"        radius={[4,4,0,0]} name="M&E" activeBar={false}/>
           </BarChart>
         </ResponsiveContainer>
       </Card>
