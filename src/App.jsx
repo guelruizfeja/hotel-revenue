@@ -453,6 +453,8 @@ function KpiModal({ kpi, datos, mes, anio, onClose }) {
       adr: d.hab_ocupadas>0?Math.round(d.revenue_hab/d.hab_ocupadas):0,
       revpar: habDis>0?Math.round(d.revenue_hab/habDis):0,
       trevpar: habDis>0?Math.round((d.revenue_hab+(d.revenue_fnb||0))/habDis):0,
+      revHab:  Math.round(d.revenue_hab||0),
+      revFnb:  Math.round(d.revenue_fnb||0),
       revTotal: Math.round(d.revenue_total||0),
     };
   };
