@@ -33,7 +33,7 @@ const TRANSLATIONS = {
     ob4_title:"M&E", ob4_text:"Gestiona grupos y eventos: confirmados, tentativos y pipeline de negocio.",
     // KPIs
     kpi_ocupacion:"Ocupación", kpi_adr:"ADR", kpi_revpar:"RevPAR", kpi_trevpar:"TRevPAR",
-    kpi_rev_diario:"Revenue Diario", kpi_rev_hab:"Rev. Hab.", kpi_rev_total:"Rev. Total",
+    kpi_rev_diario:"Revenue Diario", kpi_rev_mensual:"Revenue Mensual", kpi_rev_hab:"Rev. Hab.", kpi_rev_total:"Rev. Total",
     sin_datos_prev:"Sin datos prev.", vs_mes_ant:"vs mes ant.", vs_anio_ant:"vs año ant.",
     // Empty & loading
     sin_datos:"Sin datos todavía", importa_excel:"Importa tu plantilla Excel para ver los datos aquí",
@@ -145,7 +145,7 @@ const TRANSLATIONS = {
     ob3_title:"Budget", ob3_text:"Compare real production vs monthly target and project year-end results.",
     ob4_title:"M&E", ob4_text:"Manage groups and events: confirmed, tentative and business pipeline.",
     kpi_ocupacion:"Occupancy", kpi_adr:"ADR", kpi_revpar:"RevPAR", kpi_trevpar:"TRevPAR",
-    kpi_rev_diario:"Daily Revenue", kpi_rev_hab:"Room Rev.", kpi_rev_total:"Total Rev.",
+    kpi_rev_diario:"Daily Revenue", kpi_rev_mensual:"Monthly Revenue", kpi_rev_hab:"Room Rev.", kpi_rev_total:"Total Rev.",
     sin_datos_prev:"No prev. data", vs_mes_ant:"vs prev. month", vs_anio_ant:"vs prev. year",
     sin_datos:"No data yet", importa_excel:"Import your Excel template to see your data here",
     cargando_datos:"Loading data...", cargando_pickup:"Loading pickup...",
@@ -247,7 +247,7 @@ const TRANSLATIONS = {
     ob3_title:"Budget", ob3_text:"Comparez la production réelle vs l'objectif mensuel et projetez la clôture annuelle.",
     ob4_title:"M&E", ob4_text:"Gérez les groupes et événements : confirmés, tentatifs et pipeline.",
     kpi_ocupacion:"Occupation", kpi_adr:"ADR", kpi_revpar:"RevPAR", kpi_trevpar:"TRevPAR",
-    kpi_rev_diario:"Revenu Journalier", kpi_rev_hab:"Rev. Ch.", kpi_rev_total:"Rev. Total",
+    kpi_rev_diario:"Revenu Journalier", kpi_rev_mensual:"Revenu Mensuel", kpi_rev_hab:"Rev. Ch.", kpi_rev_total:"Rev. Total",
     sin_datos_prev:"Pas de données préc.", vs_mes_ant:"vs mois préc.", vs_anio_ant:"vs année préc.",
     sin_datos:"Aucune donnée", importa_excel:"Importez votre modèle Excel pour voir vos données ici",
     cargando_datos:"Chargement...", cargando_pickup:"Chargement pickup...",
@@ -383,9 +383,10 @@ const CustomTooltip = ({ active, payload, label, unit }) => {
           ? isOcc ? `${Math.round(p.value)}%` : `${Math.round(p.value).toLocaleString("es-ES")}€`
           : p.value;
         return (
-          <p key={i} style={{ color: "#fff", fontSize: 12, margin: "2px 0" }}>
-            <span style={{ color: "#fff" }}>{p.name}: </span>{val}
-          </p>
+          <div key={i} style={{ display:"flex", alignItems:"center", gap:7, margin:"2px 0" }}>
+            <span style={{ width:8, height:8, borderRadius:"50%", background:p.color||"#7A9CC8", flexShrink:0, display:"inline-block" }}/>
+            <span style={{ color:"rgba(255,255,255,0.9)", fontSize:12 }}>{p.name}: {val}</span>
+          </div>
         );
       })}
     </div>
@@ -402,7 +403,7 @@ function Card({ children, style = {} }) {
 
 
 // ─── KPI MODAL ───────────────────────────────────────────────────
-const KPI_TKEYS = { "Ocupación":"kpi_ocupacion", "ADR":"kpi_adr", "RevPAR":"kpi_revpar", "TRevPAR":"kpi_trevpar", "Revenue Diario":"kpi_rev_diario", "Revenue Total":"kpi_rev_total" };
+const KPI_TKEYS = { "Ocupación":"kpi_ocupacion", "ADR":"kpi_adr", "RevPAR":"kpi_revpar", "TRevPAR":"kpi_trevpar", "Revenue Diario":"kpi_rev_diario", "Revenue Mensual":"kpi_rev_mensual", "Revenue Total":"kpi_rev_total" };
 function KpiModal({ kpi, datos, mes, anio, onClose }) {
   const t = useT();
   const kpiLabel = t(KPI_TKEYS[kpi]) || kpi;
@@ -530,26 +531,7 @@ function KpiModal({ kpi, datos, mes, anio, onClose }) {
           </div>
         </div>
 
-        {kpi === "TRevPAR" ? (() => {
-          const n = diasMesCompleto.length || 1;
-          const avgHab = diasMesCompleto.reduce((a,d)=>a+d.revHab,0) / n;
-          const avgFnb = diasMesCompleto.reduce((a,d)=>a+d.revFnb,0) / n;
-          return (
-            <div style={{ display:"grid", gridTemplateColumns:"repeat(2,1fr)", gap:12, marginBottom:20 }}>
-              {[
-                { label:"Media diaria", value:`€${Math.round(avgHab+avgFnb).toLocaleString("es-ES")}` },
-                { label:`Vs ${MESES_FULL[mesPrevIdx]}`, value: varComp!==null ? `${parseFloat(varComp)>=0?"+":""}${varComp}%` : "Sin datos", up: varComp!==null?parseFloat(varComp)>=0:true },
-                { label:"Hab./día", value:`€${Math.round(avgHab).toLocaleString("es-ES")}`, color:C.accent },
-                { label:"F&B/día", value:`€${Math.round(avgFnb).toLocaleString("es-ES")}`, color:"#E85D04" },
-              ].map((k,i)=>(
-                <div key={i} style={{ background:`${C.accent}0f`, borderRadius:8, padding:"16px", borderLeft:`3px solid ${k.color||C.accent}`, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", textAlign:"center" }}>
-                  <p style={{ fontSize:10, color:C.textMid, textTransform:"uppercase", letterSpacing:1.5, marginBottom:6, fontWeight:600 }}>{k.label}</p>
-                  <p style={{ fontSize:22, fontWeight:700, color:k.color||(k.up===false?C.red:k.up===true?C.green:C.text), fontFamily:"'Plus Jakarta Sans',sans-serif" }}>{k.value}</p>
-                </div>
-              ))}
-            </div>
-          );
-        })() : kpi === "Revenue Total" ? (() => {
+        {kpi === "Revenue Total" ? (() => {
           const totalHabS  = diasMes.reduce((a,d)=>a+d.revHab,0);
           const totalFnbS  = diasMes.reduce((a,d)=>a+d.revFnb,0);
           return (
@@ -565,6 +547,33 @@ function KpiModal({ kpi, datos, mes, anio, onClose }) {
                   <p style={{ fontSize:22, fontWeight:700, color:k.color||(k.up===false?C.red:k.up===true?C.green:C.text), fontFamily:"'Plus Jakarta Sans',sans-serif" }}>{k.value}</p>
                 </div>
               ))}
+            </div>
+          );
+        })() : kpi === "Revenue Mensual" ? (() => {
+          const totalHabM = diasMesCompleto.reduce((a,d)=>a+d.revHab,0);
+          const totalFnbM = diasMesCompleto.reduce((a,d)=>a+d.revFnb,0);
+          const totalM    = totalHabM + totalFnbM;
+          const totalLM   = diasMesCompLetoMP.reduce((a,d)=>a+d.revHab+d.revFnb,0);
+          const totalLY   = diasLY.reduce((a,d)=>a+(d.revHab||0)+(d.revFnb||0),0);
+          const vsLMv = totalLM>0?((totalM-totalLM)/totalLM*100).toFixed(1):null;
+          const vsLYv = totalLY>0?((totalM-totalLY)/totalLY*100).toFixed(1):null;
+          return (
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(2,1fr)", gap:12, marginBottom:20 }}>
+              {[
+                { label:"Total del mes", value:`€${Math.round(totalM).toLocaleString("es-ES")}` },
+                { label:`Vs ${MESES_FULL[mesPrevIdx]}`, value:vsLMv?`${parseFloat(vsLMv)>=0?"+":""}${vsLMv}%`:"Sin datos", up:vsLMv?parseFloat(vsLMv)>=0:true },
+                { label:"Habitaciones", value:`€${Math.round(totalHabM).toLocaleString("es-ES")}`, color:C.accent },
+                { label:"F&B", value:`€${Math.round(totalFnbM).toLocaleString("es-ES")}`, color:"#E85D04" },
+              ].map((k,i)=>(
+                <div key={i} style={{ background:`${C.accent}0f`, borderRadius:8, padding:"16px", borderLeft:`3px solid ${k.color||C.accent}`, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", textAlign:"center" }}>
+                  <p style={{ fontSize:10, color:C.textMid, textTransform:"uppercase", letterSpacing:1.5, marginBottom:6, fontWeight:600 }}>{k.label}</p>
+                  <p style={{ fontSize:22, fontWeight:700, color:k.color||(k.up===false?C.red:k.up===true?C.green:C.text), fontFamily:"'Plus Jakarta Sans',sans-serif" }}>{k.value}</p>
+                </div>
+              ))}
+              {vsLYv && <div style={{ gridColumn:"1/-1", display:"flex", gap:8, alignItems:"center" }}>
+                <span style={{ fontSize:11, color:C.textLight }}>vs LY ({anio-1}):</span>
+                <span style={{ fontSize:12, fontWeight:700, padding:"2px 8px", borderRadius:4, background:parseFloat(vsLYv)>=0?C.greenLight:C.redLight, color:parseFloat(vsLYv)>=0?C.green:C.red }}>{parseFloat(vsLYv)>=0?"+":""}{vsLYv}%</span>
+              </div>}
             </div>
           );
         })() : (
@@ -583,41 +592,32 @@ function KpiModal({ kpi, datos, mes, anio, onClose }) {
 
         <div style={{ marginBottom:16 }}>
           <p style={{ fontSize:12, fontWeight:600, color:C.textMid, marginBottom:10, textTransform:"uppercase", letterSpacing:1 }}>
-            {kpi==="TRevPAR" ? "Desglose diario de ingresos" : kpi==="Revenue Total" ? "Evolución anual" : "Evolución del mes"}
+            {kpi==="Revenue Total" ? "Evolución anual" : kpi==="Revenue Mensual" ? "Revenue diario del mes" : "Evolución del mes"}
           </p>
-          {kpi==="TRevPAR" ? (() => {
-            const n2 = diasMesCompleto.length || 1;
-            const avgHab2 = diasMesCompleto.reduce((a,d)=>a+d.revHab,0) / n2;
-            const avgFnb2 = diasMesCompleto.reduce((a,d)=>a+d.revFnb,0) / n2;
-            const total   = avgHab2 + avgFnb2;
-            const pieData = [
-              { name:"Habitaciones", value:avgHab2, pct: total>0?Math.round(avgHab2/total*100):0 },
-              { name:"F&B",          value:avgFnb2, pct: total>0?Math.round(avgFnb2/total*100):0 },
-            ].filter(d=>d.value>0);
-            const PIE_COLORS = [C.accent, "#E85D04"];
+          {kpi==="Revenue Mensual" ? (() => {
+            const dailyData = diasMesCompleto.map(d=>({ dia:d.dia, revHab:d.revHab, revFnb:d.revFnb }));
             return (
-              <div style={{ display:"flex", alignItems:"center", gap:24 }}>
-                <PieChart width={200} height={200}>
-                  <Pie data={pieData} cx={95} cy={95} innerRadius={55} outerRadius={90} paddingAngle={3} dataKey="value">
-                    {pieData.map((_,i)=><Cell key={i} fill={PIE_COLORS[i]}/>)}
-                  </Pie>
-                  <Tooltip content={<CustomTooltip />} cursor={{ fill: "rgba(10,37,64,0.04)" }}/>
-                </PieChart>
-                <div style={{ flex:1 }}>
-                  {pieData.map((d,i)=>(
-                    <div key={i} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"10px 0", borderBottom:`1px solid ${C.border}` }}>
-                      <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-                        <div style={{ width:10, height:10, borderRadius:"50%", background:PIE_COLORS[i], flexShrink:0 }}/>
-                        <p style={{ fontSize:13, fontWeight:600, color:C.text }}>{d.name}</p>
-                      </div>
-                      <div style={{ textAlign:"right" }}>
-                        <p style={{ fontSize:13, fontWeight:700, color:C.text }}>€{Math.round(d.value).toLocaleString("es-ES")}/día</p>
-                        <p style={{ fontSize:11, color:C.textLight }}>{d.pct}%</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              <ResponsiveContainer width="100%" height={220}>
+                <BarChart data={dailyData} barSize={10} barCategoryGap="20%">
+                  <defs>
+                    <linearGradient id="gradHabD" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#1A7A3C" stopOpacity={1}/>
+                      <stop offset="100%" stopColor="#1A7A3C" stopOpacity={0.7}/>
+                    </linearGradient>
+                    <linearGradient id="gradFnbD" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#E85D04" stopOpacity={0.9}/>
+                      <stop offset="100%" stopColor="#E85D04" stopOpacity={0.55}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke={C.border} vertical={false}/>
+                  <XAxis dataKey="dia" tick={{ fill:C.textLight, fontSize:10 }} axisLine={false} tickLine={false} interval={Math.ceil(dailyData.length/10)-1}/>
+                  <YAxis tick={{ fill:C.textLight, fontSize:10 }} axisLine={false} tickLine={false} tickFormatter={v=>v>=1000?`${(v/1000).toFixed(0)}k€`:v} width={42}/>
+                  <Tooltip content={<CustomTooltip/>} cursor={false}/>
+                  <Legend wrapperStyle={{ fontSize:11, color:C.textMid, paddingTop:8 }}/>
+                  <Bar dataKey="revHab" name="Hab." stackId="a" fill="url(#gradHabD)" radius={[0,0,0,0]} shape={(p)=><SimpleBar {...p}/>}/>
+                  <Bar dataKey="revFnb" name="F&B"  stackId="a" fill="url(#gradFnbD)" radius={[4,4,0,0]} shape={(p)=><SimpleBar {...p}/>}/>
+                </BarChart>
+              </ResponsiveContainer>
             );
           })() : kpi==="Revenue Total" ? (() => {
             const MESES_SHORT = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
@@ -699,7 +699,7 @@ function KpiModal({ kpi, datos, mes, anio, onClose }) {
   );
 }
 
-function KpiCard({ label, value, change, sub, up, i, onClick, accentColor }) {
+function KpiCard({ label, value, changeLm, upLm, changeLy, upLy, i, onClick, accentColor }) {
   const kpiAccent = accentColor || C.accent;
   return (
     <div onClick={onClick} style={{
@@ -709,24 +709,23 @@ function KpiCard({ label, value, change, sub, up, i, onClick, accentColor }) {
       boxShadow: "0 1px 4px rgba(0,0,0,0.06)", cursor: "pointer",
       transition: "box-shadow 0.2s, transform 0.2s, border-color 0.2s, background 0.2s",
     }}
-    onMouseEnter={e=>{ 
-      e.currentTarget.style.boxShadow=`0 6px 24px ${kpiAccent}40`; 
+    onMouseEnter={e=>{
+      e.currentTarget.style.boxShadow=`0 6px 24px ${kpiAccent}40`;
       e.currentTarget.style.transform="translateY(-2px)";
       e.currentTarget.style.borderColor=kpiAccent;
       e.currentTarget.style.background=`${kpiAccent}08`;
     }}
-    onMouseLeave={e=>{ 
-      e.currentTarget.style.boxShadow="0 1px 4px rgba(0,0,0,0.06)"; 
+    onMouseLeave={e=>{
+      e.currentTarget.style.boxShadow="0 1px 4px rgba(0,0,0,0.06)";
       e.currentTarget.style.transform="translateY(0)";
       e.currentTarget.style.borderColor=C.border;
       e.currentTarget.style.background=C.bgCard;
     }}>
-      <div style={{ display: "none" }} />
       <p style={{ fontSize: 12, color: C.textMid, textTransform: "uppercase", letterSpacing: "1.5px", fontWeight: 700 }}>{label}</p>
       <p style={{ fontSize: "clamp(22px,5vw,30px)", fontWeight: 700, fontFamily: "'Plus Jakarta Sans', sans-serif", color: C.text, margin: "8px 0 6px", letterSpacing: "-1px", lineHeight: 1 }}>{value}</p>
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 4, background: up ? C.greenLight : C.redLight, color: up ? C.green : C.red }}>{change}</span>
-        <span style={{ fontSize: 11, color: C.textLight }}>{sub}</span>
+      <div style={{ display: "flex", alignItems: "center", gap: 5, flexWrap:"wrap" }}>
+        {changeLm && <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 7px", borderRadius: 4, background: upLm ? C.greenLight : C.redLight, color: upLm ? C.green : C.red }}>{changeLm} <span style={{ opacity:0.65, fontWeight:400 }}>LM</span></span>}
+        {changeLy && <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 7px", borderRadius: 4, background: upLy ? C.greenLight : C.redLight, color: upLy ? C.green : C.red }}>{changeLy} <span style={{ opacity:0.65, fontWeight:400 }}>LY</span></span>}
       </div>
     </div>
   );
@@ -1835,6 +1834,9 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
     .slice(0,2)
     .map(([mes]) => mes);
   const [metricaSel, setMetricaSel] = useState("adr_occ");
+  const [notasMes, setNotasMes] = useState(() => { try { return JSON.parse(localStorage.getItem("fr_notas_mes")||"{}"); } catch { return {}; } });
+  const [editingNota, setEditingNota] = useState(null);
+  const guardarNota = (key, txt) => { const n={...notasMes,[key]:txt}; setNotasMes(n); localStorage.setItem("fr_notas_mes",JSON.stringify(n)); };
   useEffect(() => {
     if (kpiModalExterno) { setKpiModal(kpiModalExterno); onKpiModalExternoHandled && onKpiModalExternoHandled(); }
   }, [kpiModalExterno]);
@@ -1919,27 +1921,33 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
   const prevRevpar  = prevHabDis > 0 ? (prevRevHab / prevHabDis) : null;
   const prevTrevpar = prevHabDis > 0 ? ((prevRevHab + prevRevFnb) / prevHabDis) : null;
 
-  const diff = (curr, prev, isEur = false, decimals = 1) => {
-    if (prev == null || prev === 0) return { change: t("sin_datos_prev"), up: true, sub: "" };
-    const d = curr - prev;
-    const pct = ((d / prev) * 100).toFixed(1);
-    const sign = d >= 0 ? "+" : "";
-    return { change: `${sign}${pct}% ${t("vs_mes_ant")}`, up: d >= 0, sub: "" };
+  // LY: mismo mes año anterior
+  const datosMesLY = produccion.filter(d => { const f=new Date(d.fecha+"T00:00:00"); return f.getMonth()===mes && f.getFullYear()===anio-1; });
+  const lyHabOcuD  = datosMesLY.reduce((a,d)=>a+(d.hab_ocupadas||0),0);
+  const lyHabDisD  = datosMesLY.reduce((a,d)=>a+(d.hab_disponibles||0),0);
+  const lyRevHabD  = datosMesLY.reduce((a,d)=>a+(d.revenue_hab||0),0);
+  const lyRevFnbD  = datosMesLY.reduce((a,d)=>a+(d.revenue_fnb||0),0);
+  const lyRevTotD  = datosMesLY.reduce((a,d)=>a+(d.revenue_total||0),0);
+  const lyOccD     = lyHabDisD>0?(lyHabOcuD/lyHabDisD*100):null;
+  const lyAdrD     = lyHabOcuD>0?(lyRevHabD/lyHabOcuD):null;
+  const lyRevparD  = lyHabDisD>0?(lyRevHabD/lyHabDisD):null;
+  const lyTrevparD = lyHabDisD>0?((lyRevHabD+lyRevFnbD)/lyHabDisD):null;
+
+  const diff = (curr, prevLm, prevLy) => {
+    const badge = (prev) => {
+      if (prev==null||prev===0) return { ch:"—", up:true };
+      const d=curr-prev; return { ch:`${d>=0?"+":""}${((d/prev)*100).toFixed(1)}%`, up:d>=0 };
+    };
+    const lm=badge(prevLm), ly=badge(prevLy);
+    return { changeLm:lm.ch, upLm:lm.up, changeLy:ly.ch, upLy:ly.up };
   };
 
   const kpis = [
-    { label: t("kpi_ocupacion"), kpiKey:"Ocupación",    value: `${occ}%`,    ...diff(parseFloat(occ), prevOcc) },
-    { label: t("kpi_adr"),       kpiKey:"ADR",           value: `€${adr}`,    ...diff(parseFloat(adr), prevAdr) },
-    { label: t("kpi_revpar"),    kpiKey:"RevPAR",        value: `€${revpar}`,  ...diff(parseFloat(revpar), prevRevpar) },
-    { label: t("kpi_trevpar"),   kpiKey:"TRevPAR",       value: `€${trevpar}`, ...diff(parseFloat(trevpar), prevTrevpar) },
-    { label: t("kpi_rev_diario"), value: `€${datosMes.length > 0 ? Math.round(totalRevTotal / datosMes.length).toLocaleString("es-ES") : 0}`,
-      ...(() => {
-        const diasPrev = prevRevTot > 0 ? (datos.produccion||[]).filter(d => { const f=new Date(d.fecha+"T00:00:00"); return f.getMonth()===(mes===0?11:mes-1) && f.getFullYear()===(mes===0?anio-1:anio); }).length : 0;
-        const revDiarioPrev = diasPrev > 0 ? prevRevTot / diasPrev : null;
-        const revDiarioAct  = datosMes.length > 0 ? totalRevTotal / datosMes.length : 0;
-        return diff(revDiarioAct, revDiarioPrev, true);
-      })()
-    },
+    { label: t("kpi_ocupacion"), kpiKey:"Ocupación",      value: `${occ}%`,    ...diff(parseFloat(occ), prevOcc, lyOccD) },
+    { label: t("kpi_adr"),       kpiKey:"ADR",             value: `€${adr}`,    ...diff(parseFloat(adr), prevAdr, lyAdrD) },
+    { label: t("kpi_revpar"),    kpiKey:"RevPAR",          value: `€${revpar}`, ...diff(parseFloat(revpar), prevRevpar, lyRevparD) },
+    { label: t("kpi_trevpar"),   kpiKey:"TRevPAR",         value: `€${trevpar}`,...diff(parseFloat(trevpar), prevTrevpar, lyTrevparD) },
+    { label: t("kpi_rev_mensual"), kpiKey:"Revenue Mensual", value: `€${Math.round(totalRevTotal).toLocaleString("es-ES")}`, ...diff(totalRevTotal, prevRevTot, lyRevTotD) },
   ];
 
   return (
@@ -2271,8 +2279,8 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
             <thead>
               <tr>
-                {[t("th_anio"),t("th_mes"),t("th_ocup"),t("th_adr"),t("th_revpar"),t("th_trevpar"),t("th_rev_hab"),t("th_rev_total")].map((h,hi) => (
-                  <th key={h} style={{ padding: "10px 14px", textAlign: hi<=1?"left":"right", fontSize: 10, color: C.textLight, textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600, borderBottom: `2px solid ${C.border}`, whiteSpace: "nowrap" }}>{h}</th>
+                {[t("th_anio"),t("th_mes"),t("th_ocup"),t("th_adr"),t("th_revpar"),t("th_trevpar"),t("th_rev_hab"),t("th_rev_total"),"Notas"].map((h,hi) => (
+                  <th key={h} style={{ padding: "10px 14px", textAlign: hi<=1?"left":hi===8?"left":"right", fontSize: 10, color: C.textLight, textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600, borderBottom: `2px solid ${C.border}`, whiteSpace: "nowrap" }}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -2287,6 +2295,15 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
                   <td style={{ padding: "9px 14px", textAlign: "right", color: C.blue }}>€{d.trevpar}</td>
                   <td style={{ padding: "9px 14px", textAlign: "right", color: C.textMid }}>€{Math.round(d.revHab).toLocaleString("es-ES")}</td>
                   <td style={{ padding: "9px 14px", textAlign: "right", color: C.textMid }}>€{Math.round(d.revTotal).toLocaleString("es-ES")}</td>
+                  <td style={{ padding: "9px 14px" }} onClick={e => e.stopPropagation()}>
+                    {editingNota === `${d.anioIdx}-${d.mesIdx}` ? (
+                      <input autoFocus defaultValue={notasMes[`${d.anioIdx}-${d.mesIdx}`]||""} onBlur={e=>{ guardarNota(`${d.anioIdx}-${d.mesIdx}`,e.target.value); setEditingNota(null); }} onKeyDown={e=>{ if(e.key==="Enter"||e.key==="Escape"){ guardarNota(`${d.anioIdx}-${d.mesIdx}`,e.target.value); setEditingNota(null); } }} style={{ width:120, fontSize:12, padding:"3px 6px", borderRadius:4, border:`1px solid ${C.border}`, background:C.bg, color:C.text, fontFamily:"inherit", outline:"none" }}/>
+                    ) : (
+                      <span onClick={()=>setEditingNota(`${d.anioIdx}-${d.mesIdx}`)} style={{ fontSize:12, color:notasMes[`${d.anioIdx}-${d.mesIdx}`]?C.textMid:C.border, cursor:"text", display:"inline-block", minWidth:80, padding:"2px 4px", borderRadius:4, border:`1px dashed ${C.border}` }}>
+                        {notasMes[`${d.anioIdx}-${d.mesIdx}`]||"—"}
+                      </span>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -2937,21 +2954,27 @@ function PickupView({ datos }) {
           // OCC OTB estimada (reservas / (hab * días))
           const otbOcc = hab > 0 ? (otb / (hab * diasMes) * 100) : null;
 
+          // ADR OTB desde pickupEntries
+          const otbEntries = (pickupEntries||[]).filter(e => String(e.fecha_llegada||"").slice(0,7) === key);
+          const otbRevTotal = otbEntries.reduce((s,e) => s + (e.precio_total||0), 0);
+          const otbNochesTotal = otbEntries.reduce((s,e) => s + ((e.noches||1) * (e.num_reservas||1)), 0);
+          const adrOtb = otbNochesTotal > 0 && otbRevTotal > 0 ? Math.round(otbRevTotal / otbNochesTotal) : null;
+
           // Diferencias
-          const diffLY   = lyOcc != null && otbOcc != null ? (otbOcc - lyOcc).toFixed(1) : null;
-          const diffPpto = ppOcc != null && otbOcc != null ? (otbOcc - ppOcc).toFixed(1) : null;
+          const diffRes  = lyHabOcu > 0 ? otb - lyHabOcu : null;
+          const diffOcc  = lyOcc != null && otbOcc != null ? (otbOcc - lyOcc).toFixed(1) : null;
+          const diffAdr  = lyAdr != null && adrOtb != null ? adrOtb - Math.round(lyAdr) : null;
 
           return {
             label: MESES[d.getMonth()] + " " + a,
             esFuturo,
             otb,
-            otbOcc: otbOcc != null ? otbOcc.toFixed(1) : null,
-            lyOcc:  lyOcc  != null ? lyOcc.toFixed(1)  : null,
-            lyAdr:  lyAdr  != null ? Math.round(lyAdr) : null,
-            ppOcc:  ppOcc  != null ? ppOcc.toFixed(1)  : null,
-            ppAdr:  ppAdr  != null ? Math.round(ppAdr) : null,
-            diffLY,
-            diffPpto,
+            otbOcc:   otbOcc != null ? otbOcc.toFixed(1) : null,
+            adrOtb,
+            lyRes:    lyHabOcu > 0 ? lyHabOcu : null,
+            lyOcc:    lyOcc  != null ? lyOcc.toFixed(1)  : null,
+            lyAdr:    lyAdr  != null ? Math.round(lyAdr) : null,
+            diffRes, diffOcc, diffAdr,
           };
         });
 
@@ -2971,32 +2994,39 @@ function PickupView({ datos }) {
               <table style={{ width:"100%", borderCollapse:"collapse", fontSize:12 }}>
                 <thead>
                   <tr>
-                    <th style={{ padding:"10px 14px", textAlign:"left",   color:C.textLight, fontWeight:600, fontSize:10, textTransform:"uppercase", letterSpacing:"1px", borderBottom:`2px solid ${C.border}`, whiteSpace:"nowrap" }}>Mes</th>
-                    <th style={{ padding:"10px 14px", textAlign:"right",  color:C.textLight, fontWeight:600, fontSize:10, textTransform:"uppercase", letterSpacing:"1px", borderBottom:`2px solid ${C.border}`, whiteSpace:"nowrap" }}>OTB Res.</th>
-                    <th style={{ padding:"10px 14px", textAlign:"right",  color:"#B8860B",   fontWeight:700, fontSize:10, textTransform:"uppercase", letterSpacing:"1px", borderBottom:`2px solid ${C.border}`, whiteSpace:"nowrap" }}>OCC OTB</th>
-                    <th style={{ padding:"10px 14px", textAlign:"right",  color:C.textLight, fontWeight:600, fontSize:10, textTransform:"uppercase", letterSpacing:"1px", borderBottom:`2px solid ${C.border}`, whiteSpace:"nowrap" }}>OCC LY</th>
-                    <th style={{ padding:"10px 14px", textAlign:"right",  color:C.textLight, fontWeight:600, fontSize:10, textTransform:"uppercase", letterSpacing:"1px", borderBottom:`2px solid ${C.border}`, whiteSpace:"nowrap" }}>ADR LY</th>
-                    <th style={{ padding:"10px 14px", textAlign:"right",  color:C.textLight, fontWeight:600, fontSize:10, textTransform:"uppercase", letterSpacing:"1px", borderBottom:`2px solid ${C.border}`, whiteSpace:"nowrap" }}>OCC Ppto</th>
-                    <th style={{ padding:"10px 14px", textAlign:"right",  color:C.textLight, fontWeight:600, fontSize:10, textTransform:"uppercase", letterSpacing:"1px", borderBottom:`2px solid ${C.border}`, whiteSpace:"nowrap" }}>ADR Ppto</th>
-                    <th style={{ padding:"10px 14px", textAlign:"right",  color:C.textLight, fontWeight:600, fontSize:10, textTransform:"uppercase", letterSpacing:"1px", borderBottom:`2px solid ${C.border}`, whiteSpace:"nowrap" }}>vs LY</th>
-                    <th style={{ padding:"10px 14px", textAlign:"right",  color:C.textLight, fontWeight:600, fontSize:10, textTransform:"uppercase", letterSpacing:"1px", borderBottom:`2px solid ${C.border}`, whiteSpace:"nowrap" }}>vs Ppto</th>
+                    <th rowSpan={2} style={{ padding:"10px 14px", textAlign:"left", color:C.textLight, fontWeight:600, fontSize:10, textTransform:"uppercase", letterSpacing:"1px", borderBottom:`2px solid ${C.border}`, whiteSpace:"nowrap" }}>Mes</th>
+                    <th colSpan={3} style={{ padding:"6px 14px", textAlign:"center", color:"#B8860B", fontWeight:700, fontSize:10, textTransform:"uppercase", letterSpacing:"1px", borderBottom:`1px solid ${C.border}`, borderLeft:`2px solid #B8860B44`, whiteSpace:"nowrap" }}>OTB</th>
+                    <th colSpan={3} style={{ padding:"6px 14px", textAlign:"center", color:C.textLight, fontWeight:600, fontSize:10, textTransform:"uppercase", letterSpacing:"1px", borderBottom:`1px solid ${C.border}`, borderLeft:`2px solid ${C.border}`, whiteSpace:"nowrap" }}>LY</th>
+                    <th colSpan={3} style={{ padding:"6px 14px", textAlign:"center", color:C.accent, fontWeight:700, fontSize:10, textTransform:"uppercase", letterSpacing:"1px", borderBottom:`1px solid ${C.border}`, borderLeft:`2px solid ${C.accent}44`, whiteSpace:"nowrap" }}>Diferencia</th>
+                  </tr>
+                  <tr>
+                    <th style={{ padding:"6px 14px", textAlign:"right", color:"#B8860B", fontWeight:600, fontSize:10, textTransform:"uppercase", letterSpacing:"1px", borderBottom:`2px solid ${C.border}`, borderLeft:`2px solid #B8860B44`, whiteSpace:"nowrap" }}>Res.</th>
+                    <th style={{ padding:"6px 14px", textAlign:"right", color:"#B8860B", fontWeight:600, fontSize:10, textTransform:"uppercase", letterSpacing:"1px", borderBottom:`2px solid ${C.border}`, whiteSpace:"nowrap" }}>OCC</th>
+                    <th style={{ padding:"6px 14px", textAlign:"right", color:"#B8860B", fontWeight:600, fontSize:10, textTransform:"uppercase", letterSpacing:"1px", borderBottom:`2px solid ${C.border}`, whiteSpace:"nowrap" }}>ADR</th>
+                    <th style={{ padding:"6px 14px", textAlign:"right", color:C.textLight, fontWeight:600, fontSize:10, textTransform:"uppercase", letterSpacing:"1px", borderBottom:`2px solid ${C.border}`, borderLeft:`2px solid ${C.border}`, whiteSpace:"nowrap" }}>Res.</th>
+                    <th style={{ padding:"6px 14px", textAlign:"right", color:C.textLight, fontWeight:600, fontSize:10, textTransform:"uppercase", letterSpacing:"1px", borderBottom:`2px solid ${C.border}`, whiteSpace:"nowrap" }}>OCC</th>
+                    <th style={{ padding:"6px 14px", textAlign:"right", color:C.textLight, fontWeight:600, fontSize:10, textTransform:"uppercase", letterSpacing:"1px", borderBottom:`2px solid ${C.border}`, whiteSpace:"nowrap" }}>ADR</th>
+                    <th style={{ padding:"6px 14px", textAlign:"right", color:C.accent, fontWeight:600, fontSize:10, textTransform:"uppercase", letterSpacing:"1px", borderBottom:`2px solid ${C.border}`, borderLeft:`2px solid ${C.accent}44`, whiteSpace:"nowrap" }}>Δ Res.</th>
+                    <th style={{ padding:"6px 14px", textAlign:"right", color:C.accent, fontWeight:600, fontSize:10, textTransform:"uppercase", letterSpacing:"1px", borderBottom:`2px solid ${C.border}`, whiteSpace:"nowrap" }}>Δ OCC</th>
+                    <th style={{ padding:"6px 14px", textAlign:"right", color:C.accent, fontWeight:600, fontSize:10, textTransform:"uppercase", letterSpacing:"1px", borderBottom:`2px solid ${C.border}`, whiteSpace:"nowrap" }}>Δ ADR</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filasPace.map((f, i) => (
-                    <tr key={i} style={{ borderBottom:`1px solid ${C.border}`, background: i===0 ? C.accentLight : (i % 2 === 0 ? C.bg : C.bgCard), cursor:"pointer" }}>
+                    <tr key={i} style={{ borderBottom:`1px solid ${C.border}`, background: i===0 ? C.accentLight : (i % 2 === 0 ? C.bg : C.bgCard) }}>
                       <td style={{ padding:"9px 14px", fontWeight:600, color:C.text, whiteSpace:"nowrap" }}>
                         {f.label}
                         {f.esFuturo && <span style={{ marginLeft:6, fontSize:9, background:"#2C3E7A22", color:"#7A9CC8", borderRadius:3, padding:"1px 5px", fontWeight:700 }}>OTB</span>}
                       </td>
-                      <td style={{ padding:"9px 14px", textAlign:"right", color:C.textMid }}>{f.otb > 0 ? f.otb : "—"}</td>
-                      <td style={{ padding:"9px 14px", textAlign:"right", fontWeight:700, color:"#B8860B" }}>{f.otbOcc != null ? `${f.otbOcc}%` : "—"}</td>
+                      <td style={{ padding:"9px 14px", textAlign:"right", color:"#B8860B", fontWeight:700, borderLeft:`2px solid #B8860B22` }}>{f.otb > 0 ? f.otb : "—"}</td>
+                      <td style={{ padding:"9px 14px", textAlign:"right", color:"#B8860B", fontWeight:700 }}>{f.otbOcc != null ? `${f.otbOcc}%` : "—"}</td>
+                      <td style={{ padding:"9px 14px", textAlign:"right", color:"#B8860B", fontWeight:700 }}>{f.adrOtb != null ? `€${f.adrOtb}` : "—"}</td>
+                      <td style={{ padding:"9px 14px", textAlign:"right", color:C.textMid, borderLeft:`2px solid ${C.border}` }}>{f.lyRes != null ? f.lyRes : "—"}</td>
                       <td style={{ padding:"9px 14px", textAlign:"right", color:C.textMid }}>{f.lyOcc  != null ? `${f.lyOcc}%`  : "—"}</td>
                       <td style={{ padding:"9px 14px", textAlign:"right", color:C.textMid }}>{f.lyAdr  != null ? `€${f.lyAdr}`  : "—"}</td>
-                      <td style={{ padding:"9px 14px", textAlign:"right", color:C.textMid }}>{f.ppOcc  != null ? `${f.ppOcc}%`  : "—"}</td>
-                      <td style={{ padding:"9px 14px", textAlign:"right", color:C.textMid }}>{f.ppAdr  != null ? `€${f.ppAdr}`  : "—"}</td>
-                      <td style={{ padding:"9px 14px", textAlign:"right", fontWeight:700, color:colorDiff(f.diffLY)   }}>{fmtDiff(f.diffLY)}</td>
-                      <td style={{ padding:"9px 14px", textAlign:"right", fontWeight:700, color:colorDiff(f.diffPpto) }}>{fmtDiff(f.diffPpto)}</td>
+                      <td style={{ padding:"9px 14px", textAlign:"right", fontWeight:700, color:colorDiff(f.diffRes != null ? String(f.diffRes) : null), borderLeft:`2px solid ${C.accent}22` }}>{f.diffRes != null ? `${f.diffRes >= 0 ? "+" : ""}${f.diffRes}` : "—"}</td>
+                      <td style={{ padding:"9px 14px", textAlign:"right", fontWeight:700, color:colorDiff(f.diffOcc) }}>{f.diffOcc != null ? `${parseFloat(f.diffOcc)>=0?"+":""}${f.diffOcc}%` : "—"}</td>
+                      <td style={{ padding:"9px 14px", textAlign:"right", fontWeight:700, color:colorDiff(f.diffAdr != null ? String(f.diffAdr) : null) }}>{f.diffAdr != null ? `${f.diffAdr >= 0 ? "+" : ""}€${Math.abs(f.diffAdr)}` : "—"}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -3006,6 +3036,52 @@ function PickupView({ datos }) {
         );
       })()}
 
+      {/* ── DESGLOSE DE RESERVAS ── */}
+      {(() => {
+        const reservas = (pickupEntries || [])
+          .filter(e => e.fecha_llegada && e.fecha_llegada >= hoyStr)
+          .sort((a,b) => a.fecha_llegada.localeCompare(b.fecha_llegada));
+        if (reservas.length === 0) return null;
+        const adrRes = e => (e.precio_total && e.noches && e.noches > 0)
+          ? Math.round(e.precio_total / e.noches)
+          : null;
+        const fmtDate = d => { if (!d) return "—"; const p = d.split("-"); return p.length===3 ? `${p[2]}/${p[1]}/${p[0]}` : d; };
+        return (
+          <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:12, overflow:"hidden" }}>
+            <div style={{ padding:"18px 24px 12px", borderBottom:`1px solid ${C.border}` }}>
+              <h3 style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:16, fontWeight:700, color:C.text, margin:0 }}>
+                Reservas en cartera
+                <span style={{ marginLeft:10, fontSize:11, fontWeight:400, color:C.textLight }}>{reservas.length} reservas futuras</span>
+              </h3>
+            </div>
+            <div style={{ overflowX:"auto" }}>
+              <table style={{ width:"100%", borderCollapse:"collapse", fontSize:12 }}>
+                <thead>
+                  <tr>
+                    {["Llegada","Salida","Canal","Noches","ADR"].map((h,hi) => (
+                      <th key={h} style={{ padding:"8px 14px", textAlign: hi>=3?"right":"left", fontSize:10, color:C.textLight, textTransform:"uppercase", letterSpacing:"1px", fontWeight:600, borderBottom:`2px solid ${C.border}`, whiteSpace:"nowrap" }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {reservas.map((e,i) => {
+                    const adr = adrRes(e);
+                    return (
+                      <tr key={i} style={{ borderBottom:`1px solid ${C.border}`, background: i%2===0?C.bg:C.bgCard }}>
+                        <td style={{ padding:"8px 14px", fontWeight:600, color:C.accent }}>{fmtDate(e.fecha_llegada)}</td>
+                        <td style={{ padding:"8px 14px", color:C.textMid }}>{fmtDate(e.fecha_salida)}</td>
+                        <td style={{ padding:"8px 14px", color:C.textMid }}>{e.canal || "—"}</td>
+                        <td style={{ padding:"8px 14px", textAlign:"right", color:C.textMid }}>{e.noches != null ? e.noches : "—"}</td>
+                        <td style={{ padding:"8px 14px", textAlign:"right", fontWeight:700, color:C.text }}>{adr != null ? `€${adr}` : "—"}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        );
+      })()}
 
     </div>
   );
@@ -3161,6 +3237,15 @@ function BudgetView({ datos, anio: anioProp }) {
   const filasConReal   = filas.filter(f => f.adr_real != null || f.revpar_real != null);
   const totalRevPpto   = filas.reduce((a, f) => a + (f.rev_total_ppto || 0), 0);
   const totalRevReal   = filasConReal.reduce((a, f) => a + (f.rev_total_real || 0), 0);
+  const totalRevRealLY = filasConReal.reduce((a, f) => {
+    const d = (produccion || []).filter(r => {
+      const fe = new Date(r.fecha + "T00:00:00");
+      return fe.getMonth() === f.mesIdx && fe.getFullYear() === anio - 1;
+    });
+    return a + d.reduce((s, r) => s + (r.revenue_total || 0), 0);
+  }, 0);
+  const lytdPct = totalRevRealLY > 0 ? (((totalRevReal - totalRevRealLY) / totalRevRealLY) * 100).toFixed(1) : null;
+  const lytdUp  = lytdPct != null ? parseFloat(lytdPct) >= 0 : null;
   const totalRevDev    = totalRevReal - filasConReal.reduce((a, f) => a + (f.rev_total_ppto || 0), 0);
   const totalRevDevPct = filasConReal.length > 0 ? ((totalRevDev / filasConReal.reduce((a,f)=>a+(f.rev_total_ppto||0),0))*100).toFixed(1) : null;
   const totalForecast  = filas.reduce((a, f) => a + (f.forecast_rev || 0), 0);
@@ -3227,13 +3312,20 @@ function BudgetView({ datos, anio: anioProp }) {
       {totalForecast > 0 && (
         <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:14 }}>
           {[
-            { label:t("rev_real_ytd"),         value:`€${Math.round(totalRevReal).toLocaleString("es-ES")}`,    color:C.green },
+            { label:t("rev_real_ytd"),         value:`€${Math.round(totalRevReal).toLocaleString("es-ES")}`,    color:C.green, lytd: lytdPct },
             { label:t("forecast_cierre_anio"), value:`€${Math.round(totalForecast).toLocaleString("es-ES")}`,   color:"#B8860B" },
             { label:t("presupuesto_anio"),     value:`€${Math.round(totalRevPpto).toLocaleString("es-ES")}`,   color:C.accent },
           ].map((k,i) => (
             <div key={i} style={{ background:C.bgCard, border:`1px solid ${C.border}`, borderRadius:10, padding:"16px 20px", borderLeft:`3px solid ${k.color}` }}>
               <p style={{ fontSize:10, color:C.textLight, textTransform:"uppercase", letterSpacing:1.5, marginBottom:6, fontWeight:600 }}>{k.label}</p>
-              <p style={{ fontSize:22, fontWeight:700, color:k.color, fontFamily:"'Plus Jakarta Sans',sans-serif" }}>{k.value}</p>
+              <div style={{ display:"flex", alignItems:"baseline", gap:8 }}>
+                <p style={{ fontSize:22, fontWeight:700, color:k.color, fontFamily:"'Plus Jakarta Sans',sans-serif", margin:0 }}>{k.value}</p>
+                {k.lytd != null && (
+                  <span style={{ fontSize:10, fontWeight:600, padding:"1px 5px", borderRadius:3, background: lytdUp ? C.greenLight : C.redLight, color: lytdUp ? C.green : C.red }}>
+                    {lytdUp ? "+" : ""}{k.lytd}% vs LYTD
+                  </span>
+                )}
+              </div>
             </div>
           ))}
         </div>
@@ -4631,12 +4723,6 @@ export default function App() {
 
         {/* Botones + Email + logout */}
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginLeft: "auto" }}>
-          {view === "dashboard" && (
-            <button id="ob-importar" onClick={() => setImportar(true)} style={{ background: C.accent, color: "#fff", border: "none", borderRadius: 7, padding: "5px 10px", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "'Plus Jakarta Sans',sans-serif", whiteSpace: "nowrap", display:"flex", alignItems:"center", gap:5 }}>
-              <span>✏️</span>
-              <span className="topbar-importar-label">Actualizar datos</span>
-            </button>
-          )}
           <select value={lang} onChange={e => { setLang(e.target.value); localStorage.setItem("fr_lang", e.target.value); }}
             style={{ border:`1px solid ${C.border}`, borderRadius:7, padding:"5px 8px", fontSize:11, fontWeight:500, color:C.text, background:C.bgCard, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", outline:"none" }}>
             <option value="es">Español</option>
