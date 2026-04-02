@@ -434,7 +434,7 @@ function KpiModal({ kpi, datos, mes, anio, onClose }) {
       return {
         dia: `${f.getDate()}/${f.getMonth()+1}`,
         diaSemana: f.getDay(),
-        fecha: f.toLocaleDateString("es-ES",{weekday:"long",day:"numeric",month:"long"}),
+        fecha: f.toLocaleDateString("es-ES",{day:"numeric",month:"long",year:"numeric"}),
         occ:    habDis>0 ? Math.round(d.hab_ocupadas/habDis*100) : 0,
         adr:    d.hab_ocupadas>0 ? Math.round(d.revenue_hab/d.hab_ocupadas) : 0,
         revpar: habDis>0 ? Math.round(d.revenue_hab/habDis) : 0,
@@ -674,8 +674,8 @@ function KpiModal({ kpi, datos, mes, anio, onClose }) {
               <ComposedChart data={chartData}>
                 <defs>
                   <linearGradient id="kpiGradBar" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={C.accent} stopOpacity={1}/>
-                    <stop offset="100%" stopColor={C.accent} stopOpacity={0.6}/>
+                    <stop offset="0%" stopColor="#004B87" stopOpacity={0.9}/>
+                    <stop offset="100%" stopColor="#004B87" stopOpacity={0.55}/>
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke={C.border} vertical={false}/>
