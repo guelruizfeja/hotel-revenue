@@ -348,7 +348,7 @@ const AnimatedBar = (props) => {
   const [animKey, setAnimKey] = useState(0);
   if (!height || height <= 0) return null;
   return (
-    <g onClick={onClick} style={{ cursor:"pointer" }}
+    <g onClick={onClick} style={{ cursor:"pointer", outline:"none" }}
       onMouseEnter={() => setAnimKey(k => k + 1)}>
       {/* Barra base — siempre visible a color completo */}
       <rect x={x} y={y} width={width} height={height} rx={4} ry={4} fill={fill}/>
@@ -4572,6 +4572,8 @@ export default function App() {
           .recharts-wrapper { width: 100% !important; }
           .recharts-wrapper svg { width: 100% !important; outline: none; }
           .recharts-wrapper svg:focus, .recharts-wrapper svg:focus-visible { outline: none; }
+          .recharts-surface:focus, .recharts-surface:focus-visible { outline: none; }
+          .recharts-wrapper *:focus, .recharts-wrapper *:focus-visible { outline: none; }
 
           /* Budget KPIs 3 cards → 1 columna */
           .budget-kpis { grid-template-columns: 1fr !important; }
