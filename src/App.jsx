@@ -2015,24 +2015,38 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
                     ))}
                     {diasDelMes.map(({dia,occ,adr,esFut,resUltDia})=>{
                       const resDia = resUltDia || 0;
-                      const bgColor = resDia > 0 ? C.greenLight : resDia < 0 ? C.redLight : C.bg;
-                      const borderColor = resDia > 0 ? C.green : resDia < 0 ? C.red : C.border;
-                      const textColor = resDia > 0 ? C.green : resDia < 0 ? C.red : C.textLight;
+                      const tieneReserva = resDia > 0;
+                      const borderColor = tieneReserva ? "#B8860B" : occ!=null ? heatColor(occ)+"CC" : C.border;
+                      const bg = occ!=null ? heatBg(occ) : C.bg;
                       return (
-                        <div key={dia} style={{ aspectRatio:"1", borderRadius:5, background: bgColor, border:`1.5px solid ${borderColor}`, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:1 }}>
+                        <div key={dia} style={{ aspectRatio:"1", borderRadius:5, background: bg, border:`1.5px solid ${borderColor}`, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:1, position:"relative" }}>
+                          {tieneReserva && (
+                            <span style={{ position:"absolute", top:2, right:2, fontSize:8, lineHeight:1, animation:"pulse-rayo 1.5s ease-in-out infinite" }}>⚡</span>
+                          )}
                           <p style={{ fontSize:8, color:C.textLight, lineHeight:1 }}>{dia}</p>
                           {occ!=null
                             ? <p style={{ fontSize:11, fontWeight:800, color:heatColor(occ), lineHeight:1 }}>{occ.toFixed(0)}%</p>
                             : <p style={{ fontSize:8, color:C.border }}>—</p>
                           }
                           {adr && !esFut && <p style={{ fontSize:7, color:C.textLight, lineHeight:1 }}>€{Math.round(adr)}</p>}
-                          {resDia!==0 && <p style={{ fontSize:7, color:textColor, fontWeight:700, lineHeight:1 }}>{resDia>0?"+":""}{resDia}</p>}
+                          {resDia!==0 && <p style={{ fontSize:7, color:tieneReserva?"#B8860B":C.red, fontWeight:700, lineHeight:1 }}>{resDia>0?"+":""}{resDia}</p>}
                         </div>
                       );
                     })}
                   </div>
 
-
+                  {/* Leyenda */}
+                  <div style={{ marginTop:10, display:"flex", flexWrap:"wrap", gap:8, alignItems:"center" }}>
+                    {[["#81C784","<25%"],["#4CAF50","25-40%"],["#FFC107","40-55%"],["#FF7043","55-70%"],["#E53935","70-85%"],["#B71C1C",">85%"]].map(([col,lbl])=>(
+                      <span key={lbl} style={{ display:"flex", alignItems:"center", gap:3, fontSize:9, color:C.textLight }}>
+                        <span style={{ width:10, height:10, borderRadius:2, background:col, display:"inline-block" }}/>
+                        {lbl}
+                      </span>
+                    ))}
+                    <span style={{ fontSize:9, color:C.textLight, display:"flex", alignItems:"center", gap:3 }}>
+                      <span style={{ fontSize:10 }}>⚡</span> Reserva captada
+                    </span>
+                  </div>
 
                 </div>
               </div>
