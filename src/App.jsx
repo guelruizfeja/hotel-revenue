@@ -365,6 +365,11 @@ const AnimatedBar = (props) => {
   );
 };
 
+const SimpleBar = ({ x, y, width, height, fill, fillOpacity }) => {
+  if (!height || height <= 0) return null;
+  return <rect x={x} y={y} width={width} height={height} rx={4} ry={4} fill={fill} fillOpacity={fillOpacity}/>;
+};
+
 const CustomTooltip = ({ active, payload, label, unit }) => {
   if (!active || !payload?.length) return null;
   const OCC_NAMES = ["Ocupación","occ","OCC"];
@@ -2743,7 +2748,7 @@ function PickupView({ datos }) {
                   itemStyle={{ color:"#ffffff" }}
                   cursor={false}
                 />
-                <Bar dataKey="valor" radius={[4,4,0,0]} maxBarSize={56} activeBar={false}>
+                <Bar dataKey="valor" radius={[4,4,0,0]} maxBarSize={56} shape={(p) => <SimpleBar {...p}/>}>
                   {chartData.map((d,i) => (
                     <Cell key={i} fill={`url(#cg_${i})`}/>
                   ))}
@@ -3312,9 +3317,9 @@ function BudgetView({ datos, anio: anioProp }) {
                 );
               }}
             />
-            <Bar dataKey="Ppto"     name={t("ppto_abrev")} fill="#64748B" fillOpacity={0.45} radius={[4,4,0,0]} activeBar={false}/>
-            <Bar dataKey="Real"     name={t("real_label")} fill="url(#gradReal)"     radius={[4,4,0,0]} activeBar={false}/>
-            <Bar dataKey="Forecast" name="Forecast"         fill="url(#gradForecast)" radius={[4,4,0,0]} activeBar={false}/>
+            <Bar dataKey="Ppto"     name={t("ppto_abrev")} fill="#64748B" fillOpacity={0.45} radius={[4,4,0,0]} shape={(p) => <SimpleBar {...p}/>}/>
+            <Bar dataKey="Real"     name={t("real_label")} fill="url(#gradReal)"     radius={[4,4,0,0]} shape={(p) => <SimpleBar {...p}/>}/>
+            <Bar dataKey="Forecast" name="Forecast"         fill="url(#gradForecast)" radius={[4,4,0,0]} shape={(p) => <SimpleBar {...p}/>}/>
           </BarChart>
         </ResponsiveContainer>
       </Card>
