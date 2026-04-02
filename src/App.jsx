@@ -523,7 +523,26 @@ function KpiModal({ kpi, datos, mes, anio, onClose }) {
           </div>
         </div>
 
-        {(kpi === "TRevPAR" || kpi === "Revenue Total") ? (() => {
+        {kpi === "TRevPAR" ? (() => {
+          const n = diasMesCompleto.length || 1;
+          const avgHab = diasMesCompleto.reduce((a,d)=>a+d.revHab,0) / n;
+          const avgFnb = diasMesCompleto.reduce((a,d)=>a+d.revFnb,0) / n;
+          return (
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(2,1fr)", gap:12, marginBottom:20 }}>
+              {[
+                { label:"Media diaria", value:`€${Math.round(avgHab+avgFnb).toLocaleString("es-ES")}` },
+                { label:`Vs ${MESES_FULL[mesPrevIdx]}`, value: varComp!==null ? `${parseFloat(varComp)>=0?"+":""}${varComp}%` : "Sin datos", up: varComp!==null?parseFloat(varComp)>=0:true },
+                { label:"Hab./día", value:`€${Math.round(avgHab).toLocaleString("es-ES")}`, color:C.accent },
+                { label:"F&B/día", value:`€${Math.round(avgFnb).toLocaleString("es-ES")}`, color:"#E85D04" },
+              ].map((k,i)=>(
+                <div key={i} style={{ background:`${C.accent}0f`, borderRadius:8, padding:"16px", borderLeft:`3px solid ${k.color||C.accent}`, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", textAlign:"center" }}>
+                  <p style={{ fontSize:10, color:C.textMid, textTransform:"uppercase", letterSpacing:1.5, marginBottom:6, fontWeight:600 }}>{k.label}</p>
+                  <p style={{ fontSize:22, fontWeight:700, color:k.color||(k.up===false?C.red:k.up===true?C.green:C.text), fontFamily:"'Plus Jakarta Sans',sans-serif" }}>{k.value}</p>
+                </div>
+              ))}
+            </div>
+          );
+        })() : kpi === "Revenue Total" ? (() => {
           const totalHabS  = diasMes.reduce((a,d)=>a+d.revHab,0);
           const totalFnbS  = diasMes.reduce((a,d)=>a+d.revFnb,0);
           return (
@@ -557,15 +576,16 @@ function KpiModal({ kpi, datos, mes, anio, onClose }) {
 
         <div style={{ marginBottom:16 }}>
           <p style={{ fontSize:12, fontWeight:600, color:C.textMid, marginBottom:10, textTransform:"uppercase", letterSpacing:1 }}>
-            {kpi==="TRevPAR" ? "Desglose de ingresos del mes" : kpi==="Revenue Total" ? "Evolución anual" : "Evolución del mes"}
+            {kpi==="TRevPAR" ? "Desglose diario de ingresos" : kpi==="Revenue Total" ? "Evolución anual" : "Evolución del mes"}
           </p>
           {kpi==="TRevPAR" ? (() => {
-            const totalHab  = diasMes.reduce((a,d)=>a+d.revHab,0);
-            const totalFnb  = diasMes.reduce((a,d)=>a+d.revFnb,0);
-            const total     = totalHab+totalFnb;
-            const pieData   = [
-              { name:"Habitaciones", value:totalHab, pct: total>0?Math.round(totalHab/total*100):0 },
-              { name:"F&B",          value:totalFnb, pct: total>0?Math.round(totalFnb/total*100):0 },
+            const n2 = diasMesCompleto.length || 1;
+            const avgHab2 = diasMesCompleto.reduce((a,d)=>a+d.revHab,0) / n2;
+            const avgFnb2 = diasMesCompleto.reduce((a,d)=>a+d.revFnb,0) / n2;
+            const total   = avgHab2 + avgFnb2;
+            const pieData = [
+              { name:"Habitaciones", value:avgHab2, pct: total>0?Math.round(avgHab2/total*100):0 },
+              { name:"F&B",          value:avgFnb2, pct: total>0?Math.round(avgFnb2/total*100):0 },
             ].filter(d=>d.value>0);
             const PIE_COLORS = [C.accent, "#E85D04"];
             return (
@@ -584,7 +604,7 @@ function KpiModal({ kpi, datos, mes, anio, onClose }) {
                         <p style={{ fontSize:13, fontWeight:600, color:C.text }}>{d.name}</p>
                       </div>
                       <div style={{ textAlign:"right" }}>
-                        <p style={{ fontSize:13, fontWeight:700, color:C.text }}>€{Math.round(d.value).toLocaleString("es-ES")}</p>
+                        <p style={{ fontSize:13, fontWeight:700, color:C.text }}>€{Math.round(d.value).toLocaleString("es-ES")}/día</p>
                         <p style={{ fontSize:11, color:C.textLight }}>{d.pct}%</p>
                       </div>
                     </div>
