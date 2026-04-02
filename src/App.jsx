@@ -798,6 +798,7 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
   const [errorPpto, setErrorPpto] = useState("");
   const [progresoPpto, setProgresoPpto] = useState("");
   const [progresoPctPpto, setProgresoPctPpto] = useState(0);
+  const [showPptoZone, setShowPptoZone] = useState(false);
   // Vaciar
   const [vaciando, setVaciando] = useState(false);
   const [confirmVaciar, setConfirmVaciar] = useState(false);
@@ -1183,6 +1184,7 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
 
       setProgresoPctPpto(100);
       setResultadoPpto({ presupuesto: presupuestoRows.length });
+      setShowPptoZone(false);
       if (onImportado) onImportado();
     } catch (e) {
       setErrorPpto(e.message);
@@ -1248,8 +1250,33 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
           </button>
         )}
 
-        {/* Dos zonas de carga */}
-        <div style={{ display:"flex", gap:16, marginBottom:14 }}>
+        {/* Botón colapsable presupuesto */}
+        <div style={{ marginBottom:10 }}>
+          <button onClick={() => { setShowPptoZone(v=>!v); setErrorPpto(""); }}
+            style={{ display:"flex", alignItems:"center", gap:6, background:"none", border:"none", cursor:"pointer", padding:0, fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+            <span style={{ fontSize:10, color:C.textLight }}>{showPptoZone ? "▲" : "▼"}</span>
+            <span style={{ fontSize:11, fontWeight:600, color:resultadoPpto ? "#2D7A4F" : C.textMid }}>
+              💰 Modificar ppto.
+            </span>
+            {resultadoPpto && <span style={{ fontSize:10, color:"#2D7A4F" }}>✅ {resultadoPpto.presupuesto} {t("meses_presupuesto")}</span>}
+          </button>
+          {showPptoZone && (
+            <div style={{ marginTop:8, padding:"12px 14px", background:"#F7F3EE", borderRadius:8, border:"1px solid #E8E0D5" }}>
+              <p style={{ fontSize:11, color:"#A8998A", marginBottom:8 }}>{t("imp_ppto_sub")}</p>
+              <UploadZone
+                id="excel-input-ppto"
+                loading={loadingPpto} resultado={null} error={errorPpto}
+                progreso={progresoPpto} progresoPct={progresoPctPpto}
+                onFile={procesarPresupuesto}
+                title="" sub=""
+                okContent={null}
+              />
+            </div>
+          )}
+        </div>
+
+        {/* Zona principal: datos + pickup */}
+        <div style={{ marginBottom:14 }}>
           <UploadZone
             id="excel-input-main"
             loading={loadingMain} resultado={resultadoMain} error={errorMain}
@@ -1260,18 +1287,6 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
             okContent={<>
               <p style={{ color:"#2D7A4F", fontSize:12 }}>✅ {resultadoMain?.produccion} {t("dias_produccion")}</p>
               {resultadoMain?.pickup > 0 && <p style={{ color:"#2D7A4F", fontSize:12, marginTop:4 }}>🎯 {resultadoMain?.pickup} {t("reservas_pickup")}</p>}
-            </>}
-          />
-          <div style={{ width:1, background:"#E8E0D5", flexShrink:0 }}/>
-          <UploadZone
-            id="excel-input-ppto"
-            loading={loadingPpto} resultado={resultadoPpto} error={errorPpto}
-            progreso={progresoPpto} progresoPct={progresoPctPpto}
-            onFile={procesarPresupuesto}
-            title={`💰 ${t("imp_ppto_title")}`}
-            sub={t("imp_ppto_sub")}
-            okContent={<>
-              <p style={{ color:"#2D7A4F", fontSize:12 }}>✅ {resultadoPpto?.presupuesto} {t("meses_presupuesto")}</p>
             </>}
           />
         </div>
