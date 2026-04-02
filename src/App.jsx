@@ -379,7 +379,7 @@ const CustomTooltip = ({ active, payload, label, unit }) => {
           : p.value;
         return (
           <p key={i} style={{ color: "#fff", fontSize: 12, margin: "2px 0" }}>
-            <span style={{ color: p.color }}>{p.name}: </span>{val}
+            <span style={{ color: "#fff" }}>{p.name}: </span>{val}
           </p>
         );
       })}
@@ -643,7 +643,7 @@ function KpiModal({ kpi, datos, mes, anio, onClose }) {
                   <span style={{ fontSize:10, color:C.textMid }}>Actual</span>
                 </div>
                 <div style={{ display:"flex", alignItems:"center", gap:5 }}>
-                  <div style={{ width:18, height:2, background:"#E85D04", borderRadius:1 }}/>
+                  <div style={{ width:18, height:2, background:"#B8860B", borderRadius:1 }}/>
                   <span style={{ fontSize:10, color:C.textMid }}>Año anterior</span>
                 </div>
               </div>
@@ -661,7 +661,7 @@ function KpiModal({ kpi, datos, mes, anio, onClose }) {
                 <YAxis tick={{ fill: C.textLight, fontSize: 11 }} axisLine={false} tickLine={false} unit={unit}/>
                 <Tooltip content={<CustomTooltip unit={unit}/>} cursor={{ fill: "rgba(10,37,64,0.04)" }}/>
                 <Bar dataKey={fieldKey} name={kpi} fill="url(#kpiGradBar)" radius={[4,4,0,0]} barSize={modoVista==="mes"?10:6}/>
-                <Line type="monotone" dataKey="ly" name="Año anterior" stroke="#E85D04" strokeWidth={1.5} dot={false} connectNulls/>
+                <Line type="monotone" dataKey="ly" name="Año anterior" stroke="#B8860B" strokeWidth={2} dot={{fill:"#B8860B", r:3, strokeWidth:0}} activeDot={{r:4}} connectNulls/>
               </ComposedChart>
             </ResponsiveContainer>
           </>) : null}
