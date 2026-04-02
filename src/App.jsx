@@ -2210,10 +2210,10 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
                     </div>
                   </div>
                   
-                  <div style={{ height:300 }}>
+                  <div style={{ height:300 }} onMouseDown={e => e.preventDefault()}>
                     <ResponsiveContainer width="100%" height={300}>
                       {metricaSel === "adr_occ" ? (
-                        <ComposedChart data={porMes} barSize={14} barCategoryGap="32%" onClick={() => {}}>
+                        <ComposedChart data={porMes} barSize={14} barCategoryGap="32%">
                           <defs>
                             <linearGradient id="gradOcc" x1="0" y1="0" x2="0" y2="1">
                               <stop offset="0%" stopColor="#004B87" stopOpacity={0.9}/>
@@ -2226,7 +2226,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
                           <YAxis yAxisId="right" orientation="right" tick={{ fill: C.textLight, fontSize: 11 }} axisLine={false} tickLine={false} unit="€"/>
                           <Tooltip content={<CustomTooltip/>} cursor={false}/>
                           <Bar yAxisId="left" dataKey="occ" name="Ocupación" fill="url(#gradOcc)" radius={[4,4,0,0]}
-                            cursor="pointer"
+                            cursor="pointer" activeBar={false}
                             shape={(p) => <AnimatedBar {...p} onClick={() => { if(p?.mesIdx!=null) setModalDiario({mesIdx:p.mesIdx, anioIdx:p.anioIdx}); }}/>}
                             onClick={(data) => { if(data?.mesIdx!=null) setModalDiario({mesIdx:data.mesIdx, anioIdx:data.anioIdx}); }}
                           />
