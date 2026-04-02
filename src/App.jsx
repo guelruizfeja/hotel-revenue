@@ -2695,7 +2695,10 @@ function PickupView({ datos }) {
                   <div style={{ display:"flex", justifyContent:"space-between", alignItems:"baseline" }}>
                     <span style={{ fontSize:12, fontWeight:700, color:C.text }}>{fmt(fecha)}</span>
                     <div style={{ display:"flex", alignItems:"baseline", gap:6 }}>
-                      <span style={{ fontSize:11, fontWeight:700, color:occColor }}>{occ}%</span>
+                      <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end" }}>
+                        <span style={{ fontSize:11, fontWeight:700, color:occColor }}>{occ}%</span>
+                        <span style={{ fontSize:8, color:C.textLight, lineHeight:1, marginTop:1 }}>ocup.</span>
+                      </div>
                       <span style={{ fontSize:13, fontWeight:800, color:COL_OTB, fontFamily:"'Plus Jakarta Sans',sans-serif" }}>{otb} {t("res_abrev")}</span>
                     </div>
                   </div>
