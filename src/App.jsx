@@ -1860,9 +1860,9 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
           if (habDis>0) return { label, mi, occ: habOcu/habDis*100, occLY, esOtb: false };
           // Mes futuro: sumar reservas OTB del pickup
           const mesStr = `${anio}-${_pad(mi+1)}`;
-          const primerDia = `${mesStr}-01`;
-          if (primerDia < _hoyStr) return { label, mi, occ: null, occLY, esOtb: false };
           const diasMes = new Date(anio, mi+1, 0).getDate();
+          const ultimoDia = `${mesStr}-${_pad(diasMes)}`;
+          if (ultimoDia < _hoyStr) return { label, mi, occ: null, occLY, esOtb: false };
           // Calcular habH desde produccion si no viene del hotel
           const habFromProd = produccion.length > 0
             ? Math.round(produccion.reduce((a,r)=>a+(r.hab_disponibles||0),0)/produccion.length)
@@ -4266,7 +4266,7 @@ export default function App() {
     // ── Inyectar grupos confirmados como pickup sintético ──
     // Cada noche de estancia del grupo = una entrada por día con hab rooms como num_reservas
     const hoyIso = new Date().toISOString().slice(0, 10);
-    const gruposConfirmados = (gruposData || []).filter(g => g.estado === "confirmado" && g.fecha_inicio && g.fecha_fin);
+    const gruposConfirmados = (gruposData || []).filter(g => g.estado === "confirmado" && g.fecha_inicio && g.fecha_fin && g.fecha_confirmacion);
     const pickupGrupos = [];
     for (const g of gruposConfirmados) {
       const ini = new Date(g.fecha_inicio + "T00:00:00");
