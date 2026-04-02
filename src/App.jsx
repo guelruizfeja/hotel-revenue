@@ -2021,11 +2021,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
           if (occ<85)  return "#E53935";
           return "#B71C1C";
         };
-        const textOnHeat = (occ) => {
-          if (occ==null) return C.text;
-          if (occ<55) return "#1a3d1a";
-          return "#ffffff";
-        };
+        const textOnHeat = (occ) => occ==null ? C.text : "#ffffff";
         const heatBg = (occ) => occ!=null
           ? `linear-gradient(to bottom, ${heatColor(occ)}88, ${heatColor(occ)}33)`
           : C.bg;
@@ -2103,7 +2099,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
                       )}
                       <p style={{ fontSize:9, fontWeight:600, color:C.textLight, textTransform:"uppercase", letterSpacing:0.5, marginBottom:3 }}>{label}</p>
                       {occ!=null
-                        ? <p style={{ fontSize:16, fontWeight:800, color:textOnHeat(occ), fontFamily:"'Plus Jakarta Sans',sans-serif", textShadow:"0 1px 3px rgba(0,0,0,0.25)" }}>{occ.toFixed(0)}%</p>
+                        ? <p style={{ fontSize:16, fontWeight:800, color:textOnHeat(occ), fontFamily:"'Plus Jakarta Sans',sans-serif", textShadow:"0 1px 4px rgba(0,0,0,0.5)" }}>{occ.toFixed(0)}%</p>
                         : <p style={{ fontSize:12, color:C.border }}>—</p>
                       }
                       {resUltDia !== 0
@@ -2160,12 +2156,12 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
                           {tieneReserva && (
                             <span style={{ position:"absolute", top:2, right:2, fontSize:8, lineHeight:1, animation:"pulse-rayo 1.5s ease-in-out infinite" }}>⚡</span>
                           )}
-                          <p style={{ fontSize:8, fontWeight:600, color:textOnHeat(occ), lineHeight:1, opacity:0.75 }}>{dia}</p>
+                          <p style={{ fontSize:8, fontWeight:600, color:textOnHeat(occ), lineHeight:1, opacity:0.8, textShadow:"0 1px 3px rgba(0,0,0,0.4)" }}>{dia}</p>
                           {occ!=null
-                            ? <p style={{ fontSize:11, fontWeight:800, color:textOnHeat(occ), lineHeight:1, textShadow:"0 1px 2px rgba(0,0,0,0.2)" }}>{occ.toFixed(0)}%</p>
+                            ? <p style={{ fontSize:11, fontWeight:800, color:textOnHeat(occ), lineHeight:1, textShadow:"0 1px 3px rgba(0,0,0,0.45)" }}>{occ.toFixed(0)}%</p>
                             : <p style={{ fontSize:8, color:C.border }}>—</p>
                           }
-                          {adr && !esFut && <p style={{ fontSize:7, fontWeight:600, color:textOnHeat(occ), lineHeight:1, opacity:0.8 }}>€{Math.round(adr)}</p>}
+                          {adr && !esFut && <p style={{ fontSize:7, fontWeight:600, color:textOnHeat(occ), lineHeight:1, opacity:0.85, textShadow:"0 1px 3px rgba(0,0,0,0.4)" }}>€{Math.round(adr)}</p>}
                           {resDia!==0 && <p style={{ fontSize:7, color:tieneReserva?"#B8860B":C.red, fontWeight:700, lineHeight:1 }}>{resDia>0?"+":""}{resDia}</p>}
                         </div>
                       );
