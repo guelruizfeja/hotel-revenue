@@ -371,7 +371,7 @@ const CustomTooltip = ({ active, payload, label, unit }) => {
   const displayLabel = payload[0]?.payload?.mesNombre || payload[0]?.payload?.fecha || label;
   return (
     <div style={{ background: C.bgDeep, borderRadius: 10, padding: "12px 16px", boxShadow: "0 8px 24px rgba(0,0,0,0.22)" }}>
-      <p style={{ color: "#D4A017", fontSize: 10, fontWeight: 700, marginBottom: 6, textTransform: "uppercase", letterSpacing: "1px" }}>{displayLabel}</p>
+      <p style={{ color: "#fff", fontSize: 10, fontWeight: 700, marginBottom: 6, textTransform: "uppercase", letterSpacing: "1px" }}>{displayLabel}</p>
       {payload.map((p, i) => {
         const isOcc = unit === "%" || OCC_NAMES.includes(p.name);
         const val = typeof p.value === 'number'
@@ -434,7 +434,7 @@ function KpiModal({ kpi, datos, mes, anio, onClose }) {
       return {
         dia: `${f.getDate()}/${f.getMonth()+1}`,
         diaSemana: f.getDay(),
-        fecha: f.toLocaleDateString("es-ES",{weekday:"short",day:"numeric",month:"short"}),
+        fecha: f.toLocaleDateString("es-ES",{weekday:"long",day:"numeric",month:"long"}),
         occ:    habDis>0 ? Math.round(d.hab_ocupadas/habDis*100) : 0,
         adr:    d.hab_ocupadas>0 ? Math.round(d.revenue_hab/d.hab_ocupadas) : 0,
         revpar: habDis>0 ? Math.round(d.revenue_hab/habDis) : 0,
