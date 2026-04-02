@@ -110,6 +110,9 @@ const TRANSLATIONS = {
     meses_presupuesto:"meses de presupuesto importados",
     leyendo:"Leyendo archivo...", procesando:"Procesando hojas...",
     limpiando:"Limpiando datos anteriores...", guardando:"Guardando datos...",
+    imp_datos_title:"Datos & Pickup", imp_datos_sub:"Producción diaria + reservas pickup",
+    imp_ppto_title:"Presupuesto", imp_ppto_sub:"Sólo hoja 💰 Presupuesto",
+    imp_ppto_ok:"Presupuesto actualizado",
     // Suscripción
     empieza_gratis:"Empieza gratis 30 días",
     acceso_completo:"Acceso completo a FastRev durante 30 días sin coste.",
@@ -209,6 +212,9 @@ const TRANSLATIONS = {
     importado_ok:"Data imported successfully!", ver_dashboard:"View dashboard",
     dias_produccion:"production days imported", reservas_pickup:"pickup bookings imported",
     meses_presupuesto:"budget months imported",
+    imp_datos_title:"Data & Pickup", imp_datos_sub:"Daily production + pickup bookings",
+    imp_ppto_title:"Budget", imp_ppto_sub:"Only 💰 Budget sheet",
+    imp_ppto_ok:"Budget updated",
     leyendo:"Reading file...", procesando:"Processing sheets...",
     limpiando:"Clearing previous data...", guardando:"Saving data...",
     empieza_gratis:"Start free for 30 days",
@@ -310,6 +316,9 @@ const TRANSLATIONS = {
     meses_presupuesto:"mois de budget importés",
     leyendo:"Lecture du fichier...", procesando:"Traitement des feuilles...",
     limpiando:"Suppression des données précédentes...", guardando:"Sauvegarde...",
+    imp_datos_title:"Données & Pickup", imp_datos_sub:"Production journalière + réservations pickup",
+    imp_ppto_title:"Budget", imp_ppto_sub:"Uniquement la feuille 💰 Budget",
+    imp_ppto_ok:"Budget mis à jour",
     empieza_gratis:"Commencez gratuitement 30 jours",
     acceso_completo:"Accès complet à FastRev pendant 30 jours sans frais.",
     precio_sub:"Ensuite, seulement 49€/mois + TVA. Annulez quand vous voulez.",
@@ -777,16 +786,24 @@ function EmptyState({ mensaje }) {
 // ─── IMPORTAR EXCEL ───────────────────────────────────────────────
 function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombreProp }) {
   const t = useT();
-  const [loading, setLoading] = useState(false);
-  const [resultado, setResultado] = useState(null);
-  const [error, setError] = useState("");
-  const [progreso, setProgreso] = useState("");
-  const [progresoPct, setProgresoPct] = useState(0);
+  // Estado datos principales
+  const [loadingMain, setLoadingMain] = useState(false);
+  const [resultadoMain, setResultadoMain] = useState(null);
+  const [errorMain, setErrorMain] = useState("");
+  const [progresoMain, setProgresoMain] = useState("");
+  const [progresoPctMain, setProgresoPctMain] = useState(0);
+  // Estado presupuesto
+  const [loadingPpto, setLoadingPpto] = useState(false);
+  const [resultadoPpto, setResultadoPpto] = useState(null);
+  const [errorPpto, setErrorPpto] = useState("");
+  const [progresoPpto, setProgresoPpto] = useState("");
+  const [progresoPctPpto, setProgresoPctPpto] = useState(0);
+  // Vaciar
   const [vaciando, setVaciando] = useState(false);
   const [confirmVaciar, setConfirmVaciar] = useState(false);
 
   const vaciarDatos = async () => {
-    setVaciando(true); setError("");
+    setVaciando(true);
     try {
       await Promise.all([
         supabase.from("produccion_diaria").delete().eq("hotel_id", session.user.id),
@@ -797,25 +814,29 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
       onImportado();
       onClose();
     } catch(e) {
-      setError("Error al vaciar datos: " + e.message);
+      setErrorMain("Error al vaciar datos: " + e.message);
     }
     setVaciando(false);
   };
 
-  const procesarExcel = async (file) => {
-    setLoading(true); setError(""); setResultado(null); setProgresoPct(0);
+  const validarArchivo = (file) => {
+    if (file.size > 10 * 1024 * 1024) throw new Error("El archivo es demasiado grande (máx. 10 MB)");
+    const TIPOS_VALIDOS = ["application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "application/vnd.ms-excel"];
+    if (!TIPOS_VALIDOS.includes(file.type) && !file.name.endsWith(".xlsx") && !file.name.endsWith(".xls")) {
+      throw new Error("Formato no válido. Sube un archivo .xlsx");
+    }
+  };
+
+  // ── Import datos principales: producción + pickup (sin presupuesto) ──
+  const procesarPrincipal = async (file) => {
+    setLoadingMain(true); setErrorMain(""); setResultadoMain(null); setProgresoPctMain(0);
     try {
-      const MAX_SIZE = 10 * 1024 * 1024; // 10 MB
-      if (file.size > MAX_SIZE) throw new Error("El archivo es demasiado grande (máx. 10 MB)");
-      const TIPOS_VALIDOS = ["application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "application/vnd.ms-excel"];
-      if (!TIPOS_VALIDOS.includes(file.type) && !file.name.endsWith(".xlsx") && !file.name.endsWith(".xls")) {
-        throw new Error("Formato de archivo no válido. Sube un archivo .xlsx");
-      }
-      setProgreso(t("leyendo")); setProgresoPct(5);
+      validarArchivo(file);
+      setProgresoMain(t("leyendo")); setProgresoPctMain(5);
       const XLSX = await import("xlsx");
       const data = await file.arrayBuffer();
       const wb = XLSX.read(data);
-      setProgresoPct(15);
+      setProgresoPctMain(15);
 
       // ── Producción Diaria ──
       const ws = wb.Sheets["📅 Producción Diaria"];
@@ -904,58 +925,9 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
         }
       }
 
-      // ── Presupuesto — col[0]=Mes, col[1]=OCC(decimal), col[4]=ADR, col[7]=RevPAR, col[10]=RevTotal ──
-      const wsBu = wb.Sheets["💰 Presupuesto"];
-      const presupuestoRows = [];
-      if (wsBu) {
-        const rowsBu = XLSX.utils.sheet_to_json(wsBu, { header: 1 });
-        const MESES_PPTO = ["Enero","Febrero","Marzo","Abril","Mayo","Junio",
-                            "Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
-        // Buscar todos los bloques: una celda con un número de 4 dígitos (año) seguida de "Enero"
-        const aniosEnProd = produccionRows.map(r => parseInt(r.fecha.slice(0,4))).filter(Boolean);
-        let bloques = []; // [{anio, startRow}]
-        for (let r = 0; r < rowsBu.length; r++) {
-          const v = rowsBu[r]?.[0];
-          const asNum = parseInt(v);
-          if (asNum >= 2020 && asNum <= 2035) {
-            // Buscar "Enero" en las siguientes filas
-            for (let s = r+1; s <= r+5; s++) {
-              if (rowsBu[s]?.[0] === "Enero") { bloques.push({ anio: asNum, startRow: s }); break; }
-            }
-          }
-        }
-        // Si no hay bloques con año explícito, usar método antiguo con año más reciente de producción
-        if (bloques.length === 0) {
-          const anioFallback = aniosEnProd.length > 0 ? Math.max(...aniosEnProd) : new Date().getFullYear();
-          for (let r = 0; r < rowsBu.length; r++) {
-            if (rowsBu[r]?.[0] === "Enero") { bloques.push({ anio: anioFallback, startRow: r }); break; }
-          }
-        }
-        for (const { anio: anioBloque, startRow } of bloques) {
-          for (let i = 0; i < 12; i++) {
-            const row = rowsBu[startRow + i];
-            if (!row || !MESES_PPTO.includes(row[0])) continue;
-            const occ_ppto       = parseFloat(row[1])  || null;
-            const adr_ppto       = parseFloat(row[4])  || null;
-            const revpar_ppto    = parseFloat(row[7])  || null;
-            const rev_total_ppto = parseFloat(row[10]) || null;
-            if (!occ_ppto && !adr_ppto && !revpar_ppto && !rev_total_ppto) continue;
-            presupuestoRows.push({
-              hotel_id: session.user.id,
-              anio: anioBloque,
-              mes: i + 1,
-              occ_ppto:       occ_ppto       ? Math.round(occ_ppto * 1000) / 10 : null,
-              adr_ppto:       adr_ppto       ? Math.round(adr_ppto * 100) / 100 : null,
-              revpar_ppto:    revpar_ppto    ? Math.round(revpar_ppto * 100) / 100 : null,
-              rev_total_ppto: rev_total_ppto ? Math.round(rev_total_ppto) : null,
-            });
-          }
-        }
-      }
+      if (produccionRows.length === 0) throw new Error("No se encontró la hoja '📅 Producción Diaria' o está vacía");
 
-      if (produccionRows.length === 0) throw new Error("No se encontraron datos en la hoja de Producción Diaria");
-
-      setProgreso(t("procesando")); setProgresoPct(30);
+      setProgresoMain(t("procesando")); setProgresoPctMain(30);
 
       // Detectar años y limpiar
       const aniosImport = [...new Set(produccionRows.map(r => r.fecha.slice(0, 4)))];
@@ -963,15 +935,13 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
       const aniosPickup = [...new Set(pickupRows.map(r => r.fecha_llegada.slice(0, 4)))];
       const todosAnios  = [...new Set([...aniosImport, ...aniosPickup])];
 
-      setProgreso(t("limpiando")); setProgresoPct(40);
+      setProgresoMain(t("limpiando")); setProgresoPctMain(40);
       await Promise.all([
-        ...aniosImport.flatMap(anio => [
+        ...aniosImport.map(anio =>
           supabase.from("produccion_diaria").delete()
             .eq("hotel_id", session.user.id)
-            .gte("fecha", `${anio}-01-01`).lte("fecha", `${anio}-12-31`),
-          supabase.from("presupuesto").delete()
-            .eq("hotel_id", session.user.id).eq("anio", parseInt(anio)),
-        ]),
+            .gte("fecha", `${anio}-01-01`).lte("fecha", `${anio}-12-31`)
+        ),
         ...todosAnios.map(anio =>
           supabase.from("pickup_entries").delete()
             .eq("hotel_id", session.user.id)
@@ -979,18 +949,13 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
         ),
       ]);
 
-      setProgreso(t("guardando")); setProgresoPct(55);
+      setProgresoMain(t("guardando")); setProgresoPctMain(55);
 
       const insertPromises = [
         supabase.from("produccion_diaria").insert(produccionRows).then(({ error }) => {
           if (error) throw new Error("Error al guardar producción: " + error.message);
-          setProgresoPct(p => Math.max(p, 70));
+          setProgresoPctMain(p => Math.max(p, 70));
         }),
-        presupuestoRows.length > 0
-          ? supabase.from("presupuesto").insert(presupuestoRows).then(({ error }) => {
-              if (error) throw new Error("Error al guardar presupuesto: " + error.message);
-            })
-          : Promise.resolve(),
       ];
 
       if (pickupRows.length > 0) {
@@ -1003,25 +968,22 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
             supabase.from("pickup_entries").insert(lote).then(({ error }) => {
               if (error) throw new Error("Error al guardar pickup: " + error.message);
               const pct = Math.round(55 + ((idx + 1) / lotes.length) * 35);
-              setProgresoPct(pct);
-              setProgreso(`Guardando pickup... ${Math.min((idx+1)*LOTE, total)} de ${total}`);
+              setProgresoPctMain(pct);
+              setProgresoMain(`Guardando pickup... ${Math.min((idx+1)*LOTE, total)} de ${total}`);
             })
-          )).then(() => setProgreso(""))
+          )).then(() => setProgresoMain(""))
         );
       }
 
       await Promise.all(insertPromises);
-      setProgresoPct(90);
+      setProgresoPctMain(90);
 
-      // M&E se gestiona directamente desde la web (sin importación Excel)
-
-      // Actualizar habitaciones en hoteles si viene del Excel
       if (totalHab) {
         await supabase.from("hoteles").update({ habitaciones: totalHab }).eq("id", session.user.id);
       }
 
-      setProgresoPct(100);
-      setResultado({ produccion: produccionRows.length, pickup: pickupRows.length, presupuesto: presupuestoRows.length });
+      setProgresoPctMain(100);
+      setResultadoMain({ produccion: produccionRows.length, pickup: pickupRows.length });
       if (onImportado) onImportado();
 
       // Enviar informe por email (fire & forget)
@@ -1041,9 +1003,7 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
           return { dia: parseInt(d.fecha.split('-')[2]), acum: Math.round(acum) };
         });
 
-        // Presupuesto mensual
-        const pptoMes = presupuestoRows.find(p => p.mes === mesActual && p.anio === anioActual);
-        const presupuestoMensual = pptoMes?.rev_total_ppto || null;
+        const presupuestoMensual = null; // El presupuesto se importa por separado
 
         // Pickup de ayer
         const ayerStr = ultimoDia.fecha;
@@ -1111,7 +1071,7 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
           // Generar PDF en cliente y enviarlo como adjunto
           let pdfBase64 = null;
           try {
-            const datosParaPDF = { produccion: produccionRows, presupuesto: presupuestoRows };
+            const datosParaPDF = { produccion: produccionRows, presupuesto: [] };
             pdfBase64 = await generarReportePDF(datosParaPDF, mesActual - 1, anioActual, hotelNombreProp || 'Mi Hotel', true);
           } catch (pdfErr) { console.error('PDF gen error:', pdfErr); }
 
@@ -1147,66 +1107,179 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
         }
       }
     } catch (e) {
-      setError(e.message);
-      setProgresoPct(0);
+      setErrorMain(e.message);
+      setProgresoPctMain(0);
     }
-    setLoading(false);
+    setLoadingMain(false);
+  };
+
+  // ── Import presupuesto: sólo hoja 💰 Presupuesto ──
+  const procesarPresupuesto = async (file) => {
+    setLoadingPpto(true); setErrorPpto(""); setResultadoPpto(null); setProgresoPctPpto(0);
+    try {
+      validarArchivo(file);
+      setProgresoPpto(t("leyendo")); setProgresoPctPpto(10);
+      const XLSX = await import("xlsx");
+      const data = await file.arrayBuffer();
+      const wb = XLSX.read(data);
+      setProgresoPctPpto(30);
+
+      const wsBu = wb.Sheets["💰 Presupuesto"];
+      if (!wsBu) throw new Error("No se encontró la hoja '💰 Presupuesto'");
+
+      const rowsBu = XLSX.utils.sheet_to_json(wsBu, { header: 1 });
+      const MESES_PPTO = ["Enero","Febrero","Marzo","Abril","Mayo","Junio",
+                          "Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+      let bloques = [];
+      for (let r = 0; r < rowsBu.length; r++) {
+        const asNum = parseInt(rowsBu[r]?.[0]);
+        if (asNum >= 2020 && asNum <= 2035) {
+          for (let s = r+1; s <= r+5; s++) {
+            if (rowsBu[s]?.[0] === "Enero") { bloques.push({ anio: asNum, startRow: s }); break; }
+          }
+        }
+      }
+      if (bloques.length === 0) {
+        // Fallback: buscar primer "Enero" y asumir año actual
+        const anioFallback = new Date().getFullYear();
+        for (let r = 0; r < rowsBu.length; r++) {
+          if (rowsBu[r]?.[0] === "Enero") { bloques.push({ anio: anioFallback, startRow: r }); break; }
+        }
+      }
+      if (bloques.length === 0) throw new Error("No se encontraron datos de presupuesto en la hoja");
+
+      const presupuestoRows = [];
+      for (const { anio: anioBloque, startRow } of bloques) {
+        for (let i = 0; i < 12; i++) {
+          const row = rowsBu[startRow + i];
+          if (!row || !MESES_PPTO.includes(row[0])) continue;
+          const occ_ppto       = parseFloat(row[1])  || null;
+          const adr_ppto       = parseFloat(row[4])  || null;
+          const revpar_ppto    = parseFloat(row[7])  || null;
+          const rev_total_ppto = parseFloat(row[10]) || null;
+          if (!occ_ppto && !adr_ppto && !revpar_ppto && !rev_total_ppto) continue;
+          presupuestoRows.push({
+            hotel_id: session.user.id,
+            anio: anioBloque,
+            mes: i + 1,
+            occ_ppto:       occ_ppto       ? Math.round(occ_ppto * 1000) / 10 : null,
+            adr_ppto:       adr_ppto       ? Math.round(adr_ppto * 100) / 100 : null,
+            revpar_ppto:    revpar_ppto    ? Math.round(revpar_ppto * 100) / 100 : null,
+            rev_total_ppto: rev_total_ppto ? Math.round(rev_total_ppto) : null,
+          });
+        }
+      }
+      if (presupuestoRows.length === 0) throw new Error("No se encontraron datos de presupuesto");
+
+      setProgresoPpto(t("limpiando")); setProgresoPctPpto(55);
+      const aniosPpto = [...new Set(bloques.map(b => b.anio))];
+      await Promise.all(aniosPpto.map(a =>
+        supabase.from("presupuesto").delete().eq("hotel_id", session.user.id).eq("anio", a)
+      ));
+
+      setProgresoPpto(t("guardando")); setProgresoPctPpto(75);
+      const { error } = await supabase.from("presupuesto").insert(presupuestoRows);
+      if (error) throw new Error("Error al guardar presupuesto: " + error.message);
+
+      setProgresoPctPpto(100);
+      setResultadoPpto({ presupuesto: presupuestoRows.length });
+      if (onImportado) onImportado();
+    } catch (e) {
+      setErrorPpto(e.message);
+      setProgresoPctPpto(0);
+    }
+    setLoadingPpto(false);
   };
 
 
+  const UploadZone = ({ id, loading, resultado, error, progreso, progresoPct, onFile, title, sub, okContent }) => (
+    <div style={{ flex:1, minWidth:0 }}>
+      <p style={{ fontSize:11, fontWeight:700, color:"#1C1814", marginBottom:6 }}>{title}</p>
+      <p style={{ fontSize:11, color:"#A8998A", marginBottom:8 }}>{sub}</p>
+      {resultado ? (
+        <div style={{ background:"#D4EDDE", borderRadius:8, padding:"10px 14px" }}>{okContent}</div>
+      ) : (
+        <>
+          <div onClick={() => !loading && document.getElementById(id).click()}
+            style={{ border:"2px dashed #E8E0D5", borderRadius:8, padding:"20px 12px", textAlign:"center", cursor:loading?"default":"pointer", background:"#F7F3EE" }}>
+            <p style={{ fontWeight:600, color:"#1C1814", fontSize:12, marginBottom:4 }}>{progreso || (loading ? t("procesando") : t("haz_clic"))}</p>
+            <p style={{ fontSize:10, color:"#A8998A" }}>{t("formato_xlsx")}</p>
+            {loading && (
+              <div style={{ marginTop:10 }}>
+                <div style={{ background:"#E8E0D5", borderRadius:999, height:6, overflow:"hidden" }}>
+                  <div style={{ height:"100%", borderRadius:999, background:"linear-gradient(90deg,#C8A96E,#A07840)", width:`${progresoPct}%`, transition:"width 0.4s ease" }}/>
+                </div>
+                <p style={{ fontSize:10, color:"#A8998A", marginTop:4 }}>{progresoPct}%</p>
+              </div>
+            )}
+            <input id={id} type="file" accept=".xlsx" style={{ display:"none" }} onChange={e => e.target.files[0] && onFile(e.target.files[0])}/>
+          </div>
+          {error && <div style={{ background:"#FDECEA", color:"#C0392B", padding:"8px 12px", borderRadius:6, fontSize:12, marginTop:8 }}>⚠️ {error}</div>}
+        </>
+      )}
+    </div>
+  );
+
   return (
-    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
-      <div style={{ background: "#fff", borderRadius: 10, padding: "36px 40px", width: 480, boxShadow: "0 24px 60px rgba(0,0,0,0.3)", fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
+    <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:1000 }}>
+      <div style={{ background:"#fff", borderRadius:10, padding:"32px 36px", width:560, boxShadow:"0 24px 60px rgba(0,0,0,0.3)", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+        {/* Header */}
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20 }}>
           <div>
-            <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 20, fontWeight: 700, color: "#1C1814" }}>{t("importar_title")}</h2>
-            <p style={{ fontSize: 12, color: "#A8998A", marginTop: 4 }}>{t("importar_sub")}</p>
+            <h2 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:20, fontWeight:700, color:"#1C1814" }}>{t("importar_title")}</h2>
+            <p style={{ fontSize:12, color:"#A8998A", marginTop:4 }}>{t("importar_sub")}</p>
           </div>
           <button onClick={onClose} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, width:28, height:28, cursor:"pointer", fontSize:15, color:"#A8998A", display:"flex", alignItems:"center", justifyContent:"center", padding:0 }}>✕</button>
         </div>
-        {!resultado ? (
-          <>
-            {confirmVaciar ? (
-              <div style={{ background: "#FDECEA", borderRadius: 10, padding: "20px", marginBottom: 16, textAlign: "center" }}>
-                <p style={{ fontWeight: 700, color: "#C0392B", marginBottom: 8 }}>⚠️ {t("vaciar_confirm")}</p>
-                <p style={{ fontSize: 12, color: "#A8998A", marginBottom: 16 }}>{t("vaciar_desc")}</p>
-                <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
-                  <button onClick={()=>setConfirmVaciar(false)} style={{ padding: "8px 20px", borderRadius: 8, border: "1px solid #E8E0D5", background: "#fff", color: "#A8998A", cursor: "pointer", fontFamily: "'Plus Jakarta Sans',sans-serif", fontSize: 13 }}>{t("cancelar")}</button>
-                  <button onClick={vaciarDatos} disabled={vaciando} style={{ padding: "8px 20px", borderRadius: 8, border: "none", background: "#C0392B", color: "#fff", cursor: vaciando?"not-allowed":"pointer", fontWeight: 700, fontFamily: "'Plus Jakarta Sans',sans-serif", fontSize: 13 }}>{vaciando ? t("vaciando") : t("si_vaciar")}</button>
-                </div>
-              </div>
-            ) : (
-              <button onClick={()=>setConfirmVaciar(true)} style={{ width: "100%", padding: "9px", borderRadius: 8, border: "1px solid #FDECEA", background: "#FFF5F5", color: "#C0392B", cursor: "pointer", fontSize: 12, fontWeight: 600, fontFamily: "'Plus Jakarta Sans',sans-serif", marginBottom: 16, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
-                🗑️ {t("vaciar_datos")}
-              </button>
-            )}
-<div onClick={() => !loading && document.getElementById("excel-input").click()} style={{ border: "2px dashed #E8E0D5", borderRadius: 8, padding: "40px 20px", textAlign: "center", cursor: loading ? "default" : "pointer", background: "#F7F3EE", marginBottom: 16 }}>
-              <p style={{ fontWeight: 600, color: "#1C1814", marginBottom: 6 }}>{progreso || (loading ? t("procesando") : t("haz_clic"))}</p>
-              <p style={{ fontSize: 12, color: "#A8998A" }}>{t("formato_xlsx")}</p>
-              {loading && (
-                <div style={{ marginTop: 16 }}>
-                  <div style={{ background: "#E8E0D5", borderRadius: 999, height: 8, overflow: "hidden" }}>
-                    <div style={{ height: "100%", borderRadius: 999, background: "linear-gradient(90deg, #C8A96E, #A07840)", width: `${progresoPct}%`, transition: "width 0.4s ease" }} />
-                  </div>
-                  <p style={{ fontSize: 11, color: "#A8998A", marginTop: 6 }}>{progresoPct}%</p>
-                </div>
-              )}
-              <input id="excel-input" type="file" accept=".xlsx" style={{ display: "none" }} onChange={e => e.target.files[0] && procesarExcel(e.target.files[0])} />
+
+        {/* Vaciar */}
+        {confirmVaciar ? (
+          <div style={{ background:"#FDECEA", borderRadius:10, padding:"16px", marginBottom:16, textAlign:"center" }}>
+            <p style={{ fontWeight:700, color:"#C0392B", marginBottom:6 }}>⚠️ {t("vaciar_confirm")}</p>
+            <p style={{ fontSize:12, color:"#A8998A", marginBottom:12 }}>{t("vaciar_desc")}</p>
+            <div style={{ display:"flex", gap:10, justifyContent:"center" }}>
+              <button onClick={()=>setConfirmVaciar(false)} style={{ padding:"7px 18px", borderRadius:8, border:"1px solid #E8E0D5", background:"#fff", color:"#A8998A", cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:12 }}>{t("cancelar")}</button>
+              <button onClick={vaciarDatos} disabled={vaciando} style={{ padding:"7px 18px", borderRadius:8, border:"none", background:"#C0392B", color:"#fff", cursor:vaciando?"not-allowed":"pointer", fontWeight:700, fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:12 }}>{vaciando?t("vaciando"):t("si_vaciar")}</button>
             </div>
-            {error && <div style={{ background: "#FDECEA", color: "#C0392B", padding: "12px 16px", borderRadius: 8, fontSize: 13, marginBottom: 12 }}>⚠️ {error}</div>}
-            <p style={{ fontSize: 11, color: "#A8998A", textAlign: "center" }}>{t("importando_xlsx")}</p>
-          </>
-        ) : (
-          <div style={{ textAlign: "center" }}>
-            <div style={{ fontSize: 50, marginBottom: 16 }}>✅</div>
-            <p style={{ fontWeight: 700, fontSize: 16, color: "#1C1814", marginBottom: 8 }}>{t("importado_ok")}</p>
-            <div style={{ background: "#D4EDDE", borderRadius: 10, padding: "16px", marginBottom: 20 }}>
-              <p style={{ color: "#2D7A4F", fontSize: 13 }}>📅 {resultado.produccion} {t("dias_produccion")}</p>
-              {resultado.pickup > 0 && <p style={{ color: "#2D7A4F", fontSize: 13, marginTop: 6 }}>🎯 {resultado.pickup} {t("reservas_pickup")}</p>}
-              {resultado.presupuesto > 0 && <p style={{ color: "#2D7A4F", fontSize: 13, marginTop: 6 }}>💰 {resultado.presupuesto} {t("meses_presupuesto")}</p>}
-            </div>
-            <button onClick={onClose} style={{ background: "#C8933A", color: "#fff", border: "none", borderRadius: 10, padding: "12px 32px", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "'Plus Jakarta Sans', sans-serif" }}>{t("ver_dashboard")}</button>
           </div>
+        ) : (
+          <button onClick={()=>setConfirmVaciar(true)} style={{ width:"100%", padding:"8px", borderRadius:8, border:"1px solid #FDECEA", background:"#FFF5F5", color:"#C0392B", cursor:"pointer", fontSize:11, fontWeight:600, fontFamily:"'Plus Jakarta Sans',sans-serif", marginBottom:16, display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
+            🗑️ {t("vaciar_datos")}
+          </button>
+        )}
+
+        {/* Dos zonas de carga */}
+        <div style={{ display:"flex", gap:16, marginBottom:14 }}>
+          <UploadZone
+            id="excel-input-main"
+            loading={loadingMain} resultado={resultadoMain} error={errorMain}
+            progreso={progresoMain} progresoPct={progresoPctMain}
+            onFile={procesarPrincipal}
+            title={`📅 ${t("imp_datos_title")}`}
+            sub={t("imp_datos_sub")}
+            okContent={<>
+              <p style={{ color:"#2D7A4F", fontSize:12 }}>✅ {resultadoMain?.produccion} {t("dias_produccion")}</p>
+              {resultadoMain?.pickup > 0 && <p style={{ color:"#2D7A4F", fontSize:12, marginTop:4 }}>🎯 {resultadoMain?.pickup} {t("reservas_pickup")}</p>}
+            </>}
+          />
+          <div style={{ width:1, background:"#E8E0D5", flexShrink:0 }}/>
+          <UploadZone
+            id="excel-input-ppto"
+            loading={loadingPpto} resultado={resultadoPpto} error={errorPpto}
+            progreso={progresoPpto} progresoPct={progresoPctPpto}
+            onFile={procesarPresupuesto}
+            title={`💰 ${t("imp_ppto_title")}`}
+            sub={t("imp_ppto_sub")}
+            okContent={<>
+              <p style={{ color:"#2D7A4F", fontSize:12 }}>✅ {resultadoPpto?.presupuesto} {t("meses_presupuesto")}</p>
+            </>}
+          />
+        </div>
+
+        <p style={{ fontSize:11, color:"#A8998A", textAlign:"center" }}>{t("importando_xlsx")}</p>
+
+        {(resultadoMain || resultadoPpto) && (
+          <button onClick={onClose} style={{ width:"100%", marginTop:14, background:"#C8933A", color:"#fff", border:"none", borderRadius:10, padding:"11px", fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>{t("ver_dashboard")}</button>
         )}
       </div>
     </div>
