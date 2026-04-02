@@ -1837,18 +1837,33 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
   const [notasMes, setNotasMes] = useState(() => { try { return JSON.parse(localStorage.getItem("fr_notas_mes")||"{}"); } catch { return {}; } });
   const [editingNota, setEditingNota] = useState(null);
   const guardarNota = (key, txt) => { const n={...notasMes,[key]:txt}; setNotasMes(n); localStorage.setItem("fr_notas_mes",JSON.stringify(n)); };
+  const [hmDragStart,  setHmDragStart]  = useState(null);
+  const [hmDragEnd,    setHmDragEnd]    = useState(null);
+  const [hmIsDragging, setHmIsDragging] = useState(false);
+  const [hmEventForm,  setHmEventForm]  = useState(null); // {fromISO, toISO}
+  const [hmEventEdit,  setHmEventEdit]  = useState({ title:"", color:"#3B82F6", notes:"" });
+  const [hmEvents, setHmEvents] = useState(() => { try { return JSON.parse(localStorage.getItem("fr_hm_events")||"[]"); } catch { return []; } });
+  const guardarHmEvent = (ev) => { const a=[...hmEvents,ev]; setHmEvents(a); localStorage.setItem("fr_hm_events",JSON.stringify(a)); };
+  const borrarHmEvent  = (idx) => { const a=hmEvents.filter((_,i)=>i!==idx); setHmEvents(a); localStorage.setItem("fr_hm_events",JSON.stringify(a)); };
+  useEffect(() => { setHmDragStart(null); setHmDragEnd(null); setHmIsDragging(false); }, [hmMesSel]);
+  useEffect(() => {
+    const up = () => { if (hmIsDragging) setHmIsDragging(false); };
+    window.addEventListener("mouseup", up);
+    return () => window.removeEventListener("mouseup", up);
+  }, [hmIsDragging]);
   useEffect(() => {
     if (kpiModalExterno) { setKpiModal(kpiModalExterno); onKpiModalExternoHandled && onKpiModalExternoHandled(); }
   }, [kpiModalExterno]);
   useEffect(() => {
     const handler = (e) => {
       if (e.key !== "Escape") return;
+      if (hmEventForm) { setHmEventForm(null); return; }
       if (modalDiario) { setModalDiario(null); return; }
       if (hmMesSel !== null) { setHmMesSel(null); return; }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [modalDiario, hmMesSel]);
+  }, [modalDiario, hmMesSel, hmEventForm]);
 
   if (!produccion || produccion.length === 0) return <EmptyState />;
 
@@ -2154,19 +2169,42 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
                   </div>
 
                   {/* Grid días — todos con aspectRatio 1 */}
-                  <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:3 }}>
+                  <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:3 }} onMouseLeave={()=>{ if(hmIsDragging){ setHmIsDragging(false); } }}>
                     {Array.from({length:(diasDelMes[0]?.diaSem===0?6:diasDelMes[0]?.diaSem-1)||0},(_,i)=>(
                       <div key={"e"+i} style={{ aspectRatio:"1" }}/>
                     ))}
                     {diasDelMes.map(({dia,occ,adr,esFut,resUltDia})=>{
                       const resDia = resUltDia || 0;
                       const tieneReserva = resDia > 0;
-                      const borderColor = tieneReserva ? "#B8860B" : occ!=null ? heatColor(occ)+"CC" : C.border;
-                      const bg = occ!=null ? heatBg(occ) : C.bg;
+                      const _pad2 = n=>String(n).padStart(2,"0");
+                      const isoDay = hmMesSel!=null ? `${anio}-${_pad2(hmMesSel+1)}-${_pad2(dia)}` : "";
+                      const inSel = hmIsDragging && hmDragStart!=null && hmDragEnd!=null &&
+                        dia >= Math.min(hmDragStart,hmDragEnd) && dia <= Math.max(hmDragStart,hmDragEnd);
+                      const evDay = hmEvents.filter(ev => ev.from <= isoDay && ev.to >= isoDay);
+                      const borderColor = inSel ? "#3B82F6" : tieneReserva ? "#B8860B" : occ!=null ? heatColor(occ)+"CC" : C.border;
+                      const bg = inSel ? "#3B82F618" : occ!=null ? heatBg(occ) : C.bg;
                       return (
-                        <div key={dia} style={{ aspectRatio:"1", borderRadius:5, background: bg, border:`1.5px solid ${borderColor}`, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:1, position:"relative" }}>
+                        <div key={dia}
+                          style={{ aspectRatio:"1", borderRadius:5, background: bg, border:`${inSel?"2px":"1.5px"} solid ${borderColor}`, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:1, position:"relative", cursor:"crosshair", userSelect:"none" }}
+                          onMouseDown={(e)=>{ e.preventDefault(); setHmDragStart(dia); setHmDragEnd(dia); setHmIsDragging(true); }}
+                          onMouseEnter={()=>{ if(hmIsDragging) setHmDragEnd(dia); }}
+                          onMouseUp={()=>{
+                            if(hmIsDragging){
+                              setHmIsDragging(false);
+                              const from=Math.min(hmDragStart||dia,dia), to=Math.max(hmDragStart||dia,dia);
+                              if(from!==to){
+                                setHmEventEdit({title:"",color:"#3B82F6",notes:""});
+                                setHmEventForm({ fromISO:`${anio}-${_pad2(hmMesSel+1)}-${_pad2(from)}`, toISO:`${anio}-${_pad2(hmMesSel+1)}-${_pad2(to)}` });
+                              }
+                            }
+                          }}>
                           {tieneReserva && (
                             <span style={{ position:"absolute", top:2, right:2, fontSize:8, lineHeight:1, animation:"pulse-rayo 1.5s ease-in-out infinite" }}>⚡</span>
+                          )}
+                          {evDay.length>0 && (
+                            <div style={{ position:"absolute", bottom:2, left:2, right:2, display:"flex", gap:1, justifyContent:"center" }}>
+                              {evDay.map((ev,ei)=><span key={ei} style={{ width:5, height:5, borderRadius:"50%", background:ev.color, display:"inline-block", flexShrink:0 }}/>)}
+                            </div>
                           )}
                           <p style={{ fontSize:8, color:C.textLight, lineHeight:1 }}>{dia}</p>
                           {occ!=null
@@ -2191,8 +2229,83 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
                     <span style={{ fontSize:9, color:C.textLight, display:"flex", alignItems:"center", gap:3 }}>
                       <span style={{ fontSize:10 }}>⚡</span> Reserva captada
                     </span>
+                    <span style={{ fontSize:9, color:"#3B82F6", fontWeight:600, marginLeft:"auto" }}>Arrastra para crear evento</span>
                   </div>
 
+                  {/* Eventos del mes */}
+                  {hmMesSel!=null && (() => {
+                    const _pad2 = n=>String(n).padStart(2,"0");
+                    const mesPrefix = `${anio}-${_pad2(hmMesSel+1)}`;
+                    const evMes = hmEvents.map((ev,idx)=>({...ev,idx})).filter(ev => ev.from.slice(0,7)===mesPrefix || ev.to.slice(0,7)===mesPrefix);
+                    if (evMes.length===0) return null;
+                    return (
+                      <div style={{ marginTop:12, borderTop:`1px solid ${C.border}`, paddingTop:10 }}>
+                        {evMes.map(ev=>(
+                          <div key={ev.idx} style={{ display:"flex", alignItems:"center", gap:8, marginBottom:6 }}>
+                            <span style={{ width:8, height:8, borderRadius:2, background:ev.color, display:"inline-block", flexShrink:0 }}/>
+                            <span style={{ fontSize:12, fontWeight:600, color:C.text, flex:1 }}>{ev.title||"(sin título)"}</span>
+                            <span style={{ fontSize:10, color:C.textLight }}>
+                              {ev.from.slice(8,10)}/{ev.from.slice(5,7)} – {ev.to.slice(8,10)}/{ev.to.slice(5,7)}
+                            </span>
+                            <button onClick={()=>borrarHmEvent(ev.idx)} style={{ background:"none", border:"none", cursor:"pointer", color:C.red, fontSize:13, padding:"0 2px", lineHeight:1 }}>×</button>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })()}
+
+                </div>
+              </div>
+            )}
+
+            {/* ── FORM EVENTO HEATMAP ── */}
+            {hmEventForm && (
+              <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.65)", zIndex:1100, display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}
+                onClick={()=>setHmEventForm(null)}>
+                <div style={{ background:C.bgCard, borderRadius:14, width:"100%", maxWidth:380, padding:"24px", boxShadow:"0 20px 60px rgba(0,0,0,0.3)" }}
+                  onClick={e=>e.stopPropagation()}>
+                  <h3 style={{ fontSize:16, fontWeight:700, color:C.text, marginBottom:16 }}>Nuevo evento</h3>
+                  <div style={{ display:"flex", gap:8, marginBottom:14, padding:"8px 12px", background:C.bg, borderRadius:8, border:`1px solid ${C.border}` }}>
+                    <span style={{ fontSize:12, color:C.textLight }}>📅</span>
+                    <span style={{ fontSize:13, fontWeight:600, color:C.accent }}>
+                      {hmEventForm.fromISO.split("-").reverse().join("/")} — {hmEventForm.toISO.split("-").reverse().join("/")}
+                    </span>
+                  </div>
+                  <input
+                    placeholder="Nombre del evento (feria, congreso...)"
+                    value={hmEventEdit.title}
+                    onChange={e=>setHmEventEdit(p=>({...p,title:e.target.value}))}
+                    style={{ width:"100%", padding:"8px 12px", borderRadius:8, border:`1px solid ${C.border}`, background:C.bg, color:C.text, fontSize:13, fontFamily:"inherit", outline:"none", marginBottom:12, boxSizing:"border-box" }}
+                    autoFocus
+                  />
+                  <div style={{ marginBottom:14 }}>
+                    <p style={{ fontSize:10, color:C.textLight, textTransform:"uppercase", letterSpacing:1, fontWeight:600, marginBottom:6 }}>Color</p>
+                    <div style={{ display:"flex", gap:8 }}>
+                      {["#3B82F6","#10B981","#F59E0B","#EF4444","#8B5CF6","#EC4899"].map(col=>(
+                        <button key={col} onClick={()=>setHmEventEdit(p=>({...p,color:col}))}
+                          style={{ width:24, height:24, borderRadius:6, background:col, border:hmEventEdit.color===col?"3px solid #fff":"2px solid transparent", cursor:"pointer", padding:0, outline:hmEventEdit.color===col?`2px solid ${col}`:"none" }}/>
+                      ))}
+                    </div>
+                  </div>
+                  <textarea
+                    placeholder="Notas (opcional)"
+                    value={hmEventEdit.notes}
+                    onChange={e=>setHmEventEdit(p=>({...p,notes:e.target.value}))}
+                    rows={2}
+                    style={{ width:"100%", padding:"8px 12px", borderRadius:8, border:`1px solid ${C.border}`, background:C.bg, color:C.text, fontSize:12, fontFamily:"inherit", outline:"none", resize:"none", marginBottom:16, boxSizing:"border-box" }}
+                  />
+                  <div style={{ display:"flex", gap:8, justifyContent:"flex-end" }}>
+                    <button onClick={()=>setHmEventForm(null)}
+                      style={{ padding:"7px 16px", borderRadius:8, border:`1px solid ${C.border}`, background:"transparent", color:C.textLight, fontSize:12, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>
+                      Cancelar
+                    </button>
+                    <button onClick={()=>{
+                      guardarHmEvent({ from:hmEventForm.fromISO, to:hmEventForm.toISO, title:hmEventEdit.title, color:hmEventEdit.color, notes:hmEventEdit.notes });
+                      setHmEventForm(null);
+                    }} style={{ padding:"7px 16px", borderRadius:8, border:"none", background:"#3B82F6", color:"#fff", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+                      Guardar
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
@@ -2268,6 +2381,55 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
             })()}
 
           </div>
+        );
+      })()}
+
+      {/* ── MIX DE CANALES (PIE) ── */}
+      {(() => {
+        const _pad = n=>String(n).padStart(2,"0");
+        const mesStr = `${anio}-${_pad(mes+1)}`;
+        const normC = c => { const a={"Directo Web":"Directo","Teléfono":"Directo","Direct":"Directo"}; return a[c]||c||"Directo"; };
+        const entries = (pickupEntries||[]).filter(e =>
+          String(e.fecha_llegada||"").slice(0,7) === mesStr && (e.estado||"confirmada")!=="cancelada"
+        );
+        if (entries.length===0) return null;
+        const CANAL_COL = {"Booking.com":"#003580","Expedia":"#FFD700","Directo":"#1A7A3C","Agencia":"#7C3AED","OTA":"#E85D04","Grupos":"#E53935","M&E":"#0891B2"};
+        const FB = ["#004B87","#B8860B","#2ECC71","#7C3AED","#E85D04","#E74C3C","#1ABC9C","#D4A017"];
+        const byCanal = {};
+        entries.forEach(e => { const c=normC(e.canal); byCanal[c]=(byCanal[c]||0)+(e.num_reservas||1); });
+        const pieData = Object.entries(byCanal).sort((a,b)=>b[1]-a[1])
+          .map(([name,value],i)=>({ name, value, fill:CANAL_COL[name]||FB[i%FB.length] }));
+        const total = pieData.reduce((a,d)=>a+d.value,0);
+        if (total===0) return null;
+        return (
+          <Card style={{ display:"grid", gridTemplateColumns:"1fr auto", gap:24, alignItems:"center" }}>
+            <div>
+              <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:20, color:C.text, marginBottom:2 }}>Mix de canales</p>
+              <p style={{ fontSize:11, color:C.textLight, marginBottom:14 }}>{t("meses_full")[mes]} {anio} · {total} reservas OTB</p>
+              {pieData.map((d,i)=>(
+                <div key={i} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:7 }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                    <span style={{ width:10, height:10, borderRadius:2, background:d.fill, display:"inline-block", flexShrink:0 }}/>
+                    <span style={{ fontSize:13, color:C.text }}>{d.name}</span>
+                  </div>
+                  <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                    <span style={{ fontSize:13, fontWeight:700, color:C.text }}>{d.value}</span>
+                    <span style={{ fontSize:10, color:C.textLight, minWidth:36, textAlign:"right" }}>({((d.value/total)*100).toFixed(0)}%)</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div style={{ width:200 }}>
+              <ResponsiveContainer width={200} height={200}>
+                <PieChart>
+                  <Pie data={pieData} dataKey="value" cx="50%" cy="50%" innerRadius={52} outerRadius={88} paddingAngle={2}>
+                    {pieData.map((d,i)=><Cell key={i} fill={d.fill}/>)}
+                  </Pie>
+                  <Tooltip formatter={(v,n)=>[`${v} res. (${((v/total)*100).toFixed(0)}%)`,n]} contentStyle={{ background:C.bgCard, border:`1px solid ${C.border}`, borderRadius:8, fontSize:12 }}/>
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </Card>
         );
       })()}
 
