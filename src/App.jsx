@@ -334,6 +334,28 @@ const MESES = ["Enero","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","No
 const MESES_CORTO = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
 const MESES_FULL = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 
+const AnimatedBar = (props) => {
+  const { x, y, width, height, fill, onClick } = props;
+  const [hovered, setHovered] = useState(false);
+  if (!height || height <= 0) return null;
+  return (
+    <g onClick={onClick} style={{ cursor:"pointer" }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}>
+      {/* Fondo tenue siempre visible */}
+      <rect x={x} y={y} width={width} height={height} rx={4} ry={4} fill={fill} opacity={0.25}/>
+      {/* Barra animada que sube al hover */}
+      <rect x={x} y={y} width={width} height={height} rx={4} ry={4} fill={fill}
+        style={{
+          transformBox:"fill-box",
+          transformOrigin:"bottom",
+          transform: hovered ? "scaleY(1)" : "scaleY(0)",
+          transition: hovered ? "transform 0.45s cubic-bezier(0.22,1,0.36,1)" : "transform 0.2s ease-in",
+        }}/>
+    </g>
+  );
+};
+
 const CustomTooltip = ({ active, payload, label, unit }) => {
   if (!active || !payload?.length) return null;
   const OCC_NAMES = ["Ocupación","occ","OCC"];
@@ -2095,6 +2117,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
                           <Tooltip content={<CustomTooltip/>} cursor={{ fill: "rgba(10,37,64,0.04)" }}/>
                           <Bar yAxisId="left" dataKey="occ" name="Ocupación" fill="url(#gradOcc)" radius={[4,4,0,0]}
                             cursor="pointer"
+                            shape={(p) => <AnimatedBar {...p} onClick={() => { if(p?.mesIdx!=null) setModalDiario({mesIdx:p.mesIdx, anioIdx:p.anioIdx}); }}/>}
                             onClick={(data) => { if(data?.mesIdx!=null) setModalDiario({mesIdx:data.mesIdx, anioIdx:data.anioIdx}); }}
                           />
                           <Line yAxisId="right" dataKey="adr" name="ADR Real" type="monotone" stroke="#B8860B" strokeWidth={2} dot={{fill:"#B8860B", r:3, strokeWidth:0}} activeDot={{r:4}}/>
