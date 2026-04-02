@@ -4477,6 +4477,12 @@ export default function App() {
               <span className="topbar-importar-label">Actualizar datos</span>
             </button>
           )}
+          <select value={lang} onChange={e => { setLang(e.target.value); localStorage.setItem("fr_lang", e.target.value); }}
+            style={{ border:`1px solid ${C.border}`, borderRadius:7, padding:"5px 8px", fontSize:11, fontWeight:500, color:C.text, background:C.bgCard, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", outline:"none" }}>
+            <option value="es">Español</option>
+            <option value="en">English</option>
+            <option value="fr">Français</option>
+          </select>
 
 
           {/* Menú Mi Perfil */}
@@ -4518,16 +4524,6 @@ export default function App() {
                     {op.key === "informe" && generandoPDF ? t("generando") : op.label}
                   </button>
                 ))}
-                {/* Selector de idioma */}
-                <div style={{ padding:"10px 16px", borderTop:`1px solid ${C.border}`, display:"flex", alignItems:"center", gap:8 }}>
-                  {[["es","🇪🇸"],["en","🇬🇧"],["fr","🇫🇷"]].map(([l, flag]) => (
-                    <button key={l} onClick={() => { setLang(l); localStorage.setItem("fr_lang", l); }}
-                      title={l.toUpperCase()}
-                      style={{ width:28, height:28, borderRadius:"50%", border: lang===l ? `2px solid ${C.accent}` : `1.5px solid ${C.border}`, background:"transparent", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", fontSize:16, padding:0, opacity: lang===l ? 1 : 0.5, transition:"all 0.15s" }}>
-                      {flag}
-                    </button>
-                  ))}
-                </div>
                 <button onClick={handleLogout}
                   style={{ width:"100%", display:"flex", alignItems:"center", padding:"10px 16px", background:"transparent", border:"none", borderTop:`1px solid ${C.border}`, cursor:"pointer", fontSize:12, color:C.red, fontFamily:"'Plus Jakarta Sans',sans-serif", textAlign:"left", letterSpacing:0.2 }}
                   onMouseEnter={e=>e.currentTarget.style.background=C.redLight}
