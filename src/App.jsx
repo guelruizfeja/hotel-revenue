@@ -2213,7 +2213,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
                   <div style={{ height:300 }}>
                     <ResponsiveContainer width="100%" height={300}>
                       {metricaSel === "adr_occ" ? (
-                        <ComposedChart data={porMes} barSize={14} barCategoryGap="32%">
+                        <ComposedChart data={porMes} barSize={14} barCategoryGap="32%" onClick={() => {}}>
                           <defs>
                             <linearGradient id="gradOcc" x1="0" y1="0" x2="0" y2="1">
                               <stop offset="0%" stopColor="#004B87" stopOpacity={0.9}/>
