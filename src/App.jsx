@@ -2307,6 +2307,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
             return {
               dia: f.getDate(),
               label: `${f.getDate()}/${f.getMonth()+1}`,
+              fecha: f.toLocaleDateString("es-ES",{day:"numeric",month:"long",year:"numeric"}),
               occ: habDis>0 ? Math.min(100, Math.round(r.hab_ocupadas/habDis*100)) : 0,
               adr: r.hab_ocupadas>0 ? Math.round(r.revenue_hab/r.hab_ocupadas) : 0,
             };
@@ -2336,8 +2337,8 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
                   <ComposedChart data={diasData} barSize={10} barCategoryGap="30%">
                     <defs>
                       <linearGradient id="gradOccDiario" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#1A7A3C" stopOpacity={0.85}/>
-                        <stop offset="100%" stopColor="#1A7A3C" stopOpacity={0.5}/>
+                        <stop offset="0%" stopColor="#004B87" stopOpacity={0.9}/>
+                        <stop offset="100%" stopColor="#004B87" stopOpacity={0.55}/>
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke={C.border} vertical={false}/>
