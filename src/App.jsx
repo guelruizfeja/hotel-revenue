@@ -492,8 +492,8 @@ function KpiModal({ kpi, datos, mes, anio, onClose }) {
     .filter(d => { const f=new Date(d.fecha+"T00:00:00"); return f.getMonth()===mesPrevIdx && f.getFullYear()===(mes===0?anio-1:anio); })
     .map(mapProd);
 
-  const srcActual = kpi==="TRevPAR" ? diasMesCompleto : diasMes;
-  const srcComp   = kpi==="TRevPAR" ? diasMesCompLetoMP : diasComp;
+  const srcActual = diasMesCompleto;
+  const srcComp   = diasMesCompLetoMP;
 
   const mediaActual = srcActual.length>0 ? srcActual.reduce((a,d)=>a+(d[fk]||0),0)/srcActual.length : 0;
   const mediaComp   = srcComp.length>0   ? srcComp.reduce((a,d)=>a+(d[fk]||0),0)/srcComp.length   : 0;
