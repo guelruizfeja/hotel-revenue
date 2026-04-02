@@ -1216,7 +1216,7 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
             )}
             <input id={id} type="file" accept=".xlsx" style={{ display:"none" }} onChange={e => e.target.files[0] && onFile(e.target.files[0])}/>
           </div>
-          {error && <div style={{ background:"#FDECEA", color:"#C0392B", padding:"8px 12px", borderRadius:6, fontSize:12, marginTop:8 }}>⚠️ {error}</div>}
+          {error && <div style={{ background:"#FDECEA", color:"#C0392B", padding:"8px 12px", borderRadius:6, fontSize:12, marginTop:8 }}>{error}</div>}
         </>
       )}
     </div>
@@ -1237,7 +1237,7 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
         {/* Vaciar */}
         {confirmVaciar ? (
           <div style={{ background:"#FDECEA", borderRadius:10, padding:"16px", marginBottom:16, textAlign:"center" }}>
-            <p style={{ fontWeight:700, color:"#C0392B", marginBottom:6 }}>⚠️ {t("vaciar_confirm")}</p>
+            <p style={{ fontWeight:700, color:"#C0392B", marginBottom:6 }}>{t("vaciar_confirm")}</p>
             <p style={{ fontSize:12, color:"#A8998A", marginBottom:12 }}>{t("vaciar_desc")}</p>
             <div style={{ display:"flex", gap:10, justifyContent:"center" }}>
               <button onClick={()=>setConfirmVaciar(false)} style={{ padding:"7px 18px", borderRadius:8, border:"1px solid #E8E0D5", background:"#fff", color:"#A8998A", cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:12 }}>{t("cancelar")}</button>
@@ -1246,7 +1246,7 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
           </div>
         ) : (
           <button onClick={()=>setConfirmVaciar(true)} style={{ width:"100%", padding:"8px", borderRadius:8, border:"1px solid #FDECEA", background:"#FFF5F5", color:"#C0392B", cursor:"pointer", fontSize:11, fontWeight:600, fontFamily:"'Plus Jakarta Sans',sans-serif", marginBottom:16, display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
-            🗑️ {t("vaciar_datos")}
+            {t("vaciar_datos")}
           </button>
         )}
 
@@ -1256,9 +1256,9 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
             style={{ display:"flex", alignItems:"center", gap:6, background:"none", border:"none", cursor:"pointer", padding:0, fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
             <span style={{ fontSize:10, color:C.textLight }}>{showPptoZone ? "▲" : "▼"}</span>
             <span style={{ fontSize:11, fontWeight:600, color:resultadoPpto ? "#2D7A4F" : C.textMid }}>
-              💰 Modificar ppto.
+              Modificar ppto.
             </span>
-            {resultadoPpto && <span style={{ fontSize:10, color:"#2D7A4F" }}>✅ {resultadoPpto.presupuesto} {t("meses_presupuesto")}</span>}
+            {resultadoPpto && <span style={{ fontSize:10, color:"#2D7A4F" }}>{resultadoPpto.presupuesto} {t("meses_presupuesto")}</span>}
           </button>
           {showPptoZone && (
             <div style={{ marginTop:8, padding:"12px 14px", background:"#F7F3EE", borderRadius:8, border:"1px solid #E8E0D5" }}>
@@ -1282,11 +1282,11 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
             loading={loadingMain} resultado={resultadoMain} error={errorMain}
             progreso={progresoMain} progresoPct={progresoPctMain}
             onFile={procesarPrincipal}
-            title={`📅 ${t("imp_datos_title")}`}
+            title={t("imp_datos_title")}
             sub={t("imp_datos_sub")}
             okContent={<>
-              <p style={{ color:"#2D7A4F", fontSize:12 }}>✅ {resultadoMain?.produccion} {t("dias_produccion")}</p>
-              {resultadoMain?.pickup > 0 && <p style={{ color:"#2D7A4F", fontSize:12, marginTop:4 }}>🎯 {resultadoMain?.pickup} {t("reservas_pickup")}</p>}
+              <p style={{ color:"#2D7A4F", fontSize:12 }}>{resultadoMain?.produccion} {t("dias_produccion")}</p>
+              {resultadoMain?.pickup > 0 && <p style={{ color:"#2D7A4F", fontSize:12, marginTop:4 }}>{resultadoMain?.pickup} {t("reservas_pickup")}</p>}
             </>}
           />
         </div>
