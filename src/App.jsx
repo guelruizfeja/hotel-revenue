@@ -4570,7 +4570,8 @@ export default function App() {
 
           /* Recharts — altura fija en móvil para evitar colapso */
           .recharts-wrapper { width: 100% !important; }
-          .recharts-wrapper svg { width: 100% !important; }
+          .recharts-wrapper svg { width: 100% !important; outline: none; }
+          .recharts-wrapper svg:focus, .recharts-wrapper svg:focus-visible { outline: none; }
 
           /* Budget KPIs 3 cards → 1 columna */
           .budget-kpis { grid-template-columns: 1fr !important; }
