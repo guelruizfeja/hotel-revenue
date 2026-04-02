@@ -1234,31 +1234,15 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
           <button onClick={onClose} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, width:28, height:28, cursor:"pointer", fontSize:15, color:"#A8998A", display:"flex", alignItems:"center", justifyContent:"center", padding:0 }}>✕</button>
         </div>
 
-        {/* Vaciar */}
-        {confirmVaciar ? (
-          <div style={{ background:"#FDECEA", borderRadius:10, padding:"16px", marginBottom:16, textAlign:"center" }}>
-            <p style={{ fontWeight:700, color:"#C0392B", marginBottom:6 }}>{t("vaciar_confirm")}</p>
-            <p style={{ fontSize:12, color:"#A8998A", marginBottom:12 }}>{t("vaciar_desc")}</p>
-            <div style={{ display:"flex", gap:10, justifyContent:"center" }}>
-              <button onClick={()=>setConfirmVaciar(false)} style={{ padding:"7px 18px", borderRadius:8, border:"1px solid #E8E0D5", background:"#fff", color:"#A8998A", cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:12 }}>{t("cancelar")}</button>
-              <button onClick={vaciarDatos} disabled={vaciando} style={{ padding:"7px 18px", borderRadius:8, border:"none", background:"#C0392B", color:"#fff", cursor:vaciando?"not-allowed":"pointer", fontWeight:700, fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:12 }}>{vaciando?t("vaciando"):t("si_vaciar")}</button>
-            </div>
-          </div>
-        ) : (
-          <button onClick={()=>setConfirmVaciar(true)} style={{ width:"100%", padding:"8px", borderRadius:8, border:"1px solid #FDECEA", background:"#FFF5F5", color:"#C0392B", cursor:"pointer", fontSize:11, fontWeight:600, fontFamily:"'Plus Jakarta Sans',sans-serif", marginBottom:16, display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
-            {t("vaciar_datos")}
-          </button>
-        )}
-
-        {/* Botón colapsable presupuesto */}
-        <div style={{ marginBottom:10 }}>
+        {/* Modificar ppto — enlace sutil arriba */}
+        <div style={{ marginBottom:12 }}>
           <button onClick={() => { setShowPptoZone(v=>!v); setErrorPpto(""); }}
-            style={{ display:"flex", alignItems:"center", gap:6, background:"none", border:"none", cursor:"pointer", padding:0, fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
-            <span style={{ fontSize:10, color:C.textLight }}>{showPptoZone ? "▲" : "▼"}</span>
-            <span style={{ fontSize:11, fontWeight:600, color:resultadoPpto ? "#2D7A4F" : C.textMid }}>
-              Modificar ppto.
+            style={{ display:"flex", alignItems:"center", gap:5, background:"none", border:"none", cursor:"pointer", padding:0, fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+            <span style={{ fontSize:9, color:C.textLight }}>{showPptoZone ? "▲" : "▼"}</span>
+            <span style={{ fontSize:11, color:resultadoPpto ? "#2D7A4F" : C.textLight, textDecoration:"underline", textDecorationStyle:"dotted", textUnderlineOffset:2 }}>
+              Modificar presupuesto
             </span>
-            {resultadoPpto && <span style={{ fontSize:10, color:"#2D7A4F" }}>{resultadoPpto.presupuesto} {t("meses_presupuesto")}</span>}
+            {resultadoPpto && <span style={{ fontSize:10, color:"#2D7A4F", marginLeft:4 }}>{resultadoPpto.presupuesto} {t("meses_presupuesto")}</span>}
           </button>
           {showPptoZone && (
             <div style={{ marginTop:8, padding:"12px 14px", background:"#F7F3EE", borderRadius:8, border:"1px solid #E8E0D5" }}>
@@ -1291,10 +1275,26 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
           />
         </div>
 
-        <p style={{ fontSize:11, color:"#A8998A", textAlign:"center" }}>{t("importando_xlsx")}</p>
+        <p style={{ fontSize:11, color:"#A8998A", textAlign:"center", marginBottom:14 }}>{t("importando_xlsx")}</p>
 
         {(resultadoMain || resultadoPpto) && (
-          <button onClick={onClose} style={{ width:"100%", marginTop:14, background:"#C8933A", color:"#fff", border:"none", borderRadius:10, padding:"11px", fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>{t("ver_dashboard")}</button>
+          <button onClick={onClose} style={{ width:"100%", marginBottom:10, background:"#C8933A", color:"#fff", border:"none", borderRadius:10, padding:"11px", fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>{t("ver_dashboard")}</button>
+        )}
+
+        {/* Vaciar — al final, discreto */}
+        {confirmVaciar ? (
+          <div style={{ background:"#FDECEA", borderRadius:8, padding:"14px", textAlign:"center" }}>
+            <p style={{ fontWeight:700, color:"#C0392B", marginBottom:4, fontSize:13 }}>{t("vaciar_confirm")}</p>
+            <p style={{ fontSize:11, color:"#A8998A", marginBottom:10 }}>{t("vaciar_desc")}</p>
+            <div style={{ display:"flex", gap:8, justifyContent:"center" }}>
+              <button onClick={()=>setConfirmVaciar(false)} style={{ padding:"6px 16px", borderRadius:7, border:"1px solid #E8E0D5", background:"#fff", color:"#A8998A", cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:11 }}>{t("cancelar")}</button>
+              <button onClick={vaciarDatos} disabled={vaciando} style={{ padding:"6px 16px", borderRadius:7, border:"none", background:"#C0392B", color:"#fff", cursor:vaciando?"not-allowed":"pointer", fontWeight:700, fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:11 }}>{vaciando?t("vaciando"):t("si_vaciar")}</button>
+            </div>
+          </div>
+        ) : (
+          <button onClick={()=>setConfirmVaciar(true)} style={{ width:"100%", padding:"7px", borderRadius:7, border:"1px solid #FDECEA", background:"none", color:"#C0392B", cursor:"pointer", fontSize:11, fontFamily:"'Plus Jakarta Sans',sans-serif", opacity:0.7 }}>
+            {t("vaciar_datos")}
+          </button>
         )}
       </div>
     </div>
