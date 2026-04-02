@@ -40,3 +40,11 @@
 .read-the-docs {
   color: #888;
 }
+
+/* Suprimir rectángulo de hover en todas las gráficas Recharts */
+.recharts-tooltip-cursor {
+  display: none !important;
+}
+.recharts-bar-background-rectangle {
+  display: none !important;
+}
