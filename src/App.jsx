@@ -2667,6 +2667,10 @@ function PickupView({ datos }) {
   const ayerStr = `${ayerD.getFullYear()}-${String(ayerD.getMonth()+1).padStart(2,"0")}-${String(ayerD.getDate()).padStart(2,"0")}`;
   const MESES_FULL_PU = t("meses_full");
 
+  const ultDia = [...pickupEntries].map(e=>String(e.fecha_pickup||"").slice(0,10)).filter(f=>f.length===10).sort().pop() || "";
+  const reservasUltDia = pickupEntries.filter(e => String(e.fecha_pickup||"").slice(0,10) === ultDia && (e.estado||"confirmada") !== "cancelada").sort((a,b)=>(a.fecha_llegada||"").localeCompare(b.fecha_llegada||""));
+  const fmtDatePU = d => { if (!d) return "—"; const p=d.split("-"); return p.length===3?`${p[2]}/${p[1]}/${p[0]}`:d; };
+
   const reservasAyer = pickupEntries.filter(e => String(e.fecha_pickup||"").slice(0,10) === ayerStr);
 
   const normCanal = c => {
@@ -2759,25 +2763,37 @@ function PickupView({ datos }) {
         ) : (
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:20 }}>
 
-            {/* Por mes de llegada */}
-            <div>
-              <p style={{ fontSize:11, fontWeight:700, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:10 }}>{t("por_mes_llegada")}</p>
-              <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
-                {Object.entries(ayerPorMes).sort((a,b)=>a[0]-b[0]).map(([mi, nr]) => {
-                  const pct = ayerTotal > 0 ? nr/ayerTotal : 0;
-                  return (
-                    <div key={mi}>
-                      <div style={{ display:"flex", justifyContent:"space-between", marginBottom:3 }}>
-                        <span style={{ fontSize:12, color:C.textMid, fontWeight:500 }}>{MESES_FULL_PU[parseInt(mi)]}</span>
-                        <span style={{ fontSize:12, fontWeight:700, color:"#B8860B" }}>{nr} res.</span>
-                      </div>
-                      <div style={{ height:6, borderRadius:3, background:C.border }}>
-                        <div style={{ height:6, borderRadius:3, background:"#B8860B", width:`${pct*100}%`, transition:"width 0.4s" }}/>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+            {/* Tabla reservas captadas último día */}
+            <div style={{ overflowY:"auto", maxHeight:220 }}>
+              <p style={{ fontSize:11, fontWeight:700, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:8 }}>
+                Captadas el {fmtDatePU(ultDia)}
+              </p>
+              {reservasUltDia.length === 0 ? (
+                <p style={{ fontSize:12, color:C.textLight }}>Sin reservas</p>
+              ) : (
+                <table style={{ width:"100%", borderCollapse:"collapse", fontSize:11 }}>
+                  <thead>
+                    <tr>
+                      {["Llegada","Canal","Noches","ADR"].map((h,hi)=>(
+                        <th key={h} style={{ padding:"4px 8px", textAlign:hi>=2?"right":"left", fontSize:9, color:C.textLight, textTransform:"uppercase", letterSpacing:"1px", fontWeight:600, borderBottom:`1px solid ${C.border}` }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {reservasUltDia.map((e,i)=>{
+                      const adr = (e.precio_total && e.noches && e.noches>0) ? Math.round(e.precio_total/e.noches) : null;
+                      return (
+                        <tr key={i} style={{ borderBottom:`1px solid ${C.border}`, background:i%2===0?C.bg:C.bgCard }}>
+                          <td style={{ padding:"5px 8px", fontWeight:600, color:C.accent }}>{fmtDatePU(e.fecha_llegada)}</td>
+                          <td style={{ padding:"5px 8px", color:C.textMid }}>{e.canal||"—"}</td>
+                          <td style={{ padding:"5px 8px", textAlign:"right", color:C.textMid }}>{e.noches??'—'}</td>
+                          <td style={{ padding:"5px 8px", textAlign:"right", fontWeight:700, color:C.text }}>{adr!=null?`€${adr}`:"—"}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              )}
             </div>
 
             {/* Por canal — Pie chart */}
@@ -3210,53 +3226,6 @@ function PickupView({ datos }) {
         );
       })()}
 
-      {/* ── DESGLOSE DE RESERVAS CAPTADAS ÚLTIMO DÍA ── */}
-      {(() => {
-        const ultDia = [...(pickupEntries||[])].map(e=>String(e.fecha_pickup||"").slice(0,10)).filter(f=>f.length===10).sort().pop() || "";
-        const reservas = (pickupEntries || [])
-          .filter(e => String(e.fecha_pickup||"").slice(0,10) === ultDia && (e.estado||"confirmada") !== "cancelada")
-          .sort((a,b) => (a.fecha_llegada||"").localeCompare(b.fecha_llegada||""));
-        if (reservas.length === 0) return null;
-        const adrRes = e => (e.precio_total && e.noches && e.noches > 0)
-          ? Math.round(e.precio_total / e.noches)
-          : null;
-        const fmtDate = d => { if (!d) return "—"; const p = d.split("-"); return p.length===3 ? `${p[2]}/${p[1]}/${p[0]}` : d; };
-        return (
-          <div style={{ background:C.bgCard, border:`1px solid ${C.border}`, borderRadius:12, overflow:"hidden" }}>
-            <div style={{ padding:"18px 24px 12px", borderBottom:`1px solid ${C.border}` }}>
-              <h3 style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:16, fontWeight:700, color:C.text, margin:0 }}>
-                Reservas captadas — <span style={{ color:C.accent }}>{fmtDate(ultDia)}</span>
-                <span style={{ marginLeft:10, fontSize:11, fontWeight:400, color:C.textLight }}>{reservas.length} reservas</span>
-              </h3>
-            </div>
-            <div style={{ overflowX:"auto" }}>
-              <table style={{ width:"100%", borderCollapse:"collapse", fontSize:12 }}>
-                <thead>
-                  <tr>
-                    {["Llegada","Salida","Canal","Noches","ADR"].map((h,hi) => (
-                      <th key={h} style={{ padding:"8px 14px", textAlign: hi>=3?"right":"left", fontSize:10, color:C.textLight, textTransform:"uppercase", letterSpacing:"1px", fontWeight:600, borderBottom:`2px solid ${C.border}`, whiteSpace:"nowrap" }}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {reservas.map((e,i) => {
-                    const adr = adrRes(e);
-                    return (
-                      <tr key={i} style={{ borderBottom:`1px solid ${C.border}`, background: i%2===0?C.bg:C.bgCard }}>
-                        <td style={{ padding:"8px 14px", fontWeight:600, color:C.accent }}>{fmtDate(e.fecha_llegada)}</td>
-                        <td style={{ padding:"8px 14px", color:C.textMid }}>{fmtDate(e.fecha_salida)}</td>
-                        <td style={{ padding:"8px 14px", color:C.textMid }}>{e.canal || "—"}</td>
-                        <td style={{ padding:"8px 14px", textAlign:"right", color:C.textMid }}>{e.noches != null ? e.noches : "—"}</td>
-                        <td style={{ padding:"8px 14px", textAlign:"right", fontWeight:700, color:C.text }}>{adr != null ? `€${adr}` : "—"}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        );
-      })()}
 
     </div>
   );
