@@ -3109,10 +3109,8 @@ function PickupView({ datos }) {
 
       {/* ── PACE ── */}
       {(() => {
-        const MESES_FULL2 = t("meses_full");
         const pad = n => String(n).padStart(2,"0");
         const hab = datos.hotel?.habitaciones || 30;
-        const hoyLY = `${hoy.getFullYear()-1}-${pad(hoy.getMonth()+1)}-${pad(hoy.getDate())}`;
 
         // 6 meses desde el mes actual
         const filasPace = Array.from({ length: 6 }, (_, i) => {
@@ -3120,7 +3118,6 @@ function PickupView({ datos }) {
           const a    = d.getFullYear();
           const m    = d.getMonth() + 1;
           const key  = `${a}-${pad(m)}`;
-          const keyLY= `${a-1}-${pad(m)}`;
           const diasMes = new Date(a, m, 0).getDate();
           const esFuturo = a > hoy.getFullYear() || (a === hoy.getFullYear() && m > hoy.getMonth() + 1);
 
@@ -3139,49 +3136,27 @@ function PickupView({ datos }) {
 
           // Presupuesto
           const pp = (presupuesto || []).find(p => p.anio === a && p.mes === m);
-          const ppOcc = pp?.occ_ppto || null; // ya en %
+          const ppOcc = pp?.occ_ppto || null;
           const ppAdr = pp?.adr_ppto || null;
 
           // OCC OTB estimada (reservas / (hab * días))
           const otbOcc = hab > 0 ? (otb / (hab * diasMes) * 100) : null;
 
-          // ADR OTB desde pickupEntries
-          const otbEntries = (pickupEntries||[]).filter(e => String(e.fecha_llegada||"").slice(0,7) === key);
-          const otbRevTotal = otbEntries.reduce((s,e) => s + (e.precio_total||0), 0);
-          const otbNochesTotal = otbEntries.reduce((s,e) => s + ((e.noches||1) * (e.num_reservas||1)), 0);
-          const adrOtb = otbNochesTotal > 0 && otbRevTotal > 0 ? Math.round(otbRevTotal / otbNochesTotal) : null;
-
-          // LYTD por mes: reservas futuras para ese mes LY que ya estaban en cartera a hoyLY
-          const lytdEntries = (pickupEntries||[]).filter(e =>
-            String(e.fecha_llegada||"").slice(0,7) === keyLY &&
-            String(e.fecha_pickup||"").slice(0,10) <= hoyLY &&
-            String(e.fecha_llegada||"").slice(0,10) >= hoyLY &&
-            (e.estado||"confirmada") !== "cancelada"
-          );
-          const lytdRes = lytdEntries.reduce((s,e) => s+(e.num_reservas||1), 0);
-          const lytdRevP = lytdEntries.reduce((s,e) => s+(e.precio_total||0), 0);
-          const lytdNoch = lytdEntries.reduce((s,e) => s+((e.noches||1)*(e.num_reservas||1)), 0);
-          const lytdResOcc = hab>0 && lytdRes>0 ? (lytdRes/(hab*diasMes)*100) : null;
-          const lytdResAdr = lytdNoch>0 && lytdRevP>0 ? Math.round(lytdRevP/lytdNoch) : null;
-
-          // Diferencias OTB vs LYTD
-          const diffRes  = lytdRes > 0 ? otb - lytdRes : null;
-          const diffOcc  = lytdResOcc != null && otbOcc != null ? (otbOcc - lytdResOcc).toFixed(1) : null;
-          const diffAdr  = lytdResAdr != null && adrOtb != null ? adrOtb - lytdResAdr : null;
+          // Diferencias
+          const diffLY   = lyOcc != null && otbOcc != null ? (otbOcc - lyOcc).toFixed(1) : null;
+          const diffPpto = ppOcc != null && otbOcc != null ? (otbOcc - ppOcc).toFixed(1) : null;
 
           return {
             label: MESES[d.getMonth()] + " " + a,
             esFuturo,
             otb,
-            otbOcc:   otbOcc != null ? otbOcc.toFixed(1) : null,
-            adrOtb,
-            lyRes:    lyHabOcu > 0 ? lyHabOcu : null,
-            lyOcc:    lyOcc  != null ? lyOcc.toFixed(1)  : null,
-            lyAdr:    lyAdr  != null ? Math.round(lyAdr) : null,
-            lytdRes:  lytdRes > 0 ? lytdRes : null,
-            lytdOcc:  lytdResOcc != null ? lytdResOcc.toFixed(1) : null,
-            lytdAdr:  lytdResAdr,
-            diffRes, diffOcc, diffAdr,
+            otbOcc: otbOcc != null ? otbOcc.toFixed(1) : null,
+            lyOcc:  lyOcc  != null ? lyOcc.toFixed(1)  : null,
+            lyAdr:  lyAdr  != null ? Math.round(lyAdr) : null,
+            ppOcc:  ppOcc  != null ? ppOcc.toFixed(1)  : null,
+            ppAdr:  ppAdr  != null ? Math.round(ppAdr) : null,
+            diffLY,
+            diffPpto,
           };
         });
 
@@ -3191,34 +3166,8 @@ function PickupView({ datos }) {
         const colorDiff = v => v == null ? C.textLight : parseFloat(v) >= 0 ? "#2ECC71" : "#E74C3C";
         const fmtDiff   = v => v == null ? "—" : `${parseFloat(v)>=0?"+":""}${v}%`;
 
-        // LYTD footer: pickups futuros en cartera a hoyLY vs OTB actual futuro
-        const hoyStr2 = `${hoy.getFullYear()}-${pad(hoy.getMonth()+1)}-${pad(hoy.getDate())}`;
-        const otbFuturo = (pickupEntries||[]).filter(e =>
-          String(e.fecha_pickup||"").slice(0,10) <= hoyStr2 &&
-          String(e.fecha_llegada||"").slice(0,10) >= hoyStr2 &&
-          (e.estado||"confirmada") !== "cancelada"
-        );
-        const lytdFuturo = (pickupEntries||[]).filter(e =>
-          String(e.fecha_pickup||"").slice(0,10) <= hoyLY &&
-          String(e.fecha_llegada||"").slice(0,10) >= hoyLY &&
-          (e.estado||"confirmada") !== "cancelada"
-        );
-        const ytdHabOcu  = otbFuturo.reduce((s,e)=>s+(e.num_reservas||1),0);
-        const ytdRevP    = otbFuturo.reduce((s,e)=>s+(e.precio_total||0),0);
-        const ytdNoch    = otbFuturo.reduce((s,e)=>s+((e.noches||1)*(e.num_reservas||1)),0);
-        const lytdHabOcu = lytdFuturo.reduce((s,e)=>s+(e.num_reservas||1),0);
-        const lytdRevP   = lytdFuturo.reduce((s,e)=>s+(e.precio_total||0),0);
-        const lytdNoch   = lytdFuturo.reduce((s,e)=>s+((e.noches||1)*(e.num_reservas||1)),0);
-        const ytdAdr  = ytdNoch>0 && ytdRevP>0  ? Math.round(ytdRevP/ytdNoch)   : null;
-        const lytdAdr = lytdNoch>0 && lytdRevP>0 ? Math.round(lytdRevP/lytdNoch) : null;
-        const ytdOcc  = null; // sin hab disponibles en pickup
-        const lytdOcc = null;
-        const lytdDiffRes = lytdHabOcu>0 ? ytdHabOcu - lytdHabOcu : null;
-        const lytdDiffAdr = ytdAdr!=null && lytdAdr!=null ? ytdAdr - lytdAdr : null;
-        const lytdDiffOcc = null;
-
         return (
-          <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:12, overflow:"hidden" }}>
+          <div style={{ background:C.bgCard, border:`1px solid ${C.border}`, borderRadius:12, overflow:"hidden" }}>
             <div style={{ padding:"18px 24px 12px", borderBottom:`1px solid ${C.border}`, display:"flex", alignItems:"baseline", gap:10 }}>
               <h3 style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:16, fontWeight:700, color:C.text, margin:0 }}>{t("pace_title")}</h3>
               <span style={{ fontSize:11, color:C.textLight }}>{t("pace_sub")}</span>
@@ -3226,47 +3175,33 @@ function PickupView({ datos }) {
             <div style={{ overflowX:"auto" }}>
               <table style={{ width:"100%", borderCollapse:"collapse", fontSize:12 }}>
                 <thead>
-                  <tr>
-                    <th rowSpan={2} style={{ padding:"10px 14px", textAlign:"left", color:C.textLight, fontWeight:600, fontSize:10, textTransform:"uppercase", letterSpacing:"1px", borderBottom:`2px solid ${C.border}`, whiteSpace:"nowrap" }}>Mes</th>
-                    <th colSpan={3} style={{ padding:"6px 14px", textAlign:"center", color:"#B8860B", fontWeight:700, fontSize:10, textTransform:"uppercase", letterSpacing:"1px", borderBottom:`1px solid ${C.border}`, borderLeft:`2px solid #B8860B44`, whiteSpace:"nowrap" }}>OTB</th>
-                    <th colSpan={3} style={{ padding:"6px 14px", textAlign:"center", color:C.textLight, fontWeight:600, fontSize:10, textTransform:"uppercase", letterSpacing:"1px", borderBottom:`1px solid ${C.border}`, borderLeft:`2px solid ${C.border}`, whiteSpace:"nowrap" }}>LY</th>
-                    <th colSpan={3} style={{ padding:"6px 14px", textAlign:"center", color:"#0891B2", fontWeight:700, fontSize:10, textTransform:"uppercase", letterSpacing:"1px", borderBottom:`1px solid ${C.border}`, borderLeft:`2px solid #0891B244`, whiteSpace:"nowrap" }}>LYTD</th>
-                    <th colSpan={3} style={{ padding:"6px 14px", textAlign:"center", color:C.accent, fontWeight:700, fontSize:10, textTransform:"uppercase", letterSpacing:"1px", borderBottom:`1px solid ${C.border}`, borderLeft:`2px solid ${C.accent}44`, whiteSpace:"nowrap" }}>Diferencia</th>
-                  </tr>
-                  <tr>
-                    <th style={{ padding:"6px 14px", textAlign:"right", color:"#B8860B", fontWeight:600, fontSize:10, textTransform:"uppercase", letterSpacing:"1px", borderBottom:`2px solid ${C.border}`, borderLeft:`2px solid #B8860B44`, whiteSpace:"nowrap" }}>Res.</th>
-                    <th style={{ padding:"6px 14px", textAlign:"right", color:"#B8860B", fontWeight:600, fontSize:10, textTransform:"uppercase", letterSpacing:"1px", borderBottom:`2px solid ${C.border}`, whiteSpace:"nowrap" }}>OCC</th>
-                    <th style={{ padding:"6px 14px", textAlign:"right", color:"#B8860B", fontWeight:600, fontSize:10, textTransform:"uppercase", letterSpacing:"1px", borderBottom:`2px solid ${C.border}`, whiteSpace:"nowrap" }}>ADR</th>
-                    <th style={{ padding:"6px 14px", textAlign:"right", color:C.textLight, fontWeight:600, fontSize:10, textTransform:"uppercase", letterSpacing:"1px", borderBottom:`2px solid ${C.border}`, borderLeft:`2px solid ${C.border}`, whiteSpace:"nowrap" }}>Res.</th>
-                    <th style={{ padding:"6px 14px", textAlign:"right", color:C.textLight, fontWeight:600, fontSize:10, textTransform:"uppercase", letterSpacing:"1px", borderBottom:`2px solid ${C.border}`, whiteSpace:"nowrap" }}>OCC</th>
-                    <th style={{ padding:"6px 14px", textAlign:"right", color:C.textLight, fontWeight:600, fontSize:10, textTransform:"uppercase", letterSpacing:"1px", borderBottom:`2px solid ${C.border}`, whiteSpace:"nowrap" }}>ADR</th>
-                    <th style={{ padding:"6px 14px", textAlign:"right", color:"#0891B2", fontWeight:600, fontSize:10, textTransform:"uppercase", letterSpacing:"1px", borderBottom:`2px solid ${C.border}`, borderLeft:`2px solid #0891B244`, whiteSpace:"nowrap" }}>Res.</th>
-                    <th style={{ padding:"6px 14px", textAlign:"right", color:"#0891B2", fontWeight:600, fontSize:10, textTransform:"uppercase", letterSpacing:"1px", borderBottom:`2px solid ${C.border}`, whiteSpace:"nowrap" }}>OCC</th>
-                    <th style={{ padding:"6px 14px", textAlign:"right", color:"#0891B2", fontWeight:600, fontSize:10, textTransform:"uppercase", letterSpacing:"1px", borderBottom:`2px solid ${C.border}`, whiteSpace:"nowrap" }}>ADR</th>
-                    <th style={{ padding:"6px 14px", textAlign:"right", color:C.accent, fontWeight:600, fontSize:10, textTransform:"uppercase", letterSpacing:"1px", borderBottom:`2px solid ${C.border}`, borderLeft:`2px solid ${C.accent}44`, whiteSpace:"nowrap" }}>Δ Res.</th>
-                    <th style={{ padding:"6px 14px", textAlign:"right", color:C.accent, fontWeight:600, fontSize:10, textTransform:"uppercase", letterSpacing:"1px", borderBottom:`2px solid ${C.border}`, whiteSpace:"nowrap" }}>Δ OCC</th>
-                    <th style={{ padding:"6px 14px", textAlign:"right", color:C.accent, fontWeight:600, fontSize:10, textTransform:"uppercase", letterSpacing:"1px", borderBottom:`2px solid ${C.border}`, whiteSpace:"nowrap" }}>Δ ADR</th>
+                  <tr style={{ background:C.bg }}>
+                    <th style={{ padding:"9px 16px", textAlign:"left",   color:C.textLight, fontWeight:600, fontSize:11, textTransform:"uppercase", letterSpacing:0.8, whiteSpace:"nowrap" }}>Mes</th>
+                    <th style={{ padding:"9px 12px", textAlign:"right",  color:C.textLight, fontWeight:600, fontSize:11, textTransform:"uppercase", letterSpacing:0.8 }}>OTB Res.</th>
+                    <th style={{ padding:"9px 12px", textAlign:"right",  color:"#B8860B",   fontWeight:700, fontSize:11, textTransform:"uppercase", letterSpacing:0.8 }}>OCC OTB</th>
+                    <th style={{ padding:"9px 12px", textAlign:"right",  color:C.textLight, fontWeight:600, fontSize:11, textTransform:"uppercase", letterSpacing:0.8 }}>OCC LY</th>
+                    <th style={{ padding:"9px 12px", textAlign:"right",  color:C.textLight, fontWeight:600, fontSize:11, textTransform:"uppercase", letterSpacing:0.8 }}>ADR LY</th>
+                    <th style={{ padding:"9px 12px", textAlign:"right",  color:C.textLight, fontWeight:600, fontSize:11, textTransform:"uppercase", letterSpacing:0.8 }}>OCC Ppto</th>
+                    <th style={{ padding:"9px 12px", textAlign:"right",  color:C.textLight, fontWeight:600, fontSize:11, textTransform:"uppercase", letterSpacing:0.8 }}>ADR Ppto</th>
+                    <th style={{ padding:"9px 12px", textAlign:"right",  color:C.textLight, fontWeight:600, fontSize:11, textTransform:"uppercase", letterSpacing:0.8 }}>vs LY</th>
+                    <th style={{ padding:"9px 16px", textAlign:"right",  color:C.textLight, fontWeight:600, fontSize:11, textTransform:"uppercase", letterSpacing:0.8 }}>vs Ppto</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filasPace.map((f, i) => (
-                    <tr key={i} style={{ borderBottom:`1px solid ${C.border}`, background: i===0 ? C.accentLight : (i % 2 === 0 ? C.bg : C.bgCard) }}>
-                      <td style={{ padding:"9px 14px", fontWeight:600, color:C.text, whiteSpace:"nowrap" }}>
+                    <tr key={i} style={{ borderTop:`1px solid ${C.border}`, background: i===0 ? C.accentLight : "transparent" }}>
+                      <td style={{ padding:"10px 16px", fontWeight:600, color:C.text, whiteSpace:"nowrap" }}>
                         {f.label}
                         {f.esFuturo && <span style={{ marginLeft:6, fontSize:9, background:"#2C3E7A22", color:"#7A9CC8", borderRadius:3, padding:"1px 5px", fontWeight:700 }}>OTB</span>}
                       </td>
-                      <td style={{ padding:"9px 14px", textAlign:"right", color:"#B8860B", fontWeight:700, borderLeft:`2px solid #B8860B22` }}>{f.otb > 0 ? f.otb : "—"}</td>
-                      <td style={{ padding:"9px 14px", textAlign:"right", color:"#B8860B", fontWeight:700 }}>{f.otbOcc != null ? `${f.otbOcc}%` : "—"}</td>
-                      <td style={{ padding:"9px 14px", textAlign:"right", color:"#B8860B", fontWeight:700 }}>{f.adrOtb != null ? `€${f.adrOtb}` : "—"}</td>
-                      <td style={{ padding:"9px 14px", textAlign:"right", color:C.textMid, borderLeft:`2px solid ${C.border}` }}>{f.lyRes != null ? f.lyRes : "—"}</td>
-                      <td style={{ padding:"9px 14px", textAlign:"right", color:C.textMid }}>{f.lyOcc  != null ? `${f.lyOcc}%`  : "—"}</td>
-                      <td style={{ padding:"9px 14px", textAlign:"right", color:C.textMid }}>{f.lyAdr  != null ? `€${f.lyAdr}`  : "—"}</td>
-                      <td style={{ padding:"9px 14px", textAlign:"right", color:"#0891B2", fontWeight:700, borderLeft:`2px solid #0891B244` }}>{f.lytdRes!=null?f.lytdRes:"—"}</td>
-                      <td style={{ padding:"9px 14px", textAlign:"right", color:"#0891B2", fontWeight:700 }}>{f.lytdOcc!=null?`${f.lytdOcc}%`:"—"}</td>
-                      <td style={{ padding:"9px 14px", textAlign:"right", color:"#0891B2", fontWeight:700 }}>{f.lytdAdr!=null?`€${f.lytdAdr}`:"—"}</td>
-                      <td style={{ padding:"9px 14px", textAlign:"right", fontWeight:700, color:colorDiff(f.diffRes != null ? String(f.diffRes) : null), borderLeft:`2px solid ${C.accent}22` }}>{f.diffRes != null ? `${f.diffRes >= 0 ? "+" : ""}${f.diffRes}` : "—"}</td>
-                      <td style={{ padding:"9px 14px", textAlign:"right", fontWeight:700, color:colorDiff(f.diffOcc) }}>{f.diffOcc != null ? `${parseFloat(f.diffOcc)>=0?"+":""}${f.diffOcc}%` : "—"}</td>
-                      <td style={{ padding:"9px 14px", textAlign:"right", fontWeight:700, color:colorDiff(f.diffAdr != null ? String(f.diffAdr) : null) }}>{f.diffAdr != null ? `${f.diffAdr >= 0 ? "+" : ""}€${Math.abs(f.diffAdr)}` : "—"}</td>
+                      <td style={{ padding:"10px 12px", textAlign:"right", color:C.textMid }}>{f.otb > 0 ? f.otb : "—"}</td>
+                      <td style={{ padding:"10px 12px", textAlign:"right", fontWeight:700, color:"#B8860B" }}>{f.otbOcc != null ? `${f.otbOcc}%` : "—"}</td>
+                      <td style={{ padding:"10px 12px", textAlign:"right", color:C.textMid }}>{f.lyOcc  != null ? `${f.lyOcc}%`  : "—"}</td>
+                      <td style={{ padding:"10px 12px", textAlign:"right", color:C.textMid }}>{f.lyAdr  != null ? `€${f.lyAdr}`  : "—"}</td>
+                      <td style={{ padding:"10px 12px", textAlign:"right", color:C.textMid }}>{f.ppOcc  != null ? `${f.ppOcc}%`  : "—"}</td>
+                      <td style={{ padding:"10px 12px", textAlign:"right", color:C.textMid }}>{f.ppAdr  != null ? `€${f.ppAdr}`  : "—"}</td>
+                      <td style={{ padding:"10px 12px", textAlign:"right", fontWeight:700, color:colorDiff(f.diffLY)   }}>{fmtDiff(f.diffLY)}</td>
+                      <td style={{ padding:"10px 16px", textAlign:"right", fontWeight:700, color:colorDiff(f.diffPpto) }}>{fmtDiff(f.diffPpto)}</td>
                     </tr>
                   ))}
                 </tbody>
