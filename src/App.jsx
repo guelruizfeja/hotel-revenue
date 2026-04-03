@@ -1331,8 +1331,8 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
 function MonthDetailView({ datos, mes, anio, onBack }) {
   const t = useT();
   const { produccion } = datos;
-  const [notasDia, setNotasDia] = React.useState(() => { try { return JSON.parse(localStorage.getItem("fr_notas_dia")||"{}"); } catch { return {}; } });
-  const [editingNotaDia, setEditingNotaDia] = React.useState(null);
+  const [notasDia, setNotasDia] = useState(() => { try { return JSON.parse(localStorage.getItem("fr_notas_dia")||"{}"); } catch { return {}; } });
+  const [editingNotaDia, setEditingNotaDia] = useState(null);
   const guardarNotaDia = (key, txt) => { const n={...notasDia,[key]:txt}; setNotasDia(n); localStorage.setItem("fr_notas_dia",JSON.stringify(n)); };
 
   const datosMes = (produccion || []).filter(d => {
