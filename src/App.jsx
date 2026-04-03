@@ -3207,6 +3207,7 @@ function PickupView({ datos }) {
                     <th rowSpan={2} style={{ padding:"10px 14px", textAlign:"left", color:C.textLight, fontWeight:600, fontSize:10, textTransform:"uppercase", letterSpacing:"1px", borderBottom:`2px solid ${C.border}`, whiteSpace:"nowrap" }}>Mes</th>
                     <th colSpan={3} style={{ padding:"6px 14px", textAlign:"center", color:"#B8860B", fontWeight:700, fontSize:10, textTransform:"uppercase", letterSpacing:"1px", borderBottom:`1px solid ${C.border}`, borderLeft:`2px solid #B8860B44`, whiteSpace:"nowrap" }}>OTB</th>
                     <th colSpan={3} style={{ padding:"6px 14px", textAlign:"center", color:C.textLight, fontWeight:600, fontSize:10, textTransform:"uppercase", letterSpacing:"1px", borderBottom:`1px solid ${C.border}`, borderLeft:`2px solid ${C.border}`, whiteSpace:"nowrap" }}>LY</th>
+                    <th colSpan={3} style={{ padding:"6px 14px", textAlign:"center", color:"#0891B2", fontWeight:700, fontSize:10, textTransform:"uppercase", letterSpacing:"1px", borderBottom:`1px solid ${C.border}`, borderLeft:`2px solid #0891B244`, whiteSpace:"nowrap" }}>LYTD</th>
                     <th colSpan={3} style={{ padding:"6px 14px", textAlign:"center", color:C.accent, fontWeight:700, fontSize:10, textTransform:"uppercase", letterSpacing:"1px", borderBottom:`1px solid ${C.border}`, borderLeft:`2px solid ${C.accent}44`, whiteSpace:"nowrap" }}>Diferencia</th>
                   </tr>
                   <tr>
@@ -3216,6 +3217,9 @@ function PickupView({ datos }) {
                     <th style={{ padding:"6px 14px", textAlign:"right", color:C.textLight, fontWeight:600, fontSize:10, textTransform:"uppercase", letterSpacing:"1px", borderBottom:`2px solid ${C.border}`, borderLeft:`2px solid ${C.border}`, whiteSpace:"nowrap" }}>Res.</th>
                     <th style={{ padding:"6px 14px", textAlign:"right", color:C.textLight, fontWeight:600, fontSize:10, textTransform:"uppercase", letterSpacing:"1px", borderBottom:`2px solid ${C.border}`, whiteSpace:"nowrap" }}>OCC</th>
                     <th style={{ padding:"6px 14px", textAlign:"right", color:C.textLight, fontWeight:600, fontSize:10, textTransform:"uppercase", letterSpacing:"1px", borderBottom:`2px solid ${C.border}`, whiteSpace:"nowrap" }}>ADR</th>
+                    <th style={{ padding:"6px 14px", textAlign:"right", color:"#0891B2", fontWeight:600, fontSize:10, textTransform:"uppercase", letterSpacing:"1px", borderBottom:`2px solid ${C.border}`, borderLeft:`2px solid #0891B244`, whiteSpace:"nowrap" }}>Res.</th>
+                    <th style={{ padding:"6px 14px", textAlign:"right", color:"#0891B2", fontWeight:600, fontSize:10, textTransform:"uppercase", letterSpacing:"1px", borderBottom:`2px solid ${C.border}`, whiteSpace:"nowrap" }}>OCC</th>
+                    <th style={{ padding:"6px 14px", textAlign:"right", color:"#0891B2", fontWeight:600, fontSize:10, textTransform:"uppercase", letterSpacing:"1px", borderBottom:`2px solid ${C.border}`, whiteSpace:"nowrap" }}>ADR</th>
                     <th style={{ padding:"6px 14px", textAlign:"right", color:C.accent, fontWeight:600, fontSize:10, textTransform:"uppercase", letterSpacing:"1px", borderBottom:`2px solid ${C.border}`, borderLeft:`2px solid ${C.accent}44`, whiteSpace:"nowrap" }}>Δ Res.</th>
                     <th style={{ padding:"6px 14px", textAlign:"right", color:C.accent, fontWeight:600, fontSize:10, textTransform:"uppercase", letterSpacing:"1px", borderBottom:`2px solid ${C.border}`, whiteSpace:"nowrap" }}>Δ OCC</th>
                     <th style={{ padding:"6px 14px", textAlign:"right", color:C.accent, fontWeight:600, fontSize:10, textTransform:"uppercase", letterSpacing:"1px", borderBottom:`2px solid ${C.border}`, whiteSpace:"nowrap" }}>Δ ADR</th>
@@ -3234,6 +3238,8 @@ function PickupView({ datos }) {
                       <td style={{ padding:"9px 14px", textAlign:"right", color:C.textMid, borderLeft:`2px solid ${C.border}` }}>{f.lyRes != null ? f.lyRes : "—"}</td>
                       <td style={{ padding:"9px 14px", textAlign:"right", color:C.textMid }}>{f.lyOcc  != null ? `${f.lyOcc}%`  : "—"}</td>
                       <td style={{ padding:"9px 14px", textAlign:"right", color:C.textMid }}>{f.lyAdr  != null ? `€${f.lyAdr}`  : "—"}</td>
+                      <td style={{ padding:"9px 14px", borderLeft:`2px solid #0891B244` }}/>
+                      <td/><td/>
                       <td style={{ padding:"9px 14px", textAlign:"right", fontWeight:700, color:colorDiff(f.diffRes != null ? String(f.diffRes) : null), borderLeft:`2px solid ${C.accent}22` }}>{f.diffRes != null ? `${f.diffRes >= 0 ? "+" : ""}${f.diffRes}` : "—"}</td>
                       <td style={{ padding:"9px 14px", textAlign:"right", fontWeight:700, color:colorDiff(f.diffOcc) }}>{f.diffOcc != null ? `${parseFloat(f.diffOcc)>=0?"+":""}${f.diffOcc}%` : "—"}</td>
                       <td style={{ padding:"9px 14px", textAlign:"right", fontWeight:700, color:colorDiff(f.diffAdr != null ? String(f.diffAdr) : null) }}>{f.diffAdr != null ? `${f.diffAdr >= 0 ? "+" : ""}€${Math.abs(f.diffAdr)}` : "—"}</td>
@@ -3244,14 +3250,19 @@ function PickupView({ datos }) {
                   <tfoot>
                     <tr style={{ borderTop:`2px solid ${C.border}`, background:"#F0F4FA" }}>
                       <td style={{ padding:"10px 14px", fontWeight:800, color:C.text, whiteSpace:"nowrap", fontSize:11, textTransform:"uppercase", letterSpacing:"0.5px" }}>
-                        YTD {hoy.getFullYear()} vs LYTD {hoy.getFullYear()-1}
+                        YTD vs LYTD
                       </td>
+                      {/* OTB = YTD actual */}
                       <td style={{ padding:"10px 14px", textAlign:"right", color:"#B8860B", fontWeight:700, borderLeft:`2px solid #B8860B22` }}>{ytdHabOcu>0?ytdHabOcu.toLocaleString("es-ES"):"—"}</td>
                       <td style={{ padding:"10px 14px", textAlign:"right", color:"#B8860B", fontWeight:700 }}>{ytdOcc!=null?`${ytdOcc}%`:"—"}</td>
                       <td style={{ padding:"10px 14px", textAlign:"right", color:"#B8860B", fontWeight:700 }}>{ytdAdr!=null?`€${ytdAdr}`:"—"}</td>
-                      <td style={{ padding:"10px 14px", textAlign:"right", color:C.textMid, borderLeft:`2px solid ${C.border}` }}>{lytdHabOcu>0?lytdHabOcu.toLocaleString("es-ES"):"—"}</td>
-                      <td style={{ padding:"10px 14px", textAlign:"right", color:C.textMid }}>{lytdOcc!=null?`${lytdOcc}%`:"—"}</td>
-                      <td style={{ padding:"10px 14px", textAlign:"right", color:C.textMid }}>{lytdAdr!=null?`€${lytdAdr}`:"—"}</td>
+                      {/* LY — vacío en fila resumen */}
+                      <td style={{ borderLeft:`2px solid ${C.border}` }}/><td/><td/>
+                      {/* LYTD */}
+                      <td style={{ padding:"10px 14px", textAlign:"right", color:"#0891B2", fontWeight:700, borderLeft:`2px solid #0891B244` }}>{lytdHabOcu>0?lytdHabOcu.toLocaleString("es-ES"):"—"}</td>
+                      <td style={{ padding:"10px 14px", textAlign:"right", color:"#0891B2", fontWeight:700 }}>{lytdOcc!=null?`${lytdOcc}%`:"—"}</td>
+                      <td style={{ padding:"10px 14px", textAlign:"right", color:"#0891B2", fontWeight:700 }}>{lytdAdr!=null?`€${lytdAdr}`:"—"}</td>
+                      {/* Diferencia YTD vs LYTD */}
                       <td style={{ padding:"10px 14px", textAlign:"right", fontWeight:700, color:colorDiff(lytdDiffRes!=null?String(lytdDiffRes):null), borderLeft:`2px solid ${C.accent}22` }}>{lytdDiffRes!=null?`${lytdDiffRes>=0?"+":""}${lytdDiffRes.toLocaleString("es-ES")}`:"—"}</td>
                       <td style={{ padding:"10px 14px", textAlign:"right", fontWeight:700, color:colorDiff(lytdDiffOcc) }}>{lytdDiffOcc!=null?`${parseFloat(lytdDiffOcc)>=0?"+":""}${lytdDiffOcc}%`:"—"}</td>
                       <td style={{ padding:"10px 14px", textAlign:"right", fontWeight:700, color:colorDiff(lytdDiffAdr!=null?String(lytdDiffAdr):null) }}>{lytdDiffAdr!=null?`${lytdDiffAdr>=0?"+":""}€${Math.abs(lytdDiffAdr)}`:"—"}</td>
