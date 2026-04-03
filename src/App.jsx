@@ -1331,6 +1331,9 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
 function MonthDetailView({ datos, mes, anio, onBack }) {
   const t = useT();
   const { produccion } = datos;
+  const [notasDia, setNotasDia] = React.useState(() => { try { return JSON.parse(localStorage.getItem("fr_notas_dia")||"{}"); } catch { return {}; } });
+  const [editingNotaDia, setEditingNotaDia] = React.useState(null);
+  const guardarNotaDia = (key, txt) => { const n={...notasDia,[key]:txt}; setNotasDia(n); localStorage.setItem("fr_notas_dia",JSON.stringify(n)); };
 
   const datosMes = (produccion || []).filter(d => {
     const f = new Date(d.fecha + "T00:00:00");
@@ -1379,8 +1382,8 @@ function MonthDetailView({ datos, mes, anio, onBack }) {
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
             <thead>
               <tr style={{ borderBottom: `2px solid ${C.border}` }}>
-                {[t("th_fecha"), t("th_hab_ocup"), t("th_ocup"), t("th_adr"), t("th_revpar"), t("th_rev_hab"), t("th_rev_total")].map(h => (
-                  <th key={h} style={{ padding: "10px 14px", textAlign: h === "Fecha" ? "left" : "right", fontSize: 10, color: C.textLight, textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600 }}>{h}</th>
+                {[t("th_fecha"), t("th_hab_ocup"), t("th_ocup"), t("th_adr"), t("th_revpar"), t("th_rev_hab"), t("th_rev_total"), "Notas"].map((h,hi) => (
+                  <th key={h} style={{ padding: "10px 14px", textAlign: hi===0||hi===7 ? "left" : "right", fontSize: 10, color: C.textLight, textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600 }}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -1406,6 +1409,15 @@ function MonthDetailView({ datos, mes, anio, onBack }) {
                     <td style={{ padding: "9px 14px", textAlign: "right", color: C.accent, fontWeight: 600 }}>€{revpar}</td>
                     <td style={{ padding: "9px 14px", textAlign: "right", color: C.textMid }}>€{Math.round(d.revenue_hab).toLocaleString("es-ES")}</td>
                     <td style={{ padding: "9px 14px", textAlign: "right", color: C.textMid }}>€{Math.round(d.revenue_total || 0).toLocaleString("es-ES")}</td>
+                    <td style={{ padding: "9px 14px" }} onClick={e=>e.stopPropagation()}>
+                      {editingNotaDia === d.fecha ? (
+                        <input autoFocus defaultValue={notasDia[d.fecha]||""} onBlur={e=>{ guardarNotaDia(d.fecha,e.target.value); setEditingNotaDia(null); }} onKeyDown={e=>{ if(e.key==="Enter"||e.key==="Escape"){ guardarNotaDia(d.fecha,e.target.value); setEditingNotaDia(null); } }} style={{ width:120, fontSize:12, padding:"3px 6px", borderRadius:4, border:`1px solid ${C.border}`, background:C.bg, color:C.text, fontFamily:"inherit", outline:"none" }}/>
+                      ) : (
+                        <span onClick={()=>setEditingNotaDia(d.fecha)} style={{ fontSize:12, color:notasDia[d.fecha]?C.textMid:C.border, cursor:"text", display:"inline-block", minWidth:80, padding:"2px 4px", borderRadius:4, border:`1px dashed ${C.border}` }}>
+                          {notasDia[d.fecha]||"—"}
+                        </span>
+                      )}
+                    </td>
                   </tr>
                 );
               })}
@@ -1419,6 +1431,7 @@ function MonthDetailView({ datos, mes, anio, onBack }) {
                 <td style={{ padding: "10px 14px", textAlign: "right", color: C.accent }}>€{mediaRevpar}</td>
                 <td style={{ padding: "10px 14px", textAlign: "right", color: C.text }}>€{Math.round(totalRevHab).toLocaleString("es-ES")}</td>
                 <td style={{ padding: "10px 14px", textAlign: "right", color: C.text }}>€{Math.round(totalRevTot).toLocaleString("es-ES")}</td>
+                <td/>
               </tr>
             </tfoot>
           </table>
