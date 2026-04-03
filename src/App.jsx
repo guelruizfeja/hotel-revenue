@@ -2401,7 +2401,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
         if (total===0) return null;
         return (
           <Card style={{ display:"flex", alignItems:"center", gap:8 }}>
-            <div style={{ flex:1 }}>
+            <div>
               <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:20, color:C.text, marginBottom:2 }}>Mix de canales</p>
               <p style={{ fontSize:11, color:C.textLight, marginBottom:14 }}>{t("meses_full")[mes]} {anio} · {total} reservas OTB</p>
               {pieData.map((d,i)=>(
