@@ -2555,6 +2555,8 @@ function PickupView({ datos }) {
   const [canalMetric, setCanalMetric]     = useState("adr"); // "adr" | "noches"
 
   const hoy     = new Date();
+  const padL    = n => String(n).padStart(2,"0");
+  const hoyStr  = `${hoy.getFullYear()}-${padL(hoy.getMonth()+1)}-${padL(hoy.getDate())}`;
   const MESES   = t("meses_corto");
 
   // Año inicial: el más reciente con datos
