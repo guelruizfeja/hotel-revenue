@@ -576,19 +576,25 @@ function KpiModal({ kpi, datos, mes, anio, onClose }) {
               </div>}
             </div>
           );
-        })() : (
-        <div style={{ display:"grid", gridTemplateColumns:"repeat(2,1fr)", gap:12, marginBottom:20 }}>
-          {[
+        })() : (() => {
+          const mediaLY = diasLY.length>0 ? diasLY.reduce((a,d)=>a+(d[fk]||0),0)/diasLY.length : 0;
+          const varLY = mediaLY>0 ? ((mediaActual-mediaLY)/mediaLY*100).toFixed(1) : null;
+          const cards = [
             { label:"Media del mes", value:`${kpi==="Ocupación"?mediaActual.toFixed(1):Math.round(mediaActual).toLocaleString("es-ES")}${unit}` },
             { label:`Vs ${compLabel}`, value: varComp!==null ? `${parseFloat(varComp)>=0?"+":""}${varComp}%` : "Sin datos", up: varComp!==null?parseFloat(varComp)>=0:true },
-          ].map((k,i)=>(
-            <div key={i} style={{ background:`${C.accent}0f`, borderRadius:8, padding:"16px", borderLeft:`3px solid ${C.accent}`, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", textAlign:"center" }}>
-              <p style={{ fontSize:10, color:C.textMid, textTransform:"uppercase", letterSpacing:1.5, marginBottom:6, fontWeight:600 }}>{k.label}</p>
-              <p style={{ fontSize:22, fontWeight:700, color:k.up===false?C.red:k.up===true?C.green:C.text, fontFamily:"'Plus Jakarta Sans',sans-serif" }}>{k.value}</p>
+            { label:`Vs LY (${anio-1})`, value: varLY!==null ? `${parseFloat(varLY)>=0?"+":""}${varLY}%` : "Sin datos", up: varLY!==null?parseFloat(varLY)>=0:true },
+          ];
+          return (
+            <div style={{ display:"grid", gridTemplateColumns:`repeat(${cards.length},1fr)`, gap:12, marginBottom:20 }}>
+              {cards.map((k,i)=>(
+                <div key={i} style={{ background:`${C.accent}0f`, borderRadius:8, padding:"16px", borderLeft:`3px solid ${C.accent}`, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", textAlign:"center" }}>
+                  <p style={{ fontSize:10, color:C.textMid, textTransform:"uppercase", letterSpacing:1.5, marginBottom:6, fontWeight:600 }}>{k.label}</p>
+                  <p style={{ fontSize:22, fontWeight:700, color:k.up===false?C.red:k.up===true?C.green:C.text, fontFamily:"'Plus Jakarta Sans',sans-serif" }}>{k.value}</p>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-        )}
+          );
+        })()}
 
         <div style={{ marginBottom:16 }}>
           {kpi==="Revenue Mensual" ? (() => {
@@ -651,7 +657,7 @@ function KpiModal({ kpi, datos, mes, anio, onClose }) {
               </BarChart>
             </ResponsiveContainer>
             );
-          })() : kpi!=="TRevPAR" ? (<>
+          })() : (<>
             <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10 }}>
               <div style={{ display:"flex", gap:6 }}>
                 {[["30dias","Últimos 30 días"],["mes","Mes actual"]].map(([key,label])=>(
@@ -688,7 +694,7 @@ function KpiModal({ kpi, datos, mes, anio, onClose }) {
                 <Line type="monotone" dataKey="ly" name="Año anterior" stroke="#B8860B" strokeWidth={2} dot={{fill:"#B8860B", r:3, strokeWidth:0}} activeDot={{r:4}} connectNulls/>
               </ComposedChart>
             </ResponsiveContainer>
-          </>) : null}
+          </>)}
         </div>
 
      </div>
@@ -720,10 +726,6 @@ function KpiCard({ label, value, changeLm, upLm, changeLy, upLy, i, onClick, acc
     }}>
       <p style={{ fontSize: 12, color: C.textMid, textTransform: "uppercase", letterSpacing: "1.5px", fontWeight: 700 }}>{label}</p>
       <p style={{ fontSize: "clamp(22px,5vw,30px)", fontWeight: 700, fontFamily: "'Plus Jakarta Sans', sans-serif", color: C.text, margin: "8px 0 6px", letterSpacing: "-1px", lineHeight: 1 }}>{value}</p>
-      <div style={{ display: "flex", alignItems: "center", gap: 5, flexWrap:"wrap" }}>
-        {changeLm && <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 7px", borderRadius: 4, background: upLm ? C.greenLight : C.redLight, color: upLm ? C.green : C.red }}>{changeLm} <span style={{ opacity:0.65, fontWeight:400 }}>LM</span></span>}
-        {changeLy && <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 7px", borderRadius: 4, background: upLy ? C.greenLight : C.redLight, color: upLy ? C.green : C.red }}>{changeLy} <span style={{ opacity:0.65, fontWeight:400 }}>LY</span></span>}
-      </div>
     </div>
   );
 }
@@ -1959,7 +1961,6 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
     { label: t("kpi_adr"),       kpiKey:"ADR",             value: `€${adr}`,    ...diff(parseFloat(adr), prevAdr, lyAdrD) },
     { label: t("kpi_revpar"),    kpiKey:"RevPAR",          value: `€${revpar}`, ...diff(parseFloat(revpar), prevRevpar, lyRevparD) },
     { label: t("kpi_trevpar"),   kpiKey:"TRevPAR",         value: `€${trevpar}`,...diff(parseFloat(trevpar), prevTrevpar, lyTrevparD) },
-    { label: t("kpi_rev_mensual"), kpiKey:"Revenue Mensual", value: `€${Math.round(totalRevTotal).toLocaleString("es-ES")}`, ...diff(totalRevTotal, prevRevTot, lyRevTotD) },
   ];
 
   return (
