@@ -3151,10 +3151,11 @@ function PickupView({ datos }) {
           const otbNochesTotal = otbEntries.reduce((s,e) => s + ((e.noches||1) * (e.num_reservas||1)), 0);
           const adrOtb = otbNochesTotal > 0 && otbRevTotal > 0 ? Math.round(otbRevTotal / otbNochesTotal) : null;
 
-          // LYTD por mes: pickup para ese mes LY con fecha_pickup <= hoyLY
+          // LYTD por mes: reservas futuras para ese mes LY que ya estaban en cartera a hoyLY
           const lytdEntries = (pickupEntries||[]).filter(e =>
             String(e.fecha_llegada||"").slice(0,7) === keyLY &&
             String(e.fecha_pickup||"").slice(0,10) <= hoyLY &&
+            String(e.fecha_llegada||"").slice(0,10) >= hoyLY &&
             (e.estado||"confirmada") !== "cancelada"
           );
           const lytdRes = lytdEntries.reduce((s,e) => s+(e.num_reservas||1), 0);
@@ -3190,24 +3191,31 @@ function PickupView({ datos }) {
         const colorDiff = v => v == null ? C.textLight : parseFloat(v) >= 0 ? "#2ECC71" : "#E74C3C";
         const fmtDiff   = v => v == null ? "—" : `${parseFloat(v)>=0?"+":""}${v}%`;
 
-        // LYTD
-        const inicioAct = `${hoy.getFullYear()}-01-01`;
-        const inicioLY  = `${hoy.getFullYear()-1}-01-01`;
-        const diasYTD  = (produccion||[]).filter(r => r.fecha >= inicioAct && r.fecha <= `${hoy.getFullYear()}-${pad(hoy.getMonth()+1)}-${pad(hoy.getDate())}`);
-        const diasLYTD = (produccion||[]).filter(r => r.fecha >= inicioLY  && r.fecha <= hoyLY);
-        const ytdHabOcu  = diasYTD.reduce((s,r)=>s+(r.hab_ocupadas||0),0);
-        const ytdHabDis  = diasYTD.reduce((s,r)=>s+(r.hab_disponibles||0),0);
-        const ytdRevHab  = diasYTD.reduce((s,r)=>s+(r.revenue_hab||0),0);
-        const lytdHabOcu = diasLYTD.reduce((s,r)=>s+(r.hab_ocupadas||0),0);
-        const lytdHabDis = diasLYTD.reduce((s,r)=>s+(r.hab_disponibles||0),0);
-        const lytdRevHab = diasLYTD.reduce((s,r)=>s+(r.revenue_hab||0),0);
-        const ytdOcc  = ytdHabDis>0  ? (ytdHabOcu/ytdHabDis*100).toFixed(1)   : null;
-        const ytdAdr  = ytdHabOcu>0  ? Math.round(ytdRevHab/ytdHabOcu)         : null;
-        const lytdOcc = lytdHabDis>0 ? (lytdHabOcu/lytdHabDis*100).toFixed(1) : null;
-        const lytdAdr = lytdHabOcu>0 ? Math.round(lytdRevHab/lytdHabOcu)       : null;
+        // LYTD footer: pickups futuros en cartera a hoyLY vs OTB actual futuro
+        const hoyStr2 = `${hoy.getFullYear()}-${pad(hoy.getMonth()+1)}-${pad(hoy.getDate())}`;
+        const otbFuturo = (pickupEntries||[]).filter(e =>
+          String(e.fecha_pickup||"").slice(0,10) <= hoyStr2 &&
+          String(e.fecha_llegada||"").slice(0,10) >= hoyStr2 &&
+          (e.estado||"confirmada") !== "cancelada"
+        );
+        const lytdFuturo = (pickupEntries||[]).filter(e =>
+          String(e.fecha_pickup||"").slice(0,10) <= hoyLY &&
+          String(e.fecha_llegada||"").slice(0,10) >= hoyLY &&
+          (e.estado||"confirmada") !== "cancelada"
+        );
+        const ytdHabOcu  = otbFuturo.reduce((s,e)=>s+(e.num_reservas||1),0);
+        const ytdRevP    = otbFuturo.reduce((s,e)=>s+(e.precio_total||0),0);
+        const ytdNoch    = otbFuturo.reduce((s,e)=>s+((e.noches||1)*(e.num_reservas||1)),0);
+        const lytdHabOcu = lytdFuturo.reduce((s,e)=>s+(e.num_reservas||1),0);
+        const lytdRevP   = lytdFuturo.reduce((s,e)=>s+(e.precio_total||0),0);
+        const lytdNoch   = lytdFuturo.reduce((s,e)=>s+((e.noches||1)*(e.num_reservas||1)),0);
+        const ytdAdr  = ytdNoch>0 && ytdRevP>0  ? Math.round(ytdRevP/ytdNoch)   : null;
+        const lytdAdr = lytdNoch>0 && lytdRevP>0 ? Math.round(lytdRevP/lytdNoch) : null;
+        const ytdOcc  = null; // sin hab disponibles en pickup
+        const lytdOcc = null;
         const lytdDiffRes = lytdHabOcu>0 ? ytdHabOcu - lytdHabOcu : null;
-        const lytdDiffOcc = ytdOcc!=null && lytdOcc!=null ? (parseFloat(ytdOcc)-parseFloat(lytdOcc)).toFixed(1) : null;
         const lytdDiffAdr = ytdAdr!=null && lytdAdr!=null ? ytdAdr - lytdAdr : null;
+        const lytdDiffOcc = null;
 
         return (
           <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:12, overflow:"hidden" }}>
@@ -3268,17 +3276,19 @@ function PickupView({ datos }) {
                       <td style={{ padding:"10px 14px", fontWeight:800, color:C.text, whiteSpace:"nowrap", fontSize:11, textTransform:"uppercase", letterSpacing:"0.5px" }}>
                         YTD vs LYTD
                       </td>
-                      {/* OTB — vacío en fila YTD vs LYTD */}
-                      <td style={{ borderLeft:`2px solid #B8860B22` }}/><td/><td/>
-                      {/* LY — vacío en fila resumen */}
+                      {/* OTB = pickups futuros a día de hoy */}
+                      <td style={{ padding:"10px 14px", textAlign:"right", color:"#B8860B", fontWeight:700, borderLeft:`2px solid #B8860B22` }}>{ytdHabOcu>0?ytdHabOcu.toLocaleString("es-ES"):"—"}</td>
+                      <td/>
+                      <td style={{ padding:"10px 14px", textAlign:"right", color:"#B8860B", fontWeight:700 }}>{ytdAdr!=null?`€${ytdAdr}`:"—"}</td>
+                      {/* LY — vacío */}
                       <td style={{ borderLeft:`2px solid ${C.border}` }}/><td/><td/>
-                      {/* LYTD */}
+                      {/* LYTD = pickups futuros a hoyLY */}
                       <td style={{ padding:"10px 14px", textAlign:"right", color:"#0891B2", fontWeight:700, borderLeft:`2px solid #0891B244` }}>{lytdHabOcu>0?lytdHabOcu.toLocaleString("es-ES"):"—"}</td>
-                      <td style={{ padding:"10px 14px", textAlign:"right", color:"#0891B2", fontWeight:700 }}>{lytdOcc!=null?`${lytdOcc}%`:"—"}</td>
+                      <td/>
                       <td style={{ padding:"10px 14px", textAlign:"right", color:"#0891B2", fontWeight:700 }}>{lytdAdr!=null?`€${lytdAdr}`:"—"}</td>
-                      {/* Diferencia YTD vs LYTD */}
+                      {/* Diferencia */}
                       <td style={{ padding:"10px 14px", textAlign:"right", fontWeight:700, color:colorDiff(lytdDiffRes!=null?String(lytdDiffRes):null), borderLeft:`2px solid ${C.accent}22` }}>{lytdDiffRes!=null?`${lytdDiffRes>=0?"+":""}${lytdDiffRes.toLocaleString("es-ES")}`:"—"}</td>
-                      <td style={{ padding:"10px 14px", textAlign:"right", fontWeight:700, color:colorDiff(lytdDiffOcc) }}>{lytdDiffOcc!=null?`${parseFloat(lytdDiffOcc)>=0?"+":""}${lytdDiffOcc}%`:"—"}</td>
+                      <td/>
                       <td style={{ padding:"10px 14px", textAlign:"right", fontWeight:700, color:colorDiff(lytdDiffAdr!=null?String(lytdDiffAdr):null) }}>{lytdDiffAdr!=null?`${lytdDiffAdr>=0?"+":""}€${Math.abs(lytdDiffAdr)}`:"—"}</td>
                     </tr>
                   </tfoot>
