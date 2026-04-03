@@ -1382,8 +1382,8 @@ function MonthDetailView({ datos, mes, anio, onBack }) {
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
             <thead>
               <tr style={{ borderBottom: `2px solid ${C.border}` }}>
-                {[t("th_fecha"), t("th_hab_ocup"), t("th_ocup"), t("th_adr"), t("th_revpar"), t("th_rev_hab"), t("th_rev_total"), "Notas"].map((h,hi) => (
-                  <th key={h} style={{ padding: "10px 14px", textAlign: hi===0||hi===7 ? "left" : "right", fontSize: 10, color: C.textLight, textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600 }}>{h}</th>
+                {[t("th_fecha"), "Notas", t("th_hab_ocup"), t("th_ocup"), t("th_adr"), t("th_revpar"), t("th_rev_hab"), t("th_rev_total")].map((h,hi) => (
+                  <th key={h} style={{ padding: "10px 14px", textAlign: hi<=1 ? "left" : "right", fontSize: 10, color: C.textLight, textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600 }}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -1403,12 +1403,6 @@ function MonthDetailView({ datos, mes, anio, onBack }) {
                       <span style={{ color: C.textLight, fontSize: 11, marginRight: 6 }}>{semana}</span>
                       {String(dia).padStart(2, "0")}/{String(mes + 1).padStart(2, "0")}
                     </td>
-                    <td style={{ padding: "9px 14px", textAlign: "right", color: C.textMid }}>{d.hab_ocupadas}</td>
-                    <td style={{ padding: "9px 14px", textAlign: "right", color: parseFloat(occ) >= 80 ? C.green : parseFloat(occ) < 50 ? C.red : C.textMid, fontWeight: 600 }}>{occ}%</td>
-                    <td style={{ padding: "9px 14px", textAlign: "right", color: C.textMid }}>€{adr}</td>
-                    <td style={{ padding: "9px 14px", textAlign: "right", color: C.accent, fontWeight: 600 }}>€{revpar}</td>
-                    <td style={{ padding: "9px 14px", textAlign: "right", color: C.textMid }}>€{Math.round(d.revenue_hab).toLocaleString("es-ES")}</td>
-                    <td style={{ padding: "9px 14px", textAlign: "right", color: C.textMid }}>€{Math.round(d.revenue_total || 0).toLocaleString("es-ES")}</td>
                     <td style={{ padding: "9px 14px" }} onClick={e=>e.stopPropagation()}>
                       {editingNotaDia === d.fecha ? (
                         <input autoFocus defaultValue={notasDia[d.fecha]||""} onBlur={e=>{ guardarNotaDia(d.fecha,e.target.value); setEditingNotaDia(null); }} onKeyDown={e=>{ if(e.key==="Enter"||e.key==="Escape"){ guardarNotaDia(d.fecha,e.target.value); setEditingNotaDia(null); } }} style={{ width:120, fontSize:12, padding:"3px 6px", borderRadius:4, border:`1px solid ${C.border}`, background:C.bg, color:C.text, fontFamily:"inherit", outline:"none" }}/>
@@ -1418,6 +1412,12 @@ function MonthDetailView({ datos, mes, anio, onBack }) {
                         </span>
                       )}
                     </td>
+                    <td style={{ padding: "9px 14px", textAlign: "right", color: C.textMid }}>{d.hab_ocupadas}</td>
+                    <td style={{ padding: "9px 14px", textAlign: "right", color: parseFloat(occ) >= 80 ? C.green : parseFloat(occ) < 50 ? C.red : C.textMid, fontWeight: 600 }}>{occ}%</td>
+                    <td style={{ padding: "9px 14px", textAlign: "right", color: C.textMid }}>€{adr}</td>
+                    <td style={{ padding: "9px 14px", textAlign: "right", color: C.accent, fontWeight: 600 }}>€{revpar}</td>
+                    <td style={{ padding: "9px 14px", textAlign: "right", color: C.textMid }}>€{Math.round(d.revenue_hab).toLocaleString("es-ES")}</td>
+                    <td style={{ padding: "9px 14px", textAlign: "right", color: C.textMid }}>€{Math.round(d.revenue_total || 0).toLocaleString("es-ES")}</td>
                   </tr>
                 );
               })}
@@ -1425,13 +1425,13 @@ function MonthDetailView({ datos, mes, anio, onBack }) {
             <tfoot>
               <tr style={{ borderTop: `2px solid ${C.border}`, background: "#E8F5EE", fontWeight: 700 }}>
                 <td style={{ padding: "10px 14px", color: C.text, fontWeight: 700 }}>{t("total_mes")}</td>
+                <td/>
                 <td style={{ padding: "10px 14px", textAlign: "right", color: C.text }}>{totalHabOcu}</td>
                 <td style={{ padding: "10px 14px", textAlign: "right", color: C.text }}>{mediaOcc}%</td>
                 <td style={{ padding: "10px 14px", textAlign: "right", color: C.text }}>€{mediaAdr}</td>
                 <td style={{ padding: "10px 14px", textAlign: "right", color: C.accent }}>€{mediaRevpar}</td>
                 <td style={{ padding: "10px 14px", textAlign: "right", color: C.text }}>€{Math.round(totalRevHab).toLocaleString("es-ES")}</td>
                 <td style={{ padding: "10px 14px", textAlign: "right", color: C.text }}>€{Math.round(totalRevTot).toLocaleString("es-ES")}</td>
-                <td/>
               </tr>
             </tfoot>
           </table>
@@ -2460,8 +2460,8 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
             <thead>
               <tr>
-                {[t("th_anio"),t("th_mes"),t("th_ocup"),t("th_adr"),t("th_revpar"),t("th_trevpar"),t("th_rev_hab"),t("th_rev_total"),"Notas"].map((h,hi) => (
-                  <th key={h} style={{ padding: "10px 14px", textAlign: hi<=1?"left":hi===8?"left":"right", fontSize: 10, color: C.textLight, textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600, borderBottom: `2px solid ${C.border}`, whiteSpace: "nowrap" }}>{h}</th>
+                {[t("th_anio"),t("th_mes"),t("th_ocup"),t("th_adr"),t("th_revpar"),t("th_trevpar"),t("th_rev_hab"),t("th_rev_total")].map((h,hi) => (
+                  <th key={h} style={{ padding: "10px 14px", textAlign: hi<=1?"left":"right", fontSize: 10, color: C.textLight, textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600, borderBottom: `2px solid ${C.border}`, whiteSpace: "nowrap" }}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -2476,15 +2476,6 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
                   <td style={{ padding: "9px 14px", textAlign: "right", color: C.blue }}>€{d.trevpar}</td>
                   <td style={{ padding: "9px 14px", textAlign: "right", color: C.textMid }}>€{Math.round(d.revHab).toLocaleString("es-ES")}</td>
                   <td style={{ padding: "9px 14px", textAlign: "right", color: C.textMid }}>€{Math.round(d.revTotal).toLocaleString("es-ES")}</td>
-                  <td style={{ padding: "9px 14px" }} onClick={e => e.stopPropagation()}>
-                    {editingNota === `${d.anioIdx}-${d.mesIdx}` ? (
-                      <input autoFocus defaultValue={notasMes[`${d.anioIdx}-${d.mesIdx}`]||""} onBlur={e=>{ guardarNota(`${d.anioIdx}-${d.mesIdx}`,e.target.value); setEditingNota(null); }} onKeyDown={e=>{ if(e.key==="Enter"||e.key==="Escape"){ guardarNota(`${d.anioIdx}-${d.mesIdx}`,e.target.value); setEditingNota(null); } }} style={{ width:120, fontSize:12, padding:"3px 6px", borderRadius:4, border:`1px solid ${C.border}`, background:C.bg, color:C.text, fontFamily:"inherit", outline:"none" }}/>
-                    ) : (
-                      <span onClick={()=>setEditingNota(`${d.anioIdx}-${d.mesIdx}`)} style={{ fontSize:12, color:notasMes[`${d.anioIdx}-${d.mesIdx}`]?C.textMid:C.border, cursor:"text", display:"inline-block", minWidth:80, padding:"2px 4px", borderRadius:4, border:`1px dashed ${C.border}` }}>
-                        {notasMes[`${d.anioIdx}-${d.mesIdx}`]||"—"}
-                      </span>
-                    )}
-                  </td>
                 </tr>
               ))}
             </tbody>
