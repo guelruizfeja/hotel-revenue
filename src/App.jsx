@@ -3270,29 +3270,6 @@ function PickupView({ datos }) {
                     </tr>
                   ))}
                 </tbody>
-                {(ytdHabOcu>0 || lytdHabOcu>0) && (
-                  <tfoot>
-                    <tr style={{ borderTop:`2px solid ${C.border}`, background:"#F0F4FA" }}>
-                      <td style={{ padding:"10px 14px", fontWeight:800, color:C.text, whiteSpace:"nowrap", fontSize:11, textTransform:"uppercase", letterSpacing:"0.5px" }}>
-                        YTD vs LYTD
-                      </td>
-                      {/* OTB = pickups futuros a día de hoy */}
-                      <td style={{ padding:"10px 14px", textAlign:"right", color:"#B8860B", fontWeight:700, borderLeft:`2px solid #B8860B22` }}>{ytdHabOcu>0?ytdHabOcu.toLocaleString("es-ES"):"—"}</td>
-                      <td/>
-                      <td style={{ padding:"10px 14px", textAlign:"right", color:"#B8860B", fontWeight:700 }}>{ytdAdr!=null?`€${ytdAdr}`:"—"}</td>
-                      {/* LY — vacío */}
-                      <td style={{ borderLeft:`2px solid ${C.border}` }}/><td/><td/>
-                      {/* LYTD = pickups futuros a hoyLY */}
-                      <td style={{ padding:"10px 14px", textAlign:"right", color:"#0891B2", fontWeight:700, borderLeft:`2px solid #0891B244` }}>{lytdHabOcu>0?lytdHabOcu.toLocaleString("es-ES"):"—"}</td>
-                      <td/>
-                      <td style={{ padding:"10px 14px", textAlign:"right", color:"#0891B2", fontWeight:700 }}>{lytdAdr!=null?`€${lytdAdr}`:"—"}</td>
-                      {/* Diferencia */}
-                      <td style={{ padding:"10px 14px", textAlign:"right", fontWeight:700, color:colorDiff(lytdDiffRes!=null?String(lytdDiffRes):null), borderLeft:`2px solid ${C.accent}22` }}>{lytdDiffRes!=null?`${lytdDiffRes>=0?"+":""}${lytdDiffRes.toLocaleString("es-ES")}`:"—"}</td>
-                      <td/>
-                      <td style={{ padding:"10px 14px", textAlign:"right", fontWeight:700, color:colorDiff(lytdDiffAdr!=null?String(lytdDiffAdr):null) }}>{lytdDiffAdr!=null?`${lytdDiffAdr>=0?"+":""}€${Math.abs(lytdDiffAdr)}`:"—"}</td>
-                    </tr>
-                  </tfoot>
-                )}
               </table>
             </div>
           </div>
