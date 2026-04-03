@@ -2201,7 +2201,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
                           )}
                           {evDay.length>0 && (
                             <div style={{ position:"absolute", bottom:2, left:2, right:2, display:"flex", gap:1, justifyContent:"center" }}>
-                              {evDay.map((ev,ei)=><span key={ei} style={{ width:5, height:5, borderRadius:"50%", background:ev.color, display:"inline-block", flexShrink:0 }}/>)}
+                              {evDay.map((ev,ei)=><span key={ei} style={{ width:8, height:8, borderRadius:"50%", background:ev.color, display:"inline-block", flexShrink:0 }}/>)}
                             </div>
                           )}
                           <p style={{ fontSize:8, color:C.textLight, lineHeight:1 }}>{dia}</p>
