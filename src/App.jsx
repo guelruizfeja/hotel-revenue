@@ -3226,6 +3226,54 @@ function PickupView({ datos }) {
         );
       })()}
 
+      {/* ── LAST YEAR TO DATE ── */}
+      {(() => {
+        const pad = n => String(n).padStart(2,"0");
+        const hoyLY = `${hoy.getFullYear()-1}-${pad(hoy.getMonth()+1)}-${pad(hoy.getDate())}`;
+        const inicioLY = `${hoy.getFullYear()-1}-01-01`;
+
+        const diasLYTD = (produccion||[]).filter(r => r.fecha >= inicioLY && r.fecha <= hoyLY);
+        if (diasLYTD.length === 0) return null;
+
+        const habOcu  = diasLYTD.reduce((s,r) => s+(r.hab_ocupadas||0), 0);
+        const habDis  = diasLYTD.reduce((s,r) => s+(r.hab_disponibles||0), 0);
+        const revHab  = diasLYTD.reduce((s,r) => s+(r.revenue_hab||0), 0);
+        const revTot  = diasLYTD.reduce((s,r) => s+(r.revenue_total||0), 0);
+        const occ     = habDis>0 ? (habOcu/habDis*100).toFixed(1) : null;
+        const adr     = habOcu>0 ? Math.round(revHab/habOcu) : null;
+        const revpar  = habDis>0 ? Math.round(revHab/habDis) : null;
+
+        const kpis = [
+          { label:"Hab. Ocupadas", value: habOcu.toLocaleString("es-ES") },
+          { label:"Ocupación",     value: occ!=null ? `${occ}%` : "—" },
+          { label:"ADR",           value: adr!=null ? `€${adr}` : "—" },
+          { label:"RevPAR",        value: revpar!=null ? `€${revpar}` : "—" },
+          { label:"Rev. Hab.",     value: `€${Math.round(revHab).toLocaleString("es-ES")}` },
+          { label:"Rev. Total",    value: `€${Math.round(revTot).toLocaleString("es-ES")}` },
+        ];
+
+        return (
+          <div style={{ background:C.bgCard, border:`1px solid ${C.border}`, borderRadius:12, overflow:"hidden" }}>
+            <div style={{ padding:"18px 24px 12px", borderBottom:`1px solid ${C.border}` }}>
+              <h3 style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:16, fontWeight:700, color:C.text, margin:0 }}>
+                Last Year to Date
+                <span style={{ marginLeft:10, fontSize:11, fontWeight:400, color:C.textLight }}>
+                  01/01/{hoy.getFullYear()-1} → {pad(hoy.getDate())}/{pad(hoy.getMonth()+1)}/{hoy.getFullYear()-1}
+                </span>
+              </h3>
+            </div>
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(140px,1fr))", gap:1, background:C.border }}>
+              {kpis.map((k,i) => (
+                <div key={i} style={{ background:C.bgCard, padding:"16px 20px" }}>
+                  <p style={{ fontSize:10, color:C.textLight, textTransform:"uppercase", letterSpacing:"1.5px", fontWeight:600, marginBottom:6 }}>{k.label}</p>
+                  <p style={{ fontSize:22, fontWeight:700, color: i===3?C.accent:C.text, fontFamily:"'Plus Jakarta Sans',sans-serif", letterSpacing:"-0.5px" }}>{k.value}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
+
 
     </div>
   );
