@@ -3174,6 +3174,26 @@ function PickupView({ datos }) {
         const colorDiff = v => v == null ? C.textLight : parseFloat(v) >= 0 ? "#2ECC71" : "#E74C3C";
         const fmtDiff   = v => v == null ? "—" : `${parseFloat(v)>=0?"+":""}${v}%`;
 
+        // LYTD
+        const hoyLY    = `${hoy.getFullYear()-1}-${pad(hoy.getMonth()+1)}-${pad(hoy.getDate())}`;
+        const inicioAct = `${hoy.getFullYear()}-01-01`;
+        const inicioLY  = `${hoy.getFullYear()-1}-01-01`;
+        const diasYTD  = (produccion||[]).filter(r => r.fecha >= inicioAct && r.fecha <= `${hoy.getFullYear()}-${pad(hoy.getMonth()+1)}-${pad(hoy.getDate())}`);
+        const diasLYTD = (produccion||[]).filter(r => r.fecha >= inicioLY  && r.fecha <= hoyLY);
+        const ytdHabOcu  = diasYTD.reduce((s,r)=>s+(r.hab_ocupadas||0),0);
+        const ytdHabDis  = diasYTD.reduce((s,r)=>s+(r.hab_disponibles||0),0);
+        const ytdRevHab  = diasYTD.reduce((s,r)=>s+(r.revenue_hab||0),0);
+        const lytdHabOcu = diasLYTD.reduce((s,r)=>s+(r.hab_ocupadas||0),0);
+        const lytdHabDis = diasLYTD.reduce((s,r)=>s+(r.hab_disponibles||0),0);
+        const lytdRevHab = diasLYTD.reduce((s,r)=>s+(r.revenue_hab||0),0);
+        const ytdOcc  = ytdHabDis>0  ? (ytdHabOcu/ytdHabDis*100).toFixed(1)   : null;
+        const ytdAdr  = ytdHabOcu>0  ? Math.round(ytdRevHab/ytdHabOcu)         : null;
+        const lytdOcc = lytdHabDis>0 ? (lytdHabOcu/lytdHabDis*100).toFixed(1) : null;
+        const lytdAdr = lytdHabOcu>0 ? Math.round(lytdRevHab/lytdHabOcu)       : null;
+        const lytdDiffRes = lytdHabOcu>0 ? ytdHabOcu - lytdHabOcu : null;
+        const lytdDiffOcc = ytdOcc!=null && lytdOcc!=null ? (parseFloat(ytdOcc)-parseFloat(lytdOcc)).toFixed(1) : null;
+        const lytdDiffAdr = ytdAdr!=null && lytdAdr!=null ? ytdAdr - lytdAdr : null;
+
         return (
           <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:12, overflow:"hidden" }}>
             <div style={{ padding:"18px 24px 12px", borderBottom:`1px solid ${C.border}`, display:"flex", alignItems:"baseline", gap:10 }}>
@@ -3220,59 +3240,30 @@ function PickupView({ datos }) {
                     </tr>
                   ))}
                 </tbody>
+                {(ytdHabOcu>0 || lytdHabOcu>0) && (
+                  <tfoot>
+                    <tr style={{ borderTop:`2px solid ${C.border}`, background:"#F0F4FA" }}>
+                      <td style={{ padding:"10px 14px", fontWeight:800, color:C.text, whiteSpace:"nowrap", fontSize:11, textTransform:"uppercase", letterSpacing:"0.5px" }}>
+                        YTD {hoy.getFullYear()} vs LYTD {hoy.getFullYear()-1}
+                      </td>
+                      <td style={{ padding:"10px 14px", textAlign:"right", color:"#B8860B", fontWeight:700, borderLeft:`2px solid #B8860B22` }}>{ytdHabOcu>0?ytdHabOcu.toLocaleString("es-ES"):"—"}</td>
+                      <td style={{ padding:"10px 14px", textAlign:"right", color:"#B8860B", fontWeight:700 }}>{ytdOcc!=null?`${ytdOcc}%`:"—"}</td>
+                      <td style={{ padding:"10px 14px", textAlign:"right", color:"#B8860B", fontWeight:700 }}>{ytdAdr!=null?`€${ytdAdr}`:"—"}</td>
+                      <td style={{ padding:"10px 14px", textAlign:"right", color:C.textMid, borderLeft:`2px solid ${C.border}` }}>{lytdHabOcu>0?lytdHabOcu.toLocaleString("es-ES"):"—"}</td>
+                      <td style={{ padding:"10px 14px", textAlign:"right", color:C.textMid }}>{lytdOcc!=null?`${lytdOcc}%`:"—"}</td>
+                      <td style={{ padding:"10px 14px", textAlign:"right", color:C.textMid }}>{lytdAdr!=null?`€${lytdAdr}`:"—"}</td>
+                      <td style={{ padding:"10px 14px", textAlign:"right", fontWeight:700, color:colorDiff(lytdDiffRes!=null?String(lytdDiffRes):null), borderLeft:`2px solid ${C.accent}22` }}>{lytdDiffRes!=null?`${lytdDiffRes>=0?"+":""}${lytdDiffRes.toLocaleString("es-ES")}`:"—"}</td>
+                      <td style={{ padding:"10px 14px", textAlign:"right", fontWeight:700, color:colorDiff(lytdDiffOcc) }}>{lytdDiffOcc!=null?`${parseFloat(lytdDiffOcc)>=0?"+":""}${lytdDiffOcc}%`:"—"}</td>
+                      <td style={{ padding:"10px 14px", textAlign:"right", fontWeight:700, color:colorDiff(lytdDiffAdr!=null?String(lytdDiffAdr):null) }}>{lytdDiffAdr!=null?`${lytdDiffAdr>=0?"+":""}€${Math.abs(lytdDiffAdr)}`:"—"}</td>
+                    </tr>
+                  </tfoot>
+                )}
               </table>
             </div>
           </div>
         );
       })()}
 
-      {/* ── LAST YEAR TO DATE ── */}
-      {(() => {
-        const pad = n => String(n).padStart(2,"0");
-        const hoyLY = `${hoy.getFullYear()-1}-${pad(hoy.getMonth()+1)}-${pad(hoy.getDate())}`;
-        const inicioLY = `${hoy.getFullYear()-1}-01-01`;
-
-        const diasLYTD = (produccion||[]).filter(r => r.fecha >= inicioLY && r.fecha <= hoyLY);
-        if (diasLYTD.length === 0) return null;
-
-        const habOcu  = diasLYTD.reduce((s,r) => s+(r.hab_ocupadas||0), 0);
-        const habDis  = diasLYTD.reduce((s,r) => s+(r.hab_disponibles||0), 0);
-        const revHab  = diasLYTD.reduce((s,r) => s+(r.revenue_hab||0), 0);
-        const revTot  = diasLYTD.reduce((s,r) => s+(r.revenue_total||0), 0);
-        const occ     = habDis>0 ? (habOcu/habDis*100).toFixed(1) : null;
-        const adr     = habOcu>0 ? Math.round(revHab/habOcu) : null;
-        const revpar  = habDis>0 ? Math.round(revHab/habDis) : null;
-
-        const kpis = [
-          { label:"Hab. Ocupadas", value: habOcu.toLocaleString("es-ES") },
-          { label:"Ocupación",     value: occ!=null ? `${occ}%` : "—" },
-          { label:"ADR",           value: adr!=null ? `€${adr}` : "—" },
-          { label:"RevPAR",        value: revpar!=null ? `€${revpar}` : "—" },
-          { label:"Rev. Hab.",     value: `€${Math.round(revHab).toLocaleString("es-ES")}` },
-          { label:"Rev. Total",    value: `€${Math.round(revTot).toLocaleString("es-ES")}` },
-        ];
-
-        return (
-          <div style={{ background:C.bgCard, border:`1px solid ${C.border}`, borderRadius:12, overflow:"hidden" }}>
-            <div style={{ padding:"18px 24px 12px", borderBottom:`1px solid ${C.border}` }}>
-              <h3 style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:16, fontWeight:700, color:C.text, margin:0 }}>
-                Last Year to Date
-                <span style={{ marginLeft:10, fontSize:11, fontWeight:400, color:C.textLight }}>
-                  01/01/{hoy.getFullYear()-1} → {pad(hoy.getDate())}/{pad(hoy.getMonth()+1)}/{hoy.getFullYear()-1}
-                </span>
-              </h3>
-            </div>
-            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(140px,1fr))", gap:1, background:C.border }}>
-              {kpis.map((k,i) => (
-                <div key={i} style={{ background:C.bgCard, padding:"16px 20px" }}>
-                  <p style={{ fontSize:10, color:C.textLight, textTransform:"uppercase", letterSpacing:"1.5px", fontWeight:600, marginBottom:6 }}>{k.label}</p>
-                  <p style={{ fontSize:22, fontWeight:700, color: i===3?C.accent:C.text, fontFamily:"'Plus Jakarta Sans',sans-serif", letterSpacing:"-0.5px" }}>{k.value}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        );
-      })()}
 
 
     </div>
