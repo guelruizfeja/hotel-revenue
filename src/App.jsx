@@ -3150,10 +3150,22 @@ function PickupView({ datos }) {
           const otbNochesTotal = otbEntries.reduce((s,e) => s + ((e.noches||1) * (e.num_reservas||1)), 0);
           const adrOtb = otbNochesTotal > 0 && otbRevTotal > 0 ? Math.round(otbRevTotal / otbNochesTotal) : null;
 
-          // Diferencias
-          const diffRes  = lyHabOcu > 0 ? otb - lyHabOcu : null;
-          const diffOcc  = lyOcc != null && otbOcc != null ? (otbOcc - lyOcc).toFixed(1) : null;
-          const diffAdr  = lyAdr != null && adrOtb != null ? adrOtb - Math.round(lyAdr) : null;
+          // LYTD por mes: pickup para ese mes LY con fecha_pickup <= hoyLY
+          const lytdEntries = (pickupEntries||[]).filter(e =>
+            String(e.fecha_llegada||"").slice(0,7) === keyLY &&
+            String(e.fecha_pickup||"").slice(0,10) <= hoyLY &&
+            (e.estado||"confirmada") !== "cancelada"
+          );
+          const lytdRes = lytdEntries.reduce((s,e) => s+(e.num_reservas||1), 0);
+          const lytdRevP = lytdEntries.reduce((s,e) => s+(e.precio_total||0), 0);
+          const lytdNoch = lytdEntries.reduce((s,e) => s+((e.noches||1)*(e.num_reservas||1)), 0);
+          const lytdResOcc = hab>0 ? (lytdRes/(hab*diasMes)*100) : null;
+          const lytdResAdr = lytdNoch>0 && lytdRevP>0 ? Math.round(lytdRevP/lytdNoch) : null;
+
+          // Diferencias OTB vs LYTD
+          const diffRes  = lytdRes > 0 ? otb - lytdRes : null;
+          const diffOcc  = lytdResOcc != null && otbOcc != null ? (otbOcc - lytdResOcc).toFixed(1) : null;
+          const diffAdr  = lytdResAdr != null && adrOtb != null ? adrOtb - lytdResAdr : null;
 
           return {
             label: MESES[d.getMonth()] + " " + a,
@@ -3164,6 +3176,9 @@ function PickupView({ datos }) {
             lyRes:    lyHabOcu > 0 ? lyHabOcu : null,
             lyOcc:    lyOcc  != null ? lyOcc.toFixed(1)  : null,
             lyAdr:    lyAdr  != null ? Math.round(lyAdr) : null,
+            lytdRes:  lytdRes > 0 ? lytdRes : null,
+            lytdOcc:  lytdResOcc != null ? lytdResOcc.toFixed(1) : null,
+            lytdAdr:  lytdResAdr,
             diffRes, diffOcc, diffAdr,
           };
         });
@@ -3238,8 +3253,9 @@ function PickupView({ datos }) {
                       <td style={{ padding:"9px 14px", textAlign:"right", color:C.textMid, borderLeft:`2px solid ${C.border}` }}>{f.lyRes != null ? f.lyRes : "—"}</td>
                       <td style={{ padding:"9px 14px", textAlign:"right", color:C.textMid }}>{f.lyOcc  != null ? `${f.lyOcc}%`  : "—"}</td>
                       <td style={{ padding:"9px 14px", textAlign:"right", color:C.textMid }}>{f.lyAdr  != null ? `€${f.lyAdr}`  : "—"}</td>
-                      <td style={{ padding:"9px 14px", borderLeft:`2px solid #0891B244` }}/>
-                      <td/><td/>
+                      <td style={{ padding:"9px 14px", textAlign:"right", color:"#0891B2", fontWeight:700, borderLeft:`2px solid #0891B244` }}>{f.lytdRes!=null?f.lytdRes:"—"}</td>
+                      <td style={{ padding:"9px 14px", textAlign:"right", color:"#0891B2", fontWeight:700 }}>{f.lytdOcc!=null?`${f.lytdOcc}%`:"—"}</td>
+                      <td style={{ padding:"9px 14px", textAlign:"right", color:"#0891B2", fontWeight:700 }}>{f.lytdAdr!=null?`€${f.lytdAdr}`:"—"}</td>
                       <td style={{ padding:"9px 14px", textAlign:"right", fontWeight:700, color:colorDiff(f.diffRes != null ? String(f.diffRes) : null), borderLeft:`2px solid ${C.accent}22` }}>{f.diffRes != null ? `${f.diffRes >= 0 ? "+" : ""}${f.diffRes}` : "—"}</td>
                       <td style={{ padding:"9px 14px", textAlign:"right", fontWeight:700, color:colorDiff(f.diffOcc) }}>{f.diffOcc != null ? `${parseFloat(f.diffOcc)>=0?"+":""}${f.diffOcc}%` : "—"}</td>
                       <td style={{ padding:"9px 14px", textAlign:"right", fontWeight:700, color:colorDiff(f.diffAdr != null ? String(f.diffAdr) : null) }}>{f.diffAdr != null ? `${f.diffAdr >= 0 ? "+" : ""}€${Math.abs(f.diffAdr)}` : "—"}</td>
@@ -3252,10 +3268,8 @@ function PickupView({ datos }) {
                       <td style={{ padding:"10px 14px", fontWeight:800, color:C.text, whiteSpace:"nowrap", fontSize:11, textTransform:"uppercase", letterSpacing:"0.5px" }}>
                         YTD vs LYTD
                       </td>
-                      {/* OTB = YTD actual */}
-                      <td style={{ padding:"10px 14px", textAlign:"right", color:"#B8860B", fontWeight:700, borderLeft:`2px solid #B8860B22` }}>{ytdHabOcu>0?ytdHabOcu.toLocaleString("es-ES"):"—"}</td>
-                      <td style={{ padding:"10px 14px", textAlign:"right", color:"#B8860B", fontWeight:700 }}>{ytdOcc!=null?`${ytdOcc}%`:"—"}</td>
-                      <td style={{ padding:"10px 14px", textAlign:"right", color:"#B8860B", fontWeight:700 }}>{ytdAdr!=null?`€${ytdAdr}`:"—"}</td>
+                      {/* OTB — vacío en fila YTD vs LYTD */}
+                      <td style={{ borderLeft:`2px solid #B8860B22` }}/><td/><td/>
                       {/* LY — vacío en fila resumen */}
                       <td style={{ borderLeft:`2px solid ${C.border}` }}/><td/><td/>
                       {/* LYTD */}
