@@ -2400,8 +2400,8 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
         const total = pieData.reduce((a,d)=>a+d.value,0);
         if (total===0) return null;
         return (
-          <Card style={{ display:"grid", gridTemplateColumns:"1fr auto", gap:24, alignItems:"center" }}>
-            <div>
+          <Card style={{ display:"flex", alignItems:"center", gap:8 }}>
+            <div style={{ flex:1 }}>
               <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:20, color:C.text, marginBottom:2 }}>Mix de canales</p>
               <p style={{ fontSize:11, color:C.textLight, marginBottom:14 }}>{t("meses_full")[mes]} {anio} · {total} reservas OTB</p>
               {pieData.map((d,i)=>(
@@ -2417,11 +2417,19 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
                 </div>
               ))}
             </div>
-            <div style={{ width:200 }}>
-              <ResponsiveContainer width={200} height={200}>
+            <div style={{ width:180, flexShrink:0 }}>
+              <ResponsiveContainer width={180} height={180}>
                 <PieChart>
-                  <Pie data={pieData} dataKey="value" cx="50%" cy="50%" innerRadius={52} outerRadius={88} paddingAngle={2}>
-                    {pieData.map((d,i)=><Cell key={i} fill={d.fill}/>)}
+                  <defs>
+                    {pieData.map((d,i)=>(
+                      <radialGradient key={i} id={`pieGrad${i}`} cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+                        <stop offset="0%" stopColor={d.fill} stopOpacity={0.7}/>
+                        <stop offset="100%" stopColor={d.fill} stopOpacity={1}/>
+                      </radialGradient>
+                    ))}
+                  </defs>
+                  <Pie data={pieData} dataKey="value" cx="50%" cy="50%" innerRadius={48} outerRadius={80} paddingAngle={2}>
+                    {pieData.map((d,i)=><Cell key={i} fill={`url(#pieGrad${i})`}/>)}
                   </Pie>
                   <Tooltip formatter={(v,n)=>[`${v} res. (${((v/total)*100).toFixed(0)}%)`,n]} contentStyle={{ background:C.bgCard, border:`1px solid ${C.border}`, borderRadius:8, fontSize:12 }}/>
                 </PieChart>
