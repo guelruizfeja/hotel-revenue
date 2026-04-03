@@ -3112,6 +3112,7 @@ function PickupView({ datos }) {
         const MESES_FULL2 = t("meses_full");
         const pad = n => String(n).padStart(2,"0");
         const hab = datos.hotel?.habitaciones || 30;
+        const hoyLY = `${hoy.getFullYear()-1}-${pad(hoy.getMonth()+1)}-${pad(hoy.getDate())}`;
 
         // 6 meses desde el mes actual
         const filasPace = Array.from({ length: 6 }, (_, i) => {
@@ -3190,7 +3191,6 @@ function PickupView({ datos }) {
         const fmtDiff   = v => v == null ? "—" : `${parseFloat(v)>=0?"+":""}${v}%`;
 
         // LYTD
-        const hoyLY    = `${hoy.getFullYear()-1}-${pad(hoy.getMonth()+1)}-${pad(hoy.getDate())}`;
         const inicioAct = `${hoy.getFullYear()}-01-01`;
         const inicioLY  = `${hoy.getFullYear()-1}-01-01`;
         const diasYTD  = (produccion||[]).filter(r => r.fecha >= inicioAct && r.fecha <= `${hoy.getFullYear()}-${pad(hoy.getMonth()+1)}-${pad(hoy.getDate())}`);
