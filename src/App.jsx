@@ -3210,22 +3210,23 @@ function PickupView({ datos }) {
         );
       })()}
 
-      {/* ── DESGLOSE DE RESERVAS ── */}
+      {/* ── DESGLOSE DE RESERVAS CAPTADAS ÚLTIMO DÍA ── */}
       {(() => {
+        const ultDia = [...(pickupEntries||[])].map(e=>String(e.fecha_pickup||"").slice(0,10)).filter(f=>f.length===10).sort().pop() || "";
         const reservas = (pickupEntries || [])
-          .filter(e => e.fecha_llegada && e.fecha_llegada >= hoyStr)
-          .sort((a,b) => a.fecha_llegada.localeCompare(b.fecha_llegada));
+          .filter(e => String(e.fecha_pickup||"").slice(0,10) === ultDia && (e.estado||"confirmada") !== "cancelada")
+          .sort((a,b) => (a.fecha_llegada||"").localeCompare(b.fecha_llegada||""));
         if (reservas.length === 0) return null;
         const adrRes = e => (e.precio_total && e.noches && e.noches > 0)
           ? Math.round(e.precio_total / e.noches)
           : null;
         const fmtDate = d => { if (!d) return "—"; const p = d.split("-"); return p.length===3 ? `${p[2]}/${p[1]}/${p[0]}` : d; };
         return (
-          <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:12, overflow:"hidden" }}>
+          <div style={{ background:C.bgCard, border:`1px solid ${C.border}`, borderRadius:12, overflow:"hidden" }}>
             <div style={{ padding:"18px 24px 12px", borderBottom:`1px solid ${C.border}` }}>
               <h3 style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:16, fontWeight:700, color:C.text, margin:0 }}>
-                Reservas en cartera
-                <span style={{ marginLeft:10, fontSize:11, fontWeight:400, color:C.textLight }}>{reservas.length} reservas futuras</span>
+                Reservas captadas — <span style={{ color:C.accent }}>{fmtDate(ultDia)}</span>
+                <span style={{ marginLeft:10, fontSize:11, fontWeight:400, color:C.textLight }}>{reservas.length} reservas</span>
               </h3>
             </div>
             <div style={{ overflowX:"auto" }}>
