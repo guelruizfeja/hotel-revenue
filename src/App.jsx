@@ -591,9 +591,6 @@ function KpiModal({ kpi, datos, mes, anio, onClose }) {
         )}
 
         <div style={{ marginBottom:16 }}>
-          <p style={{ fontSize:12, fontWeight:600, color:C.textMid, marginBottom:10, textTransform:"uppercase", letterSpacing:1 }}>
-            {kpi==="Revenue Total" ? "Evolución anual" : kpi==="Revenue Mensual" ? "Revenue diario del mes" : "Evolución del mes"}
-          </p>
           {kpi==="Revenue Mensual" ? (() => {
             const dailyData = diasMesCompleto.map(d=>({ dia:d.dia, revHab:d.revHab, revFnb:d.revFnb }));
             return (
