@@ -3161,7 +3161,7 @@ function PickupView({ datos }) {
           const lytdRes = lytdEntries.reduce((s,e) => s+(e.num_reservas||1), 0);
           const lytdRevP = lytdEntries.reduce((s,e) => s+(e.precio_total||0), 0);
           const lytdNoch = lytdEntries.reduce((s,e) => s+((e.noches||1)*(e.num_reservas||1)), 0);
-          const lytdResOcc = hab>0 ? (lytdRes/(hab*diasMes)*100) : null;
+          const lytdResOcc = hab>0 && lytdRes>0 ? (lytdRes/(hab*diasMes)*100) : null;
           const lytdResAdr = lytdNoch>0 && lytdRevP>0 ? Math.round(lytdRevP/lytdNoch) : null;
 
           // Diferencias OTB vs LYTD
