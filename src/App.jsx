@@ -711,6 +711,7 @@ function KpiCard({ label, value, changeLm, upLm, changeLy, upLy, i, onClick, acc
       borderLeft: `3px solid ${kpiAccent}`, position: "relative", overflow: "hidden",
       boxShadow: "0 1px 4px rgba(0,0,0,0.06)", cursor: "pointer",
       transition: "box-shadow 0.2s, transform 0.2s, border-color 0.2s, background 0.2s",
+      display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center",
     }}
     onMouseEnter={e=>{
       e.currentTarget.style.boxShadow=`0 6px 24px ${kpiAccent}40`;
@@ -2395,7 +2396,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
         );
       })()}
 
-      {/* ── MIX DE CANALES (PIE) ── */}
+      {/* ── MOVIMIENTO DEL DÍA + MIX DE CANALES ── */}
       {(() => {
         const _pad = n=>String(n).padStart(2,"0");
         const mesStr = `${anio}-${_pad(mes+1)}`;
@@ -2412,43 +2413,87 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
           .map(([name,value],i)=>({ name, value, fill:CANAL_COL[name]||FB[i%FB.length] }));
         const total = pieData.reduce((a,d)=>a+d.value,0);
         if (total===0) return null;
+
+        const __p = n => String(n).padStart(2,"0");
+        const _hoy = new Date();
+        const hoyStr = `${_hoy.getFullYear()}-${__p(_hoy.getMonth()+1)}-${__p(_hoy.getDate())}`;
+        const allMes = (pickupEntries||[]).filter(e => String(e.fecha_llegada||"").slice(0,7) === mesStr);
+        const activas = allMes.filter(e => (e.estado||"confirmada") !== "cancelada");
+        const getFechaSalida = e => {
+          if (e.fecha_salida) return String(e.fecha_salida).slice(0,10);
+          if (e.noches && e.fecha_llegada) {
+            const d = new Date(e.fecha_llegada); d.setDate(d.getDate() + e.noches);
+            return d.toISOString().slice(0,10);
+          }
+          return null;
+        };
+        const llegadasHoy  = activas.filter(e => String(e.fecha_llegada||"").slice(0,10) === hoyStr).reduce((a,e)=>a+(e.num_reservas||1),0);
+        const salidasHoy   = activas.filter(e => getFechaSalida(e) === hoyStr).reduce((a,e)=>a+(e.num_reservas||1),0);
+        const estanciasHoy = activas.filter(e => String(e.fecha_llegada||"").slice(0,10) < hoyStr && getFechaSalida(e) > hoyStr).reduce((a,e)=>a+(e.num_reservas||1),0);
+        const cancelMes    = allMes.filter(e => (e.estado||"confirmada") === "cancelada").reduce((a,e)=>a+(e.num_reservas||1),0);
+        const stats = [
+          { label:"Llegadas hoy",  value: llegadasHoy,  icon:"↓", color:"#1A7A3C" },
+          { label:"Salidas hoy",   value: salidasHoy,   icon:"↑", color:"#004B87" },
+          { label:"Estancias hoy", value: estanciasHoy, icon:"⌂", color:"#7C3AED" },
+          { label:"Cancelaciones", value: cancelMes,    icon:"✕", color:"#E53935" },
+        ];
+
         return (
-          <Card style={{ display:"flex", alignItems:"center", gap:8 }}>
-            <div>
-              <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:20, color:C.text, marginBottom:2 }}>Mix de canales</p>
-              <p style={{ fontSize:11, color:C.textLight, marginBottom:14 }}>{t("meses_full")[mes]} {anio} · {total} reservas OTB</p>
-              {pieData.map((d,i)=>(
-                <div key={i} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:7 }}>
-                  <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                    <span style={{ width:10, height:10, borderRadius:2, background:d.fill, display:"inline-block", flexShrink:0 }}/>
-                    <span style={{ fontSize:13, color:C.text }}>{d.name}</span>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16 }}>
+            {/* Movimiento del día — izquierda */}
+            <Card style={{ display:"flex", flexDirection:"column", justifyContent:"center" }}>
+              <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:20, color:C.text, marginBottom:4 }}>Movimiento del día</p>
+              <p style={{ fontSize:11, color:C.textLight, marginBottom:16 }}>{t("meses_full")[mes]} {anio} · hoy {hoyStr}</p>
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
+                {stats.map((s,i)=>(
+                  <div key={i} style={{ background:`${s.color}0d`, borderRadius:8, padding:"14px 16px", borderLeft:`3px solid ${s.color}` }}>
+                    <p style={{ fontSize:10, color:C.textLight, textTransform:"uppercase", letterSpacing:"1.2px", fontWeight:600, marginBottom:6 }}>{s.label}</p>
+                    <div style={{ display:"flex", alignItems:"baseline", gap:6 }}>
+                      <span style={{ fontSize:28, fontWeight:800, color:s.color, fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1 }}>{s.value}</span>
+                      <span style={{ fontSize:12, color:s.color, opacity:0.7 }}>{s.icon}</span>
+                    </div>
                   </div>
-                  <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-                    <span style={{ fontSize:13, fontWeight:700, color:C.text }}>{d.value}</span>
-                    <span style={{ fontSize:10, color:C.textLight, minWidth:36, textAlign:"right" }}>({((d.value/total)*100).toFixed(0)}%)</span>
+                ))}
+              </div>
+            </Card>
+            {/* Mix de canales — derecha */}
+            <Card style={{ display:"flex", alignItems:"center", gap:8 }}>
+              <div style={{ flex:1 }}>
+                <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:20, color:C.text, marginBottom:2 }}>Mix de canales</p>
+                <p style={{ fontSize:11, color:C.textLight, marginBottom:14 }}>{t("meses_full")[mes]} {anio} · {total} reservas OTB</p>
+                {pieData.map((d,i)=>(
+                  <div key={i} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:7 }}>
+                    <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                      <span style={{ width:10, height:10, borderRadius:2, background:d.fill, display:"inline-block", flexShrink:0 }}/>
+                      <span style={{ fontSize:13, color:C.text }}>{d.name}</span>
+                    </div>
+                    <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                      <span style={{ fontSize:13, fontWeight:700, color:C.text }}>{d.value}</span>
+                      <span style={{ fontSize:10, color:C.textLight, minWidth:36, textAlign:"right" }}>({((d.value/total)*100).toFixed(0)}%)</span>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
-            <div style={{ width:180, flexShrink:0 }}>
-              <ResponsiveContainer width={180} height={180}>
-                <PieChart>
-                  <defs>
-                    {pieData.map((d,i)=>(
-                      <radialGradient key={i} id={`pieGrad${i}`} cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
-                        <stop offset="0%" stopColor={d.fill} stopOpacity={0.7}/>
-                        <stop offset="100%" stopColor={d.fill} stopOpacity={1}/>
-                      </radialGradient>
-                    ))}
-                  </defs>
-                  <Pie data={pieData} dataKey="value" cx="50%" cy="50%" innerRadius={48} outerRadius={80} paddingAngle={2}>
-                    {pieData.map((d,i)=><Cell key={i} fill={`url(#pieGrad${i})`}/>)}
-                  </Pie>
-                  <Tooltip formatter={(v,n)=>[`${v} res. (${((v/total)*100).toFixed(0)}%)`,n]} contentStyle={{ background:C.bgCard, border:`1px solid ${C.border}`, borderRadius:8, fontSize:12 }}/>
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          </Card>
+                ))}
+              </div>
+              <div style={{ width:180, flexShrink:0 }}>
+                <ResponsiveContainer width={180} height={180}>
+                  <PieChart>
+                    <defs>
+                      {pieData.map((d,i)=>(
+                        <radialGradient key={i} id={`pieGrad${i}`} cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+                          <stop offset="0%" stopColor={d.fill} stopOpacity={0.7}/>
+                          <stop offset="100%" stopColor={d.fill} stopOpacity={1}/>
+                        </radialGradient>
+                      ))}
+                    </defs>
+                    <Pie data={pieData} dataKey="value" cx="50%" cy="50%" innerRadius={48} outerRadius={80} paddingAngle={2}>
+                      {pieData.map((d,i)=><Cell key={i} fill={`url(#pieGrad${i})`}/>)}
+                    </Pie>
+                    <Tooltip formatter={(v,n)=>[`${v} res. (${((v/total)*100).toFixed(0)}%)`,n]} contentStyle={{ background:C.bgCard, border:`1px solid ${C.border}`, borderRadius:8, fontSize:12 }}/>
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            </Card>
+          </div>
         );
       })()}
 
