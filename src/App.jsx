@@ -702,7 +702,7 @@ function KpiModal({ kpi, datos, mes, anio, onClose }) {
   );
 }
 
-function KpiCard({ label, value, changeLm, upLm, changeLy, upLy, i, onClick, accentColor }) {
+function KpiCard({ label, subtitle, value, changeLm, upLm, changeLy, upLy, i, onClick, accentColor }) {
   const kpiAccent = accentColor || C.accent;
   return (
     <div onClick={onClick} style={{
@@ -726,6 +726,7 @@ function KpiCard({ label, value, changeLm, upLm, changeLy, upLy, i, onClick, acc
       e.currentTarget.style.background=C.bgCard;
     }}>
       <p style={{ fontSize: 12, color: C.textMid, textTransform: "uppercase", letterSpacing: "1.5px", fontWeight: 700 }}>{label}</p>
+      {subtitle && <p style={{ fontSize: 10, color: C.textLight, marginTop: 2, letterSpacing: "0.5px" }}>{subtitle}</p>}
       <p style={{ fontSize: "clamp(22px,5vw,30px)", fontWeight: 700, fontFamily: "'Plus Jakarta Sans', sans-serif", color: C.text, margin: "8px 0 6px", letterSpacing: "-1px", lineHeight: 1 }}>{value}</p>
     </div>
   );
@@ -1971,10 +1972,10 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
   };
 
   const kpis = [
-    { label: t("kpi_ocupacion"), kpiKey:"Ocupación",      value: `${occ}%`,    ...diff(parseFloat(occ), prevOcc, lyOccD) },
-    { label: t("kpi_adr"),       kpiKey:"ADR",             value: `€${adr}`,    ...diff(parseFloat(adr), prevAdr, lyAdrD) },
-    { label: t("kpi_revpar"),    kpiKey:"RevPAR",          value: `€${revpar}`, ...diff(parseFloat(revpar), prevRevpar, lyRevparD) },
-    { label: t("kpi_trevpar"),   kpiKey:"TRevPAR",         value: `€${trevpar}`,...diff(parseFloat(trevpar), prevTrevpar, lyTrevparD) },
+    { label: t("kpi_ocupacion"), kpiKey:"Ocupación", value: `${occ}%`,     ...diff(parseFloat(occ), prevOcc, lyOccD) },
+    { label: t("kpi_adr"),       kpiKey:"ADR",        value: `€${adr}`,    subtitle:"Precio medio",                    ...diff(parseFloat(adr), prevAdr, lyAdrD) },
+    { label: t("kpi_revpar"),    kpiKey:"RevPAR",     value: `€${revpar}`, subtitle:"Revenue por hab. disponible",     ...diff(parseFloat(revpar), prevRevpar, lyRevparD) },
+    { label: t("kpi_trevpar"),   kpiKey:"TRevPAR",    value: `€${trevpar}`,subtitle:"Revenue total por hab.",          ...diff(parseFloat(trevpar), prevTrevpar, lyTrevparD) },
   ];
 
   return (
@@ -2401,7 +2402,10 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
         const _pad = n=>String(n).padStart(2,"0");
         const mesStr = `${anio}-${_pad(mes+1)}`;
         const normC = c => { const a={"Directo Web":"Directo","Teléfono":"Directo","Direct":"Directo"}; return a[c]||c||"Directo"; };
-        const entries = (pickupEntries||[]).filter(e =>
+        const snapshot = (pickupEntries||[]).filter(e =>
+          String(e.fecha_pickup||"").slice(0,10) === ultimoDiaImportado
+        );
+        const entries = snapshot.filter(e =>
           String(e.fecha_llegada||"").slice(0,7) === mesStr && (e.estado||"confirmada")!=="cancelada"
         );
         if (entries.length===0) return null;
@@ -2414,11 +2418,8 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
         const total = pieData.reduce((a,d)=>a+d.value,0);
         if (total===0) return null;
 
-        const __p = n => String(n).padStart(2,"0");
-        const _hoy = new Date();
-        const hoyStr = `${_hoy.getFullYear()}-${__p(_hoy.getMonth()+1)}-${__p(_hoy.getDate())}`;
-        const allMes = (pickupEntries||[]).filter(e => String(e.fecha_llegada||"").slice(0,7) === mesStr);
-        const activas = allMes.filter(e => (e.estado||"confirmada") !== "cancelada");
+        const hoyStr = ultimoDiaImportado;
+        const snapshotActivas = snapshot.filter(e => (e.estado||"confirmada") !== "cancelada");
         const getFechaSalida = e => {
           if (e.fecha_salida) return String(e.fecha_salida).slice(0,10);
           if (e.noches && e.fecha_llegada) {
@@ -2427,10 +2428,11 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
           }
           return null;
         };
-        const llegadasHoy  = activas.filter(e => String(e.fecha_llegada||"").slice(0,10) === hoyStr).reduce((a,e)=>a+(e.num_reservas||1),0);
-        const salidasHoy   = activas.filter(e => getFechaSalida(e) === hoyStr).reduce((a,e)=>a+(e.num_reservas||1),0);
-        const estanciasHoy = activas.filter(e => String(e.fecha_llegada||"").slice(0,10) < hoyStr && getFechaSalida(e) > hoyStr).reduce((a,e)=>a+(e.num_reservas||1),0);
-        const cancelMes    = allMes.filter(e => (e.estado||"confirmada") === "cancelada").reduce((a,e)=>a+(e.num_reservas||1),0);
+        const llegadasHoy   = snapshotActivas.filter(e => String(e.fecha_llegada||"").slice(0,10) === hoyStr).reduce((a,e)=>a+(e.num_reservas||1),0);
+        const salidasHoy    = snapshotActivas.filter(e => getFechaSalida(e) === hoyStr).reduce((a,e)=>a+(e.num_reservas||1),0);
+        const enEstanciaHoy = snapshotActivas.filter(e => String(e.fecha_llegada||"").slice(0,10) < hoyStr && getFechaSalida(e) > hoyStr).reduce((a,e)=>a+(e.num_reservas||1),0);
+        const estanciasHoy  = llegadasHoy + enEstanciaHoy;
+        const cancelMes     = snapshot.filter(e => (e.estado||"confirmada") === "cancelada" && String(e.fecha_llegada||"").slice(0,7) === mesStr).reduce((a,e)=>a+(e.num_reservas||1),0);
         const stats = [
           { label:"Llegadas hoy",  value: llegadasHoy,  icon:"↓", color:"#1A7A3C" },
           { label:"Salidas hoy",   value: salidasHoy,   icon:"↑", color:"#004B87" },
@@ -2443,7 +2445,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
             {/* Movimiento del día — izquierda */}
             <Card style={{ display:"flex", flexDirection:"column", justifyContent:"center" }}>
               <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:20, color:C.text, marginBottom:4 }}>Movimiento del día</p>
-              <p style={{ fontSize:11, color:C.textLight, marginBottom:16 }}>{t("meses_full")[mes]} {anio} · hoy {hoyStr}</p>
+              <p style={{ fontSize:11, color:C.textLight, marginBottom:16 }}>{hoyStr}</p>
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
                 {stats.map((s,i)=>(
                   <div key={i} style={{ background:`${s.color}0d`, borderRadius:8, padding:"14px 16px", borderLeft:`3px solid ${s.color}` }}>
