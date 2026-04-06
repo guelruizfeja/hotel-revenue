@@ -1825,6 +1825,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
 
   // ── Pickup del último día importado por mes de llegada ──
   const todasFechasPickup = pickupEntries
+    .filter(e => !e._grupo)
     .map(e => String(e.fecha_pickup || '').slice(0,10))
     .filter(f => f.length === 10)
     .sort();
@@ -2402,8 +2403,14 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
         const _pad = n=>String(n).padStart(2,"0");
         const mesStr = `${anio}-${_pad(mes+1)}`;
         const normC = c => { const a={"Directo Web":"Directo","Teléfono":"Directo","Direct":"Directo"}; return a[c]||c||"Directo"; };
+        const ultDiaReal = (pickupEntries||[])
+          .filter(e => !e._grupo)
+          .map(e => String(e.fecha_pickup||"").slice(0,10))
+          .filter(f => f.length === 10)
+          .sort()
+          .pop() || ultimoDiaImportado;
         const snapshot = (pickupEntries||[]).filter(e =>
-          String(e.fecha_pickup||"").slice(0,10) === ultimoDiaImportado
+          !e._grupo && String(e.fecha_pickup||"").slice(0,10) === ultDiaReal
         );
         const entries = snapshot.filter(e =>
           String(e.fecha_llegada||"").slice(0,7) === mesStr && (e.estado||"confirmada")!=="cancelada"
@@ -2418,7 +2425,9 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
         const total = pieData.reduce((a,d)=>a+d.value,0);
         if (total===0) return null;
 
-        const hoyStr = ultimoDiaImportado;
+        const _hoy = new Date();
+        const _p2 = n => String(n).padStart(2,"0");
+        const hoyStr = `${_hoy.getFullYear()}-${_p2(_hoy.getMonth()+1)}-${_p2(_hoy.getDate())}`;
         const snapshotActivas = snapshot.filter(e => (e.estado||"confirmada") !== "cancelada");
         const getFechaSalida = e => {
           if (e.fecha_salida) return String(e.fecha_salida).slice(0,10);
@@ -2428,16 +2437,11 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
           }
           return null;
         };
-        const llegadasHoy   = snapshotActivas.filter(e => String(e.fecha_llegada||"").slice(0,10) === hoyStr).reduce((a,e)=>a+(e.num_reservas||1),0);
-        const salidasHoy    = snapshotActivas.filter(e => getFechaSalida(e) === hoyStr).reduce((a,e)=>a+(e.num_reservas||1),0);
-        const enEstanciaHoy = snapshotActivas.filter(e => String(e.fecha_llegada||"").slice(0,10) < hoyStr && getFechaSalida(e) > hoyStr).reduce((a,e)=>a+(e.num_reservas||1),0);
-        const estanciasHoy  = llegadasHoy + enEstanciaHoy;
-        const cancelMes     = snapshot.filter(e => (e.estado||"confirmada") === "cancelada" && String(e.fecha_llegada||"").slice(0,7) === mesStr).reduce((a,e)=>a+(e.num_reservas||1),0);
+        const llegadasHoy = snapshotActivas.filter(e => String(e.fecha_llegada||"").slice(0,10) === hoyStr).reduce((a,e)=>a+(e.num_reservas||1),0);
+        const salidasHoy  = snapshotActivas.filter(e => getFechaSalida(e) === hoyStr).reduce((a,e)=>a+(e.num_reservas||1),0);
         const stats = [
           { label:"Llegadas hoy",  value: llegadasHoy,  icon:"↓", color:"#1A7A3C" },
           { label:"Salidas hoy",   value: salidasHoy,   icon:"↑", color:"#004B87" },
-          { label:"Estancias hoy", value: estanciasHoy, icon:"⌂", color:"#7C3AED" },
-          { label:"Cancelaciones", value: cancelMes,    icon:"✕", color:"#E53935" },
         ];
 
         return (
