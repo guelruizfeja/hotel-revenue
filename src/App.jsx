@@ -723,6 +723,7 @@ function KpiCard({ label, subtitle, value, changeLm, upLm, changeLy, upLy, i, on
       e.currentTarget.style.boxShadow="0 1px 4px rgba(0,0,0,0.06)";
       e.currentTarget.style.transform="translateY(0)";
       e.currentTarget.style.borderColor=C.border;
+      e.currentTarget.style.borderLeftColor=kpiAccent;
       e.currentTarget.style.background=C.bgCard;
     }}>
       <p style={{ fontSize: 12, color: C.textMid, textTransform: "uppercase", letterSpacing: "1.5px", fontWeight: 700 }}>{label}</p>
