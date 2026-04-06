@@ -2982,6 +2982,7 @@ function PickupView({ datos }) {
               : Math.ceil(maxVal * 1.3);
             const fmt = v => canalMetric === "adr" ? `€${v.toLocaleString("es-ES")}` : `${v}n`;
             return (
+              <div onMouseDown={e=>e.preventDefault()}>
               <ResponsiveContainer width="100%" height={220}>
               <BarChart data={chartData}
                 margin={{ top:16, right:16, left:8, bottom:8 }}>
@@ -3010,6 +3011,7 @@ function PickupView({ datos }) {
                 </Bar>
               </BarChart>
               </ResponsiveContainer>
+              </div>
             );
           })()}
         </Card>
@@ -3549,6 +3551,7 @@ function BudgetView({ datos, anio: anioProp }) {
             </div>
           </div>
         </div>
+        <div onMouseDown={e=>e.preventDefault()}>
         <ResponsiveContainer width="100%" height={310}>
           <BarChart data={chartUnificado} barSize={16} barGap={3} barCategoryGap="32%">
             <defs>
@@ -3593,6 +3596,7 @@ function BudgetView({ datos, anio: anioProp }) {
             <Bar dataKey="Forecast" name="Forecast"         fill="url(#gradForecast)" radius={[4,4,0,0]} shape={(p) => <SimpleBar {...p}/>}/>
           </BarChart>
         </ResponsiveContainer>
+        </div>
       </Card>
 
       {/* Tabla detalle */}
@@ -4811,6 +4815,7 @@ export default function App() {
         ::-webkit-scrollbar-track { background: ${C.bg}; }
         ::-webkit-scrollbar-thumb { background: ${C.accentLight}; border-radius: 3px; }
         @keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+        svg:focus, svg *:focus { outline: none !important; }
         @keyframes pulse-rayo { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(0.8); } }
         @keyframes bar-fill-up { from { transform: scaleY(0); } to { transform: scaleY(1); } }
         @media (max-width: 640px) {
