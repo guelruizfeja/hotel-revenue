@@ -2330,15 +2330,6 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
               const _p = n => String(n).padStart(2,"0");
               const hoy = new Date();
               const hoyStr = `${hoy.getFullYear()}-${_p(hoy.getMonth()+1)}-${_p(hoy.getDate())}`;
-              const ultDiaReal = (pickupEntries||[])
-                .filter(e => !e._grupo)
-                .map(e => String(e.fecha_pickup||"").slice(0,10))
-                .filter(f => f.length===10)
-                .sort().pop() || ultimoDiaImportado;
-              const snapshot = (pickupEntries||[]).filter(e =>
-                !e._grupo && String(e.fecha_pickup||"").slice(0,10) === ultDiaReal
-                && (e.estado||"confirmada") !== "cancelada"
-              );
               const getFechaSalida = e => {
                 if (e.fecha_salida) return String(e.fecha_salida).slice(0,10);
                 if (e.noches && e.fecha_llegada) {
@@ -2347,16 +2338,21 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
                 }
                 return null;
               };
-              const entradas = snapshot.filter(e => String(e.fecha_llegada||"").slice(0,10) === hoyStr);
-              const salidas  = snapshot.filter(e => getFechaSalida(e) === hoyStr);
+              // Buscar en TODOS los registros (no solo el último snapshot)
+              // Para cada reserva única, quedarse con el estado más reciente
+              const todasActivas = (pickupEntries||[]).filter(e =>
+                !e._grupo && (e.estado||"confirmada") !== "cancelada"
+              );
+              const entradas = todasActivas.filter(e => String(e.fecha_llegada||"").slice(0,10) === hoyStr);
+              const salidas  = todasActivas.filter(e => getFechaSalida(e) === hoyStr);
               const numEntradas = entradas.reduce((a,e)=>a+(e.num_reservas||1),0);
               const numSalidas  = salidas.reduce((a,e)=>a+(e.num_reservas||1),0);
               // próxima fecha con entradas (si hoy = 0)
               const proxEntrada = numEntradas===0
-                ? snapshot.map(e=>String(e.fecha_llegada||"").slice(0,10)).filter(f=>f>hoyStr).sort()[0] || null
+                ? todasActivas.map(e=>String(e.fecha_llegada||"").slice(0,10)).filter(f=>f>hoyStr).sort()[0] || null
                 : null;
               const proxSalida = numSalidas===0
-                ? snapshot.map(e=>getFechaSalida(e)).filter(f=>f&&f>hoyStr).sort()[0] || null
+                ? todasActivas.map(e=>getFechaSalida(e)).filter(f=>f&&f>hoyStr).sort()[0] || null
                 : null;
               return (
                 <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
