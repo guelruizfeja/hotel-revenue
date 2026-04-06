@@ -2441,8 +2441,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
                     <div style={{ display:"flex", gap:14 }}>
                       {[
                         { color:"#004B87", opacity:0.75, label:"Ocupación", type:"bar" },
-                        { color:"#B8860B", opacity:1,    label:"ADR Real",  type:"line" },
-                        { color:"#64748B", opacity:0.7,  label:"ADR Ppto.", type:"dash" },
+                        { color:"#B8860B", opacity:1,    label:"ADR",       type:"line" },
                       ].map((item,i) => (
                         <div key={i} style={{ display:"flex", alignItems:"center", gap:5 }}>
                           {item.type==="bar" && <div style={{ width:10, height:10, borderRadius:2, background:item.color, opacity:item.opacity }}/>}
@@ -2474,8 +2473,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
                           shape={(p) => <AnimatedBar {...p} onClick={() => { if(p?.mesIdx!=null) setModalDiario({mesIdx:p.mesIdx, anioIdx:p.anioIdx}); }}/>}
                           onClick={(data) => { if(data?.mesIdx!=null) setModalDiario({mesIdx:data.mesIdx, anioIdx:data.anioIdx}); }}
                         />
-                        <Line yAxisId="right" dataKey="adr" name="ADR Real" type="monotone" stroke="#B8860B" strokeWidth={2} dot={{fill:"#B8860B", r:3, strokeWidth:0}} activeDot={{r:4}}/>
-                        <Line yAxisId="right" dataKey="adr_ppto" name="ADR Ppto." type="monotone" stroke="#64748B" strokeWidth={1.5} strokeDasharray="6 3" dot={false} connectNulls/>
+                        <Line yAxisId="right" dataKey="adr" name="ADR" type="monotone" stroke="#B8860B" strokeWidth={2} dot={{fill:"#B8860B", r:3, strokeWidth:0}} activeDot={{r:4}}/>
                       </ComposedChart>
                     ) : (
                       <AreaChart data={porMes}>
