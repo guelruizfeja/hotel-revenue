@@ -2436,13 +2436,22 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
                   <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:18, color:C.text }}>
                     {metricas.find(m=>m.key===metricaSel)?.label}
                   </p>
-                  <div style={{ display:"flex", gap:4 }}>
-                    {metricas.map(m => (
-                      <button key={m.key} onClick={()=>setMetricaSel(m.key)}
-                        style={{ padding:"4px 10px", borderRadius:6, border:`1px solid ${metricaSel===m.key?C.accent:C.border}`, background:metricaSel===m.key?C.accentLight:"transparent", color:metricaSel===m.key?C.accent:C.textLight, fontSize:10, fontWeight:metricaSel===m.key?600:400, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", transition:"all 0.15s" }}>
-                        {m.label}
-                      </button>
-                    ))}
+                  <div style={{ display:"flex", alignItems:"center", gap:16 }}>
+                    {/* Leyenda */}
+                    <div style={{ display:"flex", gap:14 }}>
+                      {[
+                        { color:"#004B87", opacity:0.75, label:"Ocupación", type:"bar" },
+                        { color:"#B8860B", opacity:1,    label:"ADR Real",  type:"line" },
+                        { color:"#64748B", opacity:0.7,  label:"ADR Ppto.", type:"dash" },
+                      ].map((item,i) => (
+                        <div key={i} style={{ display:"flex", alignItems:"center", gap:5 }}>
+                          {item.type==="bar" && <div style={{ width:10, height:10, borderRadius:2, background:item.color, opacity:item.opacity }}/>}
+                          {item.type==="line" && <div style={{ width:16, height:2, background:item.color, borderRadius:1 }}/>}
+                          {item.type==="dash" && <div style={{ width:16, height:2, background:`repeating-linear-gradient(90deg,${item.color} 0,${item.color} 4px,transparent 4px,transparent 7px)` }}/>}
+                          <span style={{ fontSize:10, color:C.textLight, fontWeight:500, letterSpacing:"0.3px" }}>{item.label}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
                 <div style={{ height:300 }} onMouseDown={e => e.preventDefault()}>
