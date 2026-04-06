@@ -2425,9 +2425,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
         const total = pieData.reduce((a,d)=>a+d.value,0);
         if (total===0) return null;
 
-        const _hoy = new Date();
-        const _p2 = n => String(n).padStart(2,"0");
-        const hoyStr = `${_hoy.getFullYear()}-${_p2(_hoy.getMonth()+1)}-${_p2(_hoy.getDate())}`;
+        const refStr = ultDiaReal;
         const snapshotActivas = snapshot.filter(e => (e.estado||"confirmada") !== "cancelada");
         const getFechaSalida = e => {
           if (e.fecha_salida) return String(e.fecha_salida).slice(0,10);
@@ -2437,8 +2435,8 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
           }
           return null;
         };
-        const llegadasHoy = snapshotActivas.filter(e => String(e.fecha_llegada||"").slice(0,10) === hoyStr).reduce((a,e)=>a+(e.num_reservas||1),0);
-        const salidasHoy  = snapshotActivas.filter(e => getFechaSalida(e) === hoyStr).reduce((a,e)=>a+(e.num_reservas||1),0);
+        const llegadasHoy = snapshotActivas.filter(e => String(e.fecha_llegada||"").slice(0,10) === refStr).reduce((a,e)=>a+(e.num_reservas||1),0);
+        const salidasHoy  = snapshotActivas.filter(e => getFechaSalida(e) === refStr).reduce((a,e)=>a+(e.num_reservas||1),0);
         const stats = [
           { label:"Llegadas hoy",  value: llegadasHoy,  icon:"↓", color:"#1A7A3C" },
           { label:"Salidas hoy",   value: salidasHoy,   icon:"↑", color:"#004B87" },
@@ -2449,7 +2447,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
             {/* Movimiento del día — izquierda */}
             <Card style={{ display:"flex", flexDirection:"column", justifyContent:"center" }}>
               <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:20, color:C.text, marginBottom:4 }}>Movimiento del día</p>
-              <p style={{ fontSize:11, color:C.textLight, marginBottom:16 }}>{hoyStr}</p>
+              <p style={{ fontSize:11, color:C.textLight, marginBottom:16 }}>{refStr}</p>
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
                 {stats.map((s,i)=>(
                   <div key={i} style={{ background:`${s.color}0d`, borderRadius:8, padding:"14px 16px", borderLeft:`3px solid ${s.color}` }}>
