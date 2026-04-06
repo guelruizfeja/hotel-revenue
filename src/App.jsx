@@ -2399,55 +2399,38 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
       })()}
 
       {/* ── MOVIMIENTO DEL DÍA + MIX DE CANALES ── */}
-      {(() => {
-        const _pad = n=>String(n).padStart(2,"0");
-        const mesStr = `${anio}-${_pad(mes+1)}`;
-        const normC = c => { const a={"Directo Web":"Directo","Teléfono":"Directo","Direct":"Directo"}; return a[c]||c||"Directo"; };
-        const ultDiaReal = (pickupEntries||[])
-          .filter(e => !e._grupo)
-          .map(e => String(e.fecha_pickup||"").slice(0,10))
-          .filter(f => f.length === 10)
-          .sort()
-          .pop() || ultimoDiaImportado;
-        const snapshot = (pickupEntries||[]).filter(e =>
-          !e._grupo && String(e.fecha_pickup||"").slice(0,10) === ultDiaReal
-        );
-        const entries = snapshot.filter(e =>
-          String(e.fecha_llegada||"").slice(0,7) === mesStr && (e.estado||"confirmada")!=="cancelada"
-        );
-        if (entries.length===0) return null;
-        const CANAL_COL = {"Booking.com":"#003580","Expedia":"#FFD700","Directo":"#1A7A3C","Agencia":"#7C3AED","OTA":"#E85D04","Grupos":"#E53935","M&E":"#0891B2"};
-        const FB = ["#004B87","#B8860B","#2ECC71","#7C3AED","#E85D04","#E74C3C","#1ABC9C","#D4A017"];
-        const byCanal = {};
-        entries.forEach(e => { const c=normC(e.canal); byCanal[c]=(byCanal[c]||0)+(e.num_reservas||1); });
-        const pieData = Object.entries(byCanal).sort((a,b)=>b[1]-a[1])
-          .map(([name,value],i)=>({ name, value, fill:CANAL_COL[name]||FB[i%FB.length] }));
-        const total = pieData.reduce((a,d)=>a+d.value,0);
-        if (total===0) return null;
-
-        const refStr = ultDiaReal;
-        const snapshotActivas = snapshot.filter(e => (e.estado||"confirmada") !== "cancelada");
-        const getFechaSalida = e => {
-          if (e.fecha_salida) return String(e.fecha_salida).slice(0,10);
-          if (e.noches && e.fecha_llegada) {
-            const d = new Date(e.fecha_llegada); d.setDate(d.getDate() + e.noches);
-            return d.toISOString().slice(0,10);
-          }
-          return null;
-        };
-        const llegadasHoy = snapshotActivas.filter(e => String(e.fecha_llegada||"").slice(0,10) === refStr).reduce((a,e)=>a+(e.num_reservas||1),0);
-        const salidasHoy  = snapshotActivas.filter(e => getFechaSalida(e) === refStr).reduce((a,e)=>a+(e.num_reservas||1),0);
-        const stats = [
-          { label:"Llegadas hoy",  value: llegadasHoy,  icon:"↓", color:"#1A7A3C" },
-          { label:"Salidas hoy",   value: salidasHoy,   icon:"↑", color:"#004B87" },
-        ];
-
-        return (
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16 }}>
-            {/* Movimiento del día — izquierda */}
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16 }}>
+        {/* Movimiento del día */}
+        {(() => {
+          const ultDiaReal = (pickupEntries||[])
+            .filter(e => !e._grupo)
+            .map(e => String(e.fecha_pickup||"").slice(0,10))
+            .filter(f => f.length === 10)
+            .sort()
+            .pop() || ultimoDiaImportado;
+          const snapshot = (pickupEntries||[]).filter(e =>
+            !e._grupo && String(e.fecha_pickup||"").slice(0,10) === ultDiaReal
+          );
+          const snapshotActivas = snapshot.filter(e => (e.estado||"confirmada") !== "cancelada");
+          if (snapshotActivas.length === 0) return null;
+          const getFechaSalida = e => {
+            if (e.fecha_salida) return String(e.fecha_salida).slice(0,10);
+            if (e.noches && e.fecha_llegada) {
+              const d = new Date(e.fecha_llegada); d.setDate(d.getDate() + e.noches);
+              return d.toISOString().slice(0,10);
+            }
+            return null;
+          };
+          const llegadas = snapshotActivas.filter(e => String(e.fecha_llegada||"").slice(0,10) === ultDiaReal).reduce((a,e)=>a+(e.num_reservas||1),0);
+          const salidas  = snapshotActivas.filter(e => getFechaSalida(e) === ultDiaReal).reduce((a,e)=>a+(e.num_reservas||1),0);
+          const stats = [
+            { label:"Llegadas", value: llegadas, icon:"↓", color:"#1A7A3C" },
+            { label:"Salidas",  value: salidas,  icon:"↑", color:"#004B87" },
+          ];
+          return (
             <Card style={{ display:"flex", flexDirection:"column", justifyContent:"center" }}>
               <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:20, color:C.text, marginBottom:4 }}>Movimiento del día</p>
-              <p style={{ fontSize:11, color:C.textLight, marginBottom:16 }}>{refStr}</p>
+              <p style={{ fontSize:11, color:C.textLight, marginBottom:16 }}>{ultDiaReal}</p>
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
                 {stats.map((s,i)=>(
                   <div key={i} style={{ background:`${s.color}0d`, borderRadius:8, padding:"14px 16px", borderLeft:`3px solid ${s.color}` }}>
@@ -2460,7 +2443,35 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
                 ))}
               </div>
             </Card>
-            {/* Mix de canales — derecha */}
+          );
+        })()}
+        {/* Mix de canales */}
+        {(() => {
+          const _pad = n=>String(n).padStart(2,"0");
+          const mesStr = `${anio}-${_pad(mes+1)}`;
+          const normC = c => { const a={"Directo Web":"Directo","Teléfono":"Directo","Direct":"Directo"}; return a[c]||c||"Directo"; };
+          const ultDiaReal = (pickupEntries||[])
+            .filter(e => !e._grupo)
+            .map(e => String(e.fecha_pickup||"").slice(0,10))
+            .filter(f => f.length === 10)
+            .sort()
+            .pop() || ultimoDiaImportado;
+          const snapshot = (pickupEntries||[]).filter(e =>
+            !e._grupo && String(e.fecha_pickup||"").slice(0,10) === ultDiaReal
+          );
+          const entries = snapshot.filter(e =>
+            String(e.fecha_llegada||"").slice(0,7) === mesStr && (e.estado||"confirmada")!=="cancelada"
+          );
+          if (entries.length===0) return null;
+          const CANAL_COL = {"Booking.com":"#003580","Expedia":"#FFD700","Directo":"#1A7A3C","Agencia":"#7C3AED","OTA":"#E85D04","Grupos":"#E53935","M&E":"#0891B2"};
+          const FB = ["#004B87","#B8860B","#2ECC71","#7C3AED","#E85D04","#E74C3C","#1ABC9C","#D4A017"];
+          const byCanal = {};
+          entries.forEach(e => { const c=normC(e.canal); byCanal[c]=(byCanal[c]||0)+(e.num_reservas||1); });
+          const pieData = Object.entries(byCanal).sort((a,b)=>b[1]-a[1])
+            .map(([name,value],i)=>({ name, value, fill:CANAL_COL[name]||FB[i%FB.length] }));
+          const total = pieData.reduce((a,d)=>a+d.value,0);
+          if (total===0) return null;
+          return (
             <Card style={{ display:"flex", alignItems:"center", gap:8 }}>
               <div style={{ flex:1 }}>
                 <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:20, color:C.text, marginBottom:2 }}>Mix de canales</p>
@@ -2497,9 +2508,9 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
                 </ResponsiveContainer>
               </div>
             </Card>
-          </div>
-        );
-      })()}
+          );
+        })()}
+      </div>
 
       <Card>
         <p style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 700, fontSize: 20, color: C.text, marginBottom: 16 }}>
