@@ -3467,7 +3467,8 @@ function BudgetView({ datos, anio: anioProp }) {
          : kpiChart==="adr"     ? f.adr_ppto : f.revpar_ppto,
     Real: kpiChart==="revenue" ? (f.rev_total_real ? Math.round(f.rev_total_real/1000) : null)
          : kpiChart==="adr"     ? f.adr_real : f.revpar_real,
-    Forecast: kpiChart==="revenue" && f.forecast_rev ? Math.round(f.forecast_rev / 1000)
+    Forecast: f.mesCerrado ? null
+            : kpiChart==="revenue" && f.forecast_rev ? Math.round(f.forecast_rev / 1000)
             : kpiChart==="adr"    ? (f.forecast_adr ?? null)
             : null,
   }));
