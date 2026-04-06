@@ -2111,6 +2111,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
         })() : [];
 
         return (
+          <>
           <div className="dash-charts-grid" style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16, marginBottom:16 }}>
 
             {/* ── HEATMAP ── */}
@@ -2324,77 +2325,75 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
               </div>
             )}
 
-            {/* ── GRÁFICA DERECHA UNIFICADA ── */}
-            {(() => {
-              const metricas = [
-                { key:"adr_occ", label:t("adr_ocupacion") },
-              ];
-              const xTick = (props) => {
-                const {x,y,payload} = props;
-                if(payload.value!=="Ene") return null;
-                return <text x={x} y={y+10} fill={C.textLight} fontSize={9} textAnchor="middle">{porMes.find(d=>d.mes==="Ene")?.anioIdx||""}</text>;
-              };
-              return (
-                <Card style={{ display:"flex", flexDirection:"column", minHeight:360 }}>
-                  <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16 }}>
-                    <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:18, color:C.text }}>
-                      {metricas.find(m=>m.key===metricaSel)?.label}
-                    </p>
-                    <div style={{ display:"flex", gap:4 }}>
-                      {metricas.map(m => (
-                        <button key={m.key} onClick={()=>setMetricaSel(m.key)}
-                          style={{ padding:"4px 10px", borderRadius:6, border:`1px solid ${metricaSel===m.key?C.accent:C.border}`, background:metricaSel===m.key?C.accentLight:"transparent", color:metricaSel===m.key?C.accent:C.textLight, fontSize:10, fontWeight:metricaSel===m.key?600:400, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", transition:"all 0.15s" }}>
-                          {m.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  
-                  <div style={{ height:300 }} onMouseDown={e => e.preventDefault()}>
-                    <ResponsiveContainer width="100%" height={300}>
-                      {metricaSel === "adr_occ" ? (
-                        <ComposedChart data={porMes} barSize={14} barCategoryGap="32%">
-                          <defs>
-                            <linearGradient id="gradOcc" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="0%" stopColor="#004B87" stopOpacity={0.9}/>
-                              <stop offset="100%" stopColor="#004B87" stopOpacity={0.55}/>
-                            </linearGradient>
-                          </defs>
-                          <CartesianGrid strokeDasharray="3 3" stroke={C.border} vertical={false}/>
-                          <XAxis dataKey="mes" axisLine={false} tickLine={false} height={18} interval={0} tick={{ fill: C.textLight, fontSize: 11 }}/>
-                          <YAxis yAxisId="left"  tick={{ fill: C.textLight, fontSize: 11 }} axisLine={false} tickLine={false} unit="%" domain={[0,100]}/>
-                          <YAxis yAxisId="right" orientation="right" tick={{ fill: C.textLight, fontSize: 11 }} axisLine={false} tickLine={false} unit="€"/>
-                          <Tooltip content={<CustomTooltip/>} cursor={false}/>
-                          <Bar yAxisId="left" dataKey="occ" name="Ocupación" fill="url(#gradOcc)" radius={[4,4,0,0]}
-                            cursor="pointer" activeBar={false}
-                            shape={(p) => <AnimatedBar {...p} onClick={() => { if(p?.mesIdx!=null) setModalDiario({mesIdx:p.mesIdx, anioIdx:p.anioIdx}); }}/>}
-                            onClick={(data) => { if(data?.mesIdx!=null) setModalDiario({mesIdx:data.mesIdx, anioIdx:data.anioIdx}); }}
-                          />
-                          <Line yAxisId="right" dataKey="adr" name="ADR Real" type="monotone" stroke="#B8860B" strokeWidth={2} dot={{fill:"#B8860B", r:3, strokeWidth:0}} activeDot={{r:4}}/>
-                          <Line yAxisId="right" dataKey="adr_ppto" name="ADR Ppto." type="monotone" stroke="#64748B" strokeWidth={1.5} strokeDasharray="6 3" dot={false} connectNulls/>
-                        </ComposedChart>
-                      ) : (
-                        <AreaChart data={porMes}>
-                          <defs>
-                            <linearGradient id="gMetrica" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="5%"  stopColor={C.accent} stopOpacity={0.15}/>
-                              <stop offset="95%" stopColor={C.accent} stopOpacity={0}/>
-                            </linearGradient>
-                          </defs>
-                          <CartesianGrid strokeDasharray="3 3" stroke={C.border} vertical={false}/>
-                          <XAxis dataKey="mes" axisLine={false} tickLine={false} height={18} interval={0} tick={{ fill: C.textLight, fontSize: 11 }}/>
-                          <YAxis tick={{ fill: C.textLight, fontSize: 11 }} axisLine={false} tickLine={false} unit="€"/>
-                          <Tooltip content={<CustomTooltip/>} cursor={{ fill: "rgba(10,37,64,0.04)" }}/>
-                          <Area type="monotone" dataKey={metricaSel} name={metricaSel==="revpar"?"RevPAR":"TRevPAR"} stroke={C.accent} strokeWidth={2} fill="url(#gMetrica)" dot={{fill:C.accent,r:2}} activeDot={{r:3}}/>
-                        </AreaChart>
-                      )}
-                    </ResponsiveContainer>
-                  </div>
-                </Card>
-              );
-            })()}
+            {/* hueco derecho — nueva gráfica */}
+            <div/>
 
           </div>
+
+          {/* ── ADR & OCC — fila completa debajo del heatmap ── */}
+          {(() => {
+            const metricas = [
+              { key:"adr_occ", label:t("adr_ocupacion") },
+            ];
+            return (
+              <Card style={{ display:"flex", flexDirection:"column", minHeight:360, marginTop:16 }}>
+                <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16 }}>
+                  <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:18, color:C.text }}>
+                    {metricas.find(m=>m.key===metricaSel)?.label}
+                  </p>
+                  <div style={{ display:"flex", gap:4 }}>
+                    {metricas.map(m => (
+                      <button key={m.key} onClick={()=>setMetricaSel(m.key)}
+                        style={{ padding:"4px 10px", borderRadius:6, border:`1px solid ${metricaSel===m.key?C.accent:C.border}`, background:metricaSel===m.key?C.accentLight:"transparent", color:metricaSel===m.key?C.accent:C.textLight, fontSize:10, fontWeight:metricaSel===m.key?600:400, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", transition:"all 0.15s" }}>
+                        {m.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div style={{ height:300 }} onMouseDown={e => e.preventDefault()}>
+                  <ResponsiveContainer width="100%" height={300}>
+                    {metricaSel === "adr_occ" ? (
+                      <ComposedChart data={porMes} barSize={14} barCategoryGap="32%">
+                        <defs>
+                          <linearGradient id="gradOcc" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#004B87" stopOpacity={0.9}/>
+                            <stop offset="100%" stopColor="#004B87" stopOpacity={0.55}/>
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke={C.border} vertical={false}/>
+                        <XAxis dataKey="mes" axisLine={false} tickLine={false} height={18} interval={0} tick={{ fill: C.textLight, fontSize: 11 }}/>
+                        <YAxis yAxisId="left"  tick={{ fill: C.textLight, fontSize: 11 }} axisLine={false} tickLine={false} unit="%" domain={[0,100]}/>
+                        <YAxis yAxisId="right" orientation="right" tick={{ fill: C.textLight, fontSize: 11 }} axisLine={false} tickLine={false} unit="€"/>
+                        <Tooltip content={<CustomTooltip/>} cursor={false}/>
+                        <Bar yAxisId="left" dataKey="occ" name="Ocupación" fill="url(#gradOcc)" radius={[4,4,0,0]}
+                          cursor="pointer" activeBar={false}
+                          shape={(p) => <AnimatedBar {...p} onClick={() => { if(p?.mesIdx!=null) setModalDiario({mesIdx:p.mesIdx, anioIdx:p.anioIdx}); }}/>}
+                          onClick={(data) => { if(data?.mesIdx!=null) setModalDiario({mesIdx:data.mesIdx, anioIdx:data.anioIdx}); }}
+                        />
+                        <Line yAxisId="right" dataKey="adr" name="ADR Real" type="monotone" stroke="#B8860B" strokeWidth={2} dot={{fill:"#B8860B", r:3, strokeWidth:0}} activeDot={{r:4}}/>
+                        <Line yAxisId="right" dataKey="adr_ppto" name="ADR Ppto." type="monotone" stroke="#64748B" strokeWidth={1.5} strokeDasharray="6 3" dot={false} connectNulls/>
+                      </ComposedChart>
+                    ) : (
+                      <AreaChart data={porMes}>
+                        <defs>
+                          <linearGradient id="gMetrica" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%"  stopColor={C.accent} stopOpacity={0.15}/>
+                            <stop offset="95%" stopColor={C.accent} stopOpacity={0}/>
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke={C.border} vertical={false}/>
+                        <XAxis dataKey="mes" axisLine={false} tickLine={false} height={18} interval={0} tick={{ fill: C.textLight, fontSize: 11 }}/>
+                        <YAxis tick={{ fill: C.textLight, fontSize: 11 }} axisLine={false} tickLine={false} unit="€"/>
+                        <Tooltip content={<CustomTooltip/>} cursor={{ fill: "rgba(10,37,64,0.04)" }}/>
+                        <Area type="monotone" dataKey={metricaSel} name={metricaSel==="revpar"?"RevPAR":"TRevPAR"} stroke={C.accent} strokeWidth={2} fill="url(#gMetrica)" dot={{fill:C.accent,r:2}} activeDot={{r:3}}/>
+                      </AreaChart>
+                    )}
+                  </ResponsiveContainer>
+                </div>
+              </Card>
+            );
+          })()}
+          </>
         );
       })()}
 
