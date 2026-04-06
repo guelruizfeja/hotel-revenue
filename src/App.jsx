@@ -2112,7 +2112,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
 
         return (
           <>
-          <div className="dash-charts-grid" style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16, marginBottom:16 }}>
+          <div className="dash-charts-grid" style={{ display:"grid", gridTemplateColumns:"2fr 1fr", gap:16, marginBottom:16 }}>
 
             {/* ── HEATMAP ── */}
             <Card style={{ display:"flex", flexDirection:"column" }}>
@@ -2355,34 +2355,34 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
                 ? todasActivas.map(e=>getFechaSalida(e)).filter(f=>f&&f>hoyStr).sort()[0] || null
                 : null;
               return (
-                <Card style={{ display:"flex", flexDirection:"column", height:"100%" }}>
-                  <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:20, color:C.text, marginBottom:2 }}>Movimiento del día</p>
-                  <p style={{ fontSize:11, color:C.textLight, marginBottom:20 }}>{hoyStr}</p>
+                <Card style={{ display:"flex", flexDirection:"column", justifyContent:"center", gap:12 }}>
+                  <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:16, color:C.text, marginBottom:0 }}>Movimiento del día</p>
+                  <p style={{ fontSize:10, color:C.textLight, marginBottom:0 }}>{hoyStr}</p>
 
                   {/* Entradas — azul */}
-                  <div style={{ marginBottom:20 }}>
-                    <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-                      <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <div>
+                    <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                      <svg width="22" height="22" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <rect x="8" y="4" width="16" height="24" rx="1.5" stroke="#004B87" strokeWidth="2"/>
                         <line x1="8" y1="28" x2="24" y2="28" stroke="#004B87" strokeWidth="2" strokeLinecap="round"/>
                         <circle cx="20" cy="16" r="1.5" fill="#004B87"/>
                         <line x1="0" y1="16" x2="13" y2="16" stroke="#004B87" strokeWidth="2" strokeLinecap="round"/>
                         <polyline points="9,12 13,16 9,20" stroke="#004B87" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                       </svg>
-                      <span style={{ fontSize:10, color:"#004B87", textTransform:"uppercase", letterSpacing:"1.5px", fontWeight:600 }}>Entradas</span>
-                      <span style={{ marginLeft:"auto", fontSize:48, fontWeight:800, color:"#004B87", fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1 }}>{numEntradas}</span>
+                      <span style={{ fontSize:9, color:"#004B87", textTransform:"uppercase", letterSpacing:"1.2px", fontWeight:600 }}>Entradas</span>
+                      <span style={{ marginLeft:"auto", fontSize:32, fontWeight:800, color:"#004B87", fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1 }}>{numEntradas}</span>
                     </div>
                     {numEntradas===0 && proxEntrada && (
-                      <p style={{ fontSize:10, color:C.textLight, marginTop:6, marginLeft:42 }}>Próxima: <strong>{proxEntrada}</strong></p>
+                      <p style={{ fontSize:9, color:C.textLight, marginTop:3 }}>Próxima: <strong>{proxEntrada}</strong></p>
                     )}
                   </div>
 
-                  <div style={{ borderTop:`1px solid ${C.border}`, marginBottom:20 }}/>
+                  <div style={{ borderTop:`1px solid ${C.border}` }}/>
 
                   {/* Salidas — rojo */}
                   <div>
-                    <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-                      <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                      <svg width="22" height="22" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <rect x="8" y="4" width="16" height="24" rx="1.5" stroke="#E53935" strokeWidth="2"/>
                         <line x1="8" y1="28" x2="24" y2="28" stroke="#E53935" strokeWidth="2" strokeLinecap="round"/>
                         <circle cx="12" cy="16" r="1.5" fill="#E53935"/>
@@ -2390,11 +2390,11 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
                         <polyline points="17,12 21,16 17,20" stroke="#E53935" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                         <line x1="21" y1="16" x2="32" y2="16" stroke="#E53935" strokeWidth="2" strokeLinecap="round"/>
                       </svg>
-                      <span style={{ fontSize:10, color:"#E53935", textTransform:"uppercase", letterSpacing:"1.5px", fontWeight:600 }}>Salidas</span>
-                      <span style={{ marginLeft:"auto", fontSize:48, fontWeight:800, color:"#E53935", fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1 }}>{numSalidas}</span>
+                      <span style={{ fontSize:9, color:"#E53935", textTransform:"uppercase", letterSpacing:"1.2px", fontWeight:600 }}>Salidas</span>
+                      <span style={{ marginLeft:"auto", fontSize:32, fontWeight:800, color:"#E53935", fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1 }}>{numSalidas}</span>
                     </div>
                     {numSalidas===0 && proxSalida && (
-                      <p style={{ fontSize:10, color:C.textLight, marginTop:6, marginLeft:42 }}>Próxima: <strong>{proxSalida}</strong></p>
+                      <p style={{ fontSize:9, color:C.textLight, marginTop:3 }}>Próxima: <strong>{proxSalida}</strong></p>
                     )}
                   </div>
                 </Card>
