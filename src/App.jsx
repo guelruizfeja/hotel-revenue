@@ -2343,10 +2343,16 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
               const todasActivas = (pickupEntries||[]).filter(e =>
                 !e._grupo && (e.estado||"confirmada") !== "cancelada"
               );
-              const entradas = todasActivas.filter(e => String(e.fecha_llegada||"").slice(0,10) === hoyStr);
-              const salidas  = todasActivas.filter(e => getFechaSalida(e) === hoyStr);
-              const numEntradas = entradas.reduce((a,e)=>a+(e.num_reservas||1),0);
-              const numSalidas  = salidas.reduce((a,e)=>a+(e.num_reservas||1),0);
+              const entradas   = todasActivas.filter(e => String(e.fecha_llegada||"").slice(0,10) === hoyStr);
+              const salidas    = todasActivas.filter(e => getFechaSalida(e) === hoyStr);
+              const estancias  = todasActivas.filter(e => {
+                const fl = String(e.fecha_llegada||"").slice(0,10);
+                const fs = getFechaSalida(e);
+                return fl < hoyStr && fs > hoyStr;
+              });
+              const numEntradas  = entradas.reduce((a,e)=>a+(e.num_reservas||1),0);
+              const numSalidas   = salidas.reduce((a,e)=>a+(e.num_reservas||1),0);
+              const numEstancias = estancias.reduce((a,e)=>a+(e.num_reservas||1),0);
               // próxima fecha con entradas (si hoy = 0)
               const proxEntrada = numEntradas===0
                 ? todasActivas.map(e=>String(e.fecha_llegada||"").slice(0,10)).filter(f=>f>hoyStr).sort()[0] || null
@@ -2375,6 +2381,21 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
                     {numEntradas===0 && proxEntrada && (
                       <p style={{ fontSize:9, color:C.textLight, marginTop:3 }}>Próxima: <strong>{proxEntrada}</strong></p>
                     )}
+                  </div>
+
+                  <div style={{ borderTop:`1px solid ${C.border}` }}/>
+
+                  {/* Estancias — morado */}
+                  <div>
+                    <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                      <svg width="22" height="22" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="4" y="6" width="24" height="20" rx="2" stroke="#7C3AED" strokeWidth="2"/>
+                        <line x1="4" y1="12" x2="28" y2="12" stroke="#7C3AED" strokeWidth="2"/>
+                        <circle cx="16" cy="20" r="3" stroke="#7C3AED" strokeWidth="1.5"/>
+                      </svg>
+                      <span style={{ fontSize:9, color:"#7C3AED", textTransform:"uppercase", letterSpacing:"1.2px", fontWeight:600 }}>Estancias</span>
+                      <span style={{ marginLeft:"auto", fontSize:32, fontWeight:800, color:"#7C3AED", fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1 }}>{numEstancias}</span>
+                    </div>
                   </div>
 
                   <div style={{ borderTop:`1px solid ${C.border}` }}/>
