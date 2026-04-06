@@ -2351,12 +2351,17 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
               const salidas  = snapshot.filter(e => getFechaSalida(e) === hoyStr);
               const numEntradas = entradas.reduce((a,e)=>a+(e.num_reservas||1),0);
               const numSalidas  = salidas.reduce((a,e)=>a+(e.num_reservas||1),0);
+              // diagnóstico: rango de fechas en el snapshot
+              const fechasLlegada = snapshot.map(e=>String(e.fecha_llegada||"").slice(0,10)).filter(f=>f.length===10).sort();
+              const rangoMin = fechasLlegada[0]||"—";
+              const rangoMax = fechasLlegada[fechasLlegada.length-1]||"—";
               return (
                 <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
                   {/* Entradas */}
                   <Card style={{ flex:1, display:"flex", flexDirection:"column", justifyContent:"center" }}>
                     <p style={{ fontSize:10, color:C.textLight, textTransform:"uppercase", letterSpacing:"1.5px", fontWeight:600, marginBottom:8 }}>Entradas hoy</p>
-                    <p style={{ fontSize:11, color:C.textLight, marginBottom:12 }}>{hoyStr}</p>
+                    <p style={{ fontSize:11, color:C.textLight, marginBottom:4 }}>{hoyStr}</p>
+                    <p style={{ fontSize:9, color:C.textLight, marginBottom:12, opacity:0.7 }}>Datos: {rangoMin} → {rangoMax} ({snapshot.length} res.)</p>
                     <div style={{ display:"flex", alignItems:"baseline", gap:8, marginBottom:12 }}>
                       <span style={{ fontSize:56, fontWeight:800, color:"#1A7A3C", fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1 }}>{numEntradas}</span>
                       <span style={{ fontSize:20, color:"#1A7A3C", opacity:0.7 }}>↓</span>
