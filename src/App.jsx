@@ -2351,21 +2351,26 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
               const salidas  = snapshot.filter(e => getFechaSalida(e) === hoyStr);
               const numEntradas = entradas.reduce((a,e)=>a+(e.num_reservas||1),0);
               const numSalidas  = salidas.reduce((a,e)=>a+(e.num_reservas||1),0);
-              // diagnóstico: rango de fechas en el snapshot
-              const fechasLlegada = snapshot.map(e=>String(e.fecha_llegada||"").slice(0,10)).filter(f=>f.length===10).sort();
-              const rangoMin = fechasLlegada[0]||"—";
-              const rangoMax = fechasLlegada[fechasLlegada.length-1]||"—";
+              // próxima fecha con entradas (si hoy = 0)
+              const proxEntrada = numEntradas===0
+                ? snapshot.map(e=>String(e.fecha_llegada||"").slice(0,10)).filter(f=>f>hoyStr).sort()[0] || null
+                : null;
+              const proxSalida = numSalidas===0
+                ? snapshot.map(e=>getFechaSalida(e)).filter(f=>f&&f>hoyStr).sort()[0] || null
+                : null;
               return (
                 <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
                   {/* Entradas */}
                   <Card style={{ flex:1, display:"flex", flexDirection:"column", justifyContent:"center" }}>
-                    <p style={{ fontSize:10, color:C.textLight, textTransform:"uppercase", letterSpacing:"1.5px", fontWeight:600, marginBottom:8 }}>Entradas hoy</p>
-                    <p style={{ fontSize:11, color:C.textLight, marginBottom:4 }}>{hoyStr}</p>
-                    <p style={{ fontSize:9, color:C.textLight, marginBottom:12, opacity:0.7 }}>Datos: {rangoMin} → {rangoMax} ({snapshot.length} res.)</p>
-                    <div style={{ display:"flex", alignItems:"baseline", gap:8, marginBottom:12 }}>
+                    <p style={{ fontSize:10, color:C.textLight, textTransform:"uppercase", letterSpacing:"1.5px", fontWeight:600, marginBottom:6 }}>Entradas hoy</p>
+                    <p style={{ fontSize:11, color:C.textLight, marginBottom:12 }}>{hoyStr}</p>
+                    <div style={{ display:"flex", alignItems:"baseline", gap:8, marginBottom:8 }}>
                       <span style={{ fontSize:56, fontWeight:800, color:"#1A7A3C", fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1 }}>{numEntradas}</span>
                       <span style={{ fontSize:20, color:"#1A7A3C", opacity:0.7 }}>↓</span>
                     </div>
+                    {numEntradas===0 && proxEntrada && (
+                      <p style={{ fontSize:10, color:C.textLight }}>Próxima entrada: <strong>{proxEntrada}</strong></p>
+                    )}
                     {entradas.length>0 && (
                       <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
                         {entradas.slice(0,4).map((e,i)=>(
@@ -2380,12 +2385,15 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
                   </Card>
                   {/* Salidas */}
                   <Card style={{ flex:1, display:"flex", flexDirection:"column", justifyContent:"center" }}>
-                    <p style={{ fontSize:10, color:C.textLight, textTransform:"uppercase", letterSpacing:"1.5px", fontWeight:600, marginBottom:8 }}>Salidas hoy</p>
+                    <p style={{ fontSize:10, color:C.textLight, textTransform:"uppercase", letterSpacing:"1.5px", fontWeight:600, marginBottom:6 }}>Salidas hoy</p>
                     <p style={{ fontSize:11, color:C.textLight, marginBottom:12 }}>{hoyStr}</p>
-                    <div style={{ display:"flex", alignItems:"baseline", gap:8, marginBottom:12 }}>
+                    <div style={{ display:"flex", alignItems:"baseline", gap:8, marginBottom:8 }}>
                       <span style={{ fontSize:56, fontWeight:800, color:"#004B87", fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1 }}>{numSalidas}</span>
                       <span style={{ fontSize:20, color:"#004B87", opacity:0.7 }}>↑</span>
                     </div>
+                    {numSalidas===0 && proxSalida && (
+                      <p style={{ fontSize:10, color:C.textLight }}>Próxima salida: <strong>{proxSalida}</strong></p>
+                    )}
                     {salidas.length>0 && (
                       <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
                         {salidas.slice(0,4).map((e,i)=>(
