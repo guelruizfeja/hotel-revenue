@@ -2325,8 +2325,77 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
               </div>
             )}
 
-            {/* hueco derecho — nueva gráfica */}
-            <div/>
+            {/* ── ENTRADAS Y SALIDAS DEL DÍA ── */}
+            {(() => {
+              const _p = n => String(n).padStart(2,"0");
+              const hoy = new Date();
+              const hoyStr = `${hoy.getFullYear()}-${_p(hoy.getMonth()+1)}-${_p(hoy.getDate())}`;
+              const ultDiaReal = (pickupEntries||[])
+                .filter(e => !e._grupo)
+                .map(e => String(e.fecha_pickup||"").slice(0,10))
+                .filter(f => f.length===10)
+                .sort().pop() || ultimoDiaImportado;
+              const snapshot = (pickupEntries||[]).filter(e =>
+                !e._grupo && String(e.fecha_pickup||"").slice(0,10) === ultDiaReal
+                && (e.estado||"confirmada") !== "cancelada"
+              );
+              const getFechaSalida = e => {
+                if (e.fecha_salida) return String(e.fecha_salida).slice(0,10);
+                if (e.noches && e.fecha_llegada) {
+                  const d = new Date(e.fecha_llegada); d.setDate(d.getDate() + Number(e.noches));
+                  return d.toISOString().slice(0,10);
+                }
+                return null;
+              };
+              const entradas = snapshot.filter(e => String(e.fecha_llegada||"").slice(0,10) === hoyStr);
+              const salidas  = snapshot.filter(e => getFechaSalida(e) === hoyStr);
+              const numEntradas = entradas.reduce((a,e)=>a+(e.num_reservas||1),0);
+              const numSalidas  = salidas.reduce((a,e)=>a+(e.num_reservas||1),0);
+              return (
+                <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
+                  {/* Entradas */}
+                  <Card style={{ flex:1, display:"flex", flexDirection:"column", justifyContent:"center" }}>
+                    <p style={{ fontSize:10, color:C.textLight, textTransform:"uppercase", letterSpacing:"1.5px", fontWeight:600, marginBottom:8 }}>Entradas hoy</p>
+                    <p style={{ fontSize:11, color:C.textLight, marginBottom:12 }}>{hoyStr}</p>
+                    <div style={{ display:"flex", alignItems:"baseline", gap:8, marginBottom:12 }}>
+                      <span style={{ fontSize:56, fontWeight:800, color:"#1A7A3C", fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1 }}>{numEntradas}</span>
+                      <span style={{ fontSize:20, color:"#1A7A3C", opacity:0.7 }}>↓</span>
+                    </div>
+                    {entradas.length>0 && (
+                      <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
+                        {entradas.slice(0,4).map((e,i)=>(
+                          <div key={i} style={{ display:"flex", justifyContent:"space-between", fontSize:11, color:C.textMid, borderBottom:`1px solid ${C.border}`, paddingBottom:3 }}>
+                            <span style={{ fontWeight:600 }}>{e.nombre||e.canal||"—"}</span>
+                            <span>{e.num_reservas||1} hab.</span>
+                          </div>
+                        ))}
+                        {entradas.length>4 && <p style={{ fontSize:10, color:C.textLight, marginTop:2 }}>+{entradas.length-4} más</p>}
+                      </div>
+                    )}
+                  </Card>
+                  {/* Salidas */}
+                  <Card style={{ flex:1, display:"flex", flexDirection:"column", justifyContent:"center" }}>
+                    <p style={{ fontSize:10, color:C.textLight, textTransform:"uppercase", letterSpacing:"1.5px", fontWeight:600, marginBottom:8 }}>Salidas hoy</p>
+                    <p style={{ fontSize:11, color:C.textLight, marginBottom:12 }}>{hoyStr}</p>
+                    <div style={{ display:"flex", alignItems:"baseline", gap:8, marginBottom:12 }}>
+                      <span style={{ fontSize:56, fontWeight:800, color:"#004B87", fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1 }}>{numSalidas}</span>
+                      <span style={{ fontSize:20, color:"#004B87", opacity:0.7 }}>↑</span>
+                    </div>
+                    {salidas.length>0 && (
+                      <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
+                        {salidas.slice(0,4).map((e,i)=>(
+                          <div key={i} style={{ display:"flex", justifyContent:"space-between", fontSize:11, color:C.textMid, borderBottom:`1px solid ${C.border}`, paddingBottom:3 }}>
+                            <span style={{ fontWeight:600 }}>{e.nombre||e.canal||"—"}</span>
+                            <span>{e.num_reservas||1} hab.</span>
+                          </div>
+                        ))}
+                        {salidas.length>4 && <p style={{ fontSize:10, color:C.textLight, marginTop:2 }}>+{salidas.length-4} más</p>}
+                      </div>
+                    )}
+                  </Card>
+                </div>
+              );
+            })()}
 
           </div>
 
