@@ -2555,11 +2555,12 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
                   {(() => {
                     const habH = datos.hotel?.habitaciones || 0;
                     if (!habH) return null;
-                    const latestSnap = todasActivas.map(e => String(e.fecha_pickup||"").slice(0,10)).filter(f=>f.length===10).sort().pop() || "";
-                    const snapActivas = todasActivas.filter(e => String(e.fecha_pickup||"").slice(0,10) === latestSnap);
-                    const snapEntradas  = snapActivas.filter(e => String(e.fecha_llegada||"").slice(0,10) === hoyStr).reduce((a,e)=>a+(e.num_reservas||1),0);
-                    const snapEstancias = snapActivas.filter(e => { const fl=String(e.fecha_llegada||"").slice(0,10); const fs=getFechaSalida(e); return fl<hoyStr && fs>hoyStr; }).reduce((a,e)=>a+(e.num_reservas||1),0);
-                    const occ = Math.min(Math.round((snapEntradas + snapEstancias) / habH * 100), 100);
+                    const netoHoy = (pickupEntries||[]).reduce((a,e) => {
+                      if (String(e.fecha_llegada||"").slice(0,10) !== hoyStr) return a;
+                      const cancelada = (e.estado||"confirmada") === "cancelada";
+                      return a + (e.num_reservas||1) * (cancelada ? -1 : 1);
+                    }, 0);
+                    const occ = Math.min(Math.round(Math.max(0, netoHoy) / habH * 100), 100);
                     const color = occ >= 85 ? "#E53935" : occ >= 70 ? "#C49A0A" : occ >= 50 ? C.accent : C.textLight;
                     return (
                       <div>
