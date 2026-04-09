@@ -2232,7 +2232,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
             if (prod) {
               occ = prod.hab_disponibles>0 ? Math.min(100,prod.hab_ocupadas/prod.hab_disponibles*100) : null;
               adr = prod.hab_ocupadas>0    ? (prod.revenue_hab/prod.hab_ocupadas) : null;
-            } else if (esFut) {
+            } else if (iso >= hoyStr2) {
               occ = neto>0 ? Math.min(100, neto/habHotel*100) : null;
             }
             const resUltDia = pickupUltimoDiaPorDia[iso] || 0;
@@ -2548,6 +2548,33 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
                       <p style={{ fontSize:9, color:C.textLight, marginTop:3 }}>Próxima: <strong>{proxSalida}</strong></p>
                     )}
                   </div>
+
+                  <div style={{ borderTop:`1px solid ${C.border}` }}/>
+
+                  {/* Ocupación del día — solo último snapshot */}
+                  {(() => {
+                    const habH = datos.hotel?.habitaciones || 0;
+                    if (!habH) return null;
+                    const latestSnap = todasActivas.map(e => String(e.fecha_pickup||"").slice(0,10)).filter(f=>f.length===10).sort().pop() || "";
+                    const snapActivas = todasActivas.filter(e => String(e.fecha_pickup||"").slice(0,10) === latestSnap);
+                    const snapEntradas  = snapActivas.filter(e => String(e.fecha_llegada||"").slice(0,10) === hoyStr).reduce((a,e)=>a+(e.num_reservas||1),0);
+                    const snapEstancias = snapActivas.filter(e => { const fl=String(e.fecha_llegada||"").slice(0,10); const fs=getFechaSalida(e); return fl<hoyStr && fs>hoyStr; }).reduce((a,e)=>a+(e.num_reservas||1),0);
+                    const occ = Math.min(Math.round((snapEntradas + snapEstancias) / habH * 100), 100);
+                    const color = occ >= 85 ? "#E53935" : occ >= 70 ? "#C49A0A" : occ >= 50 ? C.accent : C.textLight;
+                    return (
+                      <div>
+                        <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                          <svg width="22" height="22" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M4 28V14L16 4l12 10v14" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                            <rect x="11" y="18" width="10" height="10" rx="1" stroke={color} strokeWidth="1.8"/>
+                            <circle cx="16" cy="13" r="2" stroke={color} strokeWidth="1.5"/>
+                          </svg>
+                          <span style={{ fontSize:9, color, textTransform:"uppercase", letterSpacing:"1.2px", fontWeight:600 }}>Ocupación hoy</span>
+                          <span style={{ marginLeft:"auto", fontSize:32, fontWeight:800, color, fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1 }}>{occ}%</span>
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </Card>
               );
             })()}
