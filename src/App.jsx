@@ -2490,92 +2490,92 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
               const proxSalida = numSalidas===0
                 ? todasActivas.map(e=>getFechaSalida(e)).filter(f=>f&&f>hoyStr).sort()[0] || null
                 : null;
+              // OCC hoy
+              const habH = datos.hotel?.habitaciones || 0;
+              const netoHoy = habH ? (pickupEntries||[]).reduce((a,e) => {
+                if (String(e.fecha_llegada||"").slice(0,10) !== hoyStr) return a;
+                const cancelada = (e.estado||"confirmada") === "cancelada";
+                return a + (e.num_reservas||1) * (cancelada ? -1 : 1);
+              }, 0) : 0;
+              const occHoy = habH ? Math.min(Math.round(Math.max(0, netoHoy) / habH * 100), 100) : null;
+              const occColor = occHoy >= 85 ? "#E53935" : occHoy >= 70 ? "#C49A0A" : occHoy >= 50 ? C.accent : C.textLight;
+
+              const numStyle = (color) => ({
+                textAlign:"right", fontSize:32, fontWeight:800, color,
+                fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1
+              });
+              const labelStyle = (color) => ({
+                fontSize:9, color, textTransform:"uppercase", letterSpacing:"1.2px", fontWeight:600
+              });
+              const sep = { gridColumn:"1 / -1", borderTop:`1px solid ${C.border}` };
+
               return (
                 <Card style={{ display:"flex", flexDirection:"column", justifyContent:"center", gap:12 }}>
                   <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:22, color:C.text, marginBottom:0 }}>Movimiento del día</p>
                   <p style={{ fontSize:10, color:C.textLight, marginBottom:0 }}>{hoyStr}</p>
 
-                  {/* Entradas — azul */}
-                  <div>
-                    <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-                      <svg width="22" height="22" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <rect x="8" y="4" width="16" height="24" rx="1.5" stroke="#004B87" strokeWidth="2"/>
-                        <line x1="8" y1="28" x2="24" y2="28" stroke="#004B87" strokeWidth="2" strokeLinecap="round"/>
-                        <circle cx="20" cy="16" r="1.5" fill="#004B87"/>
-                        <line x1="0" y1="16" x2="13" y2="16" stroke="#004B87" strokeWidth="2" strokeLinecap="round"/>
-                        <polyline points="9,12 13,16 9,20" stroke="#004B87" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                      <span style={{ fontSize:9, color:"#004B87", textTransform:"uppercase", letterSpacing:"1.2px", fontWeight:600 }}>Entradas</span>
-                      <span style={{ marginLeft:"auto", minWidth:64, textAlign:"right", fontSize:32, fontWeight:800, color:"#004B87", fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1 }}>{numEntradas}</span>
-                    </div>
+                  <div style={{ display:"grid", gridTemplateColumns:"22px 1fr 56px 18px", alignItems:"center", rowGap:10, columnGap:8 }}>
+
+                    {/* Entradas */}
+                    <svg width="22" height="22" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <rect x="8" y="4" width="16" height="24" rx="1.5" stroke="#004B87" strokeWidth="2"/>
+                      <line x1="8" y1="28" x2="24" y2="28" stroke="#004B87" strokeWidth="2" strokeLinecap="round"/>
+                      <circle cx="20" cy="16" r="1.5" fill="#004B87"/>
+                      <line x1="0" y1="16" x2="13" y2="16" stroke="#004B87" strokeWidth="2" strokeLinecap="round"/>
+                      <polyline points="9,12 13,16 9,20" stroke="#004B87" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    <span style={labelStyle("#004B87")}>Entradas</span>
+                    <span style={numStyle("#004B87")}>{numEntradas}</span>
+                    <span/>
                     {numEntradas===0 && proxEntrada && (
-                      <p style={{ fontSize:9, color:C.textLight, marginTop:3 }}>Próxima: <strong>{proxEntrada}</strong></p>
+                      <p style={{ gridColumn:"1 / -1", fontSize:9, color:C.textLight, margin:0 }}>Próxima: <strong>{proxEntrada}</strong></p>
                     )}
-                  </div>
 
-                  <div style={{ borderTop:`1px solid ${C.border}` }}/>
+                    <div style={sep}/>
 
-                  {/* Estancias — morado */}
-                  <div>
-                    <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-                      <svg width="22" height="22" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <rect x="4" y="6" width="24" height="20" rx="2" stroke="#7C3AED" strokeWidth="2"/>
-                        <line x1="4" y1="12" x2="28" y2="12" stroke="#7C3AED" strokeWidth="2"/>
-                        <circle cx="16" cy="20" r="3" stroke="#7C3AED" strokeWidth="1.5"/>
-                      </svg>
-                      <span style={{ fontSize:9, color:"#7C3AED", textTransform:"uppercase", letterSpacing:"1.2px", fontWeight:600 }}>Estancias</span>
-                      <span style={{ marginLeft:"auto", minWidth:64, textAlign:"right", fontSize:32, fontWeight:800, color:"#7C3AED", fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1 }}>{numEstancias}</span>
-                    </div>
-                  </div>
+                    {/* Estancias */}
+                    <svg width="22" height="22" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <rect x="4" y="6" width="24" height="20" rx="2" stroke="#7C3AED" strokeWidth="2"/>
+                      <line x1="4" y1="12" x2="28" y2="12" stroke="#7C3AED" strokeWidth="2"/>
+                      <circle cx="16" cy="20" r="3" stroke="#7C3AED" strokeWidth="1.5"/>
+                    </svg>
+                    <span style={labelStyle("#7C3AED")}>Estancias</span>
+                    <span style={numStyle("#7C3AED")}>{numEstancias}</span>
+                    <span/>
 
-                  <div style={{ borderTop:`1px solid ${C.border}` }}/>
+                    <div style={sep}/>
 
-                  {/* Salidas — rojo */}
-                  <div>
-                    <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-                      <svg width="22" height="22" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <rect x="8" y="4" width="16" height="24" rx="1.5" stroke="#E53935" strokeWidth="2"/>
-                        <line x1="8" y1="28" x2="24" y2="28" stroke="#E53935" strokeWidth="2" strokeLinecap="round"/>
-                        <circle cx="12" cy="16" r="1.5" fill="#E53935"/>
-                        <line x1="8" y1="16" x2="21" y2="16" stroke="#E53935" strokeWidth="2" strokeLinecap="round"/>
-                        <polyline points="17,12 21,16 17,20" stroke="#E53935" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                        <line x1="21" y1="16" x2="32" y2="16" stroke="#E53935" strokeWidth="2" strokeLinecap="round"/>
-                      </svg>
-                      <span style={{ fontSize:9, color:"#E53935", textTransform:"uppercase", letterSpacing:"1.2px", fontWeight:600 }}>Salidas</span>
-                      <span style={{ marginLeft:"auto", minWidth:64, textAlign:"right", fontSize:32, fontWeight:800, color:"#E53935", fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1 }}>{numSalidas}</span>
-                    </div>
+                    {/* Salidas */}
+                    <svg width="22" height="22" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <rect x="8" y="4" width="16" height="24" rx="1.5" stroke="#E53935" strokeWidth="2"/>
+                      <line x1="8" y1="28" x2="24" y2="28" stroke="#E53935" strokeWidth="2" strokeLinecap="round"/>
+                      <circle cx="12" cy="16" r="1.5" fill="#E53935"/>
+                      <line x1="8" y1="16" x2="21" y2="16" stroke="#E53935" strokeWidth="2" strokeLinecap="round"/>
+                      <polyline points="17,12 21,16 17,20" stroke="#E53935" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      <line x1="21" y1="16" x2="32" y2="16" stroke="#E53935" strokeWidth="2" strokeLinecap="round"/>
+                    </svg>
+                    <span style={labelStyle("#E53935")}>Salidas</span>
+                    <span style={numStyle("#E53935")}>{numSalidas}</span>
+                    <span/>
                     {numSalidas===0 && proxSalida && (
-                      <p style={{ fontSize:9, color:C.textLight, marginTop:3 }}>Próxima: <strong>{proxSalida}</strong></p>
+                      <p style={{ gridColumn:"1 / -1", fontSize:9, color:C.textLight, margin:0 }}>Próxima: <strong>{proxSalida}</strong></p>
                     )}
+
+                    {occHoy !== null && <>
+                      <div style={sep}/>
+
+                      {/* Ocupación hoy */}
+                      <svg width="22" height="22" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M4 28V14L16 4l12 10v14" stroke={occColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        <rect x="11" y="18" width="10" height="10" rx="1" stroke={occColor} strokeWidth="1.8"/>
+                        <circle cx="16" cy="13" r="2" stroke={occColor} strokeWidth="1.5"/>
+                      </svg>
+                      <span style={labelStyle(occColor)}>Ocupación hoy</span>
+                      <span style={numStyle(occColor)}>{occHoy}</span>
+                      <span style={{ fontSize:18, fontWeight:800, color:occColor, fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1 }}>%</span>
+                    </>}
+
                   </div>
-
-                  <div style={{ borderTop:`1px solid ${C.border}` }}/>
-
-                  {/* Ocupación del día — solo último snapshot */}
-                  {(() => {
-                    const habH = datos.hotel?.habitaciones || 0;
-                    if (!habH) return null;
-                    const netoHoy = (pickupEntries||[]).reduce((a,e) => {
-                      if (String(e.fecha_llegada||"").slice(0,10) !== hoyStr) return a;
-                      const cancelada = (e.estado||"confirmada") === "cancelada";
-                      return a + (e.num_reservas||1) * (cancelada ? -1 : 1);
-                    }, 0);
-                    const occ = Math.min(Math.round(Math.max(0, netoHoy) / habH * 100), 100);
-                    const color = occ >= 85 ? "#E53935" : occ >= 70 ? "#C49A0A" : occ >= 50 ? C.accent : C.textLight;
-                    return (
-                      <div>
-                        <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-                          <svg width="22" height="22" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M4 28V14L16 4l12 10v14" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                            <rect x="11" y="18" width="10" height="10" rx="1" stroke={color} strokeWidth="1.8"/>
-                            <circle cx="16" cy="13" r="2" stroke={color} strokeWidth="1.5"/>
-                          </svg>
-                          <span style={{ fontSize:9, color, textTransform:"uppercase", letterSpacing:"1.2px", fontWeight:600 }}>Ocupación hoy</span>
-                          <span style={{ marginLeft:"auto", minWidth:64, textAlign:"right", fontSize:32, fontWeight:800, color, fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1 }}>{occ}<span style={{ fontSize:18 }}>%</span></span>
-                        </div>
-                      </div>
-                    );
-                  })()}
                 </Card>
               );
             })()}
