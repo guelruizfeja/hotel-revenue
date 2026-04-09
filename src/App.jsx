@@ -430,22 +430,27 @@ function WeatherBar({ ciudad, datos }) {
     const hoy = new Date();
     const ayer = new Date(hoy); ayer.setDate(hoy.getDate() - 1);
     const ayerStr = ayer.toISOString().slice(0, 10);
+    const hoyStr  = hoy.toISOString().slice(0, 10);
     const diaHoy = hoy.getDate();
     const mesActual = hoy.getMonth() + 1;
     const anioActual = hoy.getFullYear();
     const mesPad = String(mesActual).padStart(2, "0");
     const mesPrefijo = `${anioActual}-${mesPad}`;
+    const hab = datos?.hotel?.habitaciones || 30;
 
-    // Ayer
+    // Movimiento del día (ayer) + ocupación de hoy (OTB)
     const ayerDia = produccion.find(d => d.fecha === ayerStr);
-    if (ayerDia) {
-      const occ = ayerDia.hab_disponibles > 0 ? (ayerDia.hab_ocupadas / ayerDia.hab_disponibles * 100).toFixed(1) : null;
-      const adr = ayerDia.adr ? Math.round(ayerDia.adr) : null;
+    const resHoy  = pickupEntries.filter(e => String(e.fecha_llegada||"").slice(0,10) === hoyStr && (e.estado||"confirmada") !== "cancelada").reduce((a,e) => a+(e.num_reservas||1), 0);
+    const occHoy  = hab > 0 ? Math.round(resHoy / hab * 100) : null;
+    if (ayerDia || occHoy) {
+      const occ = ayerDia?.hab_disponibles > 0 ? (ayerDia.hab_ocupadas / ayerDia.hab_disponibles * 100).toFixed(1) : null;
+      const adr = ayerDia?.adr ? Math.round(ayerDia.adr) : null;
       const resAyer = pickupEntries.filter(e => String(e.fecha_pickup||"").slice(0,10) === ayerStr && (e.estado||"confirmada") !== "cancelada").reduce((a,e) => a+(e.num_reservas||1), 0);
-      let msg = "Ayer";
-      if (occ)       msg += `  ·  Ocupación ${occ}%`;
-      if (adr)       msg += `  ·  ADR €${adr.toLocaleString("es-ES")}`;
-      if (resAyer>0) msg += `  ·  ${resAyer} reserva${resAyer!==1?"s":""} captada${resAyer!==1?"s":""}`;
+      let msg = "Movimiento del día";
+      if (occHoy != null) msg += `  ·  Ocupación hoy ${occHoy}%`;
+      if (occ)            msg += `  ·  Occ ayer ${occ}%`;
+      if (adr)            msg += `  ·  ADR €${adr.toLocaleString("es-ES")}`;
+      if (resAyer > 0)    msg += `  ·  ${resAyer} reserva${resAyer!==1?"s":""} captada${resAyer!==1?"s":""}`;
       msgs.push(msg);
     }
 
