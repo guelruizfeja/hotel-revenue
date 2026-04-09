@@ -2492,7 +2492,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
                 : null;
               return (
                 <Card style={{ display:"flex", flexDirection:"column", justifyContent:"center", gap:12 }}>
-                  <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:16, color:C.text, marginBottom:0 }}>Movimiento del día</p>
+                  <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:22, color:C.text, marginBottom:0 }}>Movimiento del día</p>
                   <p style={{ fontSize:10, color:C.textLight, marginBottom:0 }}>{hoyStr}</p>
 
                   {/* Entradas — azul */}
@@ -2571,7 +2571,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
                             <circle cx="16" cy="13" r="2" stroke={color} strokeWidth="1.5"/>
                           </svg>
                           <span style={{ fontSize:9, color, textTransform:"uppercase", letterSpacing:"1.2px", fontWeight:600 }}>Ocupación hoy</span>
-                          <span style={{ marginLeft:"auto", fontSize:32, fontWeight:800, color, fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1 }}>{occ}%</span>
+                          <span style={{ marginLeft:"auto", fontSize:32, fontWeight:800, color, fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1 }}>{occ}<span style={{ fontSize:18 }}>%</span></span>
                         </div>
                       </div>
                     );
