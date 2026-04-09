@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, createContext, useContext } from "react";
+import { useState, useEffect, useRef, useMemo, createContext, useContext } from "react";
 import { supabase } from "./supabase";
 import {
   AreaChart, Area, BarChart, Bar, LineChart, Line, ComposedChart,
@@ -20,7 +20,7 @@ const useT = () => { const lang = useContext(LangContext); return (k) => (TRANSL
 const TRANSLATIONS = {
   es: {
     // Nav & topbar
-    nav_dashboard:"Dashboard", nav_pickup:"Pickup", nav_budget:"Presupuesto", nav_grupos:"M&E",
+    nav_dashboard:"Dashboard", nav_pickup:"Pickup", nav_budget:"Presupuesto", nav_grupos:"Grupos/Eventos",
     importar:"Importar", mi_perfil:"Mi perfil", cerrar_sesion:"Cerrar sesión",
     suscripcion:"Suscripción", extranets:"Extranets", informe_mensual:"Informe mensual",
     conectado_como:"Conectado como", cargando:"Cargando...",
@@ -30,7 +30,7 @@ const TRANSLATIONS = {
     ob1_title:"Dashboard", ob1_text:"Visualiza tus KPIs principales: RevPAR, ADR y ocupación comparados con el año anterior.",
     ob2_title:"Pickup", ob2_text:"Analiza el ritmo de nuevas reservas día a día y detecta tendencias de cara al mes.",
     ob3_title:"Presupuesto", ob3_text:"Compara producción real vs objetivo mensual y proyecta el cierre del año.",
-    ob4_title:"M&E", ob4_text:"Gestiona grupos y eventos: confirmados, tentativos y pipeline de negocio.",
+    ob4_title:"Grupos/Eventos", ob4_text:"Gestiona grupos y eventos: confirmados, tentativos y pipeline de negocio.",
     // KPIs
     kpi_ocupacion:"Ocupación", kpi_adr:"ADR", kpi_revpar:"RevPAR", kpi_trevpar:"TRevPAR",
     kpi_rev_diario:"Revenue Diario", kpi_rev_mensual:"Revenue Mensual", kpi_rev_hab:"Rev. Hab.", kpi_rev_total:"Rev. Total",
@@ -134,7 +134,7 @@ const TRANSLATIONS = {
     si:"Sí", no:"No", todos:"Todos",
   },
   en: {
-    nav_dashboard:"Dashboard", nav_pickup:"Pickup", nav_budget:"Budget", nav_grupos:"M&E",
+    nav_dashboard:"Dashboard", nav_pickup:"Pickup", nav_budget:"Budget", nav_grupos:"Grupos/Eventos",
     importar:"Import", mi_perfil:"My profile", cerrar_sesion:"Log out",
     suscripcion:"Subscription", extranets:"Extranets", informe_mensual:"Monthly report",
     conectado_como:"Signed in as", cargando:"Loading...",
@@ -143,7 +143,7 @@ const TRANSLATIONS = {
     ob1_title:"Dashboard", ob1_text:"View your main KPIs: RevPAR, ADR and occupancy compared to the previous year.",
     ob2_title:"Pickup", ob2_text:"Analyze the pace of new reservations day by day and detect trends for the month.",
     ob3_title:"Budget", ob3_text:"Compare real production vs monthly target and project year-end results.",
-    ob4_title:"M&E", ob4_text:"Manage groups and events: confirmed, tentative and business pipeline.",
+    ob4_title:"Grupos/Eventos", ob4_text:"Manage groups and events: confirmed, tentative and business pipeline.",
     kpi_ocupacion:"Occupancy", kpi_adr:"ADR", kpi_revpar:"RevPAR", kpi_trevpar:"TRevPAR",
     kpi_rev_diario:"Daily Revenue", kpi_rev_mensual:"Monthly Revenue", kpi_rev_hab:"Room Rev.", kpi_rev_total:"Total Rev.",
     sin_datos_prev:"No prev. data", vs_mes_ant:"vs prev. month", vs_anio_ant:"vs prev. year",
@@ -236,7 +236,7 @@ const TRANSLATIONS = {
     si:"Yes", no:"No", todos:"All",
   },
   fr: {
-    nav_dashboard:"Dashboard", nav_pickup:"Pickup", nav_budget:"Budget", nav_grupos:"M&E",
+    nav_dashboard:"Dashboard", nav_pickup:"Pickup", nav_budget:"Budget", nav_grupos:"Grupos/Eventos",
     importar:"Importer", mi_perfil:"Mon profil", cerrar_sesion:"Déconnexion",
     suscripcion:"Abonnement", extranets:"Extranets", informe_mensual:"Rapport mensuel",
     conectado_como:"Connecté en tant que", cargando:"Chargement...",
@@ -245,7 +245,7 @@ const TRANSLATIONS = {
     ob1_title:"Dashboard", ob1_text:"Visualisez vos KPIs principaux : RevPAR, ADR et occupation comparés à l'année précédente.",
     ob2_title:"Pickup", ob2_text:"Analysez le rythme des nouvelles réservations jour par jour et détectez les tendances.",
     ob3_title:"Budget", ob3_text:"Comparez la production réelle vs l'objectif mensuel et projetez la clôture annuelle.",
-    ob4_title:"M&E", ob4_text:"Gérez les groupes et événements : confirmés, tentatifs et pipeline.",
+    ob4_title:"Grupos/Eventos", ob4_text:"Gérez les groupes et événements : confirmés, tentatifs et pipeline.",
     kpi_ocupacion:"Occupation", kpi_adr:"ADR", kpi_revpar:"RevPAR", kpi_trevpar:"TRevPAR",
     kpi_rev_diario:"Revenu Journalier", kpi_rev_mensual:"Revenu Mensuel", kpi_rev_hab:"Rev. Ch.", kpi_rev_total:"Rev. Total",
     sin_datos_prev:"Pas de données préc.", vs_mes_ant:"vs mois préc.", vs_anio_ant:"vs année préc.",
@@ -392,6 +392,125 @@ const CustomTooltip = ({ active, payload, label, unit }) => {
     </div>
   );
 };
+
+function WeatherBar({ ciudad, datos }) {
+  const [weather, setWeather] = useState(null);
+
+  useEffect(() => {
+    if (!ciudad) return;
+    fetch(`https://wttr.in/${encodeURIComponent(ciudad.trim())}?format=j1`)
+      .then(r => r.json())
+      .then(data => {
+        const cur = data.current_condition?.[0];
+        if (!cur) return;
+        setWeather({ temp: cur.temp_C, code: parseInt(cur.weatherCode) });
+      })
+      .catch(() => {});
+  }, [ciudad]);
+
+  const weatherEmoji = (code) => {
+    if (!code) return "🌡️";
+    if (code === 113) return "☀️";
+    if (code === 116) return "⛅";
+    if (code === 119 || code === 122) return "☁️";
+    if ([143,248,260].includes(code)) return "🌫️";
+    if ([176,293,296,353].includes(code)) return "🌦️";
+    if ([185,263,266,281,284,311,314,317,350,374,377].includes(code)) return "🌧️";
+    if ([200,386,389,392,395].includes(code)) return "⛈️";
+    if ([179,182,227,230,323,326,329,332,335,338,356,359,362,365,368,371].includes(code)) return "❄️";
+    return "🌡️";
+  };
+  const WEATHER_ES = { 113:"Despejado", 116:"Parcialmente nublado", 119:"Nublado", 122:"Cubierto", 143:"Niebla", 176:"Lluvia ligera", 179:"Nieve ligera", 182:"Aguanieve", 185:"Llovizna helada", 200:"Tormenta eléctrica", 227:"Ventisca", 230:"Tormenta de nieve", 248:"Niebla", 260:"Niebla helada", 263:"Llovizna", 266:"Llovizna", 281:"Llovizna helada", 284:"Llovizna helada", 293:"Lluvia ligera", 296:"Lluvia ligera", 299:"Lluvia moderada", 302:"Lluvia moderada", 305:"Lluvia intensa", 308:"Lluvia muy intensa", 311:"Lluvia helada", 314:"Lluvia helada", 317:"Aguanieve ligera", 320:"Aguanieve", 323:"Nevada ligera", 326:"Nevada ligera", 329:"Nevada moderada", 332:"Nevada moderada", 335:"Nevada intensa", 338:"Nevada muy intensa", 350:"Granizo", 353:"Lluvia ligera", 356:"Lluvia intensa", 359:"Lluvia torrencial", 362:"Aguanieve ligera", 365:"Aguanieve", 368:"Nevada ligera", 371:"Nevada moderada", 374:"Granizo ligero", 377:"Granizo", 386:"Tormenta con lluvia", 389:"Tormenta con lluvia intensa", 392:"Tormenta con nieve", 395:"Tormenta de nieve" };
+
+  const tickerText = useMemo(() => {
+    const produccion = datos?.produccion || [];
+    const pickupEntries = datos?.pickupEntries || [];
+    const msgs = [];
+
+    const hoy = new Date();
+    const ayer = new Date(hoy); ayer.setDate(hoy.getDate() - 1);
+    const ayerStr = ayer.toISOString().slice(0, 10);
+    const diaHoy = hoy.getDate();
+    const mesActual = hoy.getMonth() + 1;
+    const anioActual = hoy.getFullYear();
+    const mesPad = String(mesActual).padStart(2, "0");
+    const mesPrefijo = `${anioActual}-${mesPad}`;
+
+    // Ayer
+    const ayerDia = produccion.find(d => d.fecha === ayerStr);
+    if (ayerDia) {
+      const occ = ayerDia.hab_disponibles > 0 ? (ayerDia.hab_ocupadas / ayerDia.hab_disponibles * 100).toFixed(1) : null;
+      const adr = ayerDia.adr ? Math.round(ayerDia.adr) : null;
+      const resAyer = pickupEntries.filter(e => String(e.fecha_pickup||"").slice(0,10) === ayerStr && (e.estado||"confirmada") !== "cancelada").reduce((a,e) => a+(e.num_reservas||1), 0);
+      let msg = "Ayer";
+      if (occ)       msg += `  ·  Ocupación ${occ}%`;
+      if (adr)       msg += `  ·  ADR €${adr.toLocaleString("es-ES")}`;
+      if (resAyer>0) msg += `  ·  ${resAyer} reserva${resAyer!==1?"s":""} captada${resAyer!==1?"s":""}`;
+      msgs.push(msg);
+    }
+
+    // Revenue mes actual vs mes anterior y vs año anterior
+    const datosMes = produccion.filter(d => d.fecha.startsWith(mesPrefijo));
+    const revMes = datosMes.reduce((a,d) => a+(d.revenue_total||d.revenue_hab||0), 0);
+    if (revMes > 0) {
+      const mesPrevNum = mesActual === 1 ? 12 : mesActual - 1;
+      const anioPrev   = mesActual === 1 ? anioActual - 1 : anioActual;
+      const mesPrevPfx = `${anioPrev}-${String(mesPrevNum).padStart(2,"0")}`;
+      const lyPfx      = `${anioActual-1}-${mesPad}`;
+
+      const datosPrev = produccion.filter(d => d.fecha.startsWith(mesPrevPfx)).slice(0, diaHoy);
+      const revPrev   = datosPrev.reduce((a,d) => a+(d.revenue_total||d.revenue_hab||0), 0);
+      const datosLY   = produccion.filter(d => d.fecha.startsWith(lyPfx)).slice(0, diaHoy);
+      const revLY     = datosLY.reduce((a,d) => a+(d.revenue_total||d.revenue_hab||0), 0);
+
+      let msg = `Revenue del mes: €${Math.round(revMes).toLocaleString("es-ES")}`;
+      if (revPrev > 0) {
+        const pct = ((revMes-revPrev)/revPrev*100);
+        msg += `  ·  vs mes anterior ${pct>=0?"+":""}${pct.toFixed(1)}%`;
+      }
+      if (revLY > 0) {
+        const pct = ((revMes-revLY)/revLY*100);
+        msg += `  ·  vs mismo período año anterior ${pct>=0?"+":""}${pct.toFixed(1)}%`;
+      }
+      msgs.push(msg);
+    }
+
+    if (msgs.length === 0) return "";
+    const sep = "          ◆          ";
+    const full = msgs.join(sep) + sep;
+    return full + full; // duplicar para loop continuo
+  }, [datos?.produccion?.length, datos?.pickupEntries?.length]);
+
+  const duration = Math.max(25, (tickerText.length / 2) * 0.13);
+
+  if (!ciudad) return null;
+
+  return (
+    <div style={{ background:C.accentLight, borderBottom:`1px solid #C8D8EA`, position:"sticky", top:52, zIndex:99, height:36, display:"flex", alignItems:"center", overflow:"hidden" }}>
+
+      {/* Ticker */}
+      <div style={{ flex:1, overflow:"hidden", padding:"0 16px 0 clamp(12px,4vw,32px)" }}>
+        {tickerText ? (
+          <div style={{ display:"inline-block", whiteSpace:"nowrap", fontSize:11, color:C.textMid, fontFamily:"'Plus Jakarta Sans',sans-serif", fontWeight:500, animationName:"ticker", animationTimingFunction:"linear", animationIterationCount:"infinite", animationDuration:`${duration}s` }}>
+            {tickerText}
+          </div>
+        ) : (
+          <span style={{ fontSize:11, color:C.textLight }}>Cargando datos...</span>
+        )}
+      </div>
+
+      {/* Ciudad + Tiempo — derecha */}
+      <div style={{ display:"flex", alignItems:"center", gap:8, padding:"0 clamp(12px,4vw,32px) 0 12px", borderLeft:`1px solid #C8D8EA`, flexShrink:0, height:"100%" }}>
+        {weather && <span style={{ fontSize:14, lineHeight:1 }}>{weatherEmoji(weather.code)}</span>}
+        {weather && <span style={{ fontSize:12, fontWeight:800, color:C.accent }}>{weather.temp}°C</span>}
+        {weather && <span style={{ fontSize:11, color:C.textMid }}>{WEATHER_ES[weather.code] || ""}</span>}
+        {weather && <span style={{ fontSize:10, color:"#C8D8EA" }}>·</span>}
+        <span style={{ fontSize:11, fontWeight:700, color:C.accent }}>📍 {ciudad}</span>
+      </div>
+
+    </div>
+  );
+}
 
 function Card({ children, style = {} }) {
   return (
@@ -2760,7 +2879,7 @@ function PickupView({ datos }) {
   });
 
   // ── Duración media de estancia ──
-  const conNoches = pickupEntries.filter(e => e.noches && e.noches > 0 && (e.estado||"confirmada") !== "cancelada" && normCanal(e.canal) !== "M&E");
+  const conNoches = pickupEntries.filter(e => e.noches && e.noches > 0 && (e.estado||"confirmada") !== "cancelada" && normCanal(e.canal) !== "Grupos/Eventos");
   const nochesMed = conNoches.length > 0
     ? (conNoches.reduce((a,e)=>a+(e.noches||0),0) / conNoches.length).toFixed(1)
     : null;
@@ -2777,7 +2896,7 @@ function PickupView({ datos }) {
     .sort((a,b) => b.media - a.media);
 
   // ── Precio medio por reserva ──
-  const conPrecio = pickupEntries.filter(e => e.precio_total && e.precio_total > 0 && (e.estado||"confirmada") !== "cancelada" && normCanal(e.canal) !== "M&E");
+  const conPrecio = pickupEntries.filter(e => e.precio_total && e.precio_total > 0 && (e.estado||"confirmada") !== "cancelada" && normCanal(e.canal) !== "Grupos/Eventos");
   const precioMed = conPrecio.length > 0
     ? Math.round(conPrecio.reduce((a,e)=>a+(e.precio_total||0),0) / conPrecio.length)
     : null;
@@ -3815,22 +3934,6 @@ function GruposView({ datos, onRecargar }) {
   return (
     <div style={{ display:"flex", flexDirection:"column", gap:20 }}>
 
-      {/* ── KPIs ── */}
-      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))", gap:12 }}>
-        {[
-          { label:t("rev_confirmado"),        value:`€${Math.round(revConfirmado).toLocaleString("es-ES")}`,  color:"#1A7A3C", n:confirmados.length },
-          { label:t("rev_tentativo"),         value:`€${Math.round(revTentativo).toLocaleString("es-ES")}`, color:"#B8860B", n:tentativos.length },
-          { label:t("pipeline_cotizacion"),   value:`€${Math.round(revPipeline).toLocaleString("es-ES")}`,  color:"#2B7EC1", n:pipeline.length },
-          { label:t("cancelados_perdidos"),   value:cancelados.length,                                       color:"#999",    n:cancelados.length },
-        ].map((k,i) => (
-          <div key={i} style={{ background:C.bgCard, border:`1px solid ${C.border}`, borderRadius:10, padding:"14px 18px", borderLeft:`3px solid ${k.color}` }}>
-            <p style={{ fontSize:10, color:C.textLight, textTransform:"uppercase", letterSpacing:1.5, fontWeight:600, marginBottom:4 }}>{k.label}</p>
-            <p style={{ fontSize:20, fontWeight:800, color:k.color, fontFamily:"'Plus Jakarta Sans',sans-serif" }}>{k.value}</p>
-            <p style={{ fontSize:11, color:C.textLight, marginTop:2 }}>{k.n} evento{k.n!==1?"s":""}</p>
-          </div>
-        ))}
-      </div>
-
       {/* ── Toolbar ── */}
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", gap:12, flexWrap:"wrap" }}>
         <div style={{ display:"flex", gap:6, alignItems:"center" }}>
@@ -4008,12 +4111,12 @@ function GruposView({ datos, onRecargar }) {
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:16 }}>
           <div>
             <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:18, color:C.text }}>Evolución Revenue</p>
-            <p style={{ fontSize:11, color:C.textLight, marginTop:3, letterSpacing:"0.3px" }}>Habitaciones · M&amp;E — {anio}</p>
+            <p style={{ fontSize:11, color:C.textLight, marginTop:3, letterSpacing:"0.3px" }}>Habitaciones · Grupos/Eventos — {anio}</p>
           </div>
           <div style={{ display:"flex", gap:16 }}>
             {[
               { color:"#1A7A3C", label:"Habitaciones" },
-              { color:"#B8860B", label:"M&E" },
+              { color:"#B8860B", label:"Grupos/Eventos" },
             ].map((item,i) => (
               <div key={i} style={{ display:"flex", alignItems:"center", gap:5 }}>
                 <div style={{ width:10, height:10, borderRadius:2, background:item.color }}/>
@@ -4039,7 +4142,7 @@ function GruposView({ datos, onRecargar }) {
             <YAxis tick={{ fontSize: 11, fill: C.textLight }} axisLine={false} tickLine={false} tickFormatter={v => v >= 1000 ? `${(v/1000).toFixed(0)}k€` : `€${v}`} width={48} />
             <Tooltip content={<CustomTooltip />} cursor={false} />
             <Bar dataKey="revHab" stackId="a" fill="url(#gradHabGrupos)" radius={[0,0,0,0]} name="Habitaciones" activeBar={false}/>
-            <Bar dataKey="revME"  stackId="a" fill="url(#gradME)"        radius={[4,4,0,0]} name="M&E" activeBar={false}/>
+            <Bar dataKey="revME"  stackId="a" fill="url(#gradME)"        radius={[4,4,0,0]} name="Grupos/Eventos" activeBar={false}/>
           </BarChart>
         </ResponsiveContainer>
       </Card>
@@ -4712,7 +4815,7 @@ export default function App() {
         pickupGrupos.push({
           fecha_llegada:  fecha,
           fecha_pickup:   g.fecha_confirmacion || hoyIso,
-          canal:          "M&E",
+          canal:          "Grupos/Eventos",
           num_reservas:   g.habitaciones || 0,
           fecha_salida:   g.fecha_fin,
           noches:         1,
@@ -4823,6 +4926,7 @@ export default function App() {
         svg:focus, svg *:focus { outline: none !important; }
         @keyframes pulse-rayo { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(0.8); } }
         @keyframes bar-fill-up { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+        @keyframes ticker { 0% { transform: translateX(-50%); } 100% { transform: translateX(0); } }
         @media (max-width: 640px) {
           /* Contenedor raíz — evita desbordamiento lateral */
           html, body, #root { overflow-x: hidden !important; max-width: 100vw !important; }
@@ -4975,6 +5079,8 @@ export default function App() {
           </div>
         </div>
       </div></header>
+
+      <WeatherBar ciudad={datos.hotel?.ciudad} datos={datos} />
 
       {/* Main */}
       <main id="main-scroll" onScroll={e => localStorage.setItem("fr_scroll", e.currentTarget.scrollTop)} style={{ padding: "clamp(14px,4vw,28px) clamp(12px,4vw,32px)", width: "100%", boxSizing: "border-box" }}>
