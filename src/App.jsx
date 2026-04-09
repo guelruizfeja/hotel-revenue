@@ -2506,7 +2506,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
                         <polyline points="9,12 13,16 9,20" stroke="#004B87" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                       </svg>
                       <span style={{ fontSize:9, color:"#004B87", textTransform:"uppercase", letterSpacing:"1.2px", fontWeight:600 }}>Entradas</span>
-                      <span style={{ marginLeft:"auto", fontSize:32, fontWeight:800, color:"#004B87", fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1 }}>{numEntradas}</span>
+                      <span style={{ marginLeft:"auto", minWidth:64, textAlign:"right", fontSize:32, fontWeight:800, color:"#004B87", fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1 }}>{numEntradas}</span>
                     </div>
                     {numEntradas===0 && proxEntrada && (
                       <p style={{ fontSize:9, color:C.textLight, marginTop:3 }}>Próxima: <strong>{proxEntrada}</strong></p>
@@ -2524,7 +2524,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
                         <circle cx="16" cy="20" r="3" stroke="#7C3AED" strokeWidth="1.5"/>
                       </svg>
                       <span style={{ fontSize:9, color:"#7C3AED", textTransform:"uppercase", letterSpacing:"1.2px", fontWeight:600 }}>Estancias</span>
-                      <span style={{ marginLeft:"auto", fontSize:32, fontWeight:800, color:"#7C3AED", fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1 }}>{numEstancias}</span>
+                      <span style={{ marginLeft:"auto", minWidth:64, textAlign:"right", fontSize:32, fontWeight:800, color:"#7C3AED", fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1 }}>{numEstancias}</span>
                     </div>
                   </div>
 
@@ -2542,7 +2542,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
                         <line x1="21" y1="16" x2="32" y2="16" stroke="#E53935" strokeWidth="2" strokeLinecap="round"/>
                       </svg>
                       <span style={{ fontSize:9, color:"#E53935", textTransform:"uppercase", letterSpacing:"1.2px", fontWeight:600 }}>Salidas</span>
-                      <span style={{ marginLeft:"auto", fontSize:32, fontWeight:800, color:"#E53935", fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1 }}>{numSalidas}</span>
+                      <span style={{ marginLeft:"auto", minWidth:64, textAlign:"right", fontSize:32, fontWeight:800, color:"#E53935", fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1 }}>{numSalidas}</span>
                     </div>
                     {numSalidas===0 && proxSalida && (
                       <p style={{ fontSize:9, color:C.textLight, marginTop:3 }}>Próxima: <strong>{proxSalida}</strong></p>
@@ -2571,7 +2571,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
                             <circle cx="16" cy="13" r="2" stroke={color} strokeWidth="1.5"/>
                           </svg>
                           <span style={{ fontSize:9, color, textTransform:"uppercase", letterSpacing:"1.2px", fontWeight:600 }}>Ocupación hoy</span>
-                          <span style={{ marginLeft:"auto", fontSize:32, fontWeight:800, color, fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1 }}>{occ}<span style={{ fontSize:18 }}>%</span></span>
+                          <span style={{ marginLeft:"auto", minWidth:64, textAlign:"right", fontSize:32, fontWeight:800, color, fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1 }}>{occ}<span style={{ fontSize:18 }}>%</span></span>
                         </div>
                       </div>
                     );
