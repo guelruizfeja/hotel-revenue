@@ -1,19 +1,48 @@
+export const config = { api: { bodyParser: { sizeLimit: '7mb' } } };
+
 import { Resend } from 'resend';
+import { createClient } from '@supabase/supabase-js';
+import { rateLimit, getIP } from './_ratelimit.js';
+import { validateEmail, cleanString, validateNum, escapeHtml } from './_validate.js';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+);
 
 const fmt    = (n, dec = 1) => n != null ? Number(n).toFixed(dec) : '—';
 const fmtEur = (n) => n != null ? `€${Math.round(n).toLocaleString('es-ES')}` : '—';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
+  if (!await rateLimit(getIP(req), 5, 10 * 60_000)) {
+    return res.status(429).json({ error: 'Demasiadas solicitudes. Inténtalo más tarde.' });
+  }
 
-  const { email, hotelNombre, kpis, pdfBase64, pdfNombre } = req.body;
-  if (!email || !kpis) return res.status(400).json({ error: 'Faltan datos' });
-  if (!/^[^\s@]{1,64}@[^\s@]+\.[^\s@]{2,}$/.test(email)) return res.status(400).json({ error: 'Email inválido' });
+  // Verificar JWT
+  const token = (req.headers.authorization || '').replace('Bearer ', '').trim();
+  if (!token) return res.status(401).json({ error: 'No autorizado' });
+  const { data: { user: authUser }, error: authErr } = await supabase.auth.getUser(token);
+  if (authErr || !authUser) return res.status(401).json({ error: 'No autorizado' });
 
-  const hotel = hotelNombre || 'FastRevenue';
+  const { email, hotelNombre, kpis, pdfBase64, pdfNombre } = req.body ?? {};
+  const cleanEmail = validateEmail(email);
+  if (!cleanEmail) return res.status(400).json({ error: 'Email inválido o ausente' });
+  if (authUser.email !== cleanEmail) return res.status(403).json({ error: 'No autorizado' });
+  if (!kpis || typeof kpis !== 'object' || Array.isArray(kpis)) {
+    return res.status(400).json({ error: 'Faltan datos de KPIs' });
+  }
+  if (pdfBase64 != null && typeof pdfBase64 === 'string' && pdfBase64.length > 10_000_000) {
+    return res.status(400).json({ error: 'PDF demasiado grande' });
+  }
+
+  const hotel       = escapeHtml(cleanString(hotelNombre, 100) ?? 'FastRevenue');
+  const cleanPdfNombre = cleanString(pdfNombre, 100);
   const { mes, anio, mesNombre, occ, adr, revpar, revenue_total, presupuesto } = kpis;
+  const safeAnio      = validateNum(anio, 2020, 2100) ?? '';
+  const safeMes       = validateNum(mes, 1, 12) ?? '';
+  const safeMesNombre = escapeHtml(cleanString(mesNombre, 20) ?? '');
 
   console.log('monthly-report:', hotel, mes, anio);
 
@@ -45,7 +74,7 @@ export default async function handler(req, res) {
       <text x="40" y="22" text-anchor="middle" font-size="10" font-weight="700" fill="#D4A017" font-family="Helvetica,Arial,sans-serif">$</text>
     </svg>
     <p style="margin:0 0 4px;font-size:11px;font-weight:700;color:rgba(255,255,255,0.5);letter-spacing:2px;text-transform:uppercase;">Cierre Mensual</p>
-    <p style="margin:0 0 6px;font-size:22px;font-weight:700;color:#FFFFFF;letter-spacing:1px;">${mesNombre} ${anio}</p>
+    <p style="margin:0 0 6px;font-size:22px;font-weight:700;color:#FFFFFF;letter-spacing:1px;">${safeMesNombre} ${safeAnio}</p>
     <p style="margin:0;font-size:12px;color:rgba(255,255,255,0.55);">FastRevenue &nbsp;&#8212;&nbsp; <strong style="color:#FFFFFF;">${hotel}</strong></p>
     <div style="height:2px;background:linear-gradient(90deg,transparent,#D4A017,transparent);margin-top:18px;"></div>
   </td></tr>
@@ -57,7 +86,7 @@ export default async function handler(req, res) {
       Estimado/a equipo de <strong style="color:#0A2540;">${hotel}</strong>,
     </p>
     <p style="margin:0 0 18px;font-size:14px;color:#374151;line-height:1.8;">
-      Adjuntamos el <strong>informe mensual de ${mesNombre} ${anio}</strong> con el análisis completo
+      Adjuntamos el <strong>informe mensual de ${safeMesNombre} ${safeAnio}</strong> con el análisis completo
       de la actividad de su alojamiento: KPIs del mes, comparativa vs. año anterior, detalle diario,
       evolución de los últimos 12 meses y más.
     </p>
@@ -123,7 +152,7 @@ export default async function handler(req, res) {
   if (pdfBase64) {
     try {
       attachments.push({
-        filename: pdfNombre || `Informe_${mesNombre}_${anio}.pdf`,
+        filename: cleanPdfNombre || `Informe_${safeMesNombre}_${safeAnio}.pdf`,
         content: Buffer.from(pdfBase64, 'base64'),
       });
     } catch (e) { console.error('PDF attachment error:', e); }
@@ -132,12 +161,12 @@ export default async function handler(req, res) {
   try {
     const { error } = await resend.emails.send({
       from: 'FastRevenue <info@fastrevenue.app>',
-      to: email,
-      subject: `Informe Mensual ${mesNombre} ${anio} — ${hotel}`,
+      to: cleanEmail,
+      subject: `Informe Mensual ${safeMesNombre} ${safeAnio} — ${hotel}`,
       html,
       attachments,
       headers: {
-        'X-Entity-Ref-ID': `monthly-${email}-${anio}-${mes}`,
+        'X-Entity-Ref-ID': `monthly-${cleanEmail}-${safeAnio}-${safeMes}`,
         'List-Unsubscribe': '<mailto:info@fastrevenue.app?subject=unsubscribe>',
         'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
       },

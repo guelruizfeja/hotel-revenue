@@ -1,40 +1,33 @@
+export const config = { api: { bodyParser: { sizeLimit: '16kb' } } };
+
 import { Resend } from 'resend';
 import { rateLimit, getIP } from './_ratelimit.js';
+import { validateEmail, cleanString, escapeHtml } from './_validate.js';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
-
-const EMAIL_RE = /^[^\s@]{1,64}@[^\s@]+\.[^\s@]{2,}$/;
-
-function escapeHtml(str) {
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#x27;');
-}
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
 
-  // Rate limit: 5 envíos por IP cada 10 minutos
-  if (!rateLimit(getIP(req), 5, 10 * 60_000)) {
+  if (!await rateLimit(getIP(req), 5, 10 * 60_000)) {
     return res.status(429).json({ error: 'Demasiadas solicitudes' });
   }
 
-  const { nombre, hotel, email, mensaje } = req.body;
-  if (!nombre || !hotel || !email) {
-    return res.status(400).json({ error: 'Faltan campos obligatorios' });
-  }
-  if (!EMAIL_RE.test(email)) {
-    return res.status(400).json({ error: 'Email inválido' });
+  const { nombre, hotel, email, mensaje } = req.body ?? {};
+
+  const cleanNombre  = cleanString(nombre, 100);
+  const cleanHotel   = cleanString(hotel, 100);
+  const cleanEmail   = validateEmail(email);
+  const cleanMensaje = cleanString(mensaje, 2000);
+
+  if (!cleanNombre || !cleanHotel || !cleanEmail) {
+    return res.status(400).json({ error: 'Faltan campos obligatorios o son inválidos' });
   }
 
-  // Escapar todo el input antes de embeber en HTML
-  const sNombre  = escapeHtml(nombre);
-  const sHotel   = escapeHtml(hotel);
-  const sEmail   = escapeHtml(email);
-  const sMensaje = mensaje ? escapeHtml(mensaje).replace(/\n/g, '<br>') : null;
+  const sNombre  = escapeHtml(cleanNombre);
+  const sHotel   = escapeHtml(cleanHotel);
+  const sEmail   = escapeHtml(cleanEmail);
+  const sMensaje = cleanMensaje ? escapeHtml(cleanMensaje).replace(/\n/g, '<br>') : null;
 
   try {
     const { error } = await resend.emails.send({

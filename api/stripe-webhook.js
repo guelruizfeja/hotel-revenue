@@ -25,8 +25,8 @@ export default async function handler(req, res) {
   try {
     event = stripe.webhooks.constructEvent(buf, sig, process.env.STRIPE_WEBHOOK_SECRET);
   } catch (e) {
-    console.error('Webhook error:', e.message);
-    return res.status(400).send(`Webhook Error: ${e.message}`);
+    console.error('Webhook signature error:', e.message);
+    return res.status(400).send('Webhook Error: firma inválida');
   }
 
   const { type, data } = event;

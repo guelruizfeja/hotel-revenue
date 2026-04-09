@@ -864,7 +864,7 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
       setProgresoMain(t("leyendo")); setProgresoPctMain(5);
       const XLSX = await import("xlsx");
       const data = await file.arrayBuffer();
-      const wb = XLSX.read(data);
+      const wb = XLSX.read(data, { sheets: ["📅 Producción Diaria", "🎯 Pickup", "🏨 Mi Hotel"] });
       setProgresoPctMain(15);
 
       // ── Producción Diaria ──
@@ -980,11 +980,15 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
 
       setProgresoMain(t("guardando")); setProgresoPctMain(55);
 
+      const LOTE_PROD = 500;
+      const lotesProd = [];
+      for (let i = 0; i < produccionRows.length; i += LOTE_PROD) lotesProd.push(produccionRows.slice(i, i + LOTE_PROD));
       const insertPromises = [
-        supabase.from("produccion_diaria").insert(produccionRows).then(({ error }) => {
-          if (error) throw new Error("Error al guardar producción: " + error.message);
-          setProgresoPctMain(p => Math.max(p, 70));
-        }),
+        Promise.all(lotesProd.map(lote =>
+          supabase.from("produccion_diaria").insert(lote).then(({ error }) => {
+            if (error) throw new Error("Error al guardar producción: " + error.message);
+          })
+        )).then(() => setProgresoPctMain(p => Math.max(p, 70))),
       ];
 
       if (pickupRows.length > 0) {
@@ -1023,8 +1027,9 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
         const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
         // Revenue acumulado del mes día a día
+        const mesPrefijo = `${anioActual}-${String(mesActual).padStart(2,'0')}`;
         const datosMes = produccionRows
-          .filter(d => { const [y,m] = d.fecha.split('-').map(Number); return m === mesActual && y === anioActual; })
+          .filter(d => d.fecha.startsWith(mesPrefijo))
           .sort((a, b) => a.fecha.localeCompare(b.fecha));
         let acum = 0;
         const revenueAcumulado = datosMes.map(d => {
@@ -1036,13 +1041,13 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
 
         // Pickup de ayer
         const ayerStr = ultimoDia.fecha;
-        const pickupAyer = pickupRows.filter(p => String(p.fecha_pickup || '').slice(0,10) === ayerStr);
-        const nuevasAyer = pickupAyer.filter(p => p.estado !== 'cancelada').reduce((a,p) => a + (p.num_reservas||1), 0);
-        const cancelAyer = pickupAyer.filter(p => p.estado === 'cancelada').reduce((a,p) => a + (p.num_reservas||1), 0);
-        // Revenue pickup: usa precio_total si existe, sino estima num_reservas * ADR del día
-        const revPickupAyer = pickupAyer
-          .filter(p => p.estado !== 'cancelada')
-          .reduce((a, p) => a + (p.precio_total || (p.num_reservas || 1) * (ultimoDia.adr || 0)), 0);
+        const pickupAyer = pickupRows.filter(p => p.fecha_pickup === ayerStr);
+        let nuevasAyer = 0, cancelAyer = 0, revPickupAyer = 0;
+        for (const p of pickupAyer) {
+          const nr = p.num_reservas || 1;
+          if (p.estado === 'cancelada') { cancelAyer += nr; }
+          else { nuevasAyer += nr; revPickupAyer += p.precio_total || nr * (ultimoDia.adr || 0); }
+        }
 
         // LY: mismo día del año anterior
         const lyFecha = `${anioActual - 1}-${ultimoDia.fecha.slice(5)}`;
@@ -1051,7 +1056,7 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
 
         fetch('/api/import-report', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
           body: JSON.stringify({
             email: session.user.email,
             hotelNombre: hotelNombreProp || null,
@@ -1091,7 +1096,7 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
           const revparMes = totalHabDisp > 0 ? totalRevHab  / totalHabDisp       : null;
           const trevparMes= totalHabDisp > 0 ? totalRevTot  / totalHabDisp       : null;
 
-          const datosMesLY   = produccionRows.filter(d => { const [y,m] = d.fecha.split('-').map(Number); return m === mesActual && y === anioActual - 1; });
+          const datosMesLY   = produccionRows.filter(d => d.fecha.startsWith(`${anioActual - 1}-${String(mesActual).padStart(2,'0')}`));
           const lyHabOcup = datosMesLY.reduce((a, d) => a + (d.hab_ocupadas  || 0), 0);
           const lyHabDisp = datosMesLY.reduce((a, d) => a + (d.hab_disponibles || 0), 0);
           const lyRevHab  = datosMesLY.reduce((a, d) => a + (d.revenue_hab   || 0), 0);
@@ -1106,7 +1111,7 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
 
           fetch('/api/monthly-report', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
             body: JSON.stringify({
               email: session.user.email,
               hotelNombre: hotelNombreProp || null,
@@ -1150,7 +1155,7 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
       setProgresoPpto(t("leyendo")); setProgresoPctPpto(10);
       const XLSX = await import("xlsx");
       const data = await file.arrayBuffer();
-      const wb = XLSX.read(data);
+      const wb = XLSX.read(data, { sheets: ["💰 Presupuesto"] });
       setProgresoPctPpto(30);
 
       const wsBu = wb.Sheets["💰 Presupuesto"];
@@ -3383,10 +3388,10 @@ function BudgetView({ datos, anio: anioProp }) {
         forecast_adr    = fcData.forecastAdr;
         forecast_revpar = fcData.forecastRevpar;
         confianza       = fcData.confianza;
-        try { localStorage.setItem(fcKey, JSON.stringify({ forecast_rev, forecast_adr, forecast_revpar, confianza })); } catch(_) {}
+        try { sessionStorage.setItem(fcKey, JSON.stringify({ forecast_rev, forecast_adr, forecast_revpar, confianza })); } catch(_) {}
       } else if (mesCerrado) {
         let saved = null;
-        try { saved = JSON.parse(localStorage.getItem(fcKey)); } catch(_) {}
+        try { saved = JSON.parse(sessionStorage.getItem(fcKey)); } catch(_) {}
         forecast_rev    = saved?.forecast_rev    ?? null;
         forecast_adr    = saved?.forecast_adr    ?? null;
         forecast_revpar = saved?.forecast_revpar ?? null;
@@ -4384,7 +4389,7 @@ function AuthScreen() {
       fetch("/api/send-welcome-email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, hotelNombre }),
+        body: JSON.stringify({ email, hotelNombre, user_id: data.user.id }),
       }).catch(() => {});
     }
     setMensaje("¡Cuenta creada! Ya puedes iniciar sesión.");
@@ -4465,7 +4470,7 @@ function PantallaSubscripcion({ session, onPagar }) {
       const res = await fetch("/api/create-checkout-session", {
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${session.access_token}` },
-        body: JSON.stringify({ user_id: session.user.id, email: session.user.email }),
+        body: JSON.stringify({}),
       });
       const { url, error } = await res.json();
       if (error) throw new Error(error);
@@ -4602,8 +4607,8 @@ export default function App() {
       if (session) {
         const cachedUserId = localStorage.getItem("fr_user_id");
         if (cachedUserId && cachedUserId !== session.user.id) {
-          localStorage.removeItem("fr_datos_cache_v3");
-          localStorage.removeItem("fr_datos_ts_v3");
+          sessionStorage.removeItem("fr_datos_cache_v3");
+          sessionStorage.removeItem("fr_datos_ts_v3");
           localStorage.removeItem("fr_scroll");
           localStorage.removeItem("fr_view");
         }
@@ -4643,8 +4648,8 @@ export default function App() {
     // Si no forzamos, intentar usar caché
     if (!forzar) {
       try {
-        const cached = localStorage.getItem(CACHE_KEY);
-        const ts = localStorage.getItem(CACHE_TS_KEY);
+        const cached = sessionStorage.getItem(CACHE_KEY);
+        const ts = sessionStorage.getItem(CACHE_TS_KEY);
         if (cached && ts) {
           const parsed = JSON.parse(cached);
           parsed.session = session;
@@ -4729,8 +4734,8 @@ export default function App() {
 
     // Guardar en caché
     try {
-      localStorage.setItem(CACHE_KEY, JSON.stringify(nuevoDatos));
-      localStorage.setItem(CACHE_TS_KEY, Date.now().toString());
+      sessionStorage.setItem(CACHE_KEY, JSON.stringify(nuevoDatos));
+      sessionStorage.setItem(CACHE_TS_KEY, Date.now().toString());
     } catch(_) {}
 
     setDatos({ ...nuevoDatos, session });
@@ -5072,7 +5077,7 @@ export default function App() {
                         const res = await fetch("/api/cancel-subscription", {
                           method: "POST",
                           headers: { "Content-Type": "application/json", "Authorization": `Bearer ${session.access_token}` },
-                          body: JSON.stringify({ user_id: session.user.id }),
+                          body: JSON.stringify({}),
                         });
                         const json = await res.json();
                         if (!res.ok) throw new Error(json.error);
@@ -5127,7 +5132,7 @@ export default function App() {
           </div>
         </div>
       )}
-      {importar && <ImportarExcel onClose={() => setImportar(false)} session={session} hotelNombre={datos.hotel?.nombre || ''} onImportado={() => { localStorage.removeItem("fr_datos_cache"); localStorage.removeItem("fr_datos_ts"); localStorage.removeItem("fr_scroll"); cargarDatos(true); }} />}
+      {importar && <ImportarExcel onClose={() => setImportar(false)} session={session} hotelNombre={datos.hotel?.nombre || ''} onImportado={() => { sessionStorage.removeItem("fr_datos_cache_v3"); sessionStorage.removeItem("fr_datos_ts_v3"); localStorage.removeItem("fr_scroll"); cargarDatos(true); }} />}
       {onboardingStep !== null && <OnboardingOverlay step={onboardingStep} onNext={handleOnboardingNext} onSkip={handleOnboardingSkip} />}
     </div>
     </LangContext.Provider>

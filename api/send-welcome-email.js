@@ -1,14 +1,35 @@
+export const config = { api: { bodyParser: { sizeLimit: '16kb' } } };
+
 import { Resend } from 'resend';
+import { createClient } from '@supabase/supabase-js';
+import { rateLimit, getIP } from './_ratelimit.js';
+import { validateEmail, cleanString, validateUUID, escapeHtml } from './_validate.js';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
+const supabaseAdmin = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+);
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
+  if (!await rateLimit(getIP(req), 5, 10 * 60_000)) {
+    return res.status(429).json({ error: 'Demasiadas solicitudes. Inténtalo más tarde.' });
+  }
 
-  const { email, hotelNombre } = req.body;
-  if (!email) return res.status(400).json({ error: 'Falta email' });
+  const { email, hotelNombre, user_id } = req.body ?? {};
 
-  const nombre = hotelNombre || 'tu hotel';
+  const cleanEmail = validateEmail(email);
+  if (!cleanEmail) return res.status(400).json({ error: 'Email inválido o ausente' });
+  if (!validateUUID(user_id)) return res.status(400).json({ error: 'Datos inválidos' });
+
+  // Verificar que el user_id corresponde al email en Supabase
+  const { data: { user }, error: userErr } = await supabaseAdmin.auth.admin.getUserById(user_id);
+  if (userErr || !user || user.email !== cleanEmail) {
+    return res.status(403).json({ error: 'No autorizado' });
+  }
+
+  const nombre = escapeHtml(cleanString(hotelNombre, 100) ?? 'tu hotel');
 
   const html = `
 <!DOCTYPE html>
@@ -175,11 +196,11 @@ export default async function handler(req, res) {
   try {
     const { error } = await resend.emails.send({
       from: 'FastRevenue <info@fastrevenue.app>',
-      to: email,
+      to: cleanEmail,
       subject: `Bienvenido a FastRevenue — Tu prueba de 30 días ha comenzado`,
       html,
       headers: {
-        'X-Entity-Ref-ID': `welcome-${email}`,
+        'X-Entity-Ref-ID': `welcome-${cleanEmail}`,
         'List-Unsubscribe': '<mailto:info@fastrevenue.app?subject=unsubscribe>',
         'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
       },
@@ -189,6 +210,6 @@ export default async function handler(req, res) {
     res.status(200).json({ ok: true });
   } catch (e) {
     console.error('Error enviando email de bienvenida:', e);
-    res.status(500).json({ error: e.message });
+    res.status(500).json({ error: 'Error interno' });
   }
 }

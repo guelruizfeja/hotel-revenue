@@ -1,6 +1,15 @@
+export const config = { api: { bodyParser: { sizeLimit: '2mb' } } };
+
 import { Resend } from 'resend';
+import { createClient } from '@supabase/supabase-js';
+import { rateLimit, getIP } from './_ratelimit.js';
+import { validateEmail, cleanString, escapeHtml } from './_validate.js';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+);
 
 const fmt    = (n, dec = 1) => n != null ? Number(n).toFixed(dec) : '—';
 const fmtEur = (n) => n != null ? `€${Math.round(n).toLocaleString('es-ES')}` : '—';
@@ -126,12 +135,28 @@ function buildAlerts(kpis) {
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
+  if (!await rateLimit(getIP(req), 10, 10 * 60_000)) {
+    return res.status(429).json({ error: 'Demasiadas solicitudes. Inténtalo más tarde.' });
+  }
 
-  const { email, hotelNombre, kpis } = req.body;
-  if (!email || !kpis) return res.status(400).json({ error: 'Faltan datos' });
-  if (!/^[^\s@]{1,64}@[^\s@]+\.[^\s@]{2,}$/.test(email)) return res.status(400).json({ error: 'Email inválido' });
+  // Verificar JWT
+  const token = (req.headers.authorization || '').replace('Bearer ', '').trim();
+  if (!token) return res.status(401).json({ error: 'No autorizado' });
+  const { data: { user: authUser }, error: authErr } = await supabase.auth.getUser(token);
+  if (authErr || !authUser) return res.status(401).json({ error: 'No autorizado' });
 
-  const hotel = hotelNombre || 'FastRevenue';
+  const { email, hotelNombre, kpis } = req.body ?? {};
+  const cleanEmail = validateEmail(email);
+  if (!cleanEmail) return res.status(400).json({ error: 'Email inválido o ausente' });
+  if (authUser.email !== cleanEmail) return res.status(403).json({ error: 'No autorizado' });
+  if (!kpis || typeof kpis !== 'object' || Array.isArray(kpis)) {
+    return res.status(400).json({ error: 'Faltan datos de KPIs' });
+  }
+  if (Array.isArray(kpis.revenueAcumulado) && kpis.revenueAcumulado.length > 31) {
+    return res.status(400).json({ error: 'revenueAcumulado excede el límite' });
+  }
+
+  const hotel = escapeHtml(cleanString(hotelNombre, 100) ?? 'FastRevenue');
   const {
     fecha, mesNombre,
     occ, adr, revpar, trevpar,
@@ -141,7 +166,9 @@ export default async function handler(req, res) {
     ly_occ, ly_adr, ly_revpar, ly_trevpar,
   } = kpis;
 
-  console.log('import-report:', hotel, fecha);
+  const safeFecha     = cleanString(fecha, 10) ?? '';
+  const safeMesNombre = escapeHtml(cleanString(mesNombre, 20) ?? '');
+  console.log('import-report:', hotel, safeFecha);
 
   let progressBar = '';
   try { progressBar = buildProgressBar(revenueAcumulado, presupuestoMensual); } catch (e) { console.error('progressBar error:', e); }
@@ -174,7 +201,7 @@ export default async function handler(req, res) {
     </svg>
     <p style="margin:0 0 6px;font-size:17px;font-weight:700;color:#FFFFFF;letter-spacing:2px;text-transform:uppercase;">Informe Diario de Revenue</p>
     <p style="margin:0;font-size:12px;color:rgba(255,255,255,0.55);">
-      FastRevenue &nbsp;&#8212;&nbsp; <strong style="color:#FFFFFF;font-size:14px;">${hotel}</strong> &nbsp;&#8212;&nbsp; ${fmtDate(fecha)}
+      FastRevenue &nbsp;&#8212;&nbsp; <strong style="color:#FFFFFF;font-size:14px;">${hotel}</strong> &nbsp;&#8212;&nbsp; ${fmtDate(safeFecha)}
     </p>
     <div style="height:2px;background:linear-gradient(90deg,transparent,#D4A017,transparent);margin-top:16px;"></div>
   </td></tr>
@@ -265,7 +292,7 @@ export default async function handler(req, res) {
       <tr>
         <td colspan="2" style="padding:12px 16px 8px;border-bottom:1px solid #F1F5F9;">
           <p style="margin:0;font-size:12px;font-weight:700;color:#0A2540;text-transform:uppercase;letter-spacing:0.8px;">
-            Progreso Mensual de Revenue${mesNombre ? ` <span style="color:#94A3B8;font-weight:400;text-transform:none;">(${mesNombre})</span>` : ''}
+            Progreso Mensual de Revenue${safeMesNombre ? ` <span style="color:#94A3B8;font-weight:400;text-transform:none;">(${safeMesNombre})</span>` : ''}
             &nbsp;vs.&nbsp;Presupuesto Total
           </p>
         </td>
@@ -331,8 +358,8 @@ export default async function handler(req, res) {
   try {
     const { error } = await resend.emails.send({
       from: 'FastRevenue <info@fastrevenue.app>',
-      to: email,
-      subject: `Informe ${fmtDate(fecha)} — ${hotel}`,
+      to: cleanEmail,
+      subject: `Informe ${fmtDate(safeFecha)} — ${hotel}`,
       html,
       headers: {
         'X-Entity-Ref-ID': `import-${email}-${fecha}`,
