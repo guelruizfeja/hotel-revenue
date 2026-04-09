@@ -3043,138 +3043,6 @@ function PickupView({ datos }) {
         )}
       </Card>
 
-      {/* ── 3 WIDGETS NUEVOS ── */}
-      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(280px,1fr))", gap:16 }}>
-
-        {/* CANCELACIONES DE AYER */}
-        <Card>
-          {/* Título */}
-          <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:16, color:C.text, marginBottom:2 }}>{t("cancelaciones_ayer")}</p>
-          <p style={{ fontSize:11, color:C.textLight, marginBottom:14 }}>
-            {ayerD.toLocaleDateString("es-ES",{weekday:"long",day:"numeric",month:"long"}).replace(/^\w/,c=>c.toUpperCase())}
-          </p>
-          {/* KPI badge arriba izquierda */}
-          <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:16 }}>
-            <div style={{ background: cancelTotal>0?C.redLight:"#E6F7EE", border:`1px solid ${cancelTotal>0?"#D32F2F44":"#1A7A3C44"}`, borderRadius:8, padding:"6px 14px", display:"flex", alignItems:"baseline", gap:6 }}>
-              <span style={{ fontSize:20, fontWeight:800, color:cancelTotal>0?C.red:C.green, fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1 }}>{cancelTotal}</span>
-              <span style={{ fontSize:10, fontWeight:600, textTransform:"uppercase", letterSpacing:0.8, color:cancelTotal>0?C.red:C.green }}>{cancelTotal===1?"cancelación":"cancelaciones"}</span>
-            </div>
-          </div>
-          {/* Tabla */}
-          {cancelTotal === 0 ? (
-            <p style={{ color:C.green, fontSize:13, textAlign:"center", padding:"12px 0" }}>✅ {t("sin_cancelaciones")}</p>
-          ) : (() => {
-            const fmtFecha = (iso) => {
-              if (!iso) return "—";
-              const [y,m,d] = String(iso).slice(0,10).split("-");
-              const dt = new Date(Number(y), Number(m)-1, Number(d));
-              return `${t("dias_abrev")[dt.getDay()]} ${Number(d)} ${t("meses_corto")[Number(m)-1]} ${y}`;
-            };
-            const thS = { fontSize:9, fontWeight:700, color:C.textLight, textTransform:"uppercase", letterSpacing:0.7, padding:"0 8px 8px", textAlign:"left", borderBottom:`1px solid ${C.border}` };
-            const tdS = { fontSize:11, padding:"7px 8px", verticalAlign:"middle" };
-            return (
-              <table style={{ width:"100%", borderCollapse:"collapse" }}>
-                <thead>
-                  <tr>
-                    <th style={thS}>Fecha llegada</th>
-                    <th style={thS}>Canal</th>
-                    <th style={{ ...thS, textAlign:"right" }}>ADR</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {cancelacionesAyer.map((e, i) => {
-                    const canal = normCanal(e.canal) || "—";
-                    const adr = e.precio_total && e.noches > 0
-                      ? Math.round(e.precio_total / e.noches)
-                      : e.precio_total ? Math.round(e.precio_total) : null;
-                    const canalColor = CANAL_COLORS[canal] || C.textMid;
-                    return (
-                      <tr key={i} style={{ background: i%2===0?"transparent":C.redLight+"88" }}>
-                        <td style={{ ...tdS, color:C.text, fontWeight:600 }}>{fmtFecha(e.fecha_llegada)}</td>
-                        <td style={{ ...tdS, color:canalColor, fontWeight:700 }}>{canal}</td>
-                        <td style={{ ...tdS, textAlign:"right", fontWeight:800, color:C.red }}>{adr !== null ? `€${adr.toLocaleString("es-ES")}` : "—"}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            );
-          })()}
-        </Card>
-
-        {/* ADR / DURACIÓN MEDIA POR CANAL — gráfica combinada */}
-        <Card style={{ gridColumn:"span 2" }}>
-          {/* Cabecera con toggle */}
-          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:18 }}>
-            <div>
-              <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:16, color:C.text }}>
-                {canalMetric === "adr" ? t("precio_medio_reserva") : t("duracion_media")}
-              </p>
-              <p style={{ fontSize:11, color:C.textLight, marginTop:2 }}>
-                {canalMetric === "adr" ? t("revenue_medio") : t("noches_reserva")}
-              </p>
-            </div>
-            {/* Toggle */}
-            <div style={{ display:"flex", borderRadius:8, overflow:"hidden", border:`1px solid ${C.border}` }}>
-                {[["adr","ADR"], ["noches","Noches"]].map(([key, label]) => (
-                  <button key={key} onClick={() => setCanalMetric(key)}
-                    style={{ padding:"6px 14px", fontSize:11, fontWeight:700, cursor:"pointer", border:"none", background: canalMetric===key ? C.accent : "transparent", color: canalMetric===key ? "#fff" : C.textMid, transition:"background 0.2s" }}>
-                    {label}
-                  </button>
-                ))}
-            </div>
-          </div>
-          {/* Gráfica de barras recharts */}
-          {(() => {
-            const rawData = canalMetric === "adr" ? precioCanalData : nochesCanalData.map(d => ({ ...d, color: CANAL_COLORS[d.canal]||C.accent }));
-            if (rawData.length === 0) return <p style={{ fontSize:12, color:C.textLight, textAlign:"center", padding:"30px 0" }}>{t("sin_datos")}</p>;
-            const chartData = rawData.slice(0,7).map(d => ({
-              canal: d.canal,
-              valor: canalMetric === "adr" ? d.media : parseFloat(d.media),
-              color: d.color || CANAL_COLORS[d.canal] || C.accent
-            }));
-            const maxVal = Math.max(...chartData.map(d=>d.valor));
-            const yMax   = canalMetric === "adr"
-              ? Math.ceil(maxVal * 1.15 / 50) * 50
-              : Math.ceil(maxVal * 1.3);
-            const fmt = v => canalMetric === "adr" ? `€${v.toLocaleString("es-ES")}` : `${v}n`;
-            return (
-              <div onMouseDown={e=>e.preventDefault()}>
-              <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={chartData}
-                margin={{ top:16, right:16, left:8, bottom:8 }}>
-                <defs>
-                  {chartData.map((d,i) => (
-                    <linearGradient key={i} id={`cg_${i}`} x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor={d.color} stopOpacity={1}/>
-                      <stop offset="100%" stopColor={d.color} stopOpacity={0.55}/>
-                    </linearGradient>
-                  ))}
-                </defs>
-                <CartesianGrid vertical={false} stroke={C.border} strokeDasharray="4 4" opacity={1}/>
-                <XAxis dataKey="canal" tick={{ fill:C.textMid, fontSize:11, fontWeight:600 }} axisLine={false} tickLine={false}/>
-                <YAxis domain={[0, yMax]} tickFormatter={fmt} tick={{ fill:C.textLight, fontSize:10 }} axisLine={false} tickLine={false} width={44}/>
-                <Tooltip
-                  formatter={(v) => [fmt(v), canalMetric==="adr"?"ADR":"Noches"]}
-                  contentStyle={{ background:"#0A2540", border:`1px solid ${C.border}`, borderRadius:8, fontSize:12 }}
-                  labelStyle={{ color:"#D4A017", fontWeight:700 }}
-                  itemStyle={{ color:"#ffffff" }}
-                  cursor={false}
-                />
-                <Bar dataKey="valor" radius={[4,4,0,0]} maxBarSize={56} shape={(p) => <SimpleBar {...p}/>}>
-                  {chartData.map((d,i) => (
-                    <Cell key={i} fill={`url(#cg_${i})`}/>
-                  ))}
-                </Bar>
-              </BarChart>
-              </ResponsiveContainer>
-              </div>
-            );
-          })()}
-        </Card>
-
-      </div>
-
       {/* Selector año */}
       <div style={{ display:"flex", justifyContent:"flex-end" }}>
         <div style={{ display:"flex", alignItems:"center", gap:8 }}>
@@ -3190,11 +3058,13 @@ function PickupView({ datos }) {
         </div>
       </div>
 
-      {/* ── GRÁFICA + DÍA MÁS RESERVADO ── */}
-      <div className="pickup-chart-row" style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:12, padding:"24px 28px", display:"flex", gap:40 }}>
-        {/* Col izquierda: Fechas Calientes */}
-        <div style={{ display:"flex", flexDirection:"column", gap:10, minWidth:200, paddingRight:24, borderRight:`1px solid ${C.border}` }}>
-          <p style={{ fontSize:11, fontWeight:700, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:4 }}>🔥 {t("fechas_calientes")}</p>
+      {/* ── FECHAS CALIENTES + CANCELACIONES | PICKUP TRIMESTRAL ── */}
+      <div style={{ display:"grid", gridTemplateColumns:"280px 1fr", gap:16, alignItems:"start" }}>
+
+        {/* Col izquierda: Fechas Calientes + Cancelaciones */}
+        <Card>
+          <p style={{ fontSize:11, fontWeight:700, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:8 }}>🔥 {t("fechas_calientes")}</p>
+          <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
           {(() => {
             const padL = n => String(n).padStart(2,"0");
             const hoyStr = `${hoy.getFullYear()}-${padL(hoy.getMonth()+1)}-${padL(hoy.getDate())}`;
@@ -3239,11 +3109,133 @@ function PickupView({ datos }) {
               );
             });
           })()}
-        </div>
-        {/* Col derecha: gráfica */}
-        <div style={{ flex:1 }}>
+          </div>
+          <p style={{ fontSize:11, color:C.text, marginTop:8, fontStyle:"italic", opacity:0.75 }}>
+            💡 Se recomienda comprobar el precio de estas fechas.
+          </p>
 
-        {/* Leyenda + breadcrumb */}
+          <div style={{ borderTop:`1px solid ${C.border}`, margin:"16px 0" }}/>
+
+          {/* CANCELACIONES DE AYER */}
+          <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:14, color:C.text, marginBottom:2 }}>{t("cancelaciones_ayer")}</p>
+          <p style={{ fontSize:10, color:C.textLight, marginBottom:10 }}>
+            {ayerD.toLocaleDateString("es-ES",{weekday:"long",day:"numeric",month:"long"}).replace(/^\w/,c=>c.toUpperCase())}
+          </p>
+          <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:12 }}>
+            <div style={{ background: cancelTotal>0?C.redLight:"#E6F7EE", border:`1px solid ${cancelTotal>0?"#D32F2F44":"#1A7A3C44"}`, borderRadius:8, padding:"5px 12px", display:"flex", alignItems:"baseline", gap:6 }}>
+              <span style={{ fontSize:18, fontWeight:800, color:cancelTotal>0?C.red:C.green, fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1 }}>{cancelTotal}</span>
+              <span style={{ fontSize:9, fontWeight:600, textTransform:"uppercase", letterSpacing:0.8, color:cancelTotal>0?C.red:C.green }}>{cancelTotal===1?"cancelación":"cancelaciones"}</span>
+            </div>
+          </div>
+          {cancelTotal === 0 ? (
+            <p style={{ color:C.green, fontSize:12, textAlign:"center", padding:"8px 0" }}>✅ {t("sin_cancelaciones")}</p>
+          ) : (() => {
+            const fmtFecha = (iso) => {
+              if (!iso) return "—";
+              const [y,m,d] = String(iso).slice(0,10).split("-");
+              const dt = new Date(Number(y), Number(m)-1, Number(d));
+              return `${t("dias_abrev")[dt.getDay()]} ${Number(d)} ${t("meses_corto")[Number(m)-1]} ${y}`;
+            };
+            const thS = { fontSize:9, fontWeight:700, color:C.textLight, textTransform:"uppercase", letterSpacing:0.7, padding:"0 6px 6px", textAlign:"left", borderBottom:`1px solid ${C.border}` };
+            const tdS = { fontSize:10, padding:"6px 6px", verticalAlign:"middle" };
+            return (
+              <table style={{ width:"100%", borderCollapse:"collapse" }}>
+                <thead><tr>
+                  <th style={thS}>Llegada</th>
+                  <th style={thS}>Canal</th>
+                  <th style={{ ...thS, textAlign:"right" }}>ADR</th>
+                </tr></thead>
+                <tbody>
+                  {cancelacionesAyer.map((e, i) => {
+                    const canal = normCanal(e.canal) || "—";
+                    const adr = e.precio_total && e.noches > 0
+                      ? Math.round(e.precio_total / e.noches)
+                      : e.precio_total ? Math.round(e.precio_total) : null;
+                    const canalColor = CANAL_COLORS[canal] || C.textMid;
+                    return (
+                      <tr key={i} style={{ background: i%2===0?"transparent":C.redLight+"66" }}>
+                        <td style={{ ...tdS, color:C.text, fontWeight:600 }}>{fmtFecha(e.fecha_llegada)}</td>
+                        <td style={{ ...tdS, color:canalColor, fontWeight:700 }}>{canal}</td>
+                        <td style={{ ...tdS, textAlign:"right", fontWeight:800, color:C.red }}>{adr !== null ? `€${adr.toLocaleString("es-ES")}` : "—"}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            );
+          })()}
+        </Card>
+
+        {/* Col derecha: ADR / DURACIÓN MEDIA POR CANAL */}
+        <div style={{ background:C.bgCard, border:`1px solid ${C.border}`, borderRadius:12, padding:"24px 28px" }}>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:18 }}>
+            <div>
+              <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:16, color:C.text }}>
+                {canalMetric === "adr" ? t("precio_medio_reserva") : t("duracion_media")}
+              </p>
+              <p style={{ fontSize:11, color:C.textLight, marginTop:2 }}>
+                {canalMetric === "adr" ? t("revenue_medio") : t("noches_reserva")}
+              </p>
+            </div>
+            <div style={{ display:"flex", borderRadius:8, overflow:"hidden", border:`1px solid ${C.border}` }}>
+                {[["adr","ADR"], ["noches","Noches"]].map(([key, label]) => (
+                  <button key={key} onClick={() => setCanalMetric(key)}
+                    style={{ padding:"6px 14px", fontSize:11, fontWeight:700, cursor:"pointer", border:"none", background: canalMetric===key ? C.accent : "transparent", color: canalMetric===key ? "#fff" : C.textMid, transition:"background 0.2s" }}>
+                    {label}
+                  </button>
+                ))}
+            </div>
+          </div>
+          {(() => {
+            const rawData = canalMetric === "adr" ? precioCanalData : nochesCanalData.map(d => ({ ...d, color: CANAL_COLORS[d.canal]||C.accent }));
+            if (rawData.length === 0) return <p style={{ fontSize:12, color:C.textLight, textAlign:"center", padding:"30px 0" }}>{t("sin_datos")}</p>;
+            const chartData = rawData.slice(0,7).map(d => ({
+              canal: d.canal,
+              valor: canalMetric === "adr" ? d.media : parseFloat(d.media),
+              color: d.color || CANAL_COLORS[d.canal] || C.accent
+            }));
+            const maxVal = Math.max(...chartData.map(d=>d.valor));
+            const yMax   = canalMetric === "adr"
+              ? Math.ceil(maxVal * 1.15 / 50) * 50
+              : Math.ceil(maxVal * 1.3);
+            const fmt = v => canalMetric === "adr" ? `€${v.toLocaleString("es-ES")}` : `${v}n`;
+            return (
+              <div onMouseDown={e=>e.preventDefault()}>
+              <ResponsiveContainer width="100%" height={280}>
+              <BarChart data={chartData} margin={{ top:16, right:16, left:8, bottom:8 }}>
+                <defs>
+                  {chartData.map((d,i) => (
+                    <linearGradient key={i} id={`cg_${i}`} x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor={d.color} stopOpacity={1}/>
+                      <stop offset="100%" stopColor={d.color} stopOpacity={0.55}/>
+                    </linearGradient>
+                  ))}
+                </defs>
+                <CartesianGrid vertical={false} stroke={C.border} strokeDasharray="4 4" opacity={1}/>
+                <XAxis dataKey="canal" tick={{ fill:C.textMid, fontSize:11, fontWeight:600 }} axisLine={false} tickLine={false}/>
+                <YAxis domain={[0, yMax]} tickFormatter={fmt} tick={{ fill:C.textLight, fontSize:10 }} axisLine={false} tickLine={false} width={44}/>
+                <Tooltip
+                  formatter={(v) => [fmt(v), canalMetric==="adr"?"ADR":"Noches"]}
+                  contentStyle={{ background:"#0A2540", border:`1px solid ${C.border}`, borderRadius:8, fontSize:12 }}
+                  labelStyle={{ color:"#D4A017", fontWeight:700 }}
+                  itemStyle={{ color:"#ffffff" }}
+                  cursor={false}
+                />
+                <Bar dataKey="valor" radius={[4,4,0,0]} maxBarSize={56} shape={(p) => <SimpleBar {...p}/>}>
+                  {chartData.map((d,i) => (
+                    <Cell key={i} fill={`url(#cg_${i})`}/>
+                  ))}
+                </Bar>
+              </BarChart>
+              </ResponsiveContainer>
+              </div>
+            );
+          })()}
+        </div>{/* fin col derecha */}
+      </div>{/* fin grid 2 cols */}
+
+      {/* PICKUP TRIMESTRAL — ancho completo */}
+      <Card>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:24, flexWrap:"wrap", gap:8 }}>
           <div style={{ display:"flex", gap:20, flexWrap:"wrap" }}>
             {[[t("otb_actual"), COL_OTB], [t("nav_budget"), COL_PPTO], [t("anio_anterior"), COL_LY]].map(([label, color]) => (
@@ -3270,49 +3262,41 @@ function PickupView({ datos }) {
           const vMax  = Math.ceil(Math.max(...vista.map(d => Math.max(d.otb||0, d.ppto||0, d.ly||0)), 10) * 1.15 / 10) * 10;
           const bH    = (val) => val && vMax > 0 ? `${Math.min((val/vMax)*100, 100)}%` : "0%";
           return (
-          <div style={{ display:"flex", gap:0, alignItems:"flex-end", height:280, position:"relative" }}>
-            {/* Escala Y + líneas horizontales */}
+          <div style={{ display:"flex", gap:0, alignItems:"flex-end", height:340, position:"relative" }}>
             {[0,25,50,75,100].map(p => (
               <div key={p} style={{ position:"absolute", left:0, right:0, bottom:`${p}%`, display:"flex", alignItems:"center" }}>
-                <span style={{ fontSize:10, color:C.textLight, lineHeight:1, width:32, flexShrink:0 }}>{Math.round(vMax * p / 100)}</span>
-                {p > 0 && <div style={{ flex:1, height:1, background:C.border, opacity:0.5, borderTop:"1px dashed "+C.border }} />}
+                <span style={{ fontSize:10, color:C.textLight, lineHeight:1, width:36, flexShrink:0 }}>{Math.round(vMax * p / 100)}</span>
+                {p > 0 && <div style={{ flex:1, height:0, borderTop:`1px dashed ${C.border}`, opacity:0.45 }} />}
               </div>
             ))}
-            {/* Barras */}
-            <div style={{ display:"flex", flex:1, alignItems:"flex-end", height:"100%", paddingLeft:36, gap: trimSel !== null ? 40 : 24 }}>
+            <div style={{ display:"flex", flex:1, alignItems:"flex-end", height:"100%", paddingLeft:40, gap: trimSel !== null ? 48 : 32 }}>
               {vista.map((d, i) => (
                 <div key={i}
                   onClick={() => trimSel === null && setTrimSel(i)}
                   style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", height:"100%", justifyContent:"flex-end", gap:2, cursor: trimSel === null ? "pointer" : "default" }}
                   title={trimSel === null ? `Ver desglose ${d.mes}` : ""}>
-                  {/* Grupo de 3 barras */}
-                  <div style={{ display:"flex", alignItems:"flex-end", gap:2, width:"100%", height:"calc(100% - 20px)", justifyContent:"center" }}>
-                    {/* OTB */}
+                  <div style={{ display:"flex", alignItems:"flex-end", gap:3, width:"100%", height:"calc(100% - 22px)", justifyContent:"center" }}>
                     <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"flex-end", height:"100%" }}>
                       {d.otb > 0 && <span style={{ fontSize:9, fontWeight:700, color:COL_OTB, marginBottom:2, lineHeight:1 }}>{d.otb}</span>}
-                      <div title={`OTB: ${d.otb||0}`} style={{ width:"100%", height:bH(d.otb), background:`linear-gradient(to top, ${COL_OTB}AA, ${COL_OTB})`, borderRadius:"3px 3px 0 0", minHeight:d.otb>0?4:0, transition:"height 0.3s" }} />
+                      <div title={`OTB: ${d.otb||0}`} style={{ width:"100%", height:bH(d.otb), background:`linear-gradient(to top, ${COL_OTB}88, ${COL_OTB})`, borderRadius:"4px 4px 0 0", minHeight:d.otb>0?4:0, transition:"height 0.3s" }} />
                     </div>
-                    {/* PPTO */}
                     <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"flex-end", height:"100%" }}>
                       {d.ppto > 0 && <span style={{ fontSize:9, fontWeight:700, color:COL_PPTO, marginBottom:2, lineHeight:1 }}>{d.ppto}</span>}
-                      <div title={`Ppto: ${d.ppto||0}`} style={{ width:"100%", height:bH(d.ppto), background:`linear-gradient(to top, ${COL_PPTO}AA, ${COL_PPTO})`, borderRadius:"3px 3px 0 0", minHeight:d.ppto>0?4:0, transition:"height 0.3s" }} />
+                      <div title={`Ppto: ${d.ppto||0}`} style={{ width:"100%", height:bH(d.ppto), background:`linear-gradient(to top, ${COL_PPTO}88, ${COL_PPTO})`, borderRadius:"4px 4px 0 0", minHeight:d.ppto>0?4:0, transition:"height 0.3s" }} />
                     </div>
-                    {/* LY */}
                     <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"flex-end", height:"100%" }}>
                       {d.ly > 0 && <span style={{ fontSize:9, fontWeight:700, color:COL_LY, marginBottom:2, lineHeight:1 }}>{d.ly}</span>}
-                      <div title={`LY: ${d.ly||0}`} style={{ width:"100%", height:bH(d.ly), background:`linear-gradient(to top, ${COL_LY}AA, ${COL_LY})`, borderRadius:"3px 3px 0 0", minHeight:d.ly>0?4:0, transition:"height 0.3s" }} />
+                      <div title={`LY: ${d.ly||0}`} style={{ width:"100%", height:bH(d.ly), background:`linear-gradient(to top, ${COL_LY}88, ${COL_LY})`, borderRadius:"4px 4px 0 0", minHeight:d.ly>0?4:0, transition:"height 0.3s" }} />
                     </div>
                   </div>
-                  {/* Label */}
-                  <span style={{ fontSize:10, fontWeight:700, marginTop:6, color: trimSel === null ? COL_OTB : C.textLight }}>{d.mes}</span>
+                  <span style={{ fontSize:11, fontWeight:700, marginTop:6, color: trimSel === null ? COL_OTB : C.textLight }}>{d.mes}</span>
                 </div>
               ))}
             </div>
           </div>
           );
         })()}
-        </div>{/* fin col derecha */}
-      </div>{/* fin card gráfica+pico */}
+      </Card>
 
       {/* ── PACE ── */}
       {(() => {
