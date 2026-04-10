@@ -5054,17 +5054,10 @@ export default function App() {
         {/* Botones + Email + logout */}
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginLeft: "auto" }}>
           {view === "dashboard" && (
-            <button id="ob-importar" onClick={() => setImportar(true)} style={{ background: C.accent, color: "#fff", border: "none", borderRadius: 7, padding: "5px 10px", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "'Plus Jakarta Sans',sans-serif", whiteSpace: "nowrap", display:"flex", alignItems:"center", gap:5 }}>
+            <button id="ob-importar" onClick={() => setImportar(true)} style={{ background: C.accent, color: "#fff", border: "none", borderRadius: 7, padding: "7px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "'Plus Jakarta Sans',sans-serif", whiteSpace: "nowrap", display:"flex", alignItems:"center", gap:5 }}>
               <span className="topbar-importar-label">Actualizar datos</span>
             </button>
           )}
-          <select value={lang} onChange={e => { setLang(e.target.value); localStorage.setItem("fr_lang", e.target.value); }}
-            style={{ border:`1px solid ${C.border}`, borderRadius:7, padding:"5px 8px", fontSize:11, fontWeight:500, color:C.text, background:C.bgCard, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", outline:"none" }}>
-            <option value="es">Español</option>
-            <option value="en">English</option>
-            <option value="fr">Français</option>
-          </select>
-
 
           {/* Menú Mi Perfil */}
           <div data-menu style={{ position:"relative" }}>
@@ -5114,6 +5107,13 @@ export default function App() {
               </div>
             )}
           </div>
+
+          <select value={lang} onChange={e => { setLang(e.target.value); localStorage.setItem("fr_lang", e.target.value); }}
+            style={{ border:`1px solid ${C.border}`, borderRadius:7, padding:"5px 8px", fontSize:11, fontWeight:500, color:C.text, background:C.bgCard, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", outline:"none" }}>
+            <option value="es">Español</option>
+            <option value="en">English</option>
+            <option value="fr">Français</option>
+          </select>
         </div>
       </div></header>
 
