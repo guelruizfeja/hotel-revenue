@@ -3286,7 +3286,6 @@ function PickupView({ datos }) {
             {[0,25,50,75,100].map(p => (
               <div key={p} style={{ position:"absolute", left:0, right:0, bottom:`${p}%`, display:"flex", alignItems:"center" }}>
                 <span style={{ fontSize:10, color:C.textLight, lineHeight:1, width:36, flexShrink:0 }}>{Math.round(vMax * p / 100)}</span>
-                {p > 0 && <div style={{ flex:1, height:0, borderTop:`1px dashed ${C.border}`, opacity:0.45 }} />}
               </div>
             ))}
             <div style={{ display:"flex", flex:1, alignItems:"flex-end", height:"100%", paddingLeft:40, gap: trimSel !== null ? 48 : 32 }}>
