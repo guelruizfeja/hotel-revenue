@@ -480,11 +480,32 @@ function WeatherBar({ ciudad, datos }) {
       msgs.push(msg);
     }
 
+    // Próximos eventos (grupos confirmados/tentativos con fecha_inicio >= hoy)
+    const grupos = datos?.grupos || [];
+    const proximos = grupos
+      .filter(g => g.fecha_inicio >= hoyStr && (g.estado === "confirmado" || g.estado === "tentativo"))
+      .sort((a, b) => a.fecha_inicio.localeCompare(b.fecha_inicio))
+      .slice(0, 5);
+    if (proximos.length > 0) {
+      const fmtFecha = iso => {
+        const [y, m, d] = iso.split("-");
+        return `${d}/${m}/${y.slice(2)}`;
+      };
+      const partes = proximos.map(g => {
+        let txt = `${g.estado === "tentativo" ? "⚠ " : ""}${g.nombre}`;
+        if (g.fecha_inicio) txt += `  ${fmtFecha(g.fecha_inicio)}`;
+        if (g.fecha_fin && g.fecha_fin !== g.fecha_inicio) txt += `→${fmtFecha(g.fecha_fin)}`;
+        if (g.habitaciones) txt += `  ·  ${g.habitaciones} hab.`;
+        return txt;
+      });
+      msgs.push(`Próximos eventos  ·  ${partes.join("   |   ")}`);
+    }
+
     if (msgs.length === 0) return "";
     const sep = "          ◆          ";
     const full = msgs.join(sep) + sep;
     return full + full; // duplicar para loop continuo
-  }, [datos?.produccion?.length, datos?.pickupEntries?.length]);
+  }, [datos?.produccion?.length, datos?.pickupEntries?.length, datos?.grupos?.length]);
 
   const duration = Math.max(25, (tickerText.length / 2) * 0.13);
 
