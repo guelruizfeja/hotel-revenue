@@ -850,9 +850,9 @@ function KpiCard({ label, subtitle, value, changeLm, upLm, changeLy, upLy, i, on
       e.currentTarget.style.borderLeftColor=kpiAccent;
       e.currentTarget.style.background=C.bgCard;
     }}>
-      <p style={{ fontSize: 12, color: C.accentDark, textTransform: "uppercase", letterSpacing: "1.5px", fontWeight: 700 }}>{label}</p>
-      {subtitle && <p style={{ fontSize: 10, color: C.accent, marginTop: 2, letterSpacing: "0.5px", opacity: 0.7 }}>{subtitle}</p>}
-      <p style={{ fontSize: "clamp(22px,5vw,30px)", fontWeight: 700, fontFamily: "'Plus Jakarta Sans', sans-serif", color: C.accentDark, margin: "8px 0 6px", letterSpacing: "-1px", lineHeight: 1 }}>{value}</p>
+      <p style={{ fontSize: 12, color: C.text, textTransform: "uppercase", letterSpacing: "1.5px", fontWeight: 700 }}>{label}</p>
+      {subtitle && <p style={{ fontSize: 10, color: C.textMid, marginTop: 2, letterSpacing: "0.5px", opacity: 0.7 }}>{subtitle}</p>}
+      <p style={{ fontSize: "clamp(22px,5vw,30px)", fontWeight: 700, fontFamily: "'Plus Jakarta Sans', sans-serif", color: C.text, margin: "8px 0 6px", letterSpacing: "-1px", lineHeight: 1 }}>{value}</p>
     </div>
   );
 }
