@@ -491,7 +491,7 @@ function WeatherBar({ ciudad, datos }) {
   if (!ciudad) return null;
 
   return (
-    <div style={{ background:C.accentLight, borderBottom:`1px solid #C8D8EA`, position:"sticky", top:52, zIndex:99, height:36, display:"flex", alignItems:"center", overflow:"hidden" }}>
+    <div style={{ background:"#F4F8FD", borderBottom:`1px solid #D8E6F3`, position:"sticky", top:52, zIndex:99, height:36, display:"flex", alignItems:"center", overflow:"hidden" }}>
 
       {/* Ticker */}
       <div style={{ flex:1, overflow:"hidden", padding:"0 16px 0 clamp(12px,4vw,32px)" }}>
