@@ -529,9 +529,8 @@ function WeatherBar({ ciudad, datos }) {
       <div style={{ display:"flex", alignItems:"center", gap:8, padding:"0 clamp(12px,4vw,32px) 0 12px", borderLeft:`1px solid #C8D8EA`, flexShrink:0, height:"100%" }}>
         {weather && <span style={{ fontSize:14, lineHeight:1 }}>{weatherEmoji(weather.code)}</span>}
         {weather && <span style={{ fontSize:12, fontWeight:800, color:C.accent }}>{weather.temp}°C</span>}
+        {weather && <span style={{ fontSize:11, fontWeight:700, color:C.text }}>{ciudad}</span>}
         {weather && <span style={{ fontSize:11, color:C.textMid }}>{WEATHER_ES[weather.code] || ""}</span>}
-        {weather && <span style={{ fontSize:10, color:"#C8D8EA" }}>·</span>}
-        <span style={{ fontSize:11, fontWeight:700, color:C.accent }}>📍 {ciudad}</span>
       </div>
 
     </div>
