@@ -990,6 +990,16 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
   const [errorPickup, setErrorPickup] = useState("");
   const [pickupRecientes, setPickupRecientes] = useState([]);
   const [okPickup, setOkPickup] = useState(false);
+  // Estado producción diaria
+  const [prodForm, setProdForm] = useState({
+    fecha: new Date().toISOString().slice(0,10),
+    hab_ocupadas: "", hab_disponibles: "",
+    revenue_hab: "", revenue_total: "", revenue_fnb: "",
+  });
+  const [guardandoProd, setGuardandoProd] = useState(false);
+  const [errorProd, setErrorProd] = useState("");
+  const [okProd, setOkProd] = useState(false);
+  const [prodRecientes, setProdRecientes] = useState([]);
   // Vaciar
   const [vaciando, setVaciando] = useState(false);
   const [confirmVaciar, setConfirmVaciar] = useState(false);
@@ -1390,6 +1400,35 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
   };
 
 
+  // ── Producción diaria (upsert por fecha) ──
+  const guardarProduccion = async () => {
+    setGuardandoProd(true); setErrorProd(""); setOkProd(false);
+    try {
+      if (!prodForm.fecha) throw new Error("La fecha es obligatoria");
+      const hab_ocupadas    = parseFloat(prodForm.hab_ocupadas)    || null;
+      const hab_disponibles = parseFloat(prodForm.hab_disponibles) || null;
+      const revenue_hab     = parseFloat(prodForm.revenue_hab)     || null;
+      const revenue_total   = parseFloat(prodForm.revenue_total)   || null;
+      const revenue_fnb     = parseFloat(prodForm.revenue_fnb)     || null;
+      if (!hab_ocupadas && !revenue_hab) throw new Error("Introduce al menos Hab. Ocupadas o Rev. Habitaciones");
+      const adr    = hab_ocupadas > 0 && revenue_hab ? Math.round(revenue_hab / hab_ocupadas * 100) / 100 : null;
+      const revpar = hab_disponibles > 0 && revenue_hab ? Math.round(revenue_hab / hab_disponibles * 100) / 100 : null;
+      const trevpar = hab_disponibles > 0 ? Math.round(((revenue_hab||0)+(revenue_fnb||0)) / hab_disponibles * 100) / 100 : null;
+      const row = {
+        hotel_id: session.user.id, fecha: prodForm.fecha,
+        hab_ocupadas, hab_disponibles, revenue_hab, revenue_total, revenue_fnb,
+        adr, revpar, trevpar,
+      };
+      const { error } = await supabase.from("produccion_diaria").upsert(row, { onConflict: "hotel_id,fecha" });
+      if (error) throw new Error(error.message);
+      setProdRecientes(prev => [row, ...prev.filter(r => r.fecha !== prodForm.fecha)].slice(0, 8));
+      setProdForm(f => ({...f, hab_ocupadas:"", hab_disponibles:"", revenue_hab:"", revenue_total:"", revenue_fnb:""}));
+      setOkProd(true); setTimeout(() => setOkProd(false), 3000);
+      if (onImportado) onImportado();
+    } catch(e) { setErrorProd(e.message); }
+    setGuardandoProd(false);
+  };
+
   // ── Buscar y editar día histórico ──
   const buscarDia = async () => {
     if (!fechaBusqueda) return;
@@ -1483,9 +1522,10 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
   const labelStyle = { fontSize:10, color:"#A8998A", marginBottom:3, textTransform:"uppercase", letterSpacing:"0.5px", display:"block" };
 
   const tabs = [
-    { id:"presupuesto", label:"Presupuesto", done: !!resultadoPpto },
-    { id:"historico",   label:"Histórico",   done: !!resultadoMain },
-    { id:"pickup",      label:"Pick Up",      done: pickupRecientes.length > 0 },
+    { id:"presupuesto", label:"Presupuesto",       done: !!resultadoPpto },
+    { id:"historico",   label:"Histórico",          done: !!resultadoMain },
+    { id:"produccion",  label:"Producción Diaria",  done: prodRecientes.length > 0 },
+    { id:"pickup",      label:"Pick Up",             done: pickupRecientes.length > 0 },
   ];
 
   return (
@@ -1585,6 +1625,95 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
                   </div>
                 )}
               </div>
+            </div>
+          )}
+
+          {/* ── PRODUCCIÓN DIARIA ── */}
+          {activeBlock === "produccion" && (
+            <div>
+              <p style={{ fontSize:11, color:"#A8998A", marginBottom:14 }}>Introduce la producción del día. Si ya existe un registro para esa fecha, se actualizará automáticamente.</p>
+              <div style={{ background:"#F7F3EE", border:"1px solid #E8E0D5", borderRadius:8, padding:"14px", marginBottom:12 }}>
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"8px 12px", marginBottom:12 }}>
+                  <div style={{ gridColumn:"1 / -1" }}>
+                    <label style={labelStyle}>Fecha</label>
+                    <input type="date" value={prodForm.fecha}
+                      onChange={e => setProdForm(f=>({...f, fecha:e.target.value}))} style={inputStyle} />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Hab. Ocupadas</label>
+                    <input type="number" min="0" value={prodForm.hab_ocupadas} placeholder="0"
+                      onChange={e => setProdForm(f=>({...f, hab_ocupadas:e.target.value}))} style={inputStyle} />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Hab. Disponibles</label>
+                    <input type="number" min="0" value={prodForm.hab_disponibles} placeholder="0"
+                      onChange={e => setProdForm(f=>({...f, hab_disponibles:e.target.value}))} style={inputStyle} />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Rev. Habitaciones €</label>
+                    <input type="number" min="0" step="0.01" value={prodForm.revenue_hab} placeholder="0.00"
+                      onChange={e => setProdForm(f=>({...f, revenue_hab:e.target.value}))} style={inputStyle} />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Rev. Total €</label>
+                    <input type="number" min="0" step="0.01" value={prodForm.revenue_total} placeholder="0.00"
+                      onChange={e => setProdForm(f=>({...f, revenue_total:e.target.value}))} style={inputStyle} />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Rev. F&B €</label>
+                    <input type="number" min="0" step="0.01" value={prodForm.revenue_fnb} placeholder="0.00"
+                      onChange={e => setProdForm(f=>({...f, revenue_fnb:e.target.value}))} style={inputStyle} />
+                  </div>
+                  {/* KPIs calculados en tiempo real */}
+                  {(prodForm.hab_ocupadas || prodForm.revenue_hab) && (() => {
+                    const ho = parseFloat(prodForm.hab_ocupadas) || 0;
+                    const hd = parseFloat(prodForm.hab_disponibles) || 0;
+                    const rh = parseFloat(prodForm.revenue_hab) || 0;
+                    const rf = parseFloat(prodForm.revenue_fnb) || 0;
+                    const adr    = ho > 0 ? Math.round(rh / ho * 100) / 100 : null;
+                    const revpar = hd > 0 ? Math.round(rh / hd * 100) / 100 : null;
+                    const occ    = hd > 0 ? Math.round(ho / hd * 1000) / 10 : null;
+                    return (
+                      <div style={{ gridColumn:"1 / -1", display:"flex", gap:10 }}>
+                        {[["OCC", occ!=null?`${occ}%`:"—"], ["ADR", adr!=null?`€${adr}`:"—"], ["RevPAR", revpar!=null?`€${revpar}`:"—"]].map(([k,v]) => (
+                          <div key={k} style={{ flex:1, background:"#fff", border:"1px solid #E8E0D5", borderRadius:6, padding:"8px 10px", textAlign:"center" }}>
+                            <p style={{ fontSize:9, color:"#A8998A", textTransform:"uppercase", letterSpacing:"0.5px", marginBottom:2 }}>{k}</p>
+                            <p style={{ fontSize:15, fontWeight:700, color:"#004B87", fontFamily:"'Cormorant Garamond',serif" }}>{v}</p>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })()}
+                </div>
+                {errorProd && <p style={{ fontSize:11, color:"#C0392B", marginBottom:8 }}>{errorProd}</p>}
+                {okProd && <p style={{ fontSize:11, color:"#2D7A4F", marginBottom:8 }}>✓ Producción guardada</p>}
+                <button onClick={guardarProduccion} disabled={guardandoProd}
+                  style={{ width:"100%", padding:"9px", background:"#004B87", color:"#fff", border:"none", borderRadius:6, fontSize:12, fontWeight:700, cursor:guardandoProd?"not-allowed":"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+                  {guardandoProd ? "Guardando…" : "Guardar producción"}
+                </button>
+              </div>
+
+              {prodRecientes.length > 0 && (
+                <div>
+                  <p style={{ fontSize:10, color:"#A8998A", marginBottom:6, textTransform:"uppercase", letterSpacing:"0.5px" }}>Guardados esta sesión</p>
+                  <div style={{ background:"#F7F3EE", border:"1px solid #E8E0D5", borderRadius:8, overflow:"hidden" }}>
+                    {prodRecientes.map((r, i) => {
+                      const ho = r.hab_ocupadas || 0;
+                      const hd = r.hab_disponibles || 0;
+                      const occ = hd > 0 ? (ho / hd * 100).toFixed(1) : "—";
+                      const adr = ho > 0 && r.revenue_hab ? Math.round(r.revenue_hab / ho) : "—";
+                      return (
+                        <div key={i} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"8px 12px", borderBottom: i < prodRecientes.length-1 ? "1px solid #E8E0D5" : "none", fontSize:12 }}>
+                          <span style={{ color:"#1C1814", fontWeight:600, minWidth:90 }}>{r.fecha}</span>
+                          <span style={{ color:"#A8998A" }}>{ho} hab.</span>
+                          <span style={{ color:"#004B87", fontWeight:600 }}>{occ !== "—" ? `${occ}%` : "—"}</span>
+                          <span style={{ color:"#A8998A" }}>ADR {adr !== "—" ? `€${adr}` : "—"}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
