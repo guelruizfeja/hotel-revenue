@@ -2846,7 +2846,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
                       title={occ!=null?`${label}: ${occ.toFixed(0)}%`:""}
                       style={{
                         borderRadius:8, padding:"10px 6px", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
-                        background: esMesActual ? `${C.accent}18` : occ!=null ? heatBg(occ) : C.bg,
+                        background: occ!=null ? heatBg(occ) : C.bg,
                         border:`2px solid ${esMesActual ? C.accent : esCaliente?"#E85D04":occ!=null?heatColor(occ)+"CC":C.border}`,
                         cursor:"pointer", textAlign:"center", transition:"all 0.15s", position:"relative"
                       }}
@@ -2854,9 +2854,9 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
                       {esCaliente && (
                         <span title={`${resUltDia} reservas captadas el ${ultimoDiaImportado}`} style={{ position:"absolute", top:4, right:5, fontSize:14, lineHeight:1, animation:"pulse-rayo 1.5s ease-in-out infinite" }}>⚡</span>
                       )}
-                      <p style={{ fontSize:9, fontWeight:700, color: esMesActual ? C.accent : C.textLight, textTransform:"uppercase", letterSpacing:0.5, marginBottom:3 }}>{label}</p>
+                      <p style={{ fontSize:9, fontWeight:700, color:C.textLight, textTransform:"uppercase", letterSpacing:0.5, marginBottom:3 }}>{label}</p>
                       {occ!=null
-                        ? <p style={{ fontSize:17, fontWeight:800, color: esMesActual ? C.accent : C.text, fontFamily:"'Plus Jakarta Sans',sans-serif" }}>{occ.toFixed(0)}%</p>
+                        ? <p style={{ fontSize:17, fontWeight:800, color:C.text, fontFamily:"'Plus Jakarta Sans',sans-serif" }}>{occ.toFixed(0)}%</p>
                         : <p style={{ fontSize:12, color:C.border }}>—</p>
                       }
                       {resUltDia !== 0
