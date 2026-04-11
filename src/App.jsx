@@ -1515,7 +1515,13 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
         <>
           <div onClick={() => !loading && document.getElementById(id).click()}
             style={{ border:`2px dashed ${H.border}`, borderRadius:10, padding:"32px 16px", textAlign:"center", cursor:loading?"default":"pointer", background:H.card, transition:"border-color 0.2s" }}>
-            <div style={{ fontSize:36, marginBottom:10 }}>📊</div>
+            <div style={{ marginBottom:10, display:"flex", justifyContent:"center" }}>
+              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke={H.border} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="17 8 12 3 7 8"/>
+                <line x1="12" y1="3" x2="12" y2="15"/>
+              </svg>
+            </div>
             <p style={{ fontWeight:600, color:H.text, fontSize:13, marginBottom:4 }}>{progreso || (loading ? t("procesando") : t("haz_clic"))}</p>
             <p style={{ fontSize:11, color:H.textMid }}>Soporta .xlsx — plantilla FastRev Pro</p>
             {loading && (
@@ -1537,11 +1543,39 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
   const inputStyle = { width:"100%", padding:"7px 10px", border:`1px solid ${H.border}`, borderRadius:6, fontSize:12, fontFamily:"'Plus Jakarta Sans',sans-serif", background:H.card2, color:H.text, boxSizing:"border-box", outline:"none" };
   const labelStyle = { fontSize:10, color:H.textMid, marginBottom:4, textTransform:"uppercase", letterSpacing:"0.8px", display:"block" };
 
+  const TabIcons = {
+    presupuesto: (color) => (
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="2" y="3" width="20" height="14" rx="2"/>
+        <path d="M8 21h8M12 17v4"/>
+        <path d="M7 10h2M11 10h6M7 13h4"/>
+      </svg>
+    ),
+    historico: (color) => (
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+        <path d="M3 3v5h5"/>
+        <path d="M12 7v5l4 2"/>
+      </svg>
+    ),
+    produccion: (color) => (
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M3 3v18h18"/>
+        <path d="m7 16 4-4 4 4 4-4"/>
+      </svg>
+    ),
+    pickup: (color) => (
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>
+      </svg>
+    ),
+  };
+
   const tabs = [
-    { id:"presupuesto", label:"Presupuesto",      icon:"💰", done: !!resultadoPpto },
-    { id:"historico",   label:"Histórico",         icon:"📅", done: !!resultadoMain },
-    { id:"produccion",  label:"Producción Diaria", icon:"🏨", done: prodRecientes.length > 0 },
-    { id:"pickup",      label:"Pick Up",            icon:"🎯", done: pickupRecientes.length > 0 },
+    { id:"presupuesto", label:"Presupuesto",      done: !!resultadoPpto },
+    { id:"historico",   label:"Histórico",         done: !!resultadoMain },
+    { id:"produccion",  label:"Producción Diaria", done: prodRecientes.length > 0 },
+    { id:"pickup",      label:"Pick Up",            done: pickupRecientes.length > 0 },
   ];
 
   return (
@@ -1562,8 +1596,8 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
             const active = activeBlock === tab.id;
             return (
               <button key={tab.id} onClick={() => setActiveBlock(tab.id)}
-                style={{ background: active ? "#EBF2FA" : H.card, border:`1px solid ${active ? H.blue : H.border}`, borderRadius:10, padding:"14px 8px 10px", cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", display:"flex", flexDirection:"column", alignItems:"center", gap:6, transition:"all 0.15s", boxShadow: active ? `0 2px 12px rgba(0,75,135,0.12)` : "none" }}>
-                <span style={{ fontSize:26 }}>{tab.icon}</span>
+                style={{ background: active ? "#EBF2FA" : H.card, border:`1px solid ${active ? H.blue : H.border}`, borderRadius:10, padding:"14px 8px 10px", cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", display:"flex", flexDirection:"column", alignItems:"center", gap:7, transition:"all 0.15s", boxShadow: active ? `0 2px 12px rgba(0,75,135,0.12)` : "none" }}>
+                {TabIcons[tab.id](active ? H.blue : H.textMid)}
                 <span style={{ fontSize:10, fontWeight: active ? 700 : 500, color: active ? H.blue : H.textMid, textAlign:"center", lineHeight:1.2 }}>{tab.label}</span>
                 {tab.done && <span style={{ width:6, height:6, borderRadius:"50%", background: H.green, display:"block" }} />}
               </button>
