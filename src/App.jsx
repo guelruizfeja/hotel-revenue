@@ -2912,6 +2912,8 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
               }, 0) : 0;
               const occHoy   = habH ? Math.min(Math.round(Math.max(0,netoHoy)/habH*100),100) : null;
               const occColor = occHoy>=85?"#E53935":occHoy>=70?"#C49A0A":occHoy>=50?C.accent:C.textLight;
+              const ayerProd = produccion.find(d => d.fecha === ayerStr);
+              const occAyer  = ayerProd?.hab_disponibles > 0 ? Math.round(ayerProd.hab_ocupadas / ayerProd.hab_disponibles * 100) : null;
 
               const Delta = ({ hoy, ayer }) => {
                 const d = hoy - ayer;
@@ -2991,18 +2993,8 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
                         <circle cx="16" cy="13" r="2" stroke={C.text} strokeWidth="1.5"/>
                       </svg>
                       <span style={lbl()}>Ocupación hoy</span>
-                      <div style={{ position:"relative", width:sizeC, height:sizeC, flexShrink:0 }}>
-                        <svg width={sizeC} height={sizeC} style={{ position:"absolute", top:0, left:0, transform:"rotate(-90deg)" }}>
-                          <circle cx={sizeC/2} cy={sizeC/2} r={Rc} fill="none" stroke={`${occColor}22`} strokeWidth={SWc}/>
-                          <circle cx={sizeC/2} cy={sizeC/2} r={Rc} fill="none" stroke={occColor} strokeWidth={SWc} strokeLinecap="round"
-                            strokeDasharray={circC} strokeDashoffset={circC*(1-occHoy/100)}
-                            style={{ transition:"stroke-dashoffset 0.6s ease" }}/>
-                        </svg>
-                        <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center" }}>
-                          <span style={{ fontSize:11, fontWeight:800, color:occColor, fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1 }}>{occHoy}%</span>
-                        </div>
-                      </div>
-                      <span/>
+                      <span style={num()}>{occHoy}%</span>
+                      {occAyer !== null ? <Delta hoy={occHoy} ayer={occAyer}/> : <span/>}
                     </>}
                   </div>
                 </div>
