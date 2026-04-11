@@ -5441,16 +5441,16 @@ export default function App() {
         {/* Logo centro */}
         <div style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", pointerEvents: "none", display: "flex", alignItems: "center", gap: 12 }}>
           <img src="/fastrev-logo.png" alt="FastRevenue" style={{ height: 92, width: "auto", transform: "scaleX(1.08)" }} />
-          <span className="topbar-date" style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:1 }}>
-            <span style={{ fontSize: 12, color: "#000000", fontWeight: 500, fontFamily: "'Plus Jakarta Sans', sans-serif", letterSpacing: 0.3, whiteSpace: "nowrap" }}>
+          <span className="topbar-date" style={{ display:"flex", alignItems:"center", gap:10, fontFamily:"'Plus Jakarta Sans', sans-serif" }}>
+            <span style={{ fontSize: 12, color: "#000000", fontWeight: 500, letterSpacing: 0.3, whiteSpace: "nowrap" }}>
               {ahora.toLocaleDateString(lang === "en" ? "en-GB" : lang === "fr" ? "fr-FR" : "es-ES", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).replace(/^\w/, c => c.toUpperCase())}
             </span>
-            <span style={{ display:"flex", alignItems:"center", gap:5, fontFamily:"'Plus Jakarta Sans', sans-serif" }}>
-              <span style={{ fontSize: 14, color: "#0A0A0A", fontWeight: 700, letterSpacing: 1, fontVariantNumeric:"tabular-nums" }}>
+            <span style={{ display:"flex", alignItems:"center", gap:5 }}>
+              <span style={{ fontSize: 13, color: "#0A0A0A", fontWeight: 700, letterSpacing: 1, fontVariantNumeric:"tabular-nums" }}>
                 {ahora.toLocaleTimeString(lang === "en" ? "en-GB" : lang === "fr" ? "fr-FR" : "es-ES", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
               </span>
-              <span style={{ fontSize: 10, color: "#888", fontWeight: 500, background: "#F0F0F0", borderRadius: 4, padding: "1px 5px", letterSpacing: 0.3 }}>
-                {Intl.DateTimeFormat().resolvedOptions().timeZone.split("/").pop().replace(/_/g," ")}
+              <span style={{ fontSize: 10, color: "#666", fontWeight: 600, background: "#F0F0F0", borderRadius: 4, padding: "2px 5px", letterSpacing: 0.5 }}>
+                {ahora.toLocaleTimeString("en-GB", { timeZoneName: "short" }).split(" ").pop()}
               </span>
             </span>
           </span>
