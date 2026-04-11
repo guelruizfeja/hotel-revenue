@@ -2923,63 +2923,63 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
                 return <span style={{ display:"inline-flex", alignItems:"center", gap:2, fontSize:12, fontWeight:700, color:col }}>{arr}{d>0?"+":""}{d}</span>;
               };
 
-              const lbl = (col) => ({ fontSize:9, color:col, textTransform:"uppercase", letterSpacing:"1.2px", fontWeight:600 });
-              const num = (col) => ({ fontSize:30, fontWeight:800, color:col, fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1 });
+              const lbl = () => ({ fontSize:9, color:C.textMid, textTransform:"uppercase", letterSpacing:"1.2px", fontWeight:600 });
+              const num = () => ({ fontSize:30, fontWeight:800, color:C.text, fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1 });
               const sep = { gridColumn:"1 / -1", borderTop:`1px solid ${C.border}` };
               const Rc=20, SWc=3.5, circC=2*Math.PI*Rc, sizeC=Rc*2+SWc*2;
 
               return (
                 <div style={{ flex:"0 0 380px", padding:"20px 24px", display:"flex", flexDirection:"column", justifyContent:"center", gap:10 }}>
                   <div>
-                    <p style={{ fontSize:11, fontWeight:700, color:C.textMid, textTransform:"uppercase", letterSpacing:"1.5px" }}>Movimiento Operativo Diario</p>
+                    <p style={{ fontSize:11, fontWeight:700, color:C.text, textTransform:"uppercase", letterSpacing:"1.5px" }}>Movimiento Operativo Diario</p>
                     <p style={{ fontSize:10, color:C.textLight, marginTop:2 }}>{hoyStr}</p>
                   </div>
                   <div style={{ display:"grid", gridTemplateColumns:"22px 1fr auto auto", alignItems:"center", rowGap:10, columnGap:8 }}>
 
                     <svg width="22" height="22" viewBox="0 0 32 32" fill="none">
-                      <rect x="8" y="4" width="16" height="24" rx="1.5" stroke="#004B87" strokeWidth="2"/>
-                      <line x1="8" y1="28" x2="24" y2="28" stroke="#004B87" strokeWidth="2" strokeLinecap="round"/>
-                      <circle cx="20" cy="16" r="1.5" fill="#004B87"/>
-                      <line x1="0" y1="16" x2="13" y2="16" stroke="#004B87" strokeWidth="2" strokeLinecap="round"/>
-                      <polyline points="9,12 13,16 9,20" stroke="#004B87" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      <rect x="8" y="4" width="16" height="24" rx="1.5" stroke={C.text} strokeWidth="2"/>
+                      <line x1="8" y1="28" x2="24" y2="28" stroke={C.text} strokeWidth="2" strokeLinecap="round"/>
+                      <circle cx="20" cy="16" r="1.5" fill={C.text}/>
+                      <line x1="0" y1="16" x2="13" y2="16" stroke={C.text} strokeWidth="2" strokeLinecap="round"/>
+                      <polyline points="9,12 13,16 9,20" stroke={C.text} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                     </svg>
-                    <span style={lbl("#004B87")}>Entradas{proxEntrada&&<span style={{ color:C.textLight, fontWeight:400 }}> · próx. {proxEntrada}</span>}</span>
-                    <span style={num("#004B87")}>{numEntradas}</span>
+                    <span style={lbl()}>Entradas{proxEntrada&&<span style={{ color:C.textLight, fontWeight:400 }}> · próx. {proxEntrada}</span>}</span>
+                    <span style={num()}>{numEntradas}</span>
                     <Delta hoy={numEntradas} ayer={numEntradasAyer}/>
 
                     <div style={sep}/>
 
                     <svg width="22" height="22" viewBox="0 0 32 32" fill="none">
-                      <rect x="4" y="6" width="24" height="20" rx="2" stroke="#7C3AED" strokeWidth="2"/>
-                      <line x1="4" y1="12" x2="28" y2="12" stroke="#7C3AED" strokeWidth="2"/>
-                      <circle cx="16" cy="20" r="3" stroke="#7C3AED" strokeWidth="1.5"/>
+                      <rect x="4" y="6" width="24" height="20" rx="2" stroke={C.text} strokeWidth="2"/>
+                      <line x1="4" y1="12" x2="28" y2="12" stroke={C.text} strokeWidth="2"/>
+                      <circle cx="16" cy="20" r="3" stroke={C.text} strokeWidth="1.5"/>
                     </svg>
-                    <span style={lbl("#7C3AED")}>Estancias</span>
-                    <span style={num("#7C3AED")}>{numEstancias}</span>
+                    <span style={lbl()}>Estancias</span>
+                    <span style={num()}>{numEstancias}</span>
                     <Delta hoy={numEstancias} ayer={numEstanciasAyer}/>
 
                     <div style={sep}/>
 
                     <svg width="22" height="22" viewBox="0 0 32 32" fill="none">
-                      <rect x="8" y="4" width="16" height="24" rx="1.5" stroke="#E53935" strokeWidth="2"/>
-                      <line x1="8" y1="28" x2="24" y2="28" stroke="#E53935" strokeWidth="2" strokeLinecap="round"/>
-                      <circle cx="12" cy="16" r="1.5" fill="#E53935"/>
-                      <line x1="8" y1="16" x2="21" y2="16" stroke="#E53935" strokeWidth="2" strokeLinecap="round"/>
-                      <polyline points="17,12 21,16 17,20" stroke="#E53935" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      <line x1="21" y1="16" x2="32" y2="16" stroke="#E53935" strokeWidth="2" strokeLinecap="round"/>
+                      <rect x="8" y="4" width="16" height="24" rx="1.5" stroke={C.text} strokeWidth="2"/>
+                      <line x1="8" y1="28" x2="24" y2="28" stroke={C.text} strokeWidth="2" strokeLinecap="round"/>
+                      <circle cx="12" cy="16" r="1.5" fill={C.text}/>
+                      <line x1="8" y1="16" x2="21" y2="16" stroke={C.text} strokeWidth="2" strokeLinecap="round"/>
+                      <polyline points="17,12 21,16 17,20" stroke={C.text} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      <line x1="21" y1="16" x2="32" y2="16" stroke={C.text} strokeWidth="2" strokeLinecap="round"/>
                     </svg>
-                    <span style={lbl("#E53935")}>Salidas{proxSalida&&<span style={{ color:C.textLight, fontWeight:400 }}> · próx. {proxSalida}</span>}</span>
-                    <span style={num("#E53935")}>{numSalidas}</span>
+                    <span style={lbl()}>Salidas{proxSalida&&<span style={{ color:C.textLight, fontWeight:400 }}> · próx. {proxSalida}</span>}</span>
+                    <span style={num()}>{numSalidas}</span>
                     <Delta hoy={numSalidas} ayer={numSalidasAyer}/>
 
                     {occHoy !== null && <>
                       <div style={sep}/>
                       <svg width="22" height="22" viewBox="0 0 32 32" fill="none">
-                        <path d="M4 28V14L16 4l12 10v14" stroke={occColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                        <rect x="11" y="18" width="10" height="10" rx="1" stroke={occColor} strokeWidth="1.8"/>
-                        <circle cx="16" cy="13" r="2" stroke={occColor} strokeWidth="1.5"/>
+                        <path d="M4 28V14L16 4l12 10v14" stroke={C.text} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        <rect x="11" y="18" width="10" height="10" rx="1" stroke={C.text} strokeWidth="1.8"/>
+                        <circle cx="16" cy="13" r="2" stroke={C.text} strokeWidth="1.5"/>
                       </svg>
-                      <span style={lbl(occColor)}>Ocupación hoy</span>
+                      <span style={lbl()}>Ocupación hoy</span>
                       <div style={{ position:"relative", width:sizeC, height:sizeC, flexShrink:0 }}>
                         <svg width={sizeC} height={sizeC} style={{ position:"absolute", top:0, left:0, transform:"rotate(-90deg)" }}>
                           <circle cx={sizeC/2} cy={sizeC/2} r={Rc} fill="none" stroke={`${occColor}22`} strokeWidth={SWc}/>
