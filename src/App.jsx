@@ -1585,7 +1585,7 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
         {/* Header */}
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"22px 26px 18px" }}>
           <h2 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:22, fontWeight:700, color:H.text, letterSpacing:0.2 }}>
-            Data Integration Hub
+            Gestión de datos
           </h2>
           <button onClick={onClose} style={{ background:"none", border:`1px solid ${H.border}`, borderRadius:7, width:28, height:28, cursor:"pointer", fontSize:14, color:H.textMid, display:"flex", alignItems:"center", justifyContent:"center", padding:0 }}>✕</button>
         </div>
@@ -5446,7 +5446,7 @@ export default function App() {
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginLeft: "auto" }}>
           {view === "dashboard" && (
             <button id="ob-importar" onClick={() => setImportar(true)} style={{ background: C.accent, color: "#fff", border: "none", borderRadius: 7, padding: "7px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "'Plus Jakarta Sans',sans-serif", whiteSpace: "nowrap", display:"flex", alignItems:"center", gap:5 }}>
-              <span className="topbar-importar-label">Actualizar datos</span>
+              <span className="topbar-importar-label">Gestión de datos</span>
             </button>
           )}
 
