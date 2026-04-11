@@ -3196,6 +3196,7 @@ function PickupView({ datos }) {
   const cargando = false;
   const [anio, setAnio]                   = useState(new Date().getFullYear());
   const [trimSel, setTrimSel] = useState(null);
+  const [trimTip, setTrimTip] = useState(null); // { x, y, d }
   const [canalMetric, setCanalMetric]     = useState("adr"); // "adr" | "noches"
 
   const hoy     = new Date();
@@ -3487,7 +3488,80 @@ function PickupView({ datos }) {
         </div>
       </div>
 
-      {/* ── FECHAS CALIENTES + CANCELACIONES | PICKUP TRIMESTRAL ── */}
+      {/* PICKUP TRIMESTRAL — ancho completo */}
+      <Card style={{ position:"relative" }}>
+        {trimTip && (
+          <div style={{ position:"fixed", top: trimTip.y - 10, left: trimTip.x + 14, background:"#0A2540", borderRadius:10, padding:"10px 14px", boxShadow:"0 8px 24px rgba(0,0,0,0.25)", pointerEvents:"none", zIndex:9999, minWidth:120 }}>
+            <p style={{ color:"#fff", fontSize:10, fontWeight:700, marginBottom:6, textTransform:"uppercase", letterSpacing:"1px" }}>{trimTip.d.mes}</p>
+            {trimTip.d.otb  != null && <div style={{ display:"flex", alignItems:"center", gap:7, margin:"2px 0" }}><span style={{ width:8, height:8, borderRadius:"50%", background:COL_OTB, flexShrink:0, display:"inline-block" }}/><span style={{ color:"rgba(255,255,255,0.9)", fontSize:12 }}>{t("otb_actual")}: {trimTip.d.otb}</span></div>}
+            {trimTip.d.ppto != null && <div style={{ display:"flex", alignItems:"center", gap:7, margin:"2px 0" }}><span style={{ width:8, height:8, borderRadius:"50%", background:COL_PPTO, flexShrink:0, display:"inline-block" }}/><span style={{ color:"rgba(255,255,255,0.9)", fontSize:12 }}>{t("nav_budget")}: {trimTip.d.ppto}</span></div>}
+            {trimTip.d.ly   != null && <div style={{ display:"flex", alignItems:"center", gap:7, margin:"2px 0" }}><span style={{ width:8, height:8, borderRadius:"50%", background:COL_LY,  flexShrink:0, display:"inline-block" }}/><span style={{ color:"rgba(255,255,255,0.9)", fontSize:12 }}>{t("anio_anterior")}: {trimTip.d.ly}</span></div>}
+          </div>
+        )}
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:24, flexWrap:"wrap", gap:8 }}>
+          <div style={{ display:"flex", gap:20, flexWrap:"wrap" }}>
+            {[[t("otb_actual"), COL_OTB], [t("nav_budget"), COL_PPTO], [t("anio_anterior"), COL_LY]].map(([label, color]) => (
+              <div key={label} style={{ display:"flex", alignItems:"center", gap:7 }}>
+                <div style={{ width:14, height:14, background:color, borderRadius:2 }} />
+                <span style={{ fontSize:12, fontWeight:600, color:C.textMid }}>{label}</span>
+              </div>
+            ))}
+          </div>
+          {trimSel !== null && (
+            <button onClick={() => setTrimSel(null)}
+              style={{ display:"flex", alignItems:"center", gap:6, background:"none", border:`1px solid ${C.border}`, borderRadius:6, padding:"4px 12px", cursor:"pointer", fontSize:11, color:C.textMid, fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+              ← Volver
+            </button>
+          )}
+        </div>
+
+        {!hayDatos ? (
+          <div style={{ textAlign:"center", padding:"60px 0", color:C.textLight, fontSize:13 }}>
+            {t("sin_datos_pickup")}
+          </div>
+        ) : (() => {
+          const vista = trimSel !== null ? datosDetalle : datosGrafica;
+          const vMax  = Math.ceil(Math.max(...vista.map(d => Math.max(d.otb||0, d.ppto||0, d.ly||0)), 10) * 1.15 / 10) * 10;
+          const bH    = (val) => val && vMax > 0 ? `${Math.min((val/vMax)*100, 100)}%` : "0%";
+          return (
+          <div style={{ display:"flex", gap:0, alignItems:"flex-end", height:340, position:"relative" }}>
+            {[0,25,50,75,100].map(p => (
+              <div key={p} style={{ position:"absolute", left:0, right:0, bottom:`${p}%`, display:"flex", alignItems:"center" }}>
+                <span style={{ fontSize:10, color:C.textLight, lineHeight:1, width:36, flexShrink:0 }}>{Math.round(vMax * p / 100)}</span>
+              </div>
+            ))}
+            <div style={{ display:"flex", flex:1, alignItems:"flex-end", height:"100%", paddingLeft:40, gap: trimSel !== null ? 48 : 32 }}>
+              {vista.map((d, i) => (
+                <div key={i}
+                  onClick={() => trimSel === null && setTrimSel(i)}
+                  onMouseEnter={(e) => setTrimTip({ x: e.clientX, y: e.clientY, d })}
+                  onMouseMove={(e)  => setTrimTip(t => t ? { ...t, x: e.clientX, y: e.clientY } : null)}
+                  onMouseLeave={() => setTrimTip(null)}
+                  style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", height:"100%", justifyContent:"flex-end", gap:2, cursor: trimSel === null ? "pointer" : "default" }}>
+                  <div style={{ display:"flex", alignItems:"flex-end", gap:3, width:"100%", height:"calc(100% - 22px)", justifyContent:"center" }}>
+                    <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"flex-end", height:"100%" }}>
+                      {d.otb > 0 && <span style={{ fontSize:9, fontWeight:700, color:COL_OTB, marginBottom:2, lineHeight:1 }}>{d.otb}</span>}
+                      <div style={{ width:"100%", height:bH(d.otb), background:`linear-gradient(to top, ${COL_OTB}88, ${COL_OTB})`, borderRadius:"4px 4px 0 0", minHeight:d.otb>0?4:0, transition:"height 0.3s" }} />
+                    </div>
+                    <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"flex-end", height:"100%" }}>
+                      {d.ppto > 0 && <span style={{ fontSize:9, fontWeight:700, color:COL_PPTO, marginBottom:2, lineHeight:1 }}>{d.ppto}</span>}
+                      <div style={{ width:"100%", height:bH(d.ppto), background:`linear-gradient(to top, ${COL_PPTO}88, ${COL_PPTO})`, borderRadius:"4px 4px 0 0", minHeight:d.ppto>0?4:0, transition:"height 0.3s" }} />
+                    </div>
+                    <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"flex-end", height:"100%" }}>
+                      {d.ly > 0 && <span style={{ fontSize:9, fontWeight:700, color:COL_LY, marginBottom:2, lineHeight:1 }}>{d.ly}</span>}
+                      <div style={{ width:"100%", height:bH(d.ly), background:`linear-gradient(to top, ${COL_LY}88, ${COL_LY})`, borderRadius:"4px 4px 0 0", minHeight:d.ly>0?4:0, transition:"height 0.3s" }} />
+                    </div>
+                  </div>
+                  <span style={{ fontSize:11, fontWeight:700, marginTop:6, color: trimSel === null ? COL_OTB : C.textLight }}>{d.mes}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          );
+        })()}
+      </Card>
+
+      {/* ── FECHAS CALIENTES + CANCELACIONES | PRECIO MEDIO CANAL ── */}
       <div style={{ display:"grid", gridTemplateColumns:"280px 1fr", gap:16, alignItems:"start" }}>
 
         {/* Col izquierda: Fechas Calientes + Cancelaciones */}
@@ -3646,7 +3720,7 @@ function PickupView({ datos }) {
                 <Tooltip
                   formatter={(v) => [fmt(v), canalMetric==="adr"?"ADR":"Noches"]}
                   contentStyle={{ background:"#0A2540", border:`1px solid ${C.border}`, borderRadius:8, fontSize:12 }}
-                  labelStyle={{ color:"#D4A017", fontWeight:700 }}
+                  labelStyle={{ color:"#ffffff", fontWeight:700 }}
                   itemStyle={{ color:"#ffffff" }}
                   cursor={false}
                 />
@@ -3662,69 +3736,6 @@ function PickupView({ datos }) {
           })()}
         </div>{/* fin col derecha */}
       </div>{/* fin grid 2 cols */}
-
-      {/* PICKUP TRIMESTRAL — ancho completo */}
-      <Card>
-        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:24, flexWrap:"wrap", gap:8 }}>
-          <div style={{ display:"flex", gap:20, flexWrap:"wrap" }}>
-            {[[t("otb_actual"), COL_OTB], [t("nav_budget"), COL_PPTO], [t("anio_anterior"), COL_LY]].map(([label, color]) => (
-              <div key={label} style={{ display:"flex", alignItems:"center", gap:7 }}>
-                <div style={{ width:14, height:14, background:color, borderRadius:2 }} />
-                <span style={{ fontSize:12, fontWeight:600, color:C.textMid }}>{label}</span>
-              </div>
-            ))}
-          </div>
-          {trimSel !== null && (
-            <button onClick={() => setTrimSel(null)}
-              style={{ display:"flex", alignItems:"center", gap:6, background:"none", border:`1px solid ${C.border}`, borderRadius:6, padding:"4px 12px", cursor:"pointer", fontSize:11, color:C.textMid, fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
-              ← Volver
-            </button>
-          )}
-        </div>
-
-        {!hayDatos ? (
-          <div style={{ textAlign:"center", padding:"60px 0", color:C.textLight, fontSize:13 }}>
-            {t("sin_datos_pickup")}
-          </div>
-        ) : (() => {
-          const vista = trimSel !== null ? datosDetalle : datosGrafica;
-          const vMax  = Math.ceil(Math.max(...vista.map(d => Math.max(d.otb||0, d.ppto||0, d.ly||0)), 10) * 1.15 / 10) * 10;
-          const bH    = (val) => val && vMax > 0 ? `${Math.min((val/vMax)*100, 100)}%` : "0%";
-          return (
-          <div style={{ display:"flex", gap:0, alignItems:"flex-end", height:340, position:"relative" }}>
-            {[0,25,50,75,100].map(p => (
-              <div key={p} style={{ position:"absolute", left:0, right:0, bottom:`${p}%`, display:"flex", alignItems:"center" }}>
-                <span style={{ fontSize:10, color:C.textLight, lineHeight:1, width:36, flexShrink:0 }}>{Math.round(vMax * p / 100)}</span>
-              </div>
-            ))}
-            <div style={{ display:"flex", flex:1, alignItems:"flex-end", height:"100%", paddingLeft:40, gap: trimSel !== null ? 48 : 32 }}>
-              {vista.map((d, i) => (
-                <div key={i}
-                  onClick={() => trimSel === null && setTrimSel(i)}
-                  style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", height:"100%", justifyContent:"flex-end", gap:2, cursor: trimSel === null ? "pointer" : "default" }}
-                  title={trimSel === null ? `Ver desglose ${d.mes}` : ""}>
-                  <div style={{ display:"flex", alignItems:"flex-end", gap:3, width:"100%", height:"calc(100% - 22px)", justifyContent:"center" }}>
-                    <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"flex-end", height:"100%" }}>
-                      {d.otb > 0 && <span style={{ fontSize:9, fontWeight:700, color:COL_OTB, marginBottom:2, lineHeight:1 }}>{d.otb}</span>}
-                      <div title={`OTB: ${d.otb||0}`} style={{ width:"100%", height:bH(d.otb), background:`linear-gradient(to top, ${COL_OTB}88, ${COL_OTB})`, borderRadius:"4px 4px 0 0", minHeight:d.otb>0?4:0, transition:"height 0.3s" }} />
-                    </div>
-                    <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"flex-end", height:"100%" }}>
-                      {d.ppto > 0 && <span style={{ fontSize:9, fontWeight:700, color:COL_PPTO, marginBottom:2, lineHeight:1 }}>{d.ppto}</span>}
-                      <div title={`Ppto: ${d.ppto||0}`} style={{ width:"100%", height:bH(d.ppto), background:`linear-gradient(to top, ${COL_PPTO}88, ${COL_PPTO})`, borderRadius:"4px 4px 0 0", minHeight:d.ppto>0?4:0, transition:"height 0.3s" }} />
-                    </div>
-                    <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"flex-end", height:"100%" }}>
-                      {d.ly > 0 && <span style={{ fontSize:9, fontWeight:700, color:COL_LY, marginBottom:2, lineHeight:1 }}>{d.ly}</span>}
-                      <div title={`LY: ${d.ly||0}`} style={{ width:"100%", height:bH(d.ly), background:`linear-gradient(to top, ${COL_LY}88, ${COL_LY})`, borderRadius:"4px 4px 0 0", minHeight:d.ly>0?4:0, transition:"height 0.3s" }} />
-                    </div>
-                  </div>
-                  <span style={{ fontSize:11, fontWeight:700, marginTop:6, color: trimSel === null ? COL_OTB : C.textLight }}>{d.mes}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-          );
-        })()}
-      </Card>
 
       {/* ── PACE ── */}
       {(() => {
