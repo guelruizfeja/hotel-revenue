@@ -846,8 +846,11 @@ function KpiModal({ kpi, datos, mes, anio, onClose }) {
   );
 }
 
-function KpiCard({ label, subtitle, value, changeLm, upLm, changeLy, upLy, i, onClick, accentColor }) {
+function KpiCard({ label, subtitle, value, changeLm, upLm, changeLy, upLy, i, onClick, accentColor, circleValue }) {
   const kpiAccent = accentColor || C.accent;
+  const R = 38, SW = 5;
+  const circumference = 2 * Math.PI * R;
+  const dashOffset = circleValue != null ? circumference * (1 - Math.min(100, Math.max(0, circleValue)) / 100) : 0;
   return (
     <div onClick={onClick} style={{
       background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: 10,
@@ -872,7 +875,25 @@ function KpiCard({ label, subtitle, value, changeLm, upLm, changeLy, upLy, i, on
     }}>
       <p style={{ fontSize: 12, color: C.text, textTransform: "uppercase", letterSpacing: "1.5px", fontWeight: 700 }}>{label}</p>
       {subtitle && <p style={{ fontSize: 10, color: C.textMid, marginTop: 2, letterSpacing: "0.5px", opacity: 0.7 }}>{subtitle}</p>}
-      <p style={{ fontSize: "clamp(22px,5vw,30px)", fontWeight: 700, fontFamily: "'Plus Jakarta Sans', sans-serif", color: C.text, margin: "8px 0 6px", letterSpacing: "-1px", lineHeight: 1 }}>{value}</p>
+      {circleValue != null ? (
+        <div style={{ position: "relative", width: R*2+SW*2, height: R*2+SW*2, margin: "6px auto 2px", flexShrink: 0 }}>
+          <svg width={R*2+SW*2} height={R*2+SW*2} style={{ position: "absolute", top: 0, left: 0, transform: "rotate(-90deg)" }}>
+            <circle cx={R+SW/2} cy={R+SW/2} r={R} fill="none" stroke={`${kpiAccent}22`} strokeWidth={SW} />
+            <circle
+              cx={R+SW/2} cy={R+SW/2} r={R} fill="none"
+              stroke={kpiAccent} strokeWidth={SW} strokeLinecap="round"
+              strokeDasharray={circumference}
+              strokeDashoffset={dashOffset}
+              style={{ transition: "stroke-dashoffset 0.6s ease" }}
+            />
+          </svg>
+          <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <p style={{ fontSize: "clamp(18px,4vw,22px)", fontWeight: 700, fontFamily: "'Plus Jakarta Sans', sans-serif", color: C.text, margin: 0, letterSpacing: "-1px", lineHeight: 1 }}>{value}</p>
+          </div>
+        </div>
+      ) : (
+        <p style={{ fontSize: "clamp(22px,5vw,30px)", fontWeight: 700, fontFamily: "'Plus Jakarta Sans', sans-serif", color: C.text, margin: "8px 0 6px", letterSpacing: "-1px", lineHeight: 1 }}>{value}</p>
+      )}
     </div>
   );
 }
@@ -2519,7 +2540,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
   };
 
   const kpis = [
-    { label: t("kpi_ocupacion"), kpiKey:"Ocupación", value: `${occ}%`,     ...diff(parseFloat(occ), prevOcc, lyOccD) },
+    { label: t("kpi_ocupacion"), kpiKey:"Ocupación", value: `${occ}%`, circleValue: parseFloat(occ), ...diff(parseFloat(occ), prevOcc, lyOccD) },
     { label: t("kpi_adr"),       kpiKey:"ADR",        value: `€${adr}`,    subtitle:"Precio medio",                    ...diff(parseFloat(adr), prevAdr, lyAdrD) },
     { label: t("kpi_revpar"),    kpiKey:"RevPAR",     value: `€${revpar}`, subtitle:"Revenue por hab. disponible",     ...diff(parseFloat(revpar), prevRevpar, lyRevparD) },
     { label: t("kpi_trevpar"),   kpiKey:"TRevPAR",    value: `€${trevpar}`,subtitle:"Revenue total por hab.",          ...diff(parseFloat(trevpar), prevTrevpar, lyTrevparD) },
