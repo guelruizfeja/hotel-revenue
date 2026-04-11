@@ -1498,9 +1498,9 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
 
   // ── Paleta clara (igual que el resto de la web) ──
   const H = {
-    bg:      "#FDFDFD",
+    bg:      "#FFFFFF",
     card:    "#FFFFFF",
-    card2:   "#F7F7F7",
+    card2:   "#FFFFFF",
     border:  "#E0E5EC",
     accent:  "#C8933A",
     accentD: "#A07228",
