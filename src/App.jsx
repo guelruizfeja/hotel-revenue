@@ -846,25 +846,16 @@ function KpiModal({ kpi, datos, mes, anio, onClose }) {
   );
 }
 
-function KpiCard({ label, subtitle, value, changeLm, upLm, changeLy, upLy, i, onClick, accentColor, circleValue }) {
+function KpiCard({ label, subtitle, value, changeLm, upLm, changeLy, upLy, i, onClick, accentColor }) {
   const kpiAccent = accentColor || C.accent;
-  const R = 28, SW = 4;
-  const circumference = 2 * Math.PI * R;
-  const dashOffset = circleValue != null ? circumference * (1 - Math.min(100, Math.max(0, circleValue)) / 100) : 0;
-  const size = R * 2 + SW * 2;
   return (
     <div onClick={onClick} style={{
       background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: 10,
-      padding: "16px 18px", animation: `fadeUp 0.5s ease ${i * 0.08}s both`,
+      padding: "20px 22px", animation: `fadeUp 0.5s ease ${i * 0.08}s both`,
       borderLeft: `3px solid ${kpiAccent}`, position: "relative", overflow: "hidden",
       boxShadow: "0 1px 4px rgba(0,0,0,0.06)", cursor: "pointer",
       transition: "box-shadow 0.2s, transform 0.2s, border-color 0.2s, background 0.2s",
-      display: "flex",
-      flexDirection: circleValue != null ? "row" : "column",
-      alignItems: "center",
-      justifyContent: circleValue != null ? "flex-start" : "center",
-      textAlign: circleValue != null ? "left" : "center",
-      gap: circleValue != null ? 14 : 0,
+      display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center",
     }}
     onMouseEnter={e=>{
       e.currentTarget.style.boxShadow=`0 6px 24px ${kpiAccent}40`;
@@ -879,31 +870,9 @@ function KpiCard({ label, subtitle, value, changeLm, upLm, changeLy, upLy, i, on
       e.currentTarget.style.borderLeftColor=kpiAccent;
       e.currentTarget.style.background=C.bgCard;
     }}>
-      {circleValue != null ? (
-        <>
-          <svg width={size} height={size} style={{ flexShrink: 0, transform: "rotate(-90deg)" }}>
-            <circle cx={size/2} cy={size/2} r={R} fill="none" stroke={`${kpiAccent}22`} strokeWidth={SW} />
-            <circle
-              cx={size/2} cy={size/2} r={R} fill="none"
-              stroke={kpiAccent} strokeWidth={SW} strokeLinecap="round"
-              strokeDasharray={circumference}
-              strokeDashoffset={dashOffset}
-              style={{ transition: "stroke-dashoffset 0.6s ease" }}
-            />
-          </svg>
-          <div>
-            <p style={{ fontSize: 11, color: C.textMid, textTransform: "uppercase", letterSpacing: "1.5px", fontWeight: 700, margin: 0 }}>{label}</p>
-            <p style={{ fontSize: "clamp(22px,4vw,28px)", fontWeight: 700, fontFamily: "'Plus Jakarta Sans', sans-serif", color: C.text, margin: "2px 0 0", letterSpacing: "-1px", lineHeight: 1 }}>{value}</p>
-            {subtitle && <p style={{ fontSize: 10, color: C.textMid, marginTop: 3, letterSpacing: "0.5px", opacity: 0.7 }}>{subtitle}</p>}
-          </div>
-        </>
-      ) : (
-        <>
-          <p style={{ fontSize: 12, color: C.text, textTransform: "uppercase", letterSpacing: "1.5px", fontWeight: 700 }}>{label}</p>
-          {subtitle && <p style={{ fontSize: 10, color: C.textMid, marginTop: 2, letterSpacing: "0.5px", opacity: 0.7 }}>{subtitle}</p>}
-          <p style={{ fontSize: "clamp(22px,5vw,30px)", fontWeight: 700, fontFamily: "'Plus Jakarta Sans', sans-serif", color: C.text, margin: "8px 0 6px", letterSpacing: "-1px", lineHeight: 1 }}>{value}</p>
-        </>
-      )}
+      <p style={{ fontSize: 12, color: C.text, textTransform: "uppercase", letterSpacing: "1.5px", fontWeight: 700 }}>{label}</p>
+      {subtitle && <p style={{ fontSize: 10, color: C.textMid, marginTop: 2, letterSpacing: "0.5px", opacity: 0.7 }}>{subtitle}</p>}
+      <p style={{ fontSize: "clamp(22px,5vw,30px)", fontWeight: 700, fontFamily: "'Plus Jakarta Sans', sans-serif", color: C.text, margin: "8px 0 6px", letterSpacing: "-1px", lineHeight: 1 }}>{value}</p>
     </div>
   );
 }
@@ -2550,7 +2519,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
   };
 
   const kpis = [
-    { label: t("kpi_ocupacion"), kpiKey:"Ocupación", value: `${occ}%`, circleValue: parseFloat(occ), ...diff(parseFloat(occ), prevOcc, lyOccD) },
+    { label: t("kpi_ocupacion"), kpiKey:"Ocupación", value: `${occ}%`,     ...diff(parseFloat(occ), prevOcc, lyOccD) },
     { label: t("kpi_adr"),       kpiKey:"ADR",        value: `€${adr}`,    subtitle:"Precio medio",                    ...diff(parseFloat(adr), prevAdr, lyAdrD) },
     { label: t("kpi_revpar"),    kpiKey:"RevPAR",     value: `€${revpar}`, subtitle:"Revenue por hab. disponible",     ...diff(parseFloat(revpar), prevRevpar, lyRevparD) },
     { label: t("kpi_trevpar"),   kpiKey:"TRevPAR",    value: `€${trevpar}`,subtitle:"Revenue total por hab.",          ...diff(parseFloat(trevpar), prevTrevpar, lyTrevparD) },
