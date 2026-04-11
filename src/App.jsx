@@ -2662,12 +2662,10 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
 
             {/* ── HEATMAP ── */}
             <Card style={{ display:"flex", flexDirection:"column" }}>
-              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
-                <div>
-                  <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:20, color:C.text, marginBottom:2 }}>{t("ocup_mensual")}</p>
-                  
-                </div>
-
+              <div style={{ marginBottom:14 }}>
+                <p style={{ fontSize:11, fontWeight:700, color:C.textMid, textTransform:"uppercase", letterSpacing:"1.5px" }}>
+                  {t("ocup_mensual")} <span style={{ color:C.accent }}>| {t("meses_full")[mes].toUpperCase()} {anio}</span>
+                </p>
               </div>
 
               {/* Vista anual: grid 4x3 */}
@@ -2676,18 +2674,23 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
                     const mesKey = `${anio}-${String(mi+1).padStart(2,"0")}`;
                     const resUltDia = pickupUltimoDiaPorMes[mesKey] || 0;
                     const esCaliente = top2Meses.includes(mesKey) && resUltDia > 0;
-                    const signo = resUltDia > 0 ? "+" : resUltDia < 0 ? "" : null;
+                    const esMesActual = mi === mes;
                     return (
                     <div key={mi} onClick={()=>setHmMesSel(mi)}
                       title={occ!=null?`${label}: ${occ.toFixed(0)}%`:""}
-                      style={{ borderRadius:8, padding:"10px 6px", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", background: heatBg(occ), border:`2px solid ${esCaliente?"#E85D04":occ!=null?heatColor(occ)+"CC":C.border}`, cursor:"pointer", textAlign:"center", transition:"all 0.15s", position:"relative" }}
+                      style={{
+                        borderRadius:8, padding:"10px 6px", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
+                        background: esMesActual ? `${C.accent}18` : occ!=null ? heatBg(occ) : C.bg,
+                        border:`2px solid ${esMesActual ? C.accent : esCaliente?"#E85D04":occ!=null?heatColor(occ)+"CC":C.border}`,
+                        cursor:"pointer", textAlign:"center", transition:"all 0.15s", position:"relative"
+                      }}
                       onMouseEnter={e=>e.currentTarget.style.opacity="0.8"} onMouseLeave={e=>e.currentTarget.style.opacity="1"}>
                       {esCaliente && (
-                        <span title={`${resUltDia} reservas captadas el ${ultimoDiaImportado}`} style={{ position:"absolute", top:4, right:5, fontSize:16, lineHeight:1, animation:"pulse-rayo 1.5s ease-in-out infinite" }}>⚡</span>
+                        <span title={`${resUltDia} reservas captadas el ${ultimoDiaImportado}`} style={{ position:"absolute", top:4, right:5, fontSize:14, lineHeight:1, animation:"pulse-rayo 1.5s ease-in-out infinite" }}>⚡</span>
                       )}
-                      <p style={{ fontSize:9, fontWeight:600, color:C.textLight, textTransform:"uppercase", letterSpacing:0.5, marginBottom:3 }}>{label}</p>
+                      <p style={{ fontSize:9, fontWeight:700, color: esMesActual ? C.accent : C.textLight, textTransform:"uppercase", letterSpacing:0.5, marginBottom:3 }}>{label}</p>
                       {occ!=null
-                        ? <p style={{ fontSize:16, fontWeight:800, color:"#111", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>{occ.toFixed(0)}%</p>
+                        ? <p style={{ fontSize:17, fontWeight:800, color: esMesActual ? C.accent : C.text, fontFamily:"'Plus Jakarta Sans',sans-serif" }}>{occ.toFixed(0)}%</p>
                         : <p style={{ fontSize:12, color:C.border }}>—</p>
                       }
                       {resUltDia !== 0
@@ -2871,11 +2874,14 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
               </div>
             )}
 
-            {/* ── ENTRADAS Y SALIDAS DEL DÍA ── */}
+            {/* ── MOVIMIENTO OPERATIVO DIARIO ── */}
             {(() => {
               const _p = n => String(n).padStart(2,"0");
               const hoy = new Date();
               const hoyStr = `${hoy.getFullYear()}-${_p(hoy.getMonth()+1)}-${_p(hoy.getDate())}`;
+              const ayer = new Date(hoy); ayer.setDate(ayer.getDate()-1);
+              const ayerStr = `${ayer.getFullYear()}-${_p(ayer.getMonth()+1)}-${_p(ayer.getDate())}`;
+
               const getFechaSalida = e => {
                 if (e.fecha_salida) return String(e.fecha_salida).slice(0,10);
                 if (e.noches && e.fecha_llegada) {
@@ -2884,85 +2890,93 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
                 }
                 return null;
               };
-              // Buscar en TODOS los registros (no solo el último snapshot)
-              // Para cada reserva única, quedarse con el estado más reciente
               const todasActivas = (pickupEntries||[]).filter(e =>
                 !e._grupo && (e.estado||"confirmada") !== "cancelada"
               );
-              const entradas   = todasActivas.filter(e => String(e.fecha_llegada||"").slice(0,10) === hoyStr);
-              const salidas    = todasActivas.filter(e => getFechaSalida(e) === hoyStr);
-              const estancias  = todasActivas.filter(e => {
-                const fl = String(e.fecha_llegada||"").slice(0,10);
-                const fs = getFechaSalida(e);
-                return fl < hoyStr && fs > hoyStr;
-              });
-              const numEntradas  = entradas.reduce((a,e)=>a+(e.num_reservas||1),0);
-              const numSalidas   = salidas.reduce((a,e)=>a+(e.num_reservas||1),0);
-              const numEstancias = estancias.reduce((a,e)=>a+(e.num_reservas||1),0);
-              // próxima fecha con entradas (si hoy = 0)
-              const proxEntrada = numEntradas===0
-                ? todasActivas.map(e=>String(e.fecha_llegada||"").slice(0,10)).filter(f=>f>hoyStr).sort()[0] || null
-                : null;
-              const proxSalida = numSalidas===0
-                ? todasActivas.map(e=>getFechaSalida(e)).filter(f=>f&&f>hoyStr).sort()[0] || null
-                : null;
-              // OCC hoy
+
+              // Hoy
+              const numEntradas  = todasActivas.filter(e => String(e.fecha_llegada||"").slice(0,10) === hoyStr).reduce((a,e)=>a+(e.num_reservas||1),0);
+              const numSalidas   = todasActivas.filter(e => getFechaSalida(e) === hoyStr).reduce((a,e)=>a+(e.num_reservas||1),0);
+              const numEstancias = todasActivas.filter(e => { const fl=String(e.fecha_llegada||"").slice(0,10); const fs=getFechaSalida(e); return fl < hoyStr && fs > hoyStr; }).reduce((a,e)=>a+(e.num_reservas||1),0);
+              // Ayer
+              const numEntradasAyer  = todasActivas.filter(e => String(e.fecha_llegada||"").slice(0,10) === ayerStr).reduce((a,e)=>a+(e.num_reservas||1),0);
+              const numSalidasAyer   = todasActivas.filter(e => getFechaSalida(e) === ayerStr).reduce((a,e)=>a+(e.num_reservas||1),0);
+              const numEstanciasAyer = todasActivas.filter(e => { const fl=String(e.fecha_llegada||"").slice(0,10); const fs=getFechaSalida(e); return fl < ayerStr && fs > ayerStr; }).reduce((a,e)=>a+(e.num_reservas||1),0);
+
+              // Próximas fechas si hoy = 0
+              const proxEntrada = numEntradas===0 ? todasActivas.map(e=>String(e.fecha_llegada||"").slice(0,10)).filter(f=>f>hoyStr).sort()[0]||null : null;
+              const proxSalida  = numSalidas===0  ? todasActivas.map(e=>getFechaSalida(e)).filter(f=>f&&f>hoyStr).sort()[0]||null : null;
+
+              // OCC hoy con círculo
               const habH = datos.hotel?.habitaciones || 0;
               const netoHoy = habH ? (pickupEntries||[]).reduce((a,e) => {
                 if (String(e.fecha_llegada||"").slice(0,10) !== hoyStr) return a;
-                const cancelada = (e.estado||"confirmada") === "cancelada";
-                return a + (e.num_reservas||1) * (cancelada ? -1 : 1);
+                return a + (e.num_reservas||1) * ((e.estado||"confirmada")==="cancelada" ? -1 : 1);
               }, 0) : 0;
-              const occHoy = habH ? Math.min(Math.round(Math.max(0, netoHoy) / habH * 100), 100) : null;
-              const occColor = occHoy >= 85 ? "#E53935" : occHoy >= 70 ? "#C49A0A" : occHoy >= 50 ? C.accent : C.textLight;
+              const occHoy = habH ? Math.min(Math.round(Math.max(0,netoHoy)/habH*100),100) : null;
+              const occColor = occHoy>=85?"#E53935":occHoy>=70?"#C49A0A":occHoy>=50?C.accent:C.textLight;
 
-              const numStyle = (color) => ({
-                textAlign:"right", fontSize:32, fontWeight:800, color,
-                fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1
-              });
-              const labelStyle = (color) => ({
-                fontSize:9, color, textTransform:"uppercase", letterSpacing:"1.2px", fontWeight:600
-              });
+              // Componente flecha delta
+              const Delta = ({ hoy, ayer }) => {
+                if (ayer == null) return null;
+                const d = hoy - ayer;
+                if (d === 0) return <span style={{ fontSize:11, color:C.textLight, fontWeight:600, whiteSpace:"nowrap" }}>= ayer</span>;
+                const color = d > 0 ? "#10B981" : "#EF4444";
+                const arrow = d > 0
+                  ? <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><polyline points="2,9 6,3 10,9" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  : <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><polyline points="2,3 6,9 10,3" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>;
+                return (
+                  <span style={{ display:"inline-flex", alignItems:"center", gap:2, fontSize:12, fontWeight:700, color, whiteSpace:"nowrap" }}>
+                    {arrow}{d>0?"+":""}{d}
+                  </span>
+                );
+              };
+
+              const labelStyle = (color) => ({ fontSize:9, color, textTransform:"uppercase", letterSpacing:"1.2px", fontWeight:600 });
+              const numStyle   = (color) => ({ textAlign:"right", fontSize:30, fontWeight:800, color, fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1 });
               const sep = { gridColumn:"1 / -1", borderTop:`1px solid ${C.border}` };
 
-              return (
-                <Card style={{ display:"flex", flexDirection:"column", justifyContent:"center", gap:12 }}>
-                  <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:22, color:C.text, marginBottom:0 }}>Movimiento del día</p>
-                  <p style={{ fontSize:10, color:C.textLight, marginBottom:0 }}>{hoyStr}</p>
+              // Círculo OCC
+              const Rc=20, SWc=3.5, circC=2*Math.PI*Rc;
+              const sizeC=Rc*2+SWc*2;
 
-                  <div style={{ display:"grid", gridTemplateColumns:"22px 1fr 56px 18px", alignItems:"center", rowGap:10, columnGap:8 }}>
+              return (
+                <Card style={{ display:"flex", flexDirection:"column", justifyContent:"center", gap:10 }}>
+                  <div>
+                    <p style={{ fontSize:11, fontWeight:700, color:C.textMid, textTransform:"uppercase", letterSpacing:"1.5px" }}>Movimiento Operativo Diario</p>
+                    <p style={{ fontSize:10, color:C.textLight, marginTop:2 }}>{hoyStr}</p>
+                  </div>
+
+                  <div style={{ display:"grid", gridTemplateColumns:"22px 1fr auto auto", alignItems:"center", rowGap:10, columnGap:8 }}>
 
                     {/* Entradas */}
-                    <svg width="22" height="22" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <svg width="22" height="22" viewBox="0 0 32 32" fill="none">
                       <rect x="8" y="4" width="16" height="24" rx="1.5" stroke="#004B87" strokeWidth="2"/>
                       <line x1="8" y1="28" x2="24" y2="28" stroke="#004B87" strokeWidth="2" strokeLinecap="round"/>
                       <circle cx="20" cy="16" r="1.5" fill="#004B87"/>
                       <line x1="0" y1="16" x2="13" y2="16" stroke="#004B87" strokeWidth="2" strokeLinecap="round"/>
                       <polyline points="9,12 13,16 9,20" stroke="#004B87" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                     </svg>
-                    <span style={labelStyle("#004B87")}>Entradas</span>
+                    <span style={labelStyle("#004B87")}>Entradas{proxEntrada ? <span style={{ color:C.textLight, fontWeight:400 }}> · próx. {proxEntrada}</span> : ""}</span>
                     <span style={numStyle("#004B87")}>{numEntradas}</span>
-                    <span/>
-                    {numEntradas===0 && proxEntrada && (
-                      <p style={{ gridColumn:"1 / -1", fontSize:9, color:C.textLight, margin:0 }}>Próxima: <strong>{proxEntrada}</strong></p>
-                    )}
+                    <Delta hoy={numEntradas} ayer={numEntradasAyer}/>
 
                     <div style={sep}/>
 
                     {/* Estancias */}
-                    <svg width="22" height="22" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <svg width="22" height="22" viewBox="0 0 32 32" fill="none">
                       <rect x="4" y="6" width="24" height="20" rx="2" stroke="#7C3AED" strokeWidth="2"/>
                       <line x1="4" y1="12" x2="28" y2="12" stroke="#7C3AED" strokeWidth="2"/>
                       <circle cx="16" cy="20" r="3" stroke="#7C3AED" strokeWidth="1.5"/>
                     </svg>
                     <span style={labelStyle("#7C3AED")}>Estancias</span>
                     <span style={numStyle("#7C3AED")}>{numEstancias}</span>
-                    <span/>
+                    <Delta hoy={numEstancias} ayer={numEstanciasAyer}/>
 
                     <div style={sep}/>
 
                     {/* Salidas */}
-                    <svg width="22" height="22" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <svg width="22" height="22" viewBox="0 0 32 32" fill="none">
                       <rect x="8" y="4" width="16" height="24" rx="1.5" stroke="#E53935" strokeWidth="2"/>
                       <line x1="8" y1="28" x2="24" y2="28" stroke="#E53935" strokeWidth="2" strokeLinecap="round"/>
                       <circle cx="12" cy="16" r="1.5" fill="#E53935"/>
@@ -2970,25 +2984,31 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
                       <polyline points="17,12 21,16 17,20" stroke="#E53935" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                       <line x1="21" y1="16" x2="32" y2="16" stroke="#E53935" strokeWidth="2" strokeLinecap="round"/>
                     </svg>
-                    <span style={labelStyle("#E53935")}>Salidas</span>
+                    <span style={labelStyle("#E53935")}>Salidas{proxSalida ? <span style={{ color:C.textLight, fontWeight:400 }}> · próx. {proxSalida}</span> : ""}</span>
                     <span style={numStyle("#E53935")}>{numSalidas}</span>
-                    <span/>
-                    {numSalidas===0 && proxSalida && (
-                      <p style={{ gridColumn:"1 / -1", fontSize:9, color:C.textLight, margin:0 }}>Próxima: <strong>{proxSalida}</strong></p>
-                    )}
+                    <Delta hoy={numSalidas} ayer={numSalidasAyer}/>
 
                     {occHoy !== null && <>
                       <div style={sep}/>
-
-                      {/* Ocupación hoy */}
-                      <svg width="22" height="22" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      {/* Ocupación hoy con círculo */}
+                      <svg width="22" height="22" viewBox="0 0 32 32" fill="none">
                         <path d="M4 28V14L16 4l12 10v14" stroke={occColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                         <rect x="11" y="18" width="10" height="10" rx="1" stroke={occColor} strokeWidth="1.8"/>
                         <circle cx="16" cy="13" r="2" stroke={occColor} strokeWidth="1.5"/>
                       </svg>
                       <span style={labelStyle(occColor)}>Ocupación hoy</span>
-                      <span style={numStyle(occColor)}>{occHoy}</span>
-                      <span style={{ fontSize:18, fontWeight:800, color:occColor, fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1 }}>%</span>
+                      <div style={{ position:"relative", width:sizeC, height:sizeC, flexShrink:0 }}>
+                        <svg width={sizeC} height={sizeC} style={{ position:"absolute", top:0, left:0, transform:"rotate(-90deg)" }}>
+                          <circle cx={sizeC/2} cy={sizeC/2} r={Rc} fill="none" stroke={`${occColor}22`} strokeWidth={SWc}/>
+                          <circle cx={sizeC/2} cy={sizeC/2} r={Rc} fill="none" stroke={occColor} strokeWidth={SWc} strokeLinecap="round"
+                            strokeDasharray={circC} strokeDashoffset={circC*(1-occHoy/100)}
+                            style={{ transition:"stroke-dashoffset 0.6s ease" }}/>
+                        </svg>
+                        <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center" }}>
+                          <span style={{ fontSize:11, fontWeight:800, color:occColor, fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1 }}>{occHoy}%</span>
+                        </div>
+                      </div>
+                      <span/>
                     </>}
 
                   </div>
