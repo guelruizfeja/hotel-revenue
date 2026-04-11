@@ -958,19 +958,39 @@ function EmptyState({ mensaje }) {
 // ─── IMPORTAR EXCEL ───────────────────────────────────────────────
 function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombreProp }) {
   const t = useT();
-  // Estado datos principales
+  // Bloque activo (acordeón)
+  const [activeBlock, setActiveBlock] = useState(null);
+  const toggleBlock = (b) => setActiveBlock(prev => prev === b ? null : b);
+  // Estado datos principales (Histórico)
   const [loadingMain, setLoadingMain] = useState(false);
   const [resultadoMain, setResultadoMain] = useState(null);
   const [errorMain, setErrorMain] = useState("");
   const [progresoMain, setProgresoMain] = useState("");
   const [progresoPctMain, setProgresoPctMain] = useState(0);
+  // Edición por fecha (Histórico)
+  const [fechaBusqueda, setFechaBusqueda] = useState("");
+  const [diaEncontrado, setDiaEncontrado] = useState(null);
+  const [buscando, setBuscando] = useState(false);
+  const [editValues, setEditValues] = useState({});
+  const [guardandoEdit, setGuardandoEdit] = useState(false);
+  const [errorEdit, setErrorEdit] = useState("");
+  const [okEdit, setOkEdit] = useState(false);
   // Estado presupuesto
   const [loadingPpto, setLoadingPpto] = useState(false);
   const [resultadoPpto, setResultadoPpto] = useState(null);
   const [errorPpto, setErrorPpto] = useState("");
   const [progresoPpto, setProgresoPpto] = useState("");
   const [progresoPctPpto, setProgresoPctPpto] = useState(0);
-  const [showPptoZone, setShowPptoZone] = useState(false);
+  // Estado pick up diario
+  const [pickupForm, setPickupForm] = useState({
+    fecha_pickup: new Date().toISOString().slice(0,10),
+    fecha_llegada: "", canal: "", num_reservas: "1",
+    fecha_salida: "", noches: "", precio_total: "", estado: "confirmada",
+  });
+  const [guardandoPickup, setGuardandoPickup] = useState(false);
+  const [errorPickup, setErrorPickup] = useState("");
+  const [pickupRecientes, setPickupRecientes] = useState([]);
+  const [okPickup, setOkPickup] = useState(false);
   // Vaciar
   const [vaciando, setVaciando] = useState(false);
   const [confirmVaciar, setConfirmVaciar] = useState(false);
@@ -1371,16 +1391,77 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
   };
 
 
-  const UploadZone = ({ id, loading, resultado, error, progreso, progresoPct, onFile, title, sub, okContent }) => (
-    <div style={{ flex:1, minWidth:0 }}>
-      <p style={{ fontSize:11, fontWeight:700, color:"#1C1814", marginBottom:6 }}>{title}</p>
-      <p style={{ fontSize:11, color:"#A8998A", marginBottom:8 }}>{sub}</p>
+  // ── Buscar y editar día histórico ──
+  const buscarDia = async () => {
+    if (!fechaBusqueda) return;
+    setBuscando(true); setErrorEdit(""); setOkEdit(false); setDiaEncontrado(null);
+    const { data } = await supabase.from("produccion_diaria").select("*")
+      .eq("hotel_id", session.user.id).eq("fecha", fechaBusqueda).maybeSingle();
+    if (!data) { setErrorEdit(`No hay datos para ${fechaBusqueda}`); }
+    else {
+      setDiaEncontrado(data);
+      setEditValues({
+        hab_ocupadas: data.hab_ocupadas ?? "", hab_disponibles: data.hab_disponibles ?? "",
+        revenue_hab: data.revenue_hab ?? "", revenue_total: data.revenue_total ?? "",
+        revenue_fnb: data.revenue_fnb ?? "",
+      });
+    }
+    setBuscando(false);
+  };
+
+  const guardarDia = async () => {
+    setGuardandoEdit(true); setErrorEdit(""); setOkEdit(false);
+    const hab_ocupadas    = parseFloat(editValues.hab_ocupadas)    || null;
+    const hab_disponibles = parseFloat(editValues.hab_disponibles) || null;
+    const revenue_hab     = parseFloat(editValues.revenue_hab)     || null;
+    const revenue_total   = parseFloat(editValues.revenue_total)   || null;
+    const revenue_fnb     = parseFloat(editValues.revenue_fnb)     || null;
+    const adr    = hab_ocupadas > 0 && revenue_hab ? Math.round(revenue_hab / hab_ocupadas * 100) / 100 : null;
+    const revpar = hab_disponibles > 0 && revenue_hab ? Math.round(revenue_hab / hab_disponibles * 100) / 100 : null;
+    const trevpar = hab_disponibles > 0 ? Math.round(((revenue_hab||0)+(revenue_fnb||0)) / hab_disponibles * 100) / 100 : null;
+    const { error } = await supabase.from("produccion_diaria")
+      .update({ hab_ocupadas, hab_disponibles, revenue_hab, revenue_total, revenue_fnb, adr, revpar, trevpar })
+      .eq("hotel_id", session.user.id).eq("fecha", fechaBusqueda);
+    if (error) { setErrorEdit("Error: " + error.message); }
+    else { setOkEdit(true); if (onImportado) onImportado(); }
+    setGuardandoEdit(false);
+  };
+
+  // ── Guardar pickup diario manual ──
+  const guardarPickup = async () => {
+    setGuardandoPickup(true); setErrorPickup(""); setOkPickup(false);
+    try {
+      if (!pickupForm.fecha_llegada) throw new Error("La fecha de llegada es obligatoria");
+      const row = {
+        hotel_id:      session.user.id,
+        fecha_pickup:  pickupForm.fecha_pickup,
+        fecha_llegada: pickupForm.fecha_llegada,
+        canal:         pickupForm.canal || null,
+        num_reservas:  parseInt(pickupForm.num_reservas) || 1,
+        fecha_salida:  pickupForm.fecha_salida || null,
+        noches:        pickupForm.noches ? parseInt(pickupForm.noches) : null,
+        precio_total:  pickupForm.precio_total ? parseFloat(pickupForm.precio_total) : null,
+        estado:        pickupForm.estado || "confirmada",
+      };
+      const { error } = await supabase.from("pickup_entries").insert(row);
+      if (error) throw new Error(error.message);
+      setPickupRecientes(prev => [row, ...prev].slice(0, 8));
+      setPickupForm(f => ({...f, fecha_llegada:"", canal:"", num_reservas:"1", fecha_salida:"", noches:"", precio_total:""}));
+      setOkPickup(true);
+      setTimeout(() => setOkPickup(false), 3000);
+      if (onImportado) onImportado();
+    } catch(e) { setErrorPickup(e.message); }
+    setGuardandoPickup(false);
+  };
+
+  const UploadZone = ({ id, loading, resultado, error, progreso, progresoPct, onFile, okContent }) => (
+    <div>
       {resultado ? (
         <div style={{ background:"#D4EDDE", borderRadius:8, padding:"10px 14px" }}>{okContent}</div>
       ) : (
         <>
           <div onClick={() => !loading && document.getElementById(id).click()}
-            style={{ border:"2px dashed #E8E0D5", borderRadius:8, padding:"20px 12px", textAlign:"center", cursor:loading?"default":"pointer", background:"#F7F3EE" }}>
+            style={{ border:"2px dashed #E8E0D5", borderRadius:8, padding:"20px 12px", textAlign:"center", cursor:loading?"default":"pointer", background:"#fff" }}>
             <p style={{ fontWeight:600, color:"#1C1814", fontSize:12, marginBottom:4 }}>{progreso || (loading ? t("procesando") : t("haz_clic"))}</p>
             <p style={{ fontSize:10, color:"#A8998A" }}>{t("formato_xlsx")}</p>
             {loading && (
@@ -1399,66 +1480,206 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
     </div>
   );
 
+  const inputStyle = { width:"100%", padding:"6px 9px", border:"1px solid #E8E0D5", borderRadius:5, fontSize:12, fontFamily:"'Plus Jakarta Sans',sans-serif", background:"#FAFAFA", color:"#1C1814", boxSizing:"border-box" };
+  const labelStyle = { fontSize:10, color:"#A8998A", marginBottom:3, textTransform:"uppercase", letterSpacing:"0.5px", display:"block" };
+
+  const BlockHeader = ({ label, block, done }) => (
+    <button onClick={() => toggleBlock(block)}
+      style={{ width:"100%", display:"flex", alignItems:"center", justifyContent:"space-between", padding:"11px 14px", background: activeBlock===block ? "#EDE6DA" : "#F7F3EE", border:"1px solid #E8E0D5", borderRadius: activeBlock===block ? "8px 8px 0 0" : 8, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", marginBottom: activeBlock===block ? 0 : 8 }}>
+      <span style={{ fontSize:13, fontWeight:600, color:"#1C1814" }}>{label}</span>
+      <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+        {done && <span style={{ fontSize:11, color:"#2D7A4F", fontWeight:700 }}>✓</span>}
+        <span style={{ fontSize:10, color:"#A8998A" }}>{activeBlock===block ? "▲" : "▼"}</span>
+      </div>
+    </button>
+  );
+
   return (
-    <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:1000 }}>
-      <div style={{ background:"#fff", borderRadius:10, padding:"32px 36px", width:560, boxShadow:"0 24px 60px rgba(0,0,0,0.3)", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+    <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", display:"flex", alignItems:"flex-start", justifyContent:"center", zIndex:1000, overflowY:"auto", padding:"32px 0 32px" }}>
+      <div style={{ background:"#fff", borderRadius:10, padding:"28px 32px", width:600, maxWidth:"95vw", boxShadow:"0 24px 60px rgba(0,0,0,0.3)", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+
         {/* Header */}
-        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20 }}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:22 }}>
           <div>
-            <h2 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:20, fontWeight:700, color:"#1C1814" }}>{t("importar_title")}</h2>
-            <p style={{ fontSize:12, color:"#A8998A", marginTop:4 }}>{t("importar_sub")}</p>
+            <h2 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:22, fontWeight:700, color:"#1C1814" }}>Actualizar datos</h2>
+            <p style={{ fontSize:12, color:"#A8998A", marginTop:4 }}>Selecciona el bloque que quieres actualizar</p>
           </div>
           <button onClick={onClose} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, width:28, height:28, cursor:"pointer", fontSize:15, color:"#A8998A", display:"flex", alignItems:"center", justifyContent:"center", padding:0 }}>✕</button>
         </div>
 
-        {/* Modificar ppto — enlace sutil arriba */}
-        <div style={{ marginBottom:12 }}>
-          <button onClick={() => { setShowPptoZone(v=>!v); setErrorPpto(""); }}
-            style={{ display:"flex", alignItems:"center", gap:5, background:"none", border:"none", cursor:"pointer", padding:0, fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
-            <span style={{ fontSize:9, color:C.textLight }}>{showPptoZone ? "▲" : "▼"}</span>
-            <span style={{ fontSize:11, color:resultadoPpto ? "#2D7A4F" : C.textLight, textDecoration:"underline", textDecorationStyle:"dotted", textUnderlineOffset:2 }}>
-              Modificar presupuesto
-            </span>
-            {resultadoPpto && <span style={{ fontSize:10, color:"#2D7A4F", marginLeft:4 }}>{resultadoPpto.presupuesto} {t("meses_presupuesto")}</span>}
-          </button>
-          {showPptoZone && (
-            <div style={{ marginTop:8, padding:"12px 14px", background:"#F7F3EE", borderRadius:8, border:"1px solid #E8E0D5" }}>
-              <p style={{ fontSize:11, color:"#A8998A", marginBottom:8 }}>{t("imp_ppto_sub")}</p>
+        {/* ── BLOQUE 1: PRESUPUESTO ── */}
+        <div style={{ marginBottom: activeBlock==="presupuesto" ? 8 : 0 }}>
+          <BlockHeader label="1 · Presupuesto" block="presupuesto" done={!!resultadoPpto} />
+          {activeBlock === "presupuesto" && (
+            <div style={{ padding:"16px", background:"#F7F3EE", border:"1px solid #E8E0D5", borderTop:"none", borderRadius:"0 0 8px 8px", marginBottom:8 }}>
+              <p style={{ fontSize:11, color:"#A8998A", marginBottom:12 }}>{t("imp_ppto_sub")}</p>
               <UploadZone
                 id="excel-input-ppto"
-                loading={loadingPpto} resultado={null} error={errorPpto}
+                loading={loadingPpto} resultado={resultadoPpto ? true : null} error={errorPpto}
                 progreso={progresoPpto} progresoPct={progresoPctPpto}
                 onFile={procesarPresupuesto}
-                title="" sub=""
-                okContent={null}
+                okContent={<p style={{ color:"#2D7A4F", fontSize:12 }}>✓ {resultadoPpto?.presupuesto} {t("meses_presupuesto")}</p>}
               />
             </div>
           )}
         </div>
 
-        {/* Zona principal: datos + pickup */}
-        <div style={{ marginBottom:14 }}>
-          <UploadZone
-            id="excel-input-main"
-            loading={loadingMain} resultado={resultadoMain} error={errorMain}
-            progreso={progresoMain} progresoPct={progresoPctMain}
-            onFile={procesarPrincipal}
-            title={t("imp_datos_title")}
-            sub={t("imp_datos_sub")}
-            okContent={<>
-              <p style={{ color:"#2D7A4F", fontSize:12 }}>{resultadoMain?.produccion} {t("dias_produccion")}</p>
-              {resultadoMain?.pickup > 0 && <p style={{ color:"#2D7A4F", fontSize:12, marginTop:4 }}>{resultadoMain?.pickup} {t("reservas_pickup")}</p>}
-            </>}
-          />
+        {/* ── BLOQUE 2: HISTÓRICO ── */}
+        <div style={{ marginBottom: activeBlock==="historico" ? 8 : 0 }}>
+          <BlockHeader label="2 · Histórico" block="historico" done={!!resultadoMain} />
+          {activeBlock === "historico" && (
+            <div style={{ padding:"16px", background:"#F7F3EE", border:"1px solid #E8E0D5", borderTop:"none", borderRadius:"0 0 8px 8px", marginBottom:8 }}>
+
+              {/* Carga inicial Excel */}
+              <p style={{ fontSize:11, fontWeight:700, color:"#1C1814", marginBottom:3 }}>Carga inicial</p>
+              <p style={{ fontSize:11, color:"#A8998A", marginBottom:10 }}>Importa todos los datos históricos de producción diaria y reservas OTB desde el Excel.</p>
+              <UploadZone
+                id="excel-input-main"
+                loading={loadingMain} resultado={resultadoMain ? true : null} error={errorMain}
+                progreso={progresoMain} progresoPct={progresoPctMain}
+                onFile={procesarPrincipal}
+                okContent={<>
+                  <p style={{ color:"#2D7A4F", fontSize:12 }}>✓ {resultadoMain?.produccion} {t("dias_produccion")}</p>
+                  {resultadoMain?.pickup > 0 && <p style={{ color:"#2D7A4F", fontSize:12, marginTop:3 }}>{resultadoMain?.pickup} {t("reservas_pickup")}</p>}
+                </>}
+              />
+
+              {/* Editar por fecha */}
+              <div style={{ marginTop:18, paddingTop:16, borderTop:"1px solid #E8E0D5" }}>
+                <p style={{ fontSize:11, fontWeight:700, color:"#1C1814", marginBottom:3 }}>Editar día</p>
+                <p style={{ fontSize:11, color:"#A8998A", marginBottom:10 }}>Busca una fecha para corregir los datos de producción de ese día.</p>
+                <div style={{ display:"flex", gap:8, marginBottom:10 }}>
+                  <input type="date" value={fechaBusqueda}
+                    onChange={e => { setFechaBusqueda(e.target.value); setDiaEncontrado(null); setOkEdit(false); setErrorEdit(""); }}
+                    style={{ flex:1, padding:"7px 10px", border:"1px solid #E8E0D5", borderRadius:6, fontSize:12, fontFamily:"'Plus Jakarta Sans',sans-serif", background:"#fff", color:"#1C1814" }}
+                  />
+                  <button onClick={buscarDia} disabled={buscando || !fechaBusqueda}
+                    style={{ padding:"7px 18px", background:"#004B87", color:"#fff", border:"none", borderRadius:6, fontSize:12, fontWeight:600, cursor:buscando||!fechaBusqueda?"not-allowed":"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", opacity:!fechaBusqueda?0.5:1 }}>
+                    {buscando ? "…" : "Buscar"}
+                  </button>
+                </div>
+                {errorEdit && !diaEncontrado && <p style={{ fontSize:11, color:"#C0392B", marginBottom:8 }}>{errorEdit}</p>}
+                {diaEncontrado && (
+                  <div style={{ background:"#fff", border:"1px solid #E8E0D5", borderRadius:8, padding:"14px" }}>
+                    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"8px 12px", marginBottom:10 }}>
+                      {[
+                        { label:"Hab. Ocupadas",    key:"hab_ocupadas" },
+                        { label:"Hab. Disponibles", key:"hab_disponibles" },
+                        { label:"Rev. Habitaciones €", key:"revenue_hab" },
+                        { label:"Rev. Total €",     key:"revenue_total" },
+                        { label:"Rev. F&B €",       key:"revenue_fnb" },
+                      ].map(({ label, key }) => (
+                        <div key={key}>
+                          <label style={labelStyle}>{label}</label>
+                          <input type="number" value={editValues[key]}
+                            onChange={e => setEditValues(v => ({...v, [key]: e.target.value}))}
+                            style={inputStyle}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                    {okEdit && <p style={{ fontSize:11, color:"#2D7A4F", marginBottom:8 }}>✓ Datos guardados</p>}
+                    {errorEdit && <p style={{ fontSize:11, color:"#C0392B", marginBottom:8 }}>{errorEdit}</p>}
+                    <button onClick={guardarDia} disabled={guardandoEdit}
+                      style={{ width:"100%", padding:"8px", background:"#004B87", color:"#fff", border:"none", borderRadius:6, fontSize:12, fontWeight:600, cursor:guardandoEdit?"not-allowed":"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+                      {guardandoEdit ? "Guardando…" : "Guardar cambios"}
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
-        <p style={{ fontSize:11, color:"#A8998A", textAlign:"center", marginBottom:14 }}>{t("importando_xlsx")}</p>
+        {/* ── BLOQUE 3: PICK UP ── */}
+        <div style={{ marginBottom:16 }}>
+          <BlockHeader label="3 · Pick Up" block="pickup" done={pickupRecientes.length > 0} />
+          {activeBlock === "pickup" && (
+            <div style={{ padding:"16px", background:"#F7F3EE", border:"1px solid #E8E0D5", borderTop:"none", borderRadius:"0 0 8px 8px" }}>
+              <p style={{ fontSize:11, color:"#A8998A", marginBottom:12 }}>Añade el pick up diario de reservas en el mismo formato que el Excel.</p>
 
-        {(resultadoMain || resultadoPpto) && (
-          <button onClick={onClose} style={{ width:"100%", marginBottom:10, background:"#C8933A", color:"#fff", border:"none", borderRadius:10, padding:"11px", fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>{t("ver_dashboard")}</button>
+              <div style={{ background:"#fff", border:"1px solid #E8E0D5", borderRadius:8, padding:"14px", marginBottom:10 }}>
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"8px 12px", marginBottom:12 }}>
+                  <div>
+                    <label style={labelStyle}>Fecha Pick Up</label>
+                    <input type="date" value={pickupForm.fecha_pickup}
+                      onChange={e => setPickupForm(f=>({...f, fecha_pickup:e.target.value}))} style={inputStyle} />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Fecha Llegada *</label>
+                    <input type="date" value={pickupForm.fecha_llegada}
+                      onChange={e => setPickupForm(f=>({...f, fecha_llegada:e.target.value}))} style={inputStyle} />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Canal</label>
+                    <input type="text" value={pickupForm.canal} placeholder="Booking.com, Directo…"
+                      onChange={e => setPickupForm(f=>({...f, canal:e.target.value}))} style={inputStyle} />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Nº Reservas</label>
+                    <input type="number" min="1" value={pickupForm.num_reservas}
+                      onChange={e => setPickupForm(f=>({...f, num_reservas:e.target.value}))} style={inputStyle} />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Fecha Salida</label>
+                    <input type="date" value={pickupForm.fecha_salida}
+                      onChange={e => setPickupForm(f=>({...f, fecha_salida:e.target.value}))} style={inputStyle} />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Noches</label>
+                    <input type="number" min="1" value={pickupForm.noches} placeholder="—"
+                      onChange={e => setPickupForm(f=>({...f, noches:e.target.value}))} style={inputStyle} />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Precio Total €</label>
+                    <input type="number" step="0.01" value={pickupForm.precio_total} placeholder="—"
+                      onChange={e => setPickupForm(f=>({...f, precio_total:e.target.value}))} style={inputStyle} />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Estado</label>
+                    <select value={pickupForm.estado}
+                      onChange={e => setPickupForm(f=>({...f, estado:e.target.value}))}
+                      style={{...inputStyle, cursor:"pointer"}}>
+                      <option value="confirmada">Confirmada</option>
+                      <option value="cancelada">Cancelada</option>
+                    </select>
+                  </div>
+                </div>
+                {errorPickup && <p style={{ fontSize:11, color:"#C0392B", marginBottom:8 }}>{errorPickup}</p>}
+                {okPickup && <p style={{ fontSize:11, color:"#2D7A4F", marginBottom:8 }}>✓ Reserva añadida</p>}
+                <button onClick={guardarPickup} disabled={guardandoPickup}
+                  style={{ width:"100%", padding:"9px", background:"#C8933A", color:"#fff", border:"none", borderRadius:6, fontSize:12, fontWeight:700, cursor:guardandoPickup?"not-allowed":"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+                  {guardandoPickup ? "Guardando…" : "Añadir reserva"}
+                </button>
+              </div>
+
+              {pickupRecientes.length > 0 && (
+                <div>
+                  <p style={{ fontSize:10, color:"#A8998A", marginBottom:6, textTransform:"uppercase", letterSpacing:"0.5px" }}>Añadidas esta sesión</p>
+                  <div style={{ background:"#fff", border:"1px solid #E8E0D5", borderRadius:8, overflow:"hidden" }}>
+                    {pickupRecientes.map((r, i) => (
+                      <div key={i} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"8px 12px", borderBottom: i < pickupRecientes.length-1 ? "1px solid #F0EAE0" : "none", fontSize:12 }}>
+                        <span style={{ color:"#1C1814", minWidth:80 }}>{r.fecha_llegada}</span>
+                        <span style={{ color:"#A8998A", flex:1, paddingLeft:8 }}>{r.canal || "—"}</span>
+                        <span style={{ color:"#A8998A", marginRight:10 }}>{r.num_reservas} hab.</span>
+                        <span style={{ color: r.estado==="cancelada" ? "#C0392B" : "#2D7A4F", fontSize:11, fontWeight:600 }}>{r.estado}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Ver dashboard */}
+        {(resultadoMain || resultadoPpto || pickupRecientes.length > 0) && (
+          <button onClick={onClose} style={{ width:"100%", marginBottom:10, background:"#C8933A", color:"#fff", border:"none", borderRadius:10, padding:"11px", fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+            {t("ver_dashboard")}
+          </button>
         )}
 
-        {/* Vaciar — al final, discreto */}
+        {/* Vaciar datos */}
         {confirmVaciar ? (
           <div style={{ background:"#FDECEA", borderRadius:8, padding:"14px", textAlign:"center" }}>
             <p style={{ fontWeight:700, color:"#C0392B", marginBottom:4, fontSize:13 }}>{t("vaciar_confirm")}</p>
