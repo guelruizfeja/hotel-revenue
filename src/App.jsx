@@ -1492,19 +1492,19 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
     setGuardandoPickup(false);
   };
 
-  // ── Paleta oscura del hub ──
+  // ── Paleta clara (igual que el resto de la web) ──
   const H = {
-    bg:      "#0D1825",
-    card:    "#162032",
-    card2:   "#1C2C40",
-    border:  "#243447",
+    bg:      "#FDFDFD",
+    card:    "#FFFFFF",
+    card2:   "#F4F7FA",
+    border:  "#E0E5EC",
     accent:  "#C8933A",
     accentD: "#A07228",
-    blue:    "#2D7FC1",
-    text:    "#E8EEF4",
-    textMid: "#8BA3BA",
-    green:   "#2ECC71",
-    red:     "#E74C3C",
+    blue:    "#004B87",
+    text:    "#1A1A1A",
+    textMid: "#666E7A",
+    green:   "#009F4D",
+    red:     "#D32F2F",
   };
 
   const UploadZone = ({ id, loading, resultado, error, progreso, progresoPct, onFile, okContent }) => (
@@ -1514,7 +1514,7 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
       ) : (
         <>
           <div onClick={() => !loading && document.getElementById(id).click()}
-            style={{ border:`2px dashed ${H.border}`, borderRadius:10, padding:"32px 16px", textAlign:"center", cursor:loading?"default":"pointer", background:H.card2, transition:"border-color 0.2s" }}>
+            style={{ border:`2px dashed ${H.border}`, borderRadius:10, padding:"32px 16px", textAlign:"center", cursor:loading?"default":"pointer", background:H.card, transition:"border-color 0.2s" }}>
             <div style={{ fontSize:36, marginBottom:10 }}>📊</div>
             <p style={{ fontWeight:600, color:H.text, fontSize:13, marginBottom:4 }}>{progreso || (loading ? t("procesando") : t("haz_clic"))}</p>
             <p style={{ fontSize:11, color:H.textMid }}>Soporta .xlsx — plantilla FastRev Pro</p>
@@ -1545,8 +1545,8 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
   ];
 
   return (
-    <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.75)", display:"flex", alignItems:"flex-start", justifyContent:"center", zIndex:1000, overflowY:"auto", padding:"32px 0" }}>
-      <div style={{ background:H.bg, borderRadius:14, width:620, maxWidth:"95vw", boxShadow:"0 32px 80px rgba(0,0,0,0.6)", fontFamily:"'Plus Jakarta Sans',sans-serif", overflow:"hidden" }}>
+    <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.45)", display:"flex", alignItems:"flex-start", justifyContent:"center", zIndex:1000, overflowY:"auto", padding:"32px 0" }}>
+      <div style={{ background:H.bg, borderRadius:14, width:620, maxWidth:"95vw", boxShadow:"0 20px 60px rgba(0,0,0,0.15)", fontFamily:"'Plus Jakarta Sans',sans-serif", overflow:"hidden", border:`1px solid ${H.border}` }}>
 
         {/* Header */}
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"22px 26px 18px" }}>
@@ -1562,17 +1562,17 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
             const active = activeBlock === tab.id;
             return (
               <button key={tab.id} onClick={() => setActiveBlock(tab.id)}
-                style={{ background: active ? H.accent : H.card, border:`1px solid ${active ? H.accent : H.border}`, borderRadius:10, padding:"14px 8px 10px", cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", display:"flex", flexDirection:"column", alignItems:"center", gap:6, transition:"all 0.15s", boxShadow: active ? `0 0 18px rgba(200,147,58,0.3)` : "none" }}>
+                style={{ background: active ? "#EBF2FA" : H.card, border:`1px solid ${active ? H.blue : H.border}`, borderRadius:10, padding:"14px 8px 10px", cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", display:"flex", flexDirection:"column", alignItems:"center", gap:6, transition:"all 0.15s", boxShadow: active ? `0 2px 12px rgba(0,75,135,0.12)` : "none" }}>
                 <span style={{ fontSize:26 }}>{tab.icon}</span>
-                <span style={{ fontSize:10, fontWeight: active ? 700 : 500, color: active ? "#fff" : H.textMid, textAlign:"center", lineHeight:1.2 }}>{tab.label}</span>
-                {tab.done && <span style={{ width:6, height:6, borderRadius:"50%", background: active ? "#fff" : H.green, display:"block" }} />}
+                <span style={{ fontSize:10, fontWeight: active ? 700 : 500, color: active ? H.blue : H.textMid, textAlign:"center", lineHeight:1.2 }}>{tab.label}</span>
+                {tab.done && <span style={{ width:6, height:6, borderRadius:"50%", background: H.green, display:"block" }} />}
               </button>
             );
           })}
         </div>
 
         {/* Tab content */}
-        <div style={{ background:H.card, borderTop:`1px solid ${H.border}`, padding:"22px 26px 26px" }}>
+        <div style={{ background:H.card2, borderTop:`1px solid ${H.border}`, padding:"22px 26px 26px" }}>
 
           {/* ── PRESUPUESTO ── */}
           {activeBlock === "presupuesto" && (
