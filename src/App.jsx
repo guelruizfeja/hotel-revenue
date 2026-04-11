@@ -5127,6 +5127,8 @@ export default function App() {
 
   const hoy = new Date();
   const [mesSel,  setMesSel]  = useState(() => { const v = localStorage.getItem("rm_mes");  return v !== null ? parseInt(v) : hoy.getMonth(); });
+  const [ahora, setAhora] = useState(new Date());
+  useEffect(() => { const id = setInterval(() => setAhora(new Date()), 1000); return () => clearInterval(id); }, []);
   const [anioSel, setAnioSel] = useState(() => { const v = localStorage.getItem("rm_anio"); return v !== null ? parseInt(v) : hoy.getFullYear(); });
   const [importar, setImportar] = useState(false);
   const [suscripcion, setSuscripcion] = useState(null);
@@ -5439,8 +5441,18 @@ export default function App() {
         {/* Logo centro */}
         <div style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", pointerEvents: "none", display: "flex", alignItems: "center", gap: 12 }}>
           <img src="/fastrev-logo.png" alt="FastRevenue" style={{ height: 92, width: "auto", transform: "scaleX(1.08)" }} />
-          <span className="topbar-date" style={{ fontSize: 12, color: "#000000", fontWeight: 500, fontFamily: "'Plus Jakarta Sans', sans-serif", letterSpacing: 0.3, whiteSpace: "nowrap" }}>
-            {new Date().toLocaleDateString(lang === "en" ? "en-GB" : lang === "fr" ? "fr-FR" : "es-ES", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).replace(/^\w/, c => c.toUpperCase())}
+          <span className="topbar-date" style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:1 }}>
+            <span style={{ fontSize: 12, color: "#000000", fontWeight: 500, fontFamily: "'Plus Jakarta Sans', sans-serif", letterSpacing: 0.3, whiteSpace: "nowrap" }}>
+              {ahora.toLocaleDateString(lang === "en" ? "en-GB" : lang === "fr" ? "fr-FR" : "es-ES", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).replace(/^\w/, c => c.toUpperCase())}
+            </span>
+            <span style={{ display:"flex", alignItems:"center", gap:5, fontFamily:"'Plus Jakarta Sans', sans-serif" }}>
+              <span style={{ fontSize: 14, color: "#0A0A0A", fontWeight: 700, letterSpacing: 1, fontVariantNumeric:"tabular-nums" }}>
+                {ahora.toLocaleTimeString(lang === "en" ? "en-GB" : lang === "fr" ? "fr-FR" : "es-ES", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+              </span>
+              <span style={{ fontSize: 10, color: "#888", fontWeight: 500, background: "#F0F0F0", borderRadius: 4, padding: "1px 5px", letterSpacing: 0.3 }}>
+                {Intl.DateTimeFormat().resolvedOptions().timeZone.split("/").pop().replace(/_/g," ")}
+              </span>
+            </span>
           </span>
         </div>
 
