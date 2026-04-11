@@ -958,8 +958,9 @@ function EmptyState({ mensaje }) {
 // ─── IMPORTAR EXCEL ───────────────────────────────────────────────
 function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombreProp, fullPage = false }) {
   const t = useT();
-  // Pestaña activa
-  const [activeBlock, setActiveBlock] = useState("presupuesto");
+  // Pestaña activa (persiste entre navegaciones)
+  const [activeBlock, setActiveBlock] = useState(() => localStorage.getItem("fr_gestion_tab") || "presupuesto");
+  const setActiveBlockPersist = (id) => { setActiveBlock(id); localStorage.setItem("fr_gestion_tab", id); };
   // Estado datos principales (Histórico)
   const [loadingMain, setLoadingMain] = useState(false);
   const [resultadoMain, setResultadoMain] = useState(null);
@@ -1600,7 +1601,7 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
           {tabs.map(tab => {
             const active = activeBlock === tab.id;
             return (
-              <button key={tab.id} onClick={() => setActiveBlock(tab.id)}
+              <button key={tab.id} onClick={() => setActiveBlockPersist(tab.id)}
                 style={{ background: active ? "#EBF2FA" : H.card, border:`1px solid ${active ? H.blue : H.border}`, borderRadius:10, padding:"14px 8px 10px", cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", display:"flex", flexDirection:"column", alignItems:"center", gap:7, transition:"all 0.15s", boxShadow: active ? `0 2px 12px rgba(0,75,135,0.12)` : "none" }}>
                 {TabIcons[tab.id](active ? H.blue : H.textMid)}
                 <span style={{ fontSize:10, fontWeight: active ? 700 : 500, color: active ? H.blue : H.textMid, textAlign:"center", lineHeight:1.2 }}>{tab.label}</span>
