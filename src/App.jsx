@@ -5366,8 +5366,8 @@ export default function App() {
         * { box-sizing: border-box; margin: 0; padding: 0; } html, body, #root { width: 100%; min-height: 100vh; }
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: ${C.border}; }
-        ::-webkit-scrollbar-thumb { background: ${C.textLight}; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: ${C.textMid}; }
+        ::-webkit-scrollbar-thumb { background: ${C.textLight}88; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: ${C.textLight}; }
         @keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
         svg:focus, svg *:focus { outline: none !important; }
         @keyframes pulse-rayo { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(0.8); } }
