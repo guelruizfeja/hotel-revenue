@@ -5446,10 +5446,10 @@ export default function App() {
               {ahora.toLocaleDateString(lang === "en" ? "en-GB" : lang === "fr" ? "fr-FR" : "es-ES", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).replace(/^\w/, c => c.toUpperCase())}
             </span>
             <span style={{ display:"flex", alignItems:"center", gap:5 }}>
-              <span style={{ fontSize: 13, color: "#0A0A0A", fontWeight: 700, letterSpacing: 1, fontVariantNumeric:"tabular-nums" }}>
+              <span style={{ fontSize: 11, color: "#0A0A0A", fontWeight: 600, letterSpacing: 0.5, fontVariantNumeric:"tabular-nums" }}>
                 {ahora.toLocaleTimeString(lang === "en" ? "en-GB" : lang === "fr" ? "fr-FR" : "es-ES", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
               </span>
-              <span style={{ fontSize: 10, color: "#666", fontWeight: 600, background: "#F0F0F0", borderRadius: 4, padding: "2px 5px", letterSpacing: 0.5 }}>
+              <span style={{ fontSize: 9, color: "#666", fontWeight: 600, background: "#F0F0F0", borderRadius: 3, padding: "1px 4px", letterSpacing: 0.5 }}>
                 {ahora.toLocaleTimeString("en-GB", { timeZoneName: "short" }).split(" ").pop()}
               </span>
             </span>
