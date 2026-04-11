@@ -1492,78 +1492,98 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
     setGuardandoPickup(false);
   };
 
+  // ── Paleta oscura del hub ──
+  const H = {
+    bg:      "#0D1825",
+    card:    "#162032",
+    card2:   "#1C2C40",
+    border:  "#243447",
+    accent:  "#C8933A",
+    accentD: "#A07228",
+    blue:    "#2D7FC1",
+    text:    "#E8EEF4",
+    textMid: "#8BA3BA",
+    green:   "#2ECC71",
+    red:     "#E74C3C",
+  };
+
   const UploadZone = ({ id, loading, resultado, error, progreso, progresoPct, onFile, okContent }) => (
     <div>
       {resultado ? (
-        <div style={{ background:"#D4EDDE", borderRadius:8, padding:"10px 14px" }}>{okContent}</div>
+        <div style={{ background:"rgba(46,204,113,0.12)", border:"1px solid rgba(46,204,113,0.3)", borderRadius:10, padding:"14px 18px" }}>{okContent}</div>
       ) : (
         <>
           <div onClick={() => !loading && document.getElementById(id).click()}
-            style={{ border:"2px dashed #E8E0D5", borderRadius:8, padding:"20px 12px", textAlign:"center", cursor:loading?"default":"pointer", background:"#fff" }}>
-            <p style={{ fontWeight:600, color:"#1C1814", fontSize:12, marginBottom:4 }}>{progreso || (loading ? t("procesando") : t("haz_clic"))}</p>
-            <p style={{ fontSize:10, color:"#A8998A" }}>{t("formato_xlsx")}</p>
+            style={{ border:`2px dashed ${H.border}`, borderRadius:10, padding:"32px 16px", textAlign:"center", cursor:loading?"default":"pointer", background:H.card2, transition:"border-color 0.2s" }}>
+            <div style={{ fontSize:36, marginBottom:10 }}>📊</div>
+            <p style={{ fontWeight:600, color:H.text, fontSize:13, marginBottom:4 }}>{progreso || (loading ? t("procesando") : t("haz_clic"))}</p>
+            <p style={{ fontSize:11, color:H.textMid }}>Soporta .xlsx — plantilla FastRev Pro</p>
             {loading && (
-              <div style={{ marginTop:10 }}>
-                <div style={{ background:"#E8E0D5", borderRadius:999, height:6, overflow:"hidden" }}>
-                  <div style={{ height:"100%", borderRadius:999, background:"linear-gradient(90deg,#C8A96E,#A07840)", width:`${progresoPct}%`, transition:"width 0.4s ease" }}/>
+              <div style={{ marginTop:12 }}>
+                <div style={{ background:H.border, borderRadius:999, height:5, overflow:"hidden" }}>
+                  <div style={{ height:"100%", borderRadius:999, background:`linear-gradient(90deg,${H.accentD},${H.accent})`, width:`${progresoPct}%`, transition:"width 0.4s ease" }}/>
                 </div>
-                <p style={{ fontSize:10, color:"#A8998A", marginTop:4 }}>{progresoPct}%</p>
+                <p style={{ fontSize:10, color:H.textMid, marginTop:4 }}>{progresoPct}%</p>
               </div>
             )}
             <input id={id} type="file" accept=".xlsx" style={{ display:"none" }} onChange={e => e.target.files[0] && onFile(e.target.files[0])}/>
           </div>
-          {error && <div style={{ background:"#FDECEA", color:"#C0392B", padding:"8px 12px", borderRadius:6, fontSize:12, marginTop:8 }}>{error}</div>}
+          {error && <div style={{ background:"rgba(231,76,60,0.12)", border:"1px solid rgba(231,76,60,0.3)", color:"#F1948A", padding:"8px 12px", borderRadius:8, fontSize:12, marginTop:8 }}>{error}</div>}
         </>
       )}
     </div>
   );
 
-  const inputStyle = { width:"100%", padding:"6px 9px", border:"1px solid #E8E0D5", borderRadius:5, fontSize:12, fontFamily:"'Plus Jakarta Sans',sans-serif", background:"#FAFAFA", color:"#1C1814", boxSizing:"border-box" };
-  const labelStyle = { fontSize:10, color:"#A8998A", marginBottom:3, textTransform:"uppercase", letterSpacing:"0.5px", display:"block" };
+  const inputStyle = { width:"100%", padding:"7px 10px", border:`1px solid ${H.border}`, borderRadius:6, fontSize:12, fontFamily:"'Plus Jakarta Sans',sans-serif", background:H.card2, color:H.text, boxSizing:"border-box", outline:"none" };
+  const labelStyle = { fontSize:10, color:H.textMid, marginBottom:4, textTransform:"uppercase", letterSpacing:"0.8px", display:"block" };
 
   const tabs = [
-    { id:"presupuesto", label:"Presupuesto",       done: !!resultadoPpto },
-    { id:"historico",   label:"Histórico",          done: !!resultadoMain },
-    { id:"produccion",  label:"Producción Diaria",  done: prodRecientes.length > 0 },
-    { id:"pickup",      label:"Pick Up",             done: pickupRecientes.length > 0 },
+    { id:"presupuesto", label:"Presupuesto",      icon:"💰", done: !!resultadoPpto },
+    { id:"historico",   label:"Histórico",         icon:"📅", done: !!resultadoMain },
+    { id:"produccion",  label:"Producción Diaria", icon:"🏨", done: prodRecientes.length > 0 },
+    { id:"pickup",      label:"Pick Up",            icon:"🎯", done: pickupRecientes.length > 0 },
   ];
 
   return (
-    <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", display:"flex", alignItems:"flex-start", justifyContent:"center", zIndex:1000, overflowY:"auto", padding:"32px 0 32px" }}>
-      <div style={{ background:"#fff", borderRadius:10, width:600, maxWidth:"95vw", boxShadow:"0 24px 60px rgba(0,0,0,0.3)", fontFamily:"'Plus Jakarta Sans',sans-serif", overflow:"hidden" }}>
+    <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.75)", display:"flex", alignItems:"flex-start", justifyContent:"center", zIndex:1000, overflowY:"auto", padding:"32px 0" }}>
+      <div style={{ background:H.bg, borderRadius:14, width:620, maxWidth:"95vw", boxShadow:"0 32px 80px rgba(0,0,0,0.6)", fontFamily:"'Plus Jakarta Sans',sans-serif", overflow:"hidden" }}>
 
         {/* Header */}
-        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"24px 28px 20px" }}>
-          <div>
-            <h2 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:22, fontWeight:700, color:"#1C1814" }}>Actualizar datos</h2>
-          </div>
-          <button onClick={onClose} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, width:28, height:28, cursor:"pointer", fontSize:15, color:"#A8998A", display:"flex", alignItems:"center", justifyContent:"center", padding:0 }}>✕</button>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"22px 26px 18px" }}>
+          <h2 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:22, fontWeight:700, color:H.text, letterSpacing:0.2 }}>
+            Data Integration Hub
+          </h2>
+          <button onClick={onClose} style={{ background:"none", border:`1px solid ${H.border}`, borderRadius:7, width:28, height:28, cursor:"pointer", fontSize:14, color:H.textMid, display:"flex", alignItems:"center", justifyContent:"center", padding:0 }}>✕</button>
         </div>
 
-        {/* Tab bar */}
-        <div style={{ display:"flex", borderBottom:"2px solid #E8E0D5", padding:"0 28px" }}>
-          {tabs.map(tab => (
-            <button key={tab.id} onClick={() => setActiveBlock(tab.id)}
-              style={{ padding:"10px 18px", background:"none", border:"none", borderBottom: activeBlock===tab.id ? "2px solid #004B87" : "2px solid transparent", marginBottom:-2, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:13, fontWeight: activeBlock===tab.id ? 700 : 500, color: activeBlock===tab.id ? "#004B87" : "#A8998A", display:"flex", alignItems:"center", gap:6, whiteSpace:"nowrap" }}>
-              {tab.label}
-              {tab.done && <span style={{ width:7, height:7, borderRadius:"50%", background:"#2D7A4F", display:"inline-block" }} />}
-            </button>
-          ))}
+        {/* Tab cards */}
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:8, padding:"0 26px 20px" }}>
+          {tabs.map(tab => {
+            const active = activeBlock === tab.id;
+            return (
+              <button key={tab.id} onClick={() => setActiveBlock(tab.id)}
+                style={{ background: active ? H.accent : H.card, border:`1px solid ${active ? H.accent : H.border}`, borderRadius:10, padding:"14px 8px 10px", cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", display:"flex", flexDirection:"column", alignItems:"center", gap:6, transition:"all 0.15s", boxShadow: active ? `0 0 18px rgba(200,147,58,0.3)` : "none" }}>
+                <span style={{ fontSize:26 }}>{tab.icon}</span>
+                <span style={{ fontSize:10, fontWeight: active ? 700 : 500, color: active ? "#fff" : H.textMid, textAlign:"center", lineHeight:1.2 }}>{tab.label}</span>
+                {tab.done && <span style={{ width:6, height:6, borderRadius:"50%", background: active ? "#fff" : H.green, display:"block" }} />}
+              </button>
+            );
+          })}
         </div>
 
         {/* Tab content */}
-        <div style={{ padding:"24px 28px 28px" }}>
+        <div style={{ background:H.card, borderTop:`1px solid ${H.border}`, padding:"22px 26px 26px" }}>
 
           {/* ── PRESUPUESTO ── */}
           {activeBlock === "presupuesto" && (
             <div>
-              <p style={{ fontSize:11, color:"#A8998A", marginBottom:14 }}>{t("imp_ppto_sub")}</p>
+              <p style={{ fontSize:12, color:H.textMid, marginBottom:16, lineHeight:1.5 }}>{t("imp_ppto_sub")}</p>
               <UploadZone
                 id="excel-input-ppto"
                 loading={loadingPpto} resultado={resultadoPpto ? true : null} error={errorPpto}
                 progreso={progresoPpto} progresoPct={progresoPctPpto}
                 onFile={procesarPresupuesto}
-                okContent={<p style={{ color:"#2D7A4F", fontSize:12 }}>✓ {resultadoPpto?.presupuesto} {t("meses_presupuesto")}</p>}
+                okContent={<p style={{ color:H.green, fontSize:12 }}>✓ {resultadoPpto?.presupuesto} {t("meses_presupuesto")}</p>}
               />
             </div>
           )}
@@ -1571,36 +1591,35 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
           {/* ── HISTÓRICO ── */}
           {activeBlock === "historico" && (
             <div>
-              <p style={{ fontSize:11, fontWeight:700, color:"#1C1814", marginBottom:3 }}>Carga inicial</p>
-              <p style={{ fontSize:11, color:"#A8998A", marginBottom:12 }}>Importa todos los datos históricos de producción diaria y reservas OTB desde el Excel.</p>
+              <p style={{ fontSize:11, fontWeight:700, color:H.text, marginBottom:3 }}>Carga inicial</p>
+              <p style={{ fontSize:12, color:H.textMid, marginBottom:14, lineHeight:1.5 }}>Importa todos los datos históricos de producción diaria y reservas OTB desde el Excel.</p>
               <UploadZone
                 id="excel-input-main"
                 loading={loadingMain} resultado={resultadoMain ? true : null} error={errorMain}
                 progreso={progresoMain} progresoPct={progresoPctMain}
                 onFile={procesarPrincipal}
                 okContent={<>
-                  <p style={{ color:"#2D7A4F", fontSize:12 }}>✓ {resultadoMain?.produccion} {t("dias_produccion")}</p>
-                  {resultadoMain?.pickup > 0 && <p style={{ color:"#2D7A4F", fontSize:12, marginTop:3 }}>{resultadoMain?.pickup} {t("reservas_pickup")}</p>}
+                  <p style={{ color:H.green, fontSize:12 }}>✓ {resultadoMain?.produccion} {t("dias_produccion")}</p>
+                  {resultadoMain?.pickup > 0 && <p style={{ color:H.green, fontSize:12, marginTop:3 }}>{resultadoMain?.pickup} {t("reservas_pickup")}</p>}
                 </>}
               />
-
-              <div style={{ marginTop:20, paddingTop:18, borderTop:"1px solid #E8E0D5" }}>
-                <p style={{ fontSize:11, fontWeight:700, color:"#1C1814", marginBottom:3 }}>Editar día</p>
-                <p style={{ fontSize:11, color:"#A8998A", marginBottom:10 }}>Busca una fecha para corregir los datos de producción de ese día.</p>
+              <div style={{ marginTop:22, paddingTop:18, borderTop:`1px solid ${H.border}` }}>
+                <p style={{ fontSize:11, fontWeight:700, color:H.text, marginBottom:3 }}>Editar día</p>
+                <p style={{ fontSize:12, color:H.textMid, marginBottom:12 }}>Busca una fecha para corregir los datos de ese día.</p>
                 <div style={{ display:"flex", gap:8, marginBottom:10 }}>
                   <input type="date" value={fechaBusqueda}
                     onChange={e => { setFechaBusqueda(e.target.value); setDiaEncontrado(null); setOkEdit(false); setErrorEdit(""); }}
-                    style={{ flex:1, padding:"7px 10px", border:"1px solid #E8E0D5", borderRadius:6, fontSize:12, fontFamily:"'Plus Jakarta Sans',sans-serif", background:"#F7F3EE", color:"#1C1814" }}
+                    style={{ flex:1, padding:"8px 10px", border:`1px solid ${H.border}`, borderRadius:6, fontSize:12, fontFamily:"'Plus Jakarta Sans',sans-serif", background:H.card2, color:H.text, outline:"none" }}
                   />
                   <button onClick={buscarDia} disabled={buscando || !fechaBusqueda}
-                    style={{ padding:"7px 18px", background:"#004B87", color:"#fff", border:"none", borderRadius:6, fontSize:12, fontWeight:600, cursor:buscando||!fechaBusqueda?"not-allowed":"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", opacity:!fechaBusqueda?0.5:1 }}>
+                    style={{ padding:"8px 18px", background:H.blue, color:"#fff", border:"none", borderRadius:6, fontSize:12, fontWeight:600, cursor:buscando||!fechaBusqueda?"not-allowed":"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", opacity:!fechaBusqueda?0.4:1 }}>
                     {buscando ? "…" : "Buscar"}
                   </button>
                 </div>
-                {errorEdit && !diaEncontrado && <p style={{ fontSize:11, color:"#C0392B", marginBottom:8 }}>{errorEdit}</p>}
+                {errorEdit && !diaEncontrado && <p style={{ fontSize:11, color:H.red, marginBottom:8 }}>{errorEdit}</p>}
                 {diaEncontrado && (
-                  <div style={{ background:"#F7F3EE", border:"1px solid #E8E0D5", borderRadius:8, padding:"14px" }}>
-                    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"8px 12px", marginBottom:10 }}>
+                  <div style={{ background:H.card2, border:`1px solid ${H.border}`, borderRadius:10, padding:"14px" }}>
+                    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"8px 12px", marginBottom:12 }}>
                       {[
                         { label:"Hab. Ocupadas",       key:"hab_ocupadas" },
                         { label:"Hab. Disponibles",    key:"hab_disponibles" },
@@ -1616,10 +1635,10 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
                         </div>
                       ))}
                     </div>
-                    {okEdit && <p style={{ fontSize:11, color:"#2D7A4F", marginBottom:8 }}>✓ Datos guardados</p>}
-                    {errorEdit && <p style={{ fontSize:11, color:"#C0392B", marginBottom:8 }}>{errorEdit}</p>}
+                    {okEdit && <p style={{ fontSize:11, color:H.green, marginBottom:8 }}>✓ Datos guardados</p>}
+                    {errorEdit && <p style={{ fontSize:11, color:H.red, marginBottom:8 }}>{errorEdit}</p>}
                     <button onClick={guardarDia} disabled={guardandoEdit}
-                      style={{ width:"100%", padding:"8px", background:"#004B87", color:"#fff", border:"none", borderRadius:6, fontSize:12, fontWeight:600, cursor:guardandoEdit?"not-allowed":"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+                      style={{ width:"100%", padding:"9px", background:H.blue, color:"#fff", border:"none", borderRadius:7, fontSize:12, fontWeight:700, cursor:guardandoEdit?"not-allowed":"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
                       {guardandoEdit ? "Guardando…" : "Guardar cambios"}
                     </button>
                   </div>
@@ -1631,9 +1650,9 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
           {/* ── PRODUCCIÓN DIARIA ── */}
           {activeBlock === "produccion" && (
             <div>
-              <p style={{ fontSize:11, color:"#A8998A", marginBottom:14 }}>Introduce la producción del día. Si ya existe un registro para esa fecha, se actualizará automáticamente.</p>
-              <div style={{ background:"#F7F3EE", border:"1px solid #E8E0D5", borderRadius:8, padding:"14px", marginBottom:12 }}>
-                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"8px 12px", marginBottom:12 }}>
+              <p style={{ fontSize:12, color:H.textMid, marginBottom:16, lineHeight:1.5 }}>Introduce la producción del día. Si ya existe registro para esa fecha, se actualizará.</p>
+              <div style={{ background:H.card2, border:`1px solid ${H.border}`, borderRadius:10, padding:"16px", marginBottom:12 }}>
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"10px 14px", marginBottom:14 }}>
                   <div style={{ gridColumn:"1 / -1" }}>
                     <label style={labelStyle}>Fecha</label>
                     <input type="date" value={prodForm.fecha}
@@ -1664,50 +1683,46 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
                     <input type="number" min="0" step="0.01" value={prodForm.revenue_fnb} placeholder="0.00"
                       onChange={e => setProdForm(f=>({...f, revenue_fnb:e.target.value}))} style={inputStyle} />
                   </div>
-                  {/* KPIs calculados en tiempo real */}
                   {(prodForm.hab_ocupadas || prodForm.revenue_hab) && (() => {
                     const ho = parseFloat(prodForm.hab_ocupadas) || 0;
                     const hd = parseFloat(prodForm.hab_disponibles) || 0;
                     const rh = parseFloat(prodForm.revenue_hab) || 0;
-                    const rf = parseFloat(prodForm.revenue_fnb) || 0;
                     const adr    = ho > 0 ? Math.round(rh / ho * 100) / 100 : null;
                     const revpar = hd > 0 ? Math.round(rh / hd * 100) / 100 : null;
                     const occ    = hd > 0 ? Math.round(ho / hd * 1000) / 10 : null;
                     return (
-                      <div style={{ gridColumn:"1 / -1", display:"flex", gap:10 }}>
+                      <div style={{ gridColumn:"1 / -1", display:"flex", gap:8 }}>
                         {[["OCC", occ!=null?`${occ}%`:"—"], ["ADR", adr!=null?`€${adr}`:"—"], ["RevPAR", revpar!=null?`€${revpar}`:"—"]].map(([k,v]) => (
-                          <div key={k} style={{ flex:1, background:"#fff", border:"1px solid #E8E0D5", borderRadius:6, padding:"8px 10px", textAlign:"center" }}>
-                            <p style={{ fontSize:9, color:"#A8998A", textTransform:"uppercase", letterSpacing:"0.5px", marginBottom:2 }}>{k}</p>
-                            <p style={{ fontSize:15, fontWeight:700, color:"#004B87", fontFamily:"'Cormorant Garamond',serif" }}>{v}</p>
+                          <div key={k} style={{ flex:1, background:H.bg, border:`1px solid ${H.border}`, borderRadius:8, padding:"8px 10px", textAlign:"center" }}>
+                            <p style={{ fontSize:9, color:H.textMid, textTransform:"uppercase", letterSpacing:"0.8px", marginBottom:3 }}>{k}</p>
+                            <p style={{ fontSize:16, fontWeight:700, color:H.accent, fontFamily:"'Cormorant Garamond',serif" }}>{v}</p>
                           </div>
                         ))}
                       </div>
                     );
                   })()}
                 </div>
-                {errorProd && <p style={{ fontSize:11, color:"#C0392B", marginBottom:8 }}>{errorProd}</p>}
-                {okProd && <p style={{ fontSize:11, color:"#2D7A4F", marginBottom:8 }}>✓ Producción guardada</p>}
+                {errorProd && <p style={{ fontSize:11, color:H.red, marginBottom:8 }}>{errorProd}</p>}
+                {okProd && <p style={{ fontSize:11, color:H.green, marginBottom:8 }}>✓ Producción guardada</p>}
                 <button onClick={guardarProduccion} disabled={guardandoProd}
-                  style={{ width:"100%", padding:"9px", background:"#004B87", color:"#fff", border:"none", borderRadius:6, fontSize:12, fontWeight:700, cursor:guardandoProd?"not-allowed":"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+                  style={{ width:"100%", padding:"10px", background:H.accent, color:"#fff", border:"none", borderRadius:8, fontSize:13, fontWeight:700, cursor:guardandoProd?"not-allowed":"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
                   {guardandoProd ? "Guardando…" : "Guardar producción"}
                 </button>
               </div>
-
               {prodRecientes.length > 0 && (
                 <div>
-                  <p style={{ fontSize:10, color:"#A8998A", marginBottom:6, textTransform:"uppercase", letterSpacing:"0.5px" }}>Guardados esta sesión</p>
-                  <div style={{ background:"#F7F3EE", border:"1px solid #E8E0D5", borderRadius:8, overflow:"hidden" }}>
+                  <p style={{ fontSize:10, color:H.textMid, marginBottom:6, textTransform:"uppercase", letterSpacing:"0.8px" }}>Guardados esta sesión</p>
+                  <div style={{ background:H.card2, border:`1px solid ${H.border}`, borderRadius:8, overflow:"hidden" }}>
                     {prodRecientes.map((r, i) => {
-                      const ho = r.hab_ocupadas || 0;
-                      const hd = r.hab_disponibles || 0;
-                      const occ = hd > 0 ? (ho / hd * 100).toFixed(1) : "—";
-                      const adr = ho > 0 && r.revenue_hab ? Math.round(r.revenue_hab / ho) : "—";
+                      const ho = r.hab_ocupadas || 0; const hd = r.hab_disponibles || 0;
+                      const occ = hd > 0 ? (ho/hd*100).toFixed(1) : "—";
+                      const adr = ho > 0 && r.revenue_hab ? Math.round(r.revenue_hab/ho) : "—";
                       return (
-                        <div key={i} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"8px 12px", borderBottom: i < prodRecientes.length-1 ? "1px solid #E8E0D5" : "none", fontSize:12 }}>
-                          <span style={{ color:"#1C1814", fontWeight:600, minWidth:90 }}>{r.fecha}</span>
-                          <span style={{ color:"#A8998A" }}>{ho} hab.</span>
-                          <span style={{ color:"#004B87", fontWeight:600 }}>{occ !== "—" ? `${occ}%` : "—"}</span>
-                          <span style={{ color:"#A8998A" }}>ADR {adr !== "—" ? `€${adr}` : "—"}</span>
+                        <div key={i} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"8px 12px", borderBottom: i < prodRecientes.length-1 ? `1px solid ${H.border}` : "none", fontSize:12 }}>
+                          <span style={{ color:H.text, fontWeight:600, minWidth:90 }}>{r.fecha}</span>
+                          <span style={{ color:H.textMid }}>{ho} hab.</span>
+                          <span style={{ color:H.accent, fontWeight:600 }}>{occ !== "—" ? `${occ}%` : "—"}</span>
+                          <span style={{ color:H.textMid }}>ADR {adr !== "—" ? `€${adr}` : "—"}</span>
                         </div>
                       );
                     })}
@@ -1720,9 +1735,9 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
           {/* ── PICK UP ── */}
           {activeBlock === "pickup" && (
             <div>
-              <p style={{ fontSize:11, color:"#A8998A", marginBottom:14 }}>Añade el pick up diario de reservas en el mismo formato que el Excel.</p>
-              <div style={{ background:"#F7F3EE", border:"1px solid #E8E0D5", borderRadius:8, padding:"14px", marginBottom:12 }}>
-                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"8px 12px", marginBottom:12 }}>
+              <p style={{ fontSize:12, color:H.textMid, marginBottom:16, lineHeight:1.5 }}>Añade el pick up diario de reservas en el mismo formato que el Excel.</p>
+              <div style={{ background:H.card2, border:`1px solid ${H.border}`, borderRadius:10, padding:"16px", marginBottom:12 }}>
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"10px 14px", marginBottom:14 }}>
                   <div>
                     <label style={labelStyle}>Fecha Pick Up</label>
                     <input type="date" value={pickupForm.fecha_pickup}
@@ -1768,24 +1783,23 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
                     </select>
                   </div>
                 </div>
-                {errorPickup && <p style={{ fontSize:11, color:"#C0392B", marginBottom:8 }}>{errorPickup}</p>}
-                {okPickup && <p style={{ fontSize:11, color:"#2D7A4F", marginBottom:8 }}>✓ Reserva añadida</p>}
+                {errorPickup && <p style={{ fontSize:11, color:H.red, marginBottom:8 }}>{errorPickup}</p>}
+                {okPickup && <p style={{ fontSize:11, color:H.green, marginBottom:8 }}>✓ Reserva añadida</p>}
                 <button onClick={guardarPickup} disabled={guardandoPickup}
-                  style={{ width:"100%", padding:"9px", background:"#C8933A", color:"#fff", border:"none", borderRadius:6, fontSize:12, fontWeight:700, cursor:guardandoPickup?"not-allowed":"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+                  style={{ width:"100%", padding:"10px", background:H.accent, color:"#fff", border:"none", borderRadius:8, fontSize:13, fontWeight:700, cursor:guardandoPickup?"not-allowed":"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
                   {guardandoPickup ? "Guardando…" : "Añadir reserva"}
                 </button>
               </div>
-
               {pickupRecientes.length > 0 && (
                 <div>
-                  <p style={{ fontSize:10, color:"#A8998A", marginBottom:6, textTransform:"uppercase", letterSpacing:"0.5px" }}>Añadidas esta sesión</p>
-                  <div style={{ background:"#F7F3EE", border:"1px solid #E8E0D5", borderRadius:8, overflow:"hidden" }}>
+                  <p style={{ fontSize:10, color:H.textMid, marginBottom:6, textTransform:"uppercase", letterSpacing:"0.8px" }}>Añadidas esta sesión</p>
+                  <div style={{ background:H.card2, border:`1px solid ${H.border}`, borderRadius:8, overflow:"hidden" }}>
                     {pickupRecientes.map((r, i) => (
-                      <div key={i} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"8px 12px", borderBottom: i < pickupRecientes.length-1 ? "1px solid #E8E0D5" : "none", fontSize:12 }}>
-                        <span style={{ color:"#1C1814", minWidth:80 }}>{r.fecha_llegada}</span>
-                        <span style={{ color:"#A8998A", flex:1, paddingLeft:8 }}>{r.canal || "—"}</span>
-                        <span style={{ color:"#A8998A", marginRight:10 }}>{r.num_reservas} hab.</span>
-                        <span style={{ color: r.estado==="cancelada" ? "#C0392B" : "#2D7A4F", fontSize:11, fontWeight:600 }}>{r.estado}</span>
+                      <div key={i} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"8px 12px", borderBottom: i < pickupRecientes.length-1 ? `1px solid ${H.border}` : "none", fontSize:12 }}>
+                        <span style={{ color:H.text, minWidth:80 }}>{r.fecha_llegada}</span>
+                        <span style={{ color:H.textMid, flex:1, paddingLeft:8 }}>{r.canal || "—"}</span>
+                        <span style={{ color:H.textMid, marginRight:10 }}>{r.num_reservas} hab.</span>
+                        <span style={{ color: r.estado==="cancelada" ? H.red : H.green, fontSize:11, fontWeight:600 }}>{r.estado}</span>
                       </div>
                     ))}
                   </div>
@@ -1795,24 +1809,24 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
           )}
 
           {/* Ver dashboard */}
-          {(resultadoMain || resultadoPpto || pickupRecientes.length > 0) && (
-            <button onClick={onClose} style={{ width:"100%", marginTop:18, marginBottom:10, background:"#C8933A", color:"#fff", border:"none", borderRadius:10, padding:"11px", fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+          {(resultadoMain || resultadoPpto || prodRecientes.length > 0 || pickupRecientes.length > 0) && (
+            <button onClick={onClose} style={{ width:"100%", marginTop:20, marginBottom:10, background:H.accent, color:"#fff", border:"none", borderRadius:10, padding:"12px", fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", boxShadow:`0 4px 20px rgba(200,147,58,0.35)` }}>
               {t("ver_dashboard")}
             </button>
           )}
 
           {/* Vaciar datos */}
           {confirmVaciar ? (
-            <div style={{ background:"#FDECEA", borderRadius:8, padding:"14px", textAlign:"center", marginTop:8 }}>
-              <p style={{ fontWeight:700, color:"#C0392B", marginBottom:4, fontSize:13 }}>{t("vaciar_confirm")}</p>
-              <p style={{ fontSize:11, color:"#A8998A", marginBottom:10 }}>{t("vaciar_desc")}</p>
+            <div style={{ background:"rgba(231,76,60,0.1)", border:"1px solid rgba(231,76,60,0.3)", borderRadius:8, padding:"14px", textAlign:"center", marginTop:8 }}>
+              <p style={{ fontWeight:700, color:H.red, marginBottom:4, fontSize:13 }}>{t("vaciar_confirm")}</p>
+              <p style={{ fontSize:11, color:H.textMid, marginBottom:10 }}>{t("vaciar_desc")}</p>
               <div style={{ display:"flex", gap:8, justifyContent:"center" }}>
-                <button onClick={()=>setConfirmVaciar(false)} style={{ padding:"6px 16px", borderRadius:7, border:"1px solid #E8E0D5", background:"#fff", color:"#A8998A", cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:11 }}>{t("cancelar")}</button>
-                <button onClick={vaciarDatos} disabled={vaciando} style={{ padding:"6px 16px", borderRadius:7, border:"none", background:"#C0392B", color:"#fff", cursor:vaciando?"not-allowed":"pointer", fontWeight:700, fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:11 }}>{vaciando?t("vaciando"):t("si_vaciar")}</button>
+                <button onClick={()=>setConfirmVaciar(false)} style={{ padding:"6px 16px", borderRadius:7, border:`1px solid ${H.border}`, background:H.card2, color:H.textMid, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:11 }}>{t("cancelar")}</button>
+                <button onClick={vaciarDatos} disabled={vaciando} style={{ padding:"6px 16px", borderRadius:7, border:"none", background:H.red, color:"#fff", cursor:vaciando?"not-allowed":"pointer", fontWeight:700, fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:11 }}>{vaciando?t("vaciando"):t("si_vaciar")}</button>
               </div>
             </div>
           ) : (
-            <button onClick={()=>setConfirmVaciar(true)} style={{ width:"100%", padding:"7px", borderRadius:7, border:"1px solid #FDECEA", background:"none", color:"#C0392B", cursor:"pointer", fontSize:11, fontFamily:"'Plus Jakarta Sans',sans-serif", opacity:0.7, marginTop: (resultadoMain||resultadoPpto||pickupRecientes.length>0) ? 0 : 8 }}>
+            <button onClick={()=>setConfirmVaciar(true)} style={{ width:"100%", padding:"7px", borderRadius:7, border:"1px solid rgba(231,76,60,0.2)", background:"none", color:"rgba(231,76,60,0.6)", cursor:"pointer", fontSize:11, fontFamily:"'Plus Jakarta Sans',sans-serif", marginTop:8 }}>
               {t("vaciar_datos")}
             </button>
           )}
