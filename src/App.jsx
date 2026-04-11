@@ -1419,7 +1419,11 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
         hab_ocupadas, hab_disponibles, revenue_hab, revenue_total, revenue_fnb,
         adr, revpar, trevpar,
       };
-      const { error } = await supabase.from("produccion_diaria").upsert(row, { onConflict: "hotel_id,fecha" });
+      const { data: existing } = await supabase.from("produccion_diaria")
+        .select("id").eq("hotel_id", session.user.id).eq("fecha", prodForm.fecha).maybeSingle();
+      const { error } = existing
+        ? await supabase.from("produccion_diaria").update(row).eq("hotel_id", session.user.id).eq("fecha", prodForm.fecha)
+        : await supabase.from("produccion_diaria").insert(row);
       if (error) throw new Error(error.message);
       setProdRecientes(prev => [row, ...prev.filter(r => r.fecha !== prodForm.fecha)].slice(0, 8));
       setProdForm(f => ({...f, hab_ocupadas:"", hab_disponibles:"", revenue_hab:"", revenue_total:"", revenue_fnb:""}));
