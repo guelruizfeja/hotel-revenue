@@ -1545,7 +1545,7 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
   );
 
   const inputStyle = { width:"100%", padding:"7px 10px", border:`1px solid ${H.border}`, borderRadius:6, fontSize:12, fontFamily:"'Plus Jakarta Sans',sans-serif", background:H.card2, color:H.text, boxSizing:"border-box", outline:"none" };
-  const labelStyle = { fontSize:10, color:H.textMid, marginBottom:4, textTransform:"uppercase", letterSpacing:"0.8px", display:"block" };
+  const labelStyle = { fontSize:10, color:"#0A0A0A", marginBottom:4, textTransform:"uppercase", letterSpacing:"0.8px", display:"block", fontWeight:600 };
 
   const TabIcons = {
     presupuesto: (color) => (
