@@ -5120,6 +5120,21 @@ function OnboardingOverlay({ step, onNext, onSkip }) {
   );
 }
 
+function LiveClock({ lang }) {
+  const [ahora, setAhora] = useState(new Date());
+  useEffect(() => { const id = setInterval(() => setAhora(new Date()), 1000); return () => clearInterval(id); }, []);
+  return (
+    <span style={{ display:"flex", alignItems:"center", gap:5 }}>
+      <span style={{ fontSize: 11, color: "#0A0A0A", fontWeight: 600, letterSpacing: 0.5, fontVariantNumeric:"tabular-nums" }}>
+        {ahora.toLocaleTimeString(lang === "en" ? "en-GB" : lang === "fr" ? "fr-FR" : "es-ES", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+      </span>
+      <span style={{ fontSize: 9, color: "#666", fontWeight: 600, background: "#F0F0F0", borderRadius: 3, padding: "1px 4px", letterSpacing: 0.5 }}>
+        {ahora.toLocaleTimeString("en-GB", { timeZoneName: "short" }).split(" ").pop()}
+      </span>
+    </span>
+  );
+}
+
 export default function App() {
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -5127,8 +5142,6 @@ export default function App() {
 
   const hoy = new Date();
   const [mesSel,  setMesSel]  = useState(() => { const v = localStorage.getItem("rm_mes");  return v !== null ? parseInt(v) : hoy.getMonth(); });
-  const [ahora, setAhora] = useState(new Date());
-  useEffect(() => { const id = setInterval(() => setAhora(new Date()), 1000); return () => clearInterval(id); }, []);
   const [anioSel, setAnioSel] = useState(() => { const v = localStorage.getItem("rm_anio"); return v !== null ? parseInt(v) : hoy.getFullYear(); });
   const [importar, setImportar] = useState(false);
   const [suscripcion, setSuscripcion] = useState(null);
@@ -5443,16 +5456,9 @@ export default function App() {
           <img src="/fastrev-logo.png" alt="FastRevenue" style={{ height: 92, width: "auto", transform: "scaleX(1.08)" }} />
           <span className="topbar-date" style={{ display:"flex", alignItems:"center", gap:10, fontFamily:"'Plus Jakarta Sans', sans-serif" }}>
             <span style={{ fontSize: 12, color: "#000000", fontWeight: 500, letterSpacing: 0.3, whiteSpace: "nowrap" }}>
-              {ahora.toLocaleDateString(lang === "en" ? "en-GB" : lang === "fr" ? "fr-FR" : "es-ES", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).replace(/^\w/, c => c.toUpperCase())}
+              {new Date().toLocaleDateString(lang === "en" ? "en-GB" : lang === "fr" ? "fr-FR" : "es-ES", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).replace(/^\w/, c => c.toUpperCase())}
             </span>
-            <span style={{ display:"flex", alignItems:"center", gap:5 }}>
-              <span style={{ fontSize: 11, color: "#0A0A0A", fontWeight: 600, letterSpacing: 0.5, fontVariantNumeric:"tabular-nums" }}>
-                {ahora.toLocaleTimeString(lang === "en" ? "en-GB" : lang === "fr" ? "fr-FR" : "es-ES", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
-              </span>
-              <span style={{ fontSize: 9, color: "#666", fontWeight: 600, background: "#F0F0F0", borderRadius: 3, padding: "1px 4px", letterSpacing: 0.5 }}>
-                {ahora.toLocaleTimeString("en-GB", { timeZoneName: "short" }).split(" ").pop()}
-              </span>
-            </span>
+            <LiveClock lang={lang} />
           </span>
         </div>
 
