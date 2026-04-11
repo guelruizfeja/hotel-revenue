@@ -2929,7 +2929,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
               const Rc=20, SWc=3.5, circC=2*Math.PI*Rc, sizeC=Rc*2+SWc*2;
 
               return (
-                <div style={{ flex:"0 0 260px", padding:"20px 20px", display:"flex", flexDirection:"column", justifyContent:"center", gap:10 }}>
+                <div style={{ flex:"0 0 220px", padding:"20px 18px", display:"flex", flexDirection:"column", justifyContent:"center", gap:10 }}>
                   <div>
                     <p style={{ fontSize:11, fontWeight:700, color:C.textMid, textTransform:"uppercase", letterSpacing:"1.5px" }}>Movimiento Operativo Diario</p>
                     <p style={{ fontSize:10, color:C.textLight, marginTop:2 }}>{hoyStr}</p>
