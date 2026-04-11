@@ -2915,12 +2915,23 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
 
               const Delta = ({ hoy, ayer }) => {
                 const d = hoy - ayer;
-                if (d === 0) return <span style={{ fontSize:11, color:C.textLight, fontWeight:600 }}>= ayer</span>;
-                const col = d > 0 ? "#10B981" : "#EF4444";
-                const arr = d > 0
-                  ? <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><polyline points="2,9 6,3 10,9" stroke={col} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                  : <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><polyline points="2,3 6,9 10,3" stroke={col} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>;
-                return <span style={{ display:"inline-flex", alignItems:"center", gap:2, fontSize:12, fontWeight:700, color:col }}>{arr}{d>0?"+":""}{d}</span>;
+                const col  = d > 0 ? "#10B981" : d < 0 ? "#EF4444" : C.textLight;
+                const bg   = d > 0 ? "#10B98115" : d < 0 ? "#EF444415" : `${C.border}40`;
+                const arrow = d > 0
+                  ? <svg width="10" height="10" viewBox="0 0 10 10" fill={col}><polygon points="5,1 9,9 1,9"/></svg>
+                  : d < 0
+                  ? <svg width="10" height="10" viewBox="0 0 10 10" fill={col}><polygon points="5,9 9,1 1,1"/></svg>
+                  : null;
+                const label = d === 0 ? "sin cambio" : `${d>0?"+":""}${d}`;
+                return (
+                  <div style={{ display:"inline-flex", flexDirection:"column", alignItems:"flex-end", gap:2 }}>
+                    <span style={{ fontSize:8, color:C.textLight, fontWeight:500, letterSpacing:"0.5px", textTransform:"uppercase" }}>vs ayer</span>
+                    <span style={{ display:"inline-flex", alignItems:"center", gap:4, padding:"3px 7px", borderRadius:20, background:bg }}>
+                      {arrow}
+                      <span style={{ fontSize:12, fontWeight:700, color:col, lineHeight:1 }}>{label}</span>
+                    </span>
+                  </div>
+                );
               };
 
               const lbl = () => ({ fontSize:9, color:C.textMid, textTransform:"uppercase", letterSpacing:"1.2px", fontWeight:600 });
