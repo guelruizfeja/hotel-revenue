@@ -956,7 +956,7 @@ function EmptyState({ mensaje }) {
 }
 
 // ─── IMPORTAR EXCEL ───────────────────────────────────────────────
-function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombreProp }) {
+function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombreProp, fullPage = false }) {
   const t = useT();
   // Pestaña activa
   const [activeBlock, setActiveBlock] = useState("presupuesto");
@@ -1582,17 +1582,18 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
     { id:"pickup",      label:"Pick Up",            done: pickupRecientes.length > 0 },
   ];
 
-  return (
-    <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.45)", display:"flex", alignItems:"flex-start", justifyContent:"center", zIndex:1000, overflowY:"auto", padding:"32px 0" }}>
-      <div style={{ background:H.bg, borderRadius:14, width:620, maxWidth:"95vw", boxShadow:"0 20px 60px rgba(0,0,0,0.15)", fontFamily:"'Plus Jakarta Sans',sans-serif", overflow:"hidden", border:`1px solid ${H.border}` }}>
+  const inner = (
+    <div style={{ background:H.bg, borderRadius: fullPage ? 0 : 14, width: fullPage ? "100%" : 620, maxWidth: fullPage ? "100%" : "95vw", boxShadow: fullPage ? "none" : "0 20px 60px rgba(0,0,0,0.15)", fontFamily:"'Plus Jakarta Sans',sans-serif", overflow:"hidden", border: fullPage ? "none" : `1px solid ${H.border}` }}>
 
-        {/* Header */}
-        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"22px 26px 18px" }}>
-          <h2 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:22, fontWeight:700, color:H.text, letterSpacing:0.2 }}>
-            Gestión de datos
-          </h2>
-          <button onClick={onClose} style={{ background:"none", border:`1px solid ${H.border}`, borderRadius:7, width:28, height:28, cursor:"pointer", fontSize:14, color:H.textMid, display:"flex", alignItems:"center", justifyContent:"center", padding:0 }}>✕</button>
-        </div>
+      {/* Header */}
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"22px 26px 18px", borderBottom: fullPage ? `1px solid ${H.border}` : "none" }}>
+        <h2 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:22, fontWeight:700, color:H.text, letterSpacing:0.2 }}>
+          Gestión de datos
+        </h2>
+        <button onClick={onClose} style={{ background:"none", border:`1px solid ${H.border}`, borderRadius:7, padding:"6px 14px", cursor:"pointer", fontSize:12, fontWeight:600, color:H.textMid, fontFamily:"'Plus Jakarta Sans',sans-serif", display:"flex", alignItems:"center", gap:6 }}>
+          ← Volver al dashboard
+        </button>
+      </div>
 
         {/* Tab cards */}
         <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:8, padding:"0 26px 20px" }}>
@@ -1870,6 +1871,12 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
           )}
         </div>
       </div>
+  );
+
+  if (fullPage) return inner;
+  return (
+    <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.45)", display:"flex", alignItems:"flex-start", justifyContent:"center", zIndex:1000, overflowY:"auto", padding:"32px 0" }}>
+      {inner}
     </div>
   );
 }
@@ -5338,6 +5345,7 @@ export default function App() {
     pickup:    (props) => <PickupView    {...props} />,
     budget:    (props) => <BudgetView    {...props} />,
     grupos:    (props) => <GruposView    {...props} onRecargar={() => cargarDatos(true)} />,
+    gestion:   ()      => <ImportarExcel fullPage onClose={() => { setView("dashboard"); localStorage.setItem("fr_view","dashboard"); }} session={session} hotelNombre={datos.hotel?.nombre||''} onImportado={() => { sessionStorage.removeItem("fr_datos_cache_v3"); sessionStorage.removeItem("fr_datos_ts_v3"); localStorage.removeItem("fr_scroll"); cargarDatos(true); }} />,
   };
   const View = views[view];
 
@@ -5453,8 +5461,8 @@ export default function App() {
 
         {/* Botones + Email + logout */}
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginLeft: "auto" }}>
-          {view === "dashboard" && (
-            <button id="ob-importar" onClick={() => setImportar(true)} style={{ background: C.accent, color: "#fff", border: "none", borderRadius: 7, padding: "7px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "'Plus Jakarta Sans',sans-serif", whiteSpace: "nowrap", display:"flex", alignItems:"center", gap:5 }}>
+          {view !== "gestion" && (
+            <button id="ob-importar" onClick={() => { setView("gestion"); localStorage.setItem("fr_view","gestion"); }} style={{ background: C.accent, color: "#fff", border: "none", borderRadius: 7, padding: "7px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "'Plus Jakarta Sans',sans-serif", whiteSpace: "nowrap", display:"flex", alignItems:"center", gap:5 }}>
               <span className="topbar-importar-label">Gestión de datos</span>
             </button>
           )}
@@ -5675,7 +5683,6 @@ export default function App() {
           </div>
         </div>
       )}
-      {importar && <ImportarExcel onClose={() => setImportar(false)} session={session} hotelNombre={datos.hotel?.nombre || ''} onImportado={() => { sessionStorage.removeItem("fr_datos_cache_v3"); sessionStorage.removeItem("fr_datos_ts_v3"); localStorage.removeItem("fr_scroll"); cargarDatos(true); }} />}
       {onboardingStep !== null && <OnboardingOverlay step={onboardingStep} onNext={handleOnboardingNext} onSkip={handleOnboardingSkip} />}
     </div>
     </LangContext.Provider>
