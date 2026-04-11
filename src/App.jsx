@@ -958,9 +958,8 @@ function EmptyState({ mensaje }) {
 // ─── IMPORTAR EXCEL ───────────────────────────────────────────────
 function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombreProp }) {
   const t = useT();
-  // Bloque activo (acordeón)
-  const [activeBlock, setActiveBlock] = useState(null);
-  const toggleBlock = (b) => setActiveBlock(prev => prev === b ? null : b);
+  // Pestaña activa
+  const [activeBlock, setActiveBlock] = useState("presupuesto");
   // Estado datos principales (Histórico)
   const [loadingMain, setLoadingMain] = useState(false);
   const [resultadoMain, setResultadoMain] = useState(null);
@@ -1483,36 +1482,42 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
   const inputStyle = { width:"100%", padding:"6px 9px", border:"1px solid #E8E0D5", borderRadius:5, fontSize:12, fontFamily:"'Plus Jakarta Sans',sans-serif", background:"#FAFAFA", color:"#1C1814", boxSizing:"border-box" };
   const labelStyle = { fontSize:10, color:"#A8998A", marginBottom:3, textTransform:"uppercase", letterSpacing:"0.5px", display:"block" };
 
-  const BlockHeader = ({ label, block, done }) => (
-    <button onClick={() => toggleBlock(block)}
-      style={{ width:"100%", display:"flex", alignItems:"center", justifyContent:"space-between", padding:"11px 14px", background: activeBlock===block ? "#EDE6DA" : "#F7F3EE", border:"1px solid #E8E0D5", borderRadius: activeBlock===block ? "8px 8px 0 0" : 8, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", marginBottom: activeBlock===block ? 0 : 8 }}>
-      <span style={{ fontSize:13, fontWeight:600, color:"#1C1814" }}>{label}</span>
-      <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-        {done && <span style={{ fontSize:11, color:"#2D7A4F", fontWeight:700 }}>✓</span>}
-        <span style={{ fontSize:10, color:"#A8998A" }}>{activeBlock===block ? "▲" : "▼"}</span>
-      </div>
-    </button>
-  );
+  const tabs = [
+    { id:"presupuesto", label:"Presupuesto", done: !!resultadoPpto },
+    { id:"historico",   label:"Histórico",   done: !!resultadoMain },
+    { id:"pickup",      label:"Pick Up",      done: pickupRecientes.length > 0 },
+  ];
 
   return (
     <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", display:"flex", alignItems:"flex-start", justifyContent:"center", zIndex:1000, overflowY:"auto", padding:"32px 0 32px" }}>
-      <div style={{ background:"#fff", borderRadius:10, padding:"28px 32px", width:600, maxWidth:"95vw", boxShadow:"0 24px 60px rgba(0,0,0,0.3)", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+      <div style={{ background:"#fff", borderRadius:10, width:600, maxWidth:"95vw", boxShadow:"0 24px 60px rgba(0,0,0,0.3)", fontFamily:"'Plus Jakarta Sans',sans-serif", overflow:"hidden" }}>
 
         {/* Header */}
-        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:22 }}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"24px 28px 20px" }}>
           <div>
             <h2 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:22, fontWeight:700, color:"#1C1814" }}>Actualizar datos</h2>
-            <p style={{ fontSize:12, color:"#A8998A", marginTop:4 }}>Selecciona el bloque que quieres actualizar</p>
           </div>
           <button onClick={onClose} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, width:28, height:28, cursor:"pointer", fontSize:15, color:"#A8998A", display:"flex", alignItems:"center", justifyContent:"center", padding:0 }}>✕</button>
         </div>
 
-        {/* ── BLOQUE 1: PRESUPUESTO ── */}
-        <div style={{ marginBottom: activeBlock==="presupuesto" ? 8 : 0 }}>
-          <BlockHeader label="1 · Presupuesto" block="presupuesto" done={!!resultadoPpto} />
+        {/* Tab bar */}
+        <div style={{ display:"flex", borderBottom:"2px solid #E8E0D5", padding:"0 28px" }}>
+          {tabs.map(tab => (
+            <button key={tab.id} onClick={() => setActiveBlock(tab.id)}
+              style={{ padding:"10px 18px", background:"none", border:"none", borderBottom: activeBlock===tab.id ? "2px solid #004B87" : "2px solid transparent", marginBottom:-2, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:13, fontWeight: activeBlock===tab.id ? 700 : 500, color: activeBlock===tab.id ? "#004B87" : "#A8998A", display:"flex", alignItems:"center", gap:6, whiteSpace:"nowrap" }}>
+              {tab.label}
+              {tab.done && <span style={{ width:7, height:7, borderRadius:"50%", background:"#2D7A4F", display:"inline-block" }} />}
+            </button>
+          ))}
+        </div>
+
+        {/* Tab content */}
+        <div style={{ padding:"24px 28px 28px" }}>
+
+          {/* ── PRESUPUESTO ── */}
           {activeBlock === "presupuesto" && (
-            <div style={{ padding:"16px", background:"#F7F3EE", border:"1px solid #E8E0D5", borderTop:"none", borderRadius:"0 0 8px 8px", marginBottom:8 }}>
-              <p style={{ fontSize:11, color:"#A8998A", marginBottom:12 }}>{t("imp_ppto_sub")}</p>
+            <div>
+              <p style={{ fontSize:11, color:"#A8998A", marginBottom:14 }}>{t("imp_ppto_sub")}</p>
               <UploadZone
                 id="excel-input-ppto"
                 loading={loadingPpto} resultado={resultadoPpto ? true : null} error={errorPpto}
@@ -1522,17 +1527,12 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
               />
             </div>
           )}
-        </div>
 
-        {/* ── BLOQUE 2: HISTÓRICO ── */}
-        <div style={{ marginBottom: activeBlock==="historico" ? 8 : 0 }}>
-          <BlockHeader label="2 · Histórico" block="historico" done={!!resultadoMain} />
+          {/* ── HISTÓRICO ── */}
           {activeBlock === "historico" && (
-            <div style={{ padding:"16px", background:"#F7F3EE", border:"1px solid #E8E0D5", borderTop:"none", borderRadius:"0 0 8px 8px", marginBottom:8 }}>
-
-              {/* Carga inicial Excel */}
+            <div>
               <p style={{ fontSize:11, fontWeight:700, color:"#1C1814", marginBottom:3 }}>Carga inicial</p>
-              <p style={{ fontSize:11, color:"#A8998A", marginBottom:10 }}>Importa todos los datos históricos de producción diaria y reservas OTB desde el Excel.</p>
+              <p style={{ fontSize:11, color:"#A8998A", marginBottom:12 }}>Importa todos los datos históricos de producción diaria y reservas OTB desde el Excel.</p>
               <UploadZone
                 id="excel-input-main"
                 loading={loadingMain} resultado={resultadoMain ? true : null} error={errorMain}
@@ -1544,14 +1544,13 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
                 </>}
               />
 
-              {/* Editar por fecha */}
-              <div style={{ marginTop:18, paddingTop:16, borderTop:"1px solid #E8E0D5" }}>
+              <div style={{ marginTop:20, paddingTop:18, borderTop:"1px solid #E8E0D5" }}>
                 <p style={{ fontSize:11, fontWeight:700, color:"#1C1814", marginBottom:3 }}>Editar día</p>
                 <p style={{ fontSize:11, color:"#A8998A", marginBottom:10 }}>Busca una fecha para corregir los datos de producción de ese día.</p>
                 <div style={{ display:"flex", gap:8, marginBottom:10 }}>
                   <input type="date" value={fechaBusqueda}
                     onChange={e => { setFechaBusqueda(e.target.value); setDiaEncontrado(null); setOkEdit(false); setErrorEdit(""); }}
-                    style={{ flex:1, padding:"7px 10px", border:"1px solid #E8E0D5", borderRadius:6, fontSize:12, fontFamily:"'Plus Jakarta Sans',sans-serif", background:"#fff", color:"#1C1814" }}
+                    style={{ flex:1, padding:"7px 10px", border:"1px solid #E8E0D5", borderRadius:6, fontSize:12, fontFamily:"'Plus Jakarta Sans',sans-serif", background:"#F7F3EE", color:"#1C1814" }}
                   />
                   <button onClick={buscarDia} disabled={buscando || !fechaBusqueda}
                     style={{ padding:"7px 18px", background:"#004B87", color:"#fff", border:"none", borderRadius:6, fontSize:12, fontWeight:600, cursor:buscando||!fechaBusqueda?"not-allowed":"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", opacity:!fechaBusqueda?0.5:1 }}>
@@ -1560,21 +1559,20 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
                 </div>
                 {errorEdit && !diaEncontrado && <p style={{ fontSize:11, color:"#C0392B", marginBottom:8 }}>{errorEdit}</p>}
                 {diaEncontrado && (
-                  <div style={{ background:"#fff", border:"1px solid #E8E0D5", borderRadius:8, padding:"14px" }}>
+                  <div style={{ background:"#F7F3EE", border:"1px solid #E8E0D5", borderRadius:8, padding:"14px" }}>
                     <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"8px 12px", marginBottom:10 }}>
                       {[
-                        { label:"Hab. Ocupadas",    key:"hab_ocupadas" },
-                        { label:"Hab. Disponibles", key:"hab_disponibles" },
+                        { label:"Hab. Ocupadas",       key:"hab_ocupadas" },
+                        { label:"Hab. Disponibles",    key:"hab_disponibles" },
                         { label:"Rev. Habitaciones €", key:"revenue_hab" },
-                        { label:"Rev. Total €",     key:"revenue_total" },
-                        { label:"Rev. F&B €",       key:"revenue_fnb" },
+                        { label:"Rev. Total €",        key:"revenue_total" },
+                        { label:"Rev. F&B €",          key:"revenue_fnb" },
                       ].map(({ label, key }) => (
                         <div key={key}>
                           <label style={labelStyle}>{label}</label>
                           <input type="number" value={editValues[key]}
                             onChange={e => setEditValues(v => ({...v, [key]: e.target.value}))}
-                            style={inputStyle}
-                          />
+                            style={inputStyle} />
                         </div>
                       ))}
                     </div>
@@ -1589,16 +1587,12 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
               </div>
             </div>
           )}
-        </div>
 
-        {/* ── BLOQUE 3: PICK UP ── */}
-        <div style={{ marginBottom:16 }}>
-          <BlockHeader label="3 · Pick Up" block="pickup" done={pickupRecientes.length > 0} />
+          {/* ── PICK UP ── */}
           {activeBlock === "pickup" && (
-            <div style={{ padding:"16px", background:"#F7F3EE", border:"1px solid #E8E0D5", borderTop:"none", borderRadius:"0 0 8px 8px" }}>
-              <p style={{ fontSize:11, color:"#A8998A", marginBottom:12 }}>Añade el pick up diario de reservas en el mismo formato que el Excel.</p>
-
-              <div style={{ background:"#fff", border:"1px solid #E8E0D5", borderRadius:8, padding:"14px", marginBottom:10 }}>
+            <div>
+              <p style={{ fontSize:11, color:"#A8998A", marginBottom:14 }}>Añade el pick up diario de reservas en el mismo formato que el Excel.</p>
+              <div style={{ background:"#F7F3EE", border:"1px solid #E8E0D5", borderRadius:8, padding:"14px", marginBottom:12 }}>
                 <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"8px 12px", marginBottom:12 }}>
                   <div>
                     <label style={labelStyle}>Fecha Pick Up</label>
@@ -1656,9 +1650,9 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
               {pickupRecientes.length > 0 && (
                 <div>
                   <p style={{ fontSize:10, color:"#A8998A", marginBottom:6, textTransform:"uppercase", letterSpacing:"0.5px" }}>Añadidas esta sesión</p>
-                  <div style={{ background:"#fff", border:"1px solid #E8E0D5", borderRadius:8, overflow:"hidden" }}>
+                  <div style={{ background:"#F7F3EE", border:"1px solid #E8E0D5", borderRadius:8, overflow:"hidden" }}>
                     {pickupRecientes.map((r, i) => (
-                      <div key={i} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"8px 12px", borderBottom: i < pickupRecientes.length-1 ? "1px solid #F0EAE0" : "none", fontSize:12 }}>
+                      <div key={i} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"8px 12px", borderBottom: i < pickupRecientes.length-1 ? "1px solid #E8E0D5" : "none", fontSize:12 }}>
                         <span style={{ color:"#1C1814", minWidth:80 }}>{r.fecha_llegada}</span>
                         <span style={{ color:"#A8998A", flex:1, paddingLeft:8 }}>{r.canal || "—"}</span>
                         <span style={{ color:"#A8998A", marginRight:10 }}>{r.num_reservas} hab.</span>
@@ -1670,30 +1664,30 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
               )}
             </div>
           )}
-        </div>
 
-        {/* Ver dashboard */}
-        {(resultadoMain || resultadoPpto || pickupRecientes.length > 0) && (
-          <button onClick={onClose} style={{ width:"100%", marginBottom:10, background:"#C8933A", color:"#fff", border:"none", borderRadius:10, padding:"11px", fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
-            {t("ver_dashboard")}
-          </button>
-        )}
+          {/* Ver dashboard */}
+          {(resultadoMain || resultadoPpto || pickupRecientes.length > 0) && (
+            <button onClick={onClose} style={{ width:"100%", marginTop:18, marginBottom:10, background:"#C8933A", color:"#fff", border:"none", borderRadius:10, padding:"11px", fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+              {t("ver_dashboard")}
+            </button>
+          )}
 
-        {/* Vaciar datos */}
-        {confirmVaciar ? (
-          <div style={{ background:"#FDECEA", borderRadius:8, padding:"14px", textAlign:"center" }}>
-            <p style={{ fontWeight:700, color:"#C0392B", marginBottom:4, fontSize:13 }}>{t("vaciar_confirm")}</p>
-            <p style={{ fontSize:11, color:"#A8998A", marginBottom:10 }}>{t("vaciar_desc")}</p>
-            <div style={{ display:"flex", gap:8, justifyContent:"center" }}>
-              <button onClick={()=>setConfirmVaciar(false)} style={{ padding:"6px 16px", borderRadius:7, border:"1px solid #E8E0D5", background:"#fff", color:"#A8998A", cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:11 }}>{t("cancelar")}</button>
-              <button onClick={vaciarDatos} disabled={vaciando} style={{ padding:"6px 16px", borderRadius:7, border:"none", background:"#C0392B", color:"#fff", cursor:vaciando?"not-allowed":"pointer", fontWeight:700, fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:11 }}>{vaciando?t("vaciando"):t("si_vaciar")}</button>
+          {/* Vaciar datos */}
+          {confirmVaciar ? (
+            <div style={{ background:"#FDECEA", borderRadius:8, padding:"14px", textAlign:"center", marginTop:8 }}>
+              <p style={{ fontWeight:700, color:"#C0392B", marginBottom:4, fontSize:13 }}>{t("vaciar_confirm")}</p>
+              <p style={{ fontSize:11, color:"#A8998A", marginBottom:10 }}>{t("vaciar_desc")}</p>
+              <div style={{ display:"flex", gap:8, justifyContent:"center" }}>
+                <button onClick={()=>setConfirmVaciar(false)} style={{ padding:"6px 16px", borderRadius:7, border:"1px solid #E8E0D5", background:"#fff", color:"#A8998A", cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:11 }}>{t("cancelar")}</button>
+                <button onClick={vaciarDatos} disabled={vaciando} style={{ padding:"6px 16px", borderRadius:7, border:"none", background:"#C0392B", color:"#fff", cursor:vaciando?"not-allowed":"pointer", fontWeight:700, fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:11 }}>{vaciando?t("vaciando"):t("si_vaciar")}</button>
+              </div>
             </div>
-          </div>
-        ) : (
-          <button onClick={()=>setConfirmVaciar(true)} style={{ width:"100%", padding:"7px", borderRadius:7, border:"1px solid #FDECEA", background:"none", color:"#C0392B", cursor:"pointer", fontSize:11, fontFamily:"'Plus Jakarta Sans',sans-serif", opacity:0.7 }}>
-            {t("vaciar_datos")}
-          </button>
-        )}
+          ) : (
+            <button onClick={()=>setConfirmVaciar(true)} style={{ width:"100%", padding:"7px", borderRadius:7, border:"1px solid #FDECEA", background:"none", color:"#C0392B", cursor:"pointer", fontSize:11, fontFamily:"'Plus Jakarta Sans',sans-serif", opacity:0.7, marginTop: (resultadoMain||resultadoPpto||pickupRecientes.length>0) ? 0 : 8 }}>
+              {t("vaciar_datos")}
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
