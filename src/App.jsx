@@ -1500,7 +1500,7 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
   const H = {
     bg:      "#FDFDFD",
     card:    "#FFFFFF",
-    card2:   "#F4F7FA",
+    card2:   "#F7F7F7",
     border:  "#E0E5EC",
     accent:  "#C8933A",
     accentD: "#A07228",
