@@ -2658,10 +2658,10 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
 
         return (
           <>
-          <div className="dash-charts-grid" style={{ display:"grid", gridTemplateColumns:"2fr 1fr", gap:16, marginBottom:16 }}>
+          <div className="dash-charts-grid" style={{ display:"grid", gridTemplateColumns:"2fr 1fr", gap:0, marginBottom:16, position:"relative", alignItems:"stretch" }}>
 
             {/* ── HEATMAP ── */}
-            <Card style={{ display:"flex", flexDirection:"column" }}>
+            <Card style={{ display:"flex", flexDirection:"column", paddingRight:28 }}>
               <div style={{ marginBottom:14 }}>
                 <p style={{ fontSize:11, fontWeight:700, color:C.textMid, textTransform:"uppercase", letterSpacing:"1.5px" }}>
                   {t("ocup_mensual")} <span style={{ color:C.accent }}>| {t("meses_full")[mes].toUpperCase()} {anio}</span>
@@ -2941,7 +2941,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
               const sizeC=Rc*2+SWc*2;
 
               return (
-                <Card style={{ display:"flex", flexDirection:"column", justifyContent:"center", gap:10 }}>
+                <Card style={{ display:"flex", flexDirection:"column", justifyContent:"center", gap:10, marginLeft:-18, zIndex:2, boxShadow:"-6px 0 24px rgba(0,0,0,0.10), 0 4px 16px rgba(0,0,0,0.07)", borderRadius:12 }}>
                   <div>
                     <p style={{ fontSize:11, fontWeight:700, color:C.textMid, textTransform:"uppercase", letterSpacing:"1.5px" }}>Movimiento Operativo Diario</p>
                     <p style={{ fontSize:10, color:C.textLight, marginTop:2 }}>{hoyStr}</p>
