@@ -1698,27 +1698,27 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
                       onChange={e => setProdForm(f=>({...f, fecha:e.target.value}))} style={inputStyle} />
                   </div>
                   <div>
-                    <label style={labelStyle}>Hab. Ocupadas</label>
+                    <label style={labelStyle}>Habitaciones Ocupadas</label>
                     <input type="number" min="0" value={prodForm.hab_ocupadas} placeholder="0"
                       onChange={e => setProdForm(f=>({...f, hab_ocupadas:e.target.value}))} style={inputStyle} />
                   </div>
                   <div>
-                    <label style={labelStyle}>Hab. Disponibles</label>
+                    <label style={labelStyle}>Habitaciones Disponibles</label>
                     <input type="number" min="0" value={prodForm.hab_disponibles} placeholder="0"
                       onChange={e => setProdForm(f=>({...f, hab_disponibles:e.target.value}))} style={inputStyle} />
                   </div>
                   <div>
-                    <label style={labelStyle}>Rev. Habitaciones €</label>
+                    <label style={labelStyle}>Revenue Habitaciones €</label>
                     <input type="number" min="0" step="0.01" value={prodForm.revenue_hab} placeholder="0.00"
                       onChange={e => setProdForm(f=>({...f, revenue_hab:e.target.value}))} style={inputStyle} />
                   </div>
                   <div>
-                    <label style={labelStyle}>Rev. Total €</label>
+                    <label style={labelStyle}>Revenue Total €</label>
                     <input type="number" min="0" step="0.01" value={prodForm.revenue_total} placeholder="0.00"
                       onChange={e => setProdForm(f=>({...f, revenue_total:e.target.value}))} style={inputStyle} />
                   </div>
                   <div>
-                    <label style={labelStyle}>Rev. F&B €</label>
+                    <label style={labelStyle}>Revenue F&B €</label>
                     <input type="number" min="0" step="0.01" value={prodForm.revenue_fnb} placeholder="0.00"
                       onChange={e => setProdForm(f=>({...f, revenue_fnb:e.target.value}))} style={inputStyle} />
                   </div>
