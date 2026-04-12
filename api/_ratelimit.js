@@ -39,6 +39,7 @@ async function rateLimitRedis(key, limit, windowMs) {
     method: 'POST',
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
     body,
+    signal: AbortSignal.timeout(3000),
   });
 
   if (!r.ok) {
