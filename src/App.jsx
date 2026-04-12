@@ -6,7 +6,7 @@ import {
   PieChart, Pie, Cell,
 } from "recharts";
 
-const LOGO_B64 = "/fastrev-logo.svg";
+const LOGO_B64 = "/fastrev-logo.jpg";
 const C = {
   bg: "#FDFDFD", bgCard: "#FFFFFF", bgDeep: "#0A2540",
   accent: "#004B87", accentLight: "#E8F0F9", accentDark: "#003366",
@@ -5367,7 +5367,7 @@ function AuthScreen() {
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;0,800;1,400;1,600&family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap'); * { box-sizing: border-box; margin: 0; padding: 0; } html, body, #root { width: 100%; min-height: 100vh; } @keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }`}</style>
       <div style={{ width: 420, background: C.bgCard, borderRadius: 20, padding: "40px 36px", boxShadow: "0 32px 80px rgba(0,0,0,0.4)", animation: "fadeUp 0.5s ease both" }}>
         <div style={{ textAlign: "center", marginBottom: 32 }}>
-          <img src="/fastrev-logo.svg" alt="FastRevenue" style={{ height: 140, marginBottom: 12 }} />
+          <img src="/fastrev-logo.jpg" alt="FastRevenue" style={{ height: 140, marginBottom: 12 }} />
         </div>
         <div style={{ display: "flex", background: C.bg, borderRadius: 10, padding: 4, marginBottom: 24 }}>
           {[["login","Iniciar sesión"],["register","Crear cuenta"]].map(([k,l]) => (
@@ -5869,7 +5869,7 @@ export default function App() {
       <header style={{ background: C.bg, minHeight: 52, position: "sticky", top: 0, zIndex: 100, borderBottom: `1px solid ${C.border}` }}><div style={{ width: "100%", minHeight: 52, display: "flex", alignItems: "center", padding: "0 clamp(12px, 4vw, 32px)", gap: 6, flexWrap: "nowrap" }}>
         {/* Logo centro */}
         <div style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", pointerEvents: "none", display: "flex", alignItems: "center", gap: 12 }}>
-          <img src="/fastrev-logo.svg" alt="FastRevenue" style={{ height: 92, width: "auto", transform: "scaleX(1.08)" }} />
+          <img src="/fastrev-logo.jpg" alt="FastRevenue" style={{ height: 92, width: "auto", transform: "scaleX(1.08)" }} />
           <span className="topbar-date" style={{ display:"flex", alignItems:"center", gap:10, fontFamily:"'Plus Jakarta Sans', sans-serif" }}>
             <span style={{ fontSize: 12, color: "#000000", fontWeight: 500, letterSpacing: 0.3, whiteSpace: "nowrap" }}>
               {new Date().toLocaleDateString(lang === "en" ? "en-GB" : lang === "fr" ? "fr-FR" : "es-ES", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).replace(/^\w/, c => c.toUpperCase())}
