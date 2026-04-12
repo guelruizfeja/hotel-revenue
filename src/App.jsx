@@ -20,7 +20,7 @@ const useT = () => { const lang = useContext(LangContext); return (k) => (TRANSL
 const TRANSLATIONS = {
   es: {
     // Nav & topbar
-    nav_dashboard:"Dashboard", nav_pickup:"Pickup", nav_budget:"Presupuesto", nav_grupos:"Grupos/Eventos", nav_gestion:"Gestión de datos",
+    nav_dashboard:"Dashboard", nav_pickup:"Pickup", nav_budget:"Presupuesto", nav_grupos:"Grupos/Eventos", nav_salas:"Salas", nav_gestion:"Gestión de datos",
     importar:"Importar", mi_perfil:"Mi perfil", cerrar_sesion:"Cerrar sesión",
     suscripcion:"Suscripción", extranets:"Extranets", informe_mensual:"Informe mensual",
     conectado_como:"Conectado como", cargando:"Cargando...",
@@ -137,7 +137,7 @@ const TRANSLATIONS = {
     si:"Sí", no:"No", todos:"Todos",
   },
   en: {
-    nav_dashboard:"Dashboard", nav_pickup:"Pickup", nav_budget:"Budget", nav_grupos:"Grupos/Eventos", nav_gestion:"Data management",
+    nav_dashboard:"Dashboard", nav_pickup:"Pickup", nav_budget:"Budget", nav_grupos:"Grupos/Eventos", nav_salas:"Rooms", nav_gestion:"Data management",
     importar:"Import", mi_perfil:"My profile", cerrar_sesion:"Log out",
     suscripcion:"Subscription", extranets:"Extranets", informe_mensual:"Monthly report",
     conectado_como:"Signed in as", cargando:"Loading...",
@@ -242,7 +242,7 @@ const TRANSLATIONS = {
     si:"Yes", no:"No", todos:"All",
   },
   fr: {
-    nav_dashboard:"Dashboard", nav_pickup:"Pickup", nav_budget:"Budget", nav_grupos:"Grupos/Eventos", nav_gestion:"Gestion des données",
+    nav_dashboard:"Dashboard", nav_pickup:"Pickup", nav_budget:"Budget", nav_grupos:"Grupos/Eventos", nav_salas:"Salles", nav_gestion:"Gestion des données",
     importar:"Importer", mi_perfil:"Mon profil", cerrar_sesion:"Déconnexion",
     suscripcion:"Abonnement", extranets:"Extranets", informe_mensual:"Rapport mensuel",
     conectado_como:"Connecté en tant que", cargando:"Chargement...",
@@ -560,9 +560,9 @@ function WeatherBar({ ciudad, datos, lang }) {
   );
 }
 
-function Card({ children, style = {} }) {
+function Card({ children, style = {}, onClick }) {
   return (
-    <div style={{ background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: 10, padding: "22px 24px", width: "100%", ...style }}>
+    <div onClick={onClick} style={{ background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: 10, padding: "22px 24px", width: "100%", ...style }}>
       {children}
     </div>
   );
@@ -900,7 +900,7 @@ function KpiCard({ label, subtitle, value, changeLm, upLm, changeLy, upLy, i, on
   );
 }
 
-function PeriodSelectorInline({ mes, anio, onChange, aniosDisponibles }) {
+function PeriodSelectorInline({ mes, anio, onChange, aniosDisponibles, allowFuture = false }) {
   const t = useT();
   const hoy = new Date();
   const anioMax = hoy.getFullYear();
@@ -928,7 +928,7 @@ function PeriodSelectorInline({ mes, anio, onChange, aniosDisponibles }) {
       </div>
       <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:4 }}>
         {MESES_C.map((m, i) => {
-          const futuro = anio === anioMax && i > hoy.getMonth();
+          const futuro = !allowFuture && anio === anioMax && i > hoy.getMonth();
           const activo = i === mes;
           const esHoyMes = i === hoy.getMonth() && anio === hoy.getFullYear();
           return (
@@ -4918,12 +4918,12 @@ function GruposView({ datos, onRecargar }) {
 
   const [anio, setAnio] = useState(new Date().getFullYear());
   const [mes, setMes] = useState(new Date().getMonth());
-  const [filtroEstado, setFiltroEstado] = useState("todos");
-  const [modalGrupo, setModalGrupo] = useState(null); // null | {} (nuevo) | {id,...} (editar)
-  const [detalleGrupo, setDetalleGrupo] = useState(null); // evento para panel de métricas
+  const [modalGrupo, setModalGrupo] = useState(null);
+  const [detalleGrupo, setDetalleGrupo] = useState(null);
   const [guardando, setGuardando] = useState(false);
-  const [vistaActiva, setVistaActiva] = useState(() => localStorage.getItem("fr_grupos_vista") || "calendario");
   const [menuNuevo, setMenuNuevo] = useState(false);
+  const [subVista, setSubVista] = useState(() => localStorage.getItem("fr_grupos_subvista") || "grupos");
+  const cambiarSubVista = (v) => { setSubVista(v); localStorage.setItem("fr_grupos_subvista", v); };
   useEffect(() => {
     const handler = (e) => {
       if (e.key !== "Escape") return;
@@ -5046,53 +5046,47 @@ function GruposView({ datos, onRecargar }) {
     return { mes: MESES[mi], revHab: tieneDatos ? Math.round(revHab) : null, revME: revME > 0 ? Math.round(revME) : null };
   });
 
-  const gruposFiltrados = filtroEstado === "todos"
-    ? gruposAnio.filter(g => g.estado !== "cancelado")
-    : gruposAnio.filter(g => g.estado === filtroEstado);
-
   const inp = { width:"100%", padding:"9px 12px", borderRadius:7, border:`1.5px solid ${C.border}`, fontSize:13, fontFamily:"'Plus Jakarta Sans',sans-serif", color:C.text, background:C.bg, outline:"none", boxSizing:"border-box" };
 
   return (
     <div style={{ display:"flex", flexDirection:"column", gap:20 }}>
 
-      {/* ── Toolbar ── */}
-      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", gap:12, flexWrap:"wrap" }}>
-        <div style={{ display:"flex", gap:6, alignItems:"center" }}>
-          {/* Navegación mes (solo en vista calendario) */}
-          {vistaActiva === "calendario" ? (<>
-            <button onClick={prevMes} style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:6, width:28, height:28, cursor:"pointer", color:C.textMid, display:"flex", alignItems:"center", justifyContent:"center", fontSize:16, padding:0 }}>‹</button>
-            <span style={{ fontSize:14, fontWeight:700, color:C.text, minWidth:120, textAlign:"center" }}>{MESES_FULL[mes]} {anio}</span>
-            <button onClick={nextMes} style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:6, width:28, height:28, cursor:"pointer", color:C.textMid, display:"flex", alignItems:"center", justifyContent:"center", fontSize:16, padding:0 }}>›</button>
-          </>) : (<>
-            <button onClick={()=>setAnio(a=>a-1)} style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:6, width:28, height:28, cursor:"pointer", color:C.textMid, display:"flex", alignItems:"center", justifyContent:"center", fontSize:16, padding:0 }}>‹</button>
-            <span style={{ fontSize:14, fontWeight:700, color:C.text, minWidth:40, textAlign:"center" }}>{anio}</span>
-            <button onClick={()=>setAnio(a=>a+1)} style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:6, width:28, height:28, cursor:"pointer", color:C.textMid, display:"flex", alignItems:"center", justifyContent:"center", fontSize:16, padding:0 }}>›</button>
-          </>)}
-          {/* Selector vista */}
-          <select value={vistaActiva} onChange={e=>{ setVistaActiva(e.target.value); localStorage.setItem("fr_grupos_vista", e.target.value); }}
-            style={{ marginLeft:8, padding:"5px 10px", borderRadius:7, border:`1.5px solid ${C.border}`, fontSize:12, fontWeight:600, color:C.text, background:C.bg, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", outline:"none" }}>
-            {[["calendario","📅 Calendario"],["tabla","⊞ Tabla"]].map(([k,label])=>(
-              <option key={k} value={k}>{label}</option>
-            ))}
-          </select>
+      {/* ── Header: título + selector de periodo + botones ── */}
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:16, flexWrap:"wrap" }}>
+        <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+          <h2 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:24, fontWeight:700, color:C.text, margin:0, letterSpacing:-0.5 }}>
+            Grupos / Eventos
+          </h2>
+          <div style={{ display:"flex", gap:6 }}>
+            <select value={mes} onChange={e=>setMes(Number(e.target.value))}
+              style={{ padding:"6px 10px", borderRadius:7, border:`1.5px solid ${C.border}`, fontSize:13, fontWeight:600, color:C.text, background:C.bg, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", outline:"none" }}>
+              {MESES_FULL.map((m, i) => {
+                const mStr = String(anio) + "-" + String(i+1).padStart(2,"0");
+                const conf = grupos.filter(g => g.estado === "confirmado" && (g.fecha_inicio?.slice(0,7) === mStr || g.fecha_fin?.slice(0,7) === mStr)).length;
+                return <option key={i} value={i}>{m}{conf > 0 ? ` (${conf})` : ""}</option>;
+              })}
+            </select>
+            <select value={anio} onChange={e=>setAnio(Number(e.target.value))}
+              style={{ padding:"6px 10px", borderRadius:7, border:`1.5px solid ${C.border}`, fontSize:13, fontWeight:600, color:C.text, background:C.bg, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", outline:"none" }}>
+              {[...new Set([anio - 1, anio, anio + 1, ...grupos.map(g => parseInt(g.fecha_inicio?.slice(0,4))).filter(Boolean)])].sort().map(a => <option key={a} value={a}>{a}</option>)}
+            </select>
+          </div>
         </div>
         <div style={{ display:"flex", gap:8, alignItems:"center" }}>
           <button onClick={seedDemoData} disabled={seedando}
-            style={{ background:"#E0F0FF", color:"#2B7EC1", border:"1.5px dashed #2B7EC1", borderRadius:8, padding:"8px 16px", fontSize:12, fontWeight:600, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", opacity:seedando?0.6:1 }}>
+            style={{ background:"#E0F0FF", color:"#2B7EC1", border:"1.5px dashed #2B7EC1", borderRadius:8, padding:"7px 14px", fontSize:12, fontWeight:600, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", opacity:seedando?0.6:1 }}>
             {seedando ? "Cargando..." : "Datos demo"}
           </button>
-          {/* Botón Nueva reserva con dropdown */}
           <div style={{ position:"relative" }}>
             <button onClick={()=>setMenuNuevo(v=>!v)}
-              style={{ background:"#0A2540", color:"#fff", border:"none", borderRadius:8, padding:"8px 18px", fontSize:13, fontWeight:600, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", display:"flex", alignItems:"center", gap:6 }}>
+              style={{ background:"#0A2540", color:"#fff", border:"none", borderRadius:8, padding:"7px 16px", fontSize:13, fontWeight:600, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", display:"flex", alignItems:"center", gap:6 }}>
               + Nueva reserva
               <span style={{ fontSize:10, opacity:0.7 }}>▾</span>
             </button>
             {menuNuevo && (
               <>
-                {/* overlay para cerrar al hacer clic fuera */}
                 <div style={{ position:"fixed", inset:0, zIndex:999 }} onClick={()=>setMenuNuevo(false)}/>
-                <div style={{ position:"absolute", right:0, top:"calc(100% + 6px)", background:C.bgCard, border:`1px solid ${C.border}`, borderRadius:10, boxShadow:"0 8px 24px rgba(0,0,0,0.12)", zIndex:1000, minWidth:180, overflow:"hidden" }}>
+                <div style={{ position:"absolute", right:0, top:"calc(100% + 6px)", background:C.bgCard, border:`1px solid ${C.border}`, borderRadius:10, boxShadow:"0 8px 24px rgba(0,0,0,0.12)", zIndex:1000, minWidth:160, overflow:"hidden" }}>
                   <button onClick={()=>{ setMenuNuevo(false); abrirNuevo(); }}
                     style={{ width:"100%", padding:"11px 16px", background:"none", border:"none", textAlign:"left", cursor:"pointer", fontSize:13, fontWeight:600, color:C.text, fontFamily:"'Plus Jakarta Sans',sans-serif" }}
                     onMouseEnter={e=>e.currentTarget.style.background=C.bg}
@@ -5113,168 +5107,123 @@ function GruposView({ datos, onRecargar }) {
         </div>
       </div>
 
-      {/* ── VISTA CALENDARIO — lista eventos del mes ── */}
-      {vistaActiva === "calendario" && (() => {
-        const mesIni = new Date(anio, mes, 1);
-        const mesFin = new Date(anio, mes + 1, 0);
-        const evsMes = grupos
-          .filter(g => {
-            if (!g.fecha_inicio || !g.fecha_fin) return false;
-            const ini = new Date(g.fecha_inicio + "T00:00:00");
-            const fin = new Date(g.fecha_fin + "T00:00:00");
-            return ini <= mesFin && fin >= mesIni;
-          })
-          .sort((a, b) => a.fecha_inicio.localeCompare(b.fecha_inicio));
+      {/* ── Sub-navegación ── */}
+      <div style={{ display:"flex", gap:6 }}>
+        {[
+          { key:"grupos",  label:"Grupos" },
+          { key:"eventos", label:"Eventos" },
+          { key:"salas",   label:"Gestión de salas" },
+        ].map(({ key, label }) => {
+          const activo = subVista === key;
+          return (
+            <button key={key} onClick={()=>cambiarSubVista(key)}
+              style={{ padding:"7px 18px", fontSize:13, fontWeight:activo?700:500, cursor:"pointer", border:`1.5px solid ${activo ? C.text : C.border}`, borderRadius:8, background: activo ? C.text : "transparent", color: activo ? C.bgCard : C.textMid, fontFamily:"'Plus Jakarta Sans',sans-serif", transition:"all 0.15s" }}>
+              {label}
+            </button>
+          );
+        })}
+      </div>
 
+      {/* ── Salas ── */}
+      {subVista === "salas" && <SalasView datos={datos} onRecargar={onRecargar} onVolver={()=>cambiarSubVista("grupos")} />}
+
+      {/* ── Grupos del mes ── */}
+      {subVista === "grupos" && (() => {
+        const lista = gruposMes.filter(g => g.categoria !== "evento").sort((a,b)=>a.fecha_inicio?.localeCompare(b.fecha_inicio));
         return (
           <Card>
-            {evsMes.length === 0
-              ? <p style={{ textAlign:"center", color:C.textLight, padding:"32px 0", fontSize:13 }}>No hay eventos disponibles</p>
-              : <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
-                  {evsMes.map(g => {
-                    const noches = g.fecha_inicio && g.fecha_fin
-                      ? Math.max(1, Math.round((new Date(g.fecha_fin) - new Date(g.fecha_inicio)) / 86400000))
-                      : 1;
-                    return (
-                      <div key={g.id} onClick={() => setDetalleGrupo(g)}
-                        style={{ display:"flex", alignItems:"center", gap:12, padding:"12px 16px", borderRadius:8, border:`1px solid ${C.border}`, background:C.bg, cursor:"pointer", transition:"border-color 0.15s" }}
-                        onMouseEnter={e => e.currentTarget.style.borderColor = ESTADOS[g.estado]?.color || "#7C3AED"}
-                        onMouseLeave={e => e.currentTarget.style.borderColor = C.border}>
-                        <div style={{ flex:1, minWidth:0 }}>
-                          <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:2 }}>
-                            <p style={{ fontSize:13, fontWeight:700, color:C.text, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{g.nombre}</p>
-                            <span style={{ fontSize:9, fontWeight:700, padding:"2px 6px", borderRadius:6, background: g.categoria==="evento" ? "#EDE9FE" : "#E0F0FF", color: g.categoria==="evento" ? "#7C3AED" : "#2B7EC1", whiteSpace:"nowrap", flexShrink:0 }}>
-                              {g.categoria === "evento" ? "Evento" : "Grupo"}
-                            </span>
-                          </div>
-                          <p style={{ fontSize:11, color:C.textLight }}>
-                            {g.categoria === "evento"
-                              ? g.fecha_inicio
-                              : `${g.fecha_inicio} → ${g.fecha_fin} · ${noches} noche${noches !== 1 ? "s" : ""} · ${g.habitaciones || 0} hab.`}
-                          </p>
-                        </div>
-                        <span style={{ fontSize:10, fontWeight:700, padding:"3px 10px", borderRadius:10, background:ESTADOS[g.estado]?.bg, color:ESTADOS[g.estado]?.color, whiteSpace:"nowrap", flexShrink:0 }}>
-                          {ESTADOS[g.estado]?.label}
-                        </span>
-                        <p style={{ fontSize:13, fontWeight:800, color:"#1A7A3C", whiteSpace:"nowrap", flexShrink:0 }}>€{Math.round(calcRevTotal(g)).toLocaleString("es-ES")}</p>
-                      </div>
-                    );
-                  })}
-                </div>
-            }
-          </Card>
-        );
-      })()}
-
-      {/* ── PRÓXIMOS EVENTOS CONFIRMADOS ── */}
-      {(() => {
-        const hoyStr = new Date().toISOString().slice(0, 10);
-        const proximos = grupos
-          .filter(g => g.estado === "confirmado" && g.fecha_inicio >= hoyStr)
-          .sort((a, b) => a.fecha_inicio.localeCompare(b.fecha_inicio))
-          .slice(0, 3);
-        return (
-          <Card>
-            <p style={{ fontSize:12, fontWeight:700, color:C.textLight, textTransform:"uppercase", letterSpacing:1.5, marginBottom:12 }}>Próximos eventos confirmados</p>
-            {proximos.length === 0
-              ? <p style={{ textAlign:"center", color:C.textLight, padding:"20px 0", fontSize:13 }}>No hay eventos confirmados próximos</p>
-              : <div style={{ overflowX:"auto" }}>
-                  <table style={{ width:"100%", borderCollapse:"collapse", fontSize:12 }}>
-                    <thead>
-                      <tr>
-                        {["Evento","Entrada","Salida","Noches","Habs","ADR","Revenue"].map(h => (
-                          <th key={h} style={{ padding:"10px 14px", textAlign:"left", fontSize:10, fontWeight:600, color:C.textLight, textTransform:"uppercase", letterSpacing:"1px", borderBottom:`2px solid ${C.border}`, whiteSpace:"nowrap" }}>{h}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {proximos.map((g, i) => {
-                        const noches = g.fecha_inicio && g.fecha_fin
-                          ? Math.max(1, Math.round((new Date(g.fecha_fin) - new Date(g.fecha_inicio)) / 86400000))
-                          : 1;
+            <p style={{ fontSize:11, fontWeight:700, color:"#2B7EC1", textTransform:"uppercase", letterSpacing:1.5, marginBottom:12 }}>Grupos</p>
+            <div style={{ overflowX:"auto" }}>
+              <table style={{ width:"100%", borderCollapse:"collapse", fontSize:14 }}>
+                <thead>
+                  <tr>
+                    {["Nombre","Estado","Entrada","Salida","Noches","Habs","ADR","F&B","Sala","Revenue total","Notas"].map(h => (
+                      <th key={h} style={{ padding:"8px 14px", textAlign:"left", fontSize:10, fontWeight:600, color:C.textLight, textTransform:"uppercase", letterSpacing:"1px", borderBottom:`2px solid ${C.border}`, whiteSpace:"nowrap" }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {lista.length === 0
+                    ? <tr><td colSpan={11} style={{ padding:24, textAlign:"center", color:C.textLight, fontSize:13 }}>Sin grupos este mes</td></tr>
+                    : lista.map((g, i) => {
+                        const noches = g.fecha_inicio && g.fecha_fin ? Math.max(1, Math.round((new Date(g.fecha_fin) - new Date(g.fecha_inicio)) / 86400000)) : 1;
                         return (
-                          <tr key={g.id} onClick={() => setDetalleGrupo(g)}
-                            style={{ borderBottom:`1px solid ${C.border}`, background: i % 2 === 0 ? C.bg : C.bgCard, cursor:"pointer" }}
-                            onMouseEnter={e => e.currentTarget.style.background = C.accentLight}
-                            onMouseLeave={e => e.currentTarget.style.background = i % 2 === 0 ? C.bg : C.bgCard}>
+                          <tr key={g.id} onClick={()=>setDetalleGrupo(g)} style={{ borderBottom:`1px solid ${C.border}`, background: i%2===0?C.bg:C.bgCard, cursor:"pointer" }}
+                            onMouseEnter={e=>e.currentTarget.style.background=C.accentLight}
+                            onMouseLeave={e=>e.currentTarget.style.background=i%2===0?C.bg:C.bgCard}>
                             <td style={{ padding:"9px 14px", fontWeight:600, color:C.text, whiteSpace:"nowrap" }}>{g.nombre}</td>
-                            <td style={{ padding:"9px 14px", color:C.textMid, whiteSpace:"nowrap" }}>{g.fecha_inicio}</td>
-                            <td style={{ padding:"9px 14px", color:C.textMid, whiteSpace:"nowrap" }}>{g.fecha_fin}</td>
+                            <td style={{ padding:"9px 14px" }}>
+                              <span style={{ fontSize:10, fontWeight:700, padding:"2px 8px", borderRadius:10, background:ESTADOS[g.estado]?.bg, color:ESTADOS[g.estado]?.color, whiteSpace:"nowrap" }}>{ESTADOS[g.estado]?.label}</span>
+                            </td>
+                            <td style={{ padding:"9px 14px", color:C.textMid, whiteSpace:"nowrap" }}>{g.fecha_inicio||"—"}</td>
+                            <td style={{ padding:"9px 14px", color:C.textMid, whiteSpace:"nowrap" }}>{g.fecha_fin||"—"}</td>
                             <td style={{ padding:"9px 14px", color:C.textMid, textAlign:"center" }}>{noches}</td>
-                            <td style={{ padding:"9px 14px", color:C.textMid, textAlign:"center" }}>{g.habitaciones || 0}</td>
-                            <td style={{ padding:"9px 14px", color:C.textMid, textAlign:"right" }}>€{(g.adr_grupo || 0).toLocaleString("es-ES")}</td>
+                            <td style={{ padding:"9px 14px", color:C.textMid, textAlign:"center" }}>{g.habitaciones||0}</td>
+                            <td style={{ padding:"9px 14px", color:C.textMid, textAlign:"right" }}>€{(g.adr_grupo||0).toLocaleString("es-ES")}</td>
+                            <td style={{ padding:"9px 14px", color:C.textMid, textAlign:"right" }}>€{(g.revenue_fnb||0).toLocaleString("es-ES")}</td>
+                            <td style={{ padding:"9px 14px", color:C.textMid, textAlign:"right" }}>€{(g.revenue_sala||0).toLocaleString("es-ES")}</td>
                             <td style={{ padding:"9px 14px", fontWeight:700, color:"#1A7A3C", textAlign:"right", whiteSpace:"nowrap" }}>€{Math.round(calcRevTotal(g)).toLocaleString("es-ES")}</td>
+                            <td style={{ padding:"9px 14px", color:C.textLight, maxWidth:160, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{g.notas||"—"}</td>
                           </tr>
                         );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-            }
+                      })
+                  }
+                </tbody>
+              </table>
+            </div>
           </Card>
         );
       })()}
 
-      {/* ── VISTA TABLA ── */}
-      {vistaActiva === "tabla" && (
-        <Card>
-          <div style={{ overflowX:"auto" }}>
-            <table style={{ width:"100%", borderCollapse:"collapse", fontSize:14 }}>
-              <thead>
-                <tr>
-                  {["Evento","Estado","Entrada","Salida","Noches","Habs","PAX","ADR","F&B","Sala","Revenue total","Notas"].map(h => (
-                    <th key={h} style={{ padding:"10px 14px", textAlign:"left", fontSize:10, fontWeight:600, color:C.textLight, textTransform:"uppercase", letterSpacing:"1px", borderBottom:`2px solid ${C.border}`, whiteSpace:"nowrap" }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {gruposAnio.length === 0
-                  ? <tr><td colSpan={12} style={{ padding:24, textAlign:"center", color:C.textLight }}>{t("sin_eventos")}</td></tr>
-                  : gruposAnio.sort((a,b)=>a.fecha_inicio?.localeCompare(b.fecha_inicio)).map((g, i) => {
-                      const noches = g.fecha_inicio && g.fecha_fin
-                        ? Math.max(1, Math.round((new Date(g.fecha_fin) - new Date(g.fecha_inicio)) / 86400000))
-                        : 1;
-                      return (
-                        <tr key={g.id} onClick={()=>setDetalleGrupo(g)} style={{ borderBottom:`1px solid ${C.border}`, background: i % 2 === 0 ? C.bg : C.bgCard, cursor:"pointer" }}
-                          onMouseEnter={e=>e.currentTarget.style.background=C.accentLight}
-                          onMouseLeave={e=>e.currentTarget.style.background= i % 2 === 0 ? C.bg : C.bgCard}>
-                          <td style={{ padding:"9px 14px", fontWeight:600, color:C.text, whiteSpace:"nowrap" }}>
-                            <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-                              {g.nombre}
-                              <span style={{ fontSize:9, fontWeight:700, padding:"2px 6px", borderRadius:6, background: g.categoria==="evento" ? "#EDE9FE" : "#E0F0FF", color: g.categoria==="evento" ? "#7C3AED" : "#2B7EC1" }}>
-                                {g.categoria === "evento" ? "Evento" : "Grupo"}
-                              </span>
-                            </div>
-                          </td>
-                          <td style={{ padding:"9px 14px" }}>
-                            <span style={{ fontSize:10, fontWeight:700, padding:"2px 8px", borderRadius:10, background:ESTADOS[g.estado]?.bg, color:ESTADOS[g.estado]?.color, whiteSpace:"nowrap" }}>
-                              {ESTADOS[g.estado]?.label}
-                            </span>
-                          </td>
-                          <td style={{ padding:"9px 14px", color:C.textMid, whiteSpace:"nowrap" }}>{g.fecha_inicio||"—"}</td>
-                          <td style={{ padding:"9px 14px", color:C.textMid, whiteSpace:"nowrap" }}>{g.categoria === "evento" ? "—" : (g.fecha_fin||"—")}</td>
-                          <td style={{ padding:"9px 14px", color:C.textMid, textAlign:"center" }}>{noches}</td>
-                          <td style={{ padding:"9px 14px", color:C.textMid, textAlign:"center" }}>{g.habitaciones||0}</td>
-                          <td style={{ padding:"9px 14px", color:C.textMid, textAlign:"center" }}>{g.pax||0}</td>
-                          <td style={{ padding:"9px 14px", color:C.textMid, textAlign:"right" }}>€{(g.adr_grupo||0).toLocaleString("es-ES")}</td>
-                          <td style={{ padding:"9px 14px", color:C.textMid, textAlign:"right" }}>€{(g.revenue_fnb||0).toLocaleString("es-ES")}</td>
-                          <td style={{ padding:"9px 14px", color:C.textMid, textAlign:"right" }}>€{(g.revenue_sala||0).toLocaleString("es-ES")}</td>
-                          <td style={{ padding:"9px 14px", fontWeight:700, color:"#1A7A3C", textAlign:"right", whiteSpace:"nowrap" }}>
-                            €{Math.round(calcRevTotal(g)).toLocaleString("es-ES")}
-                          </td>
-                          <td style={{ padding:"9px 14px", color:C.textLight, maxWidth:180, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{g.notas||"—"}</td>
-                        </tr>
-                      );
-                    })
-                }
-              </tbody>
-            </table>
-          </div>
-        </Card>
-      )}
+      {/* ── Eventos del mes ── */}
+      {subVista === "eventos" && (() => {
+        const lista = gruposMes.filter(g => g.categoria === "evento").sort((a,b)=>a.fecha_inicio?.localeCompare(b.fecha_inicio));
+        return (
+          <Card>
+            <p style={{ fontSize:11, fontWeight:700, color:"#7C3AED", textTransform:"uppercase", letterSpacing:1.5, marginBottom:12 }}>Eventos</p>
+            <div style={{ overflowX:"auto" }}>
+              <table style={{ width:"100%", borderCollapse:"collapse", fontSize:14 }}>
+                <thead>
+                  <tr>
+                    {["Nombre","Estado","Fecha","Hora","Sala","F&B","Sala Rev.","Revenue total","Notas"].map(h => (
+                      <th key={h} style={{ padding:"8px 14px", textAlign:"left", fontSize:10, fontWeight:600, color:C.textLight, textTransform:"uppercase", letterSpacing:"1px", borderBottom:`2px solid ${C.border}`, whiteSpace:"nowrap" }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {lista.length === 0
+                    ? <tr><td colSpan={9} style={{ padding:24, textAlign:"center", color:C.textLight, fontSize:13 }}>Sin eventos este mes</td></tr>
+                    : lista.map((g, i) => {
+                        const ev = parseNotasEvento(g.notas);
+                        const hora = ev.hora_inicio && ev.hora_fin ? `${ev.hora_inicio} – ${ev.hora_fin}` : (ev.hora_inicio || "—");
+                        return (
+                          <tr key={g.id} onClick={()=>setDetalleGrupo(g)} style={{ borderBottom:`1px solid ${C.border}`, background: i%2===0?C.bg:C.bgCard, cursor:"pointer" }}
+                            onMouseEnter={e=>e.currentTarget.style.background=C.accentLight}
+                            onMouseLeave={e=>e.currentTarget.style.background=i%2===0?C.bg:C.bgCard}>
+                            <td style={{ padding:"9px 14px", fontWeight:600, color:C.text, whiteSpace:"nowrap" }}>{g.nombre}</td>
+                            <td style={{ padding:"9px 14px" }}>
+                              <span style={{ fontSize:10, fontWeight:700, padding:"2px 8px", borderRadius:10, background:ESTADOS[g.estado]?.bg, color:ESTADOS[g.estado]?.color, whiteSpace:"nowrap" }}>{ESTADOS[g.estado]?.label}</span>
+                            </td>
+                            <td style={{ padding:"9px 14px", color:C.textMid, whiteSpace:"nowrap" }}>{g.fecha_inicio||"—"}</td>
+                            <td style={{ padding:"9px 14px", color:C.textMid, whiteSpace:"nowrap" }}>{hora}</td>
+                            <td style={{ padding:"9px 14px", color:C.textMid, whiteSpace:"nowrap" }}>{ev.sala_nombre||"—"}</td>
+                            <td style={{ padding:"9px 14px", color:C.textMid, textAlign:"right" }}>€{(g.revenue_fnb||0).toLocaleString("es-ES")}</td>
+                            <td style={{ padding:"9px 14px", color:C.textMid, textAlign:"right" }}>€{(g.revenue_sala||0).toLocaleString("es-ES")}</td>
+                            <td style={{ padding:"9px 14px", fontWeight:700, color:"#1A7A3C", textAlign:"right", whiteSpace:"nowrap" }}>€{Math.round(calcRevTotal(g)).toLocaleString("es-ES")}</td>
+                            <td style={{ padding:"9px 14px", color:C.textLight, maxWidth:160, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{ev.notasUser||"—"}</td>
+                          </tr>
+                        );
+                      })
+                  }
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        );
+      })()}
 
       {/* ── GRÁFICO EVOLUCIÓN REVENUE ANUAL ── */}
-      <Card>
+      {subVista !== "salas" && <Card>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:16 }}>
           <div>
             <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:18, color:C.text }}>Evolución Revenue</p>
@@ -5312,7 +5261,7 @@ function GruposView({ datos, onRecargar }) {
             <Bar dataKey="revME"  stackId="a" fill="url(#gradME)"        radius={[4,4,0,0]} name="Grupos/Eventos" activeBar={false}/>
           </BarChart>
         </ResponsiveContainer>
-      </Card>
+      </Card>}
 
       {/* ── PANEL DETALLE EVENTO (desde calendario) ── */}
       {detalleGrupo !== null && (
@@ -5768,12 +5717,394 @@ function AuthScreen() {
   );
 }
 
+// ─── SALAS VIEW ──────────────────────────────────────────────────────────────
+function SalasView({ datos, onRecargar, onVolver }) {
+  const t  = useT();
+  const MESES_FULL = t("meses_full");
+  const grupos = datos.grupos || [];
+
+  // Parsea las notas de evento para extraer sala
+  const parseEv = (notas) => {
+    if (!notas) return { sala_nombre:"", hora_inicio:"", hora_fin:"", notasUser:"" };
+    const m = notas.match(/^\[ev:([^\]]*)\]\n?([\s\S]*)$/);
+    if (!m) return { sala_nombre:"", hora_inicio:"", hora_fin:"", notasUser: notas };
+    const p = Object.fromEntries(m[1].split(",").map(x => x.split("=")));
+    return { sala_nombre: p.sala||"", hora_inicio: p.hi||"", hora_fin: p.hf||"", notasUser: m[2] };
+  };
+
+  // Salas detectadas de los eventos + las guardadas manualmente
+  const SALA_META_KEY = `fr_salas_meta_${datos.session?.user?.id}`;
+  const [salaMeta, setSalaMeta] = useState(() => {
+    try { return JSON.parse(localStorage.getItem(SALA_META_KEY) || "{}"); } catch { return {}; }
+  });
+  const guardarMeta = (meta) => { setSalaMeta(meta); localStorage.setItem(SALA_META_KEY, JSON.stringify(meta)); };
+
+  const [modalSala, setModalSala] = useState(null); // null | "nueva" | {nombre,...}
+  const [formSala, setFormSala] = useState({ nombre:"", capacidad:"", tipo:"", precio_hora:"", descripcion:"" });
+  const [salaDetalle, setSalaDetalle] = useState(null);
+  const [planningAnio, setPlanningAnio] = useState(new Date().getFullYear());
+  const [planningMes, setPlanningMes] = useState(new Date().getMonth());
+  const [planningDia, setPlanningDia] = useState(null);
+
+  // Salas: las de los eventos + las guardadas manualmente
+  const salasDeEventos = [...new Set(
+    grupos.filter(g => g.categoria === "evento")
+      .map(g => parseEv(g.notas).sala_nombre)
+      .filter(Boolean)
+  )];
+  const salasGuardadas = Object.keys(salaMeta);
+  const todasSalas = [...new Set([...salasDeEventos, ...salasGuardadas])].sort();
+
+  const hoy = new Date().toISOString().slice(0,10);
+  const anioActual = new Date().getFullYear();
+
+  // Stats por sala
+  const statsSala = (nombre) => {
+    const eventos = grupos.filter(g => g.categoria === "evento" && parseEv(g.notas).sala_nombre === nombre);
+    const eventosAnio = eventos.filter(g => g.fecha_inicio?.startsWith(String(anioActual)));
+    const eventosConf = eventosAnio.filter(g => g.estado === "confirmado");
+    const revTotal = eventosConf.reduce((a,g) => a + (g.revenue_fnb||0) + (g.revenue_sala||0), 0);
+    const proximoEv = eventos.filter(g => g.fecha_inicio >= hoy && g.estado !== "cancelado")
+      .sort((a,b) => a.fecha_inicio.localeCompare(b.fecha_inicio))[0];
+    const ocupadaHoy = eventos.some(g => g.fecha_inicio === hoy && g.estado !== "cancelado");
+    return { total: eventosAnio.length, confirmados: eventosConf.length, revTotal, proximoEv, ocupadaHoy };
+  };
+
+  const TIPOS = ["Banquetes","Reuniones","Conferencias","Bodas","Polivalente","Exterior","Otro"];
+
+  const abrirNuevaSala = () => {
+    setFormSala({ nombre:"", capacidad:"", tipo:"", precio_hora:"", descripcion:"" });
+    setModalSala("nueva");
+  };
+  const abrirEditarSala = (nombre) => {
+    const meta = salaMeta[nombre] || {};
+    setFormSala({ nombre, capacidad: meta.capacidad||"", tipo: meta.tipo||"", precio_hora: meta.precio_hora||"", descripcion: meta.descripcion||"" });
+    setModalSala({ nombre });
+  };
+  const guardarSala = () => {
+    if (!formSala.nombre.trim()) return;
+    const nuevo = { ...salaMeta };
+    const nombreFinal = formSala.nombre.trim();
+    if (modalSala !== "nueva" && modalSala.nombre !== nombreFinal) delete nuevo[modalSala.nombre];
+    nuevo[nombreFinal] = { capacidad: parseInt(formSala.capacidad)||null, tipo: formSala.tipo||"", precio_hora: parseFloat(formSala.precio_hora)||null, descripcion: formSala.descripcion||"" };
+    guardarMeta(nuevo);
+    setModalSala(null);
+  };
+  const eliminarSala = (nombre) => {
+    if (!window.confirm(`¿Eliminar la sala "${nombre}" del registro?`)) return;
+    const nuevo = { ...salaMeta };
+    delete nuevo[nombre];
+    guardarMeta(nuevo);
+    if (salaDetalle === nombre) setSalaDetalle(null);
+  };
+
+  const inp = { width:"100%", padding:"9px 12px", borderRadius:7, border:`1.5px solid ${C.border}`, fontSize:13, fontFamily:"'Plus Jakarta Sans',sans-serif", color:C.text, background:C.bg, outline:"none", boxSizing:"border-box" };
+
+  if (salaDetalle) {
+    const meta = salaMeta[salaDetalle] || {};
+    const DIAS_SEMANA = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
+    const mesStr = `${planningAnio}-${String(planningMes+1).padStart(2,"0")}`;
+    const diasEnMes = new Date(planningAnio, planningMes+1, 0).getDate();
+    const eventosMes = grupos.filter(g =>
+      g.categoria === "evento" &&
+      parseEv(g.notas).sala_nombre === salaDetalle &&
+      g.fecha_inicio?.slice(0,7) === mesStr
+    );
+    const estadoColor = { confirmado:"#1A7A3C", tentativo:"#B8860B", cotizacion:"#2B7EC1", cancelado:"#999" };
+    const estadoBg    = { confirmado:"#E6F7EE", tentativo:"#FFF8E7", cotizacion:"#E8F0F9", cancelado:"#F5F5F5" };
+
+    // ── Vista diaria ────────────────────────────────────────────────────────
+    if (planningDia) {
+      const eventosDia = grupos.filter(g =>
+        g.categoria === "evento" &&
+        parseEv(g.notas).sala_nombre === salaDetalle &&
+        g.fecha_inicio === planningDia
+      );
+      const fechaObj  = new Date(planningDia + "T12:00:00");
+      const DS_FULL   = ["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
+      const HORAS     = Array.from({length:17}, (_,i) => i + 7); // 07–23
+
+      return (
+        <div style={{ display:"flex", flexDirection:"column", gap:20 }}>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+            <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+              <button onClick={()=>setPlanningDia(null)} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, padding:"5px 10px", cursor:"pointer", fontSize:12, color:C.textMid }}>← Volver</button>
+              <div>
+                <h2 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:22, fontWeight:700, color:C.text, margin:0 }}>{salaDetalle}</h2>
+                <p style={{ fontSize:13, color:C.textMid, margin:0 }}>{DS_FULL[fechaObj.getDay()]}, {fechaObj.getDate()} {MESES_FULL[fechaObj.getMonth()]} {fechaObj.getFullYear()}</p>
+              </div>
+            </div>
+          </div>
+
+          <Card>
+            <p style={{ fontSize:11, fontWeight:700, color:C.textLight, textTransform:"uppercase", letterSpacing:1.5, marginBottom:16 }}>Planning diario</p>
+            <div style={{ display:"flex", flexDirection:"column" }}>
+              {HORAS.map(hora => {
+                const horaStr = `${String(hora).padStart(2,"0")}:00`;
+
+                // Evento que empieza en esta hora
+                const evInicio = eventosDia.find(g => parseEv(g.notas).hora_inicio === horaStr);
+
+                // Hora en mitad de un evento (no el inicio) → omitir fila
+                const esMitad = !evInicio && eventosDia.some(g => {
+                  const ev  = parseEv(g.notas);
+                  const hiH = parseInt(ev.hora_inicio.split(":")[0]);
+                  const hfH = parseInt(ev.hora_fin.split(":")[0]);
+                  return hiH < hora && hora < hfH;
+                });
+                if (esMitad) return null;
+
+                const ROW_H = 48;
+                let rowHeight = ROW_H;
+                if (evInicio) {
+                  const ev  = parseEv(evInicio.notas);
+                  const dur = parseInt(ev.hora_fin.split(":")[0]) - parseInt(ev.hora_inicio.split(":")[0]);
+                  rowHeight = Math.max(dur, 1) * ROW_H;
+                }
+
+                const libre = !evInicio;
+                return (
+                  <div key={hora} style={{ display:"flex", borderBottom:`1px solid ${C.border}`, height:rowHeight }}>
+                    <div style={{ width:60, flexShrink:0, paddingRight:10, paddingTop:14, display:"flex", alignItems:"flex-start", justifyContent:"flex-end", fontSize:12, fontWeight:600, color:C.textLight, borderRight:`1px solid ${C.border}` }}>
+                      {horaStr}
+                    </div>
+                    <div style={{ flex:1, padding:"6px 14px", background: libre ? "transparent" : "#F0F6FF", display:"flex", flexDirection:"column", justifyContent:"center" }}>
+                      {libre
+                        ? <span style={{ fontSize:11, color:C.border }}>Disponible</span>
+                        : (() => {
+                            const ev = parseEv(evInicio.notas);
+                            return (
+                              <div style={{ background:estadoBg[evInicio.estado], border:`1px solid ${estadoColor[evInicio.estado]}`, borderRadius:8, padding:"10px 14px", fontSize:12, display:"flex", alignItems:"center", gap:10, height:"calc(100% - 12px)", boxSizing:"border-box" }}>
+                                <span style={{ fontWeight:700, color:estadoColor[evInicio.estado], fontSize:13 }}>{evInicio.nombre}</span>
+                                <span style={{ color:C.textMid }}>{ev.hora_inicio} – {ev.hora_fin}</span>
+                                <span style={{ fontSize:10, fontWeight:700, padding:"2px 8px", borderRadius:8, background:"white", color:estadoColor[evInicio.estado], border:`1px solid ${estadoColor[evInicio.estado]}` }}>{evInicio.estado}</span>
+                                {ev.servicio_incluido === true || ev.serv === "sí" ? <span style={{ fontSize:10, color:C.textLight }}>· F&B incl.</span> : null}
+                                <span style={{ marginLeft:"auto", fontWeight:700, color:"#1A7A3C", fontSize:13 }}>€{((evInicio.revenue_fnb||0)+(evInicio.revenue_sala||0)).toLocaleString("es-ES")}</span>
+                              </div>
+                            );
+                          })()
+                      }
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </Card>
+        </div>
+      );
+    }
+
+    // ── Vista mensual ───────────────────────────────────────────────────────
+    return (
+      <div style={{ display:"flex", flexDirection:"column", gap:20 }}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:12, flexWrap:"wrap" }}>
+          <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+            <button onClick={()=>setSalaDetalle(null)} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, padding:"5px 10px", cursor:"pointer", fontSize:12, color:C.textMid }}>← Volver</button>
+            <div>
+              <h2 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:22, fontWeight:700, color:C.text, margin:0 }}>{salaDetalle}</h2>
+              {meta.tipo && <span style={{ fontSize:11, color:C.textMid }}>{meta.tipo}{meta.capacidad ? ` · ${meta.capacidad} pax` : ""}</span>}
+            </div>
+          </div>
+          <div style={{ display:"flex", gap:6, alignItems:"center" }}>
+            <select value={planningMes} onChange={e=>setPlanningMes(Number(e.target.value))}
+              style={{ padding:"6px 10px", borderRadius:7, border:`1.5px solid ${C.border}`, fontSize:13, fontWeight:600, color:C.text, background:C.bg, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", outline:"none" }}>
+              {MESES_FULL.map((m,i) => {
+                const mStr = String(planningAnio) + "-" + String(i+1).padStart(2,"0");
+                const conf = grupos.filter(g => g.categoria === "evento" && g.estado === "confirmado" && parseEv(g.notas).sala_nombre === salaDetalle && g.fecha_inicio?.slice(0,7) === mStr).length;
+                return <option key={i} value={i}>{m}{conf > 0 ? ` (${conf})` : ""}</option>;
+              })}
+            </select>
+            <select value={planningAnio} onChange={e=>setPlanningAnio(Number(e.target.value))}
+              style={{ padding:"6px 10px", borderRadius:7, border:`1.5px solid ${C.border}`, fontSize:13, fontWeight:600, color:C.text, background:C.bg, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", outline:"none" }}>
+              {[planningAnio-1, planningAnio, planningAnio+1].map(a => <option key={a} value={a}>{a}</option>)}
+            </select>
+            <button onClick={()=>abrirEditarSala(salaDetalle)} style={{ background:"#0A2540", color:"#fff", border:"none", borderRadius:8, padding:"7px 16px", fontSize:13, fontWeight:600, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>Editar</button>
+          </div>
+        </div>
+
+        <Card>
+          <p style={{ fontSize:11, fontWeight:700, color:C.textLight, textTransform:"uppercase", letterSpacing:1.5, marginBottom:14 }}>Planning mensual — pulsa un día para ver el detalle</p>
+          <div style={{ overflowX:"auto" }}>
+            <table style={{ width:"100%", borderCollapse:"collapse", fontSize:13 }}>
+              <thead>
+                <tr>
+                  {["Día","","Evento","Estado","Horario","Revenue"].map(h => (
+                    <th key={h} style={{ padding:"8px 12px", textAlign:"left", fontSize:10, fontWeight:600, color:C.textLight, textTransform:"uppercase", letterSpacing:"1px", borderBottom:`2px solid ${C.border}`, whiteSpace:"nowrap" }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {Array.from({length:diasEnMes}, (_,i) => i+1).map(dia => {
+                  const fechaDia = `${planningAnio}-${String(planningMes+1).padStart(2,"0")}-${String(dia).padStart(2,"0")}`;
+                  const evsDia   = eventosMes.filter(g => g.fecha_inicio === fechaDia);
+                  const dSem     = new Date(fechaDia + "T12:00:00").getDay();
+                  const esFds    = dSem === 0 || dSem === 6;
+                  const esHoy    = fechaDia === hoy;
+                  const revDia   = evsDia.reduce((a,g)=>a+(g.revenue_fnb||0)+(g.revenue_sala||0),0);
+                  const bgBase   = esHoy ? "#FFFBEB" : esFds ? C.bg : C.bgCard;
+                  return (
+                    <tr key={dia} onClick={()=>setPlanningDia(fechaDia)}
+                      style={{ borderBottom:`1px solid ${C.border}`, background:bgBase, cursor:"pointer" }}
+                      onMouseEnter={e=>e.currentTarget.style.background=C.accentLight}
+                      onMouseLeave={e=>e.currentTarget.style.background=bgBase}>
+                      <td style={{ padding:"9px 12px", fontWeight:700, color:esHoy?"#B8860B":C.text, width:48 }}>{dia}</td>
+                      <td style={{ padding:"9px 12px", color:C.textLight, fontSize:11, whiteSpace:"nowrap" }}>{DIAS_SEMANA[dSem]}</td>
+                      <td style={{ padding:"9px 12px" }}>
+                        {evsDia.length === 0
+                          ? <span style={{ color:C.border }}>—</span>
+                          : evsDia.map(g => (
+                              <span key={g.id} style={{ display:"inline-block", fontSize:11, fontWeight:600, padding:"2px 8px", borderRadius:5, background:estadoBg[g.estado], color:estadoColor[g.estado], marginRight:4 }}>{g.nombre}</span>
+                            ))
+                        }
+                      </td>
+                      <td style={{ padding:"9px 12px" }}>
+                        {evsDia.map(g => (
+                          <span key={g.id} style={{ fontSize:10, fontWeight:700, padding:"2px 7px", borderRadius:8, background:estadoBg[g.estado], color:estadoColor[g.estado], marginRight:4 }}>{g.estado}</span>
+                        ))}
+                      </td>
+                      <td style={{ padding:"9px 12px", color:C.textMid, whiteSpace:"nowrap" }}>
+                        {evsDia.map(g=>{ const ev=parseEv(g.notas); return ev.hora_inicio?`${ev.hora_inicio}–${ev.hora_fin}`:null; }).filter(Boolean).join(", ") || "—"}
+                      </td>
+                      <td style={{ padding:"9px 12px", fontWeight:700, color:"#1A7A3C", textAlign:"right", whiteSpace:"nowrap" }}>
+                        {revDia > 0 ? `€${revDia.toLocaleString("es-ES")}` : ""}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ display:"flex", flexDirection:"column", gap:20 }}>
+
+      {/* Header */}
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+        <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+          {onVolver && <button onClick={onVolver} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, padding:"5px 10px", cursor:"pointer", fontSize:12, color:C.textMid }}>← Volver</button>}
+          <h2 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:24, fontWeight:700, color:C.text, margin:0 }}>Salas</h2>
+        </div>
+        <button onClick={abrirNuevaSala} style={{ background:"#0A2540", color:"#fff", border:"none", borderRadius:8, padding:"7px 16px", fontSize:13, fontWeight:600, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+          + Añadir sala
+        </button>
+      </div>
+
+      {todasSalas.length === 0 ? (
+        <Card>
+          <p style={{ textAlign:"center", color:C.textLight, padding:"40px 0", fontSize:13 }}>No hay salas registradas.<br/>Las salas se detectan automáticamente de los eventos, o puedes añadirlas manualmente.</p>
+        </Card>
+      ) : (
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))", gap:14 }}>
+          {todasSalas.map(nombre => {
+            const meta  = salaMeta[nombre] || {};
+            const stats = statsSala(nombre);
+            return (
+              <Card key={nombre} style={{ cursor:"pointer", transition:"box-shadow 0.15s" }}
+                onClick={()=>{ setSalaDetalle(nombre); setPlanningDia(null); }}>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:12 }}>
+                  <div>
+                    <p style={{ fontSize:15, fontWeight:700, color:C.text, marginBottom:3 }}>{nombre}</p>
+                    <p style={{ fontSize:11, color:C.textLight }}>{meta.tipo || "Sin tipo"}{meta.capacidad ? ` · ${meta.capacidad} pax` : ""}</p>
+                  </div>
+                  <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:4 }}>
+                    <span style={{ fontSize:10, fontWeight:700, padding:"2px 8px", borderRadius:8, background: stats.ocupadaHoy ? "#FFF8E7" : "#E6F7EE", color: stats.ocupadaHoy ? "#B8860B" : "#1A7A3C" }}>
+                      {stats.ocupadaHoy ? "Ocupada hoy" : "Disponible"}
+                    </span>
+                  </div>
+                </div>
+
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:12 }}>
+                  <div style={{ background:C.bg, borderRadius:7, padding:"8px 10px" }}>
+                    <p style={{ fontSize:10, color:C.textLight, marginBottom:2 }}>Eventos este año</p>
+                    <p style={{ fontSize:16, fontWeight:700, color:C.text }}>{stats.total}</p>
+                  </div>
+                  <div style={{ background:C.bg, borderRadius:7, padding:"8px 10px" }}>
+                    <p style={{ fontSize:10, color:C.textLight, marginBottom:2 }}>Revenue confirmado</p>
+                    <p style={{ fontSize:15, fontWeight:700, color:"#1A7A3C" }}>€{Math.round(stats.revTotal/1000)}k</p>
+                  </div>
+                </div>
+
+                {stats.proximoEv && (
+                  <div style={{ background:C.bg, borderRadius:7, padding:"8px 10px", fontSize:11, color:C.textMid }}>
+                    Próximo: <span style={{ fontWeight:600, color:C.text }}>{stats.proximoEv.nombre}</span> · {stats.proximoEv.fecha_inicio}
+                  </div>
+                )}
+
+                <div style={{ display:"flex", justifyContent:"flex-end", gap:6, marginTop:12 }}
+                  onClick={e=>e.stopPropagation()}>
+                  <button onClick={()=>abrirEditarSala(nombre)}
+                    style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, padding:"4px 10px", fontSize:11, cursor:"pointer", color:C.textMid }}>
+                    Editar
+                  </button>
+                  <button onClick={()=>eliminarSala(nombre)}
+                    style={{ background:"none", border:`1px solid ${C.red||"#e55"}`, borderRadius:6, padding:"4px 10px", fontSize:11, cursor:"pointer", color:C.red||"#e55" }}>
+                    Eliminar
+                  </button>
+                </div>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Modal sala */}
+      {modalSala !== null && (
+        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.55)", zIndex:1000, display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}
+          onClick={()=>setModalSala(null)}>
+          <div style={{ background:C.bgCard, borderRadius:14, width:"100%", maxWidth:460, padding:"28px 32px", boxShadow:"0 24px 80px rgba(0,0,0,0.2)" }}
+            onClick={e=>e.stopPropagation()}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20 }}>
+              <h3 style={{ fontSize:17, fontWeight:700, color:C.text }}>{modalSala === "nueva" ? "Nueva sala" : "Editar sala"}</h3>
+              <button onClick={()=>setModalSala(null)} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, width:28, height:28, cursor:"pointer", fontSize:16, color:C.textMid, display:"flex", alignItems:"center", justifyContent:"center", padding:0 }}>×</button>
+            </div>
+            <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+              <div>
+                <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>Nombre *</p>
+                <input style={inp} value={formSala.nombre} onChange={e=>setFormSala(f=>({...f,nombre:e.target.value}))} placeholder="Salón Principal"/>
+              </div>
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
+                <div>
+                  <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>Tipo</p>
+                  <select style={inp} value={formSala.tipo} onChange={e=>setFormSala(f=>({...f,tipo:e.target.value}))}>
+                    <option value="">Sin tipo</option>
+                    {TIPOS.map(tp=><option key={tp} value={tp}>{tp}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>Capacidad (pax)</p>
+                  <input style={inp} type="number" placeholder="150" value={formSala.capacidad} onChange={e=>setFormSala(f=>({...f,capacidad:e.target.value}))}/>
+                </div>
+              </div>
+              <div>
+                <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>Precio/hora (€)</p>
+                <input style={inp} type="number" placeholder="300" value={formSala.precio_hora} onChange={e=>setFormSala(f=>({...f,precio_hora:e.target.value}))}/>
+              </div>
+              <div>
+                <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>Descripción</p>
+                <textarea style={{...inp, resize:"vertical", minHeight:60}} placeholder="Equipamiento, características..." value={formSala.descripcion} onChange={e=>setFormSala(f=>({...f,descripcion:e.target.value}))}/>
+              </div>
+              <div style={{ display:"flex", justifyContent:"flex-end", gap:8, marginTop:4 }}>
+                <button onClick={()=>setModalSala(null)} style={{ background:"none", border:`1px solid ${C.border}`, color:C.textMid, borderRadius:7, padding:"8px 16px", fontSize:12, cursor:"pointer" }}>Cancelar</button>
+                <button onClick={guardarSala} disabled={!formSala.nombre.trim()} style={{ background:"#0A2540", color:"#fff", border:"none", borderRadius:7, padding:"8px 20px", fontSize:13, fontWeight:600, cursor:"pointer" }}>Guardar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 const NAV = [
   { key: "dashboard",  icon: "◈",  labelKey: "nav_dashboard" },
   { key: "pickup",                  labelKey: "nav_pickup" },
   { key: "budget",     icon: "💰", labelKey: "nav_budget" },
-  { key: "grupos",     icon: "🎪", labelKey: "nav_grupos" },
-  { key: "gestion",                 labelKey: "nav_gestion" },
+  { key: "grupos",     labelKey: "nav_grupos" },
+  { key: "gestion",    labelKey: "nav_gestion" },
 ];
 
 
@@ -6131,7 +6462,7 @@ export default function App() {
     grupos:    (props) => <GruposView    {...props} onRecargar={() => cargarDatos(true)} />,
     gestion:   ()      => <ImportarExcel fullPage onClose={() => { setView("dashboard"); localStorage.setItem("fr_view","dashboard"); }} session={session} hotelNombre={datos.hotel?.nombre||''} onImportado={() => { sessionStorage.removeItem("fr_datos_cache_v3"); sessionStorage.removeItem("fr_datos_ts_v3"); localStorage.removeItem("fr_scroll"); cargarDatos(true); }} />,
   };
-  const View = views[view];
+  const View = views[view] || views["dashboard"];
 
   if (loading) return (
     <div style={{ minHeight: "100vh", background: C.bgDeep, display: "flex", alignItems: "center", justifyContent: "center" }}>
