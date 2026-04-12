@@ -5876,7 +5876,7 @@ export default function App() {
         </div>
 
         {/* Nav links */}
-        <nav style={{ display: "flex", alignItems: "center", gap: 2, flex: 1 }}>
+        <nav style={{ display: "flex", alignItems: "center", gap: 2 }}>
           {NAV.map(n => {
             const navColor = n.key==="budget" ? "#1A7A3C" : n.key==="pickup" ? "#B8860B" : n.key==="grupos" ? "#7C3AED" : C.accent;
             const isActive = view===n.key;
@@ -5891,6 +5891,11 @@ export default function App() {
             );
           })}
         </nav>
+
+        {/* Logo entre nav y fecha */}
+        <div style={{ height: 34, overflow: "visible", display: "flex", alignItems: "center", flexShrink: 0, marginLeft: 16 }}>
+          <img src="/fastrev-logo.png" alt="FastRevenue" style={{ height: 150, width: "auto" }} />
+        </div>
 
         {/* Botones + Email + logout */}
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginLeft: "auto" }}>
@@ -5957,9 +5962,6 @@ export default function App() {
           </select>
 
           {/* Logo derecha */}
-          <div style={{ height: 34, overflow: "visible", display: "flex", alignItems: "center", flexShrink: 0 }}>
-            <img src="/fastrev-logo.png" alt="FastRevenue" style={{ height: 150, width: "auto" }} />
-          </div>
         </div>
       </div></header>
 
