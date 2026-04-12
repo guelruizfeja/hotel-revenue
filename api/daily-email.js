@@ -1,14 +1,17 @@
 export const config = { api: { bodyParser: { sizeLimit: '16kb' } } };
 
 import { Resend } from 'resend';
-import { createClient } from '@supabase/supabase-js';
 import { validateEmail, cleanString, escapeHtml } from './_validate.js';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
-const supabase = createClient(
-  process.env.SUPABASE_URL || '',
-  process.env.SUPABASE_SERVICE_ROLE_KEY || ''
-);
+
+// Decodifica el payload del JWT sin verificar firma (suficiente para leer el email del token)
+function jwtEmail(token) {
+  try {
+    const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString('utf8'));
+    return payload.email ?? null;
+  } catch { return null; }
+}
 
 const fmt    = (n, dec = 1) => (n != null && !isNaN(n)) ? Number(n).toFixed(dec) : '—';
 const fmtEur = (n) => (n != null && !isNaN(n)) ? `€${Math.round(n).toLocaleString('es-ES')}` : '—';
@@ -23,18 +26,11 @@ export default async function handler(req, res) {
   try {
   if (req.method !== 'POST') return res.status(405).end();
 
-  // JWT
+  // JWT: decodificar localmente, sin llamada a Supabase
   const token = (req.headers.authorization || '').replace('Bearer ', '').trim();
   if (!token) return res.status(401).json({ error: 'No autorizado' });
-  let user;
-  try {
-    const resp = await supabase.auth.getUser(token);
-    user = resp.data?.user;
-    if (!user) return res.status(401).json({ error: 'No autorizado' });
-  } catch (authEx) {
-    console.error('daily-email auth crash:', authEx);
-    return res.status(401).json({ error: 'Auth error: ' + authEx.message });
-  }
+  const tokenEmail = jwtEmail(token);
+  if (!tokenEmail) return res.status(401).json({ error: 'Token inválido' });
 
   const {
     email, hotelNombre, fecha,
@@ -45,7 +41,7 @@ export default async function handler(req, res) {
 
   const cleanEmail = validateEmail(email);
   if (!cleanEmail) return res.status(400).json({ error: 'Email inválido' });
-  if (user.email !== cleanEmail) return res.status(403).json({ error: 'No autorizado' });
+  if (tokenEmail !== cleanEmail) return res.status(403).json({ error: 'No autorizado' });
 
   const hotel    = escapeHtml(cleanString(hotelNombre, 100) ?? 'FastRevenue');
   const safeFecha = cleanString(fecha, 10) ?? '';
