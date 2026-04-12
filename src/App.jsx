@@ -1652,6 +1652,7 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
   };
 
   const guardarDia = async () => {
+    console.log('[guardarDia] iniciando, fecha:', fechaBusqueda);
     setGuardandoEdit(true); setErrorEdit(""); setOkEdit(false);
     const hab_ocupadas    = parseFloat(editValues.hab_ocupadas)    || null;
     const hab_disponibles = parseFloat(editValues.hab_disponibles) || null;
@@ -1664,10 +1665,12 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
     const { error } = await supabase.from("produccion_diaria")
       .update({ hab_ocupadas, hab_disponibles, revenue_hab, revenue_total, revenue_fnb, adr, revpar, trevpar })
       .eq("hotel_id", session.user.id).eq("fecha", fechaBusqueda);
+    console.log('[guardarDia] resultado supabase:', { error });
     if (error) { setErrorEdit("Error: " + error.message); }
     else {
       setOkEdit(true);
       if (onImportado) onImportado();
+      console.log('[guardarDia] llamando enviarInformeDiario');
       enviarInformeDiario({ fecha: fechaBusqueda, hab_ocupadas, hab_disponibles, revenue_hab, revenue_fnb, revenue_total, adr, revpar, trevpar });
     }
     setGuardandoEdit(false);
