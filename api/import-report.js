@@ -136,7 +136,6 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
   const allowed = await rateLimit(getIP(req), 60, 10 * 60_000).catch(() => true);
   if (!allowed) return res.status(429).json({ error: 'Demasiadas solicitudes. Inténtalo más tarde.' });
-  if (!resend) return res.status(500).json({ error: 'Resend no inicializado — falta RESEND_API_KEY en variables de entorno' });
 
   // Verificar JWT
   const token = (req.headers.authorization || '').replace('Bearer ', '').trim();
