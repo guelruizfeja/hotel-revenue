@@ -1504,21 +1504,74 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
   const enviarInformeDiario = async (diaRow) => {
     if (!diaRow || !session?.user?.email) return;
     try {
-      const r = await fetch('/api/daily-email', {
+      const mesActual  = parseInt(diaRow.fecha.split('-')[1]);
+      const anioActual = parseInt(diaRow.fecha.split('-')[0]);
+      const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+      const mesStr    = String(mesActual).padStart(2,'0');
+      const inicioMes = `${anioActual}-${mesStr}-01`;
+      const inicioSig = mesActual === 12 ? `${anioActual+1}-01-01` : `${anioActual}-${String(mesActual+1).padStart(2,'0')}-01`;
+      const inicioMesLY = `${anioActual-1}-${mesStr}-01`;
+      const inicioSigLY = mesActual === 12 ? `${anioActual}-01-01` : `${anioActual-1}-${String(mesActual+1).padStart(2,'0')}-01`;
+
+      const [{ data: datosMes }, { data: datosMesLY }, { data: pickupRows }] = await Promise.all([
+        supabase.from("produccion_diaria")
+          .select("fecha,hab_ocupadas,hab_disponibles,revenue_hab,revenue_total")
+          .eq("hotel_id", session.user.id).gte("fecha", inicioMes).lt("fecha", inicioSig)
+          .order("fecha", { ascending: true }),
+        supabase.from("produccion_diaria")
+          .select("fecha,hab_ocupadas,hab_disponibles,revenue_hab,revenue_total")
+          .eq("hotel_id", session.user.id).gte("fecha", inicioMesLY).lt("fecha", inicioSigLY),
+        supabase.from("pickup_entries")
+          .select("num_reservas,precio_total,estado")
+          .eq("hotel_id", session.user.id).eq("fecha_pickup", diaRow.fecha),
+      ]);
+
+      let nuevasAyer = 0, cancelAyer = 0, revPickupAyer = 0;
+      for (const p of (pickupRows || [])) {
+        const nr = p.num_reservas || 1;
+        if (p.estado === 'cancelada') cancelAyer += nr;
+        else { nuevasAyer += nr; revPickupAyer += p.precio_total || nr * (diaRow.adr || 0); }
+      }
+
+      let acum = 0;
+      const revenueAcumulado = (datosMes || []).map(d => {
+        acum += d.revenue_hab || 0;
+        return { dia: parseInt(d.fecha.split('-')[2]), acum: Math.round(acum) };
+      });
+
+      const lyFecha = `${anioActual-1}-${diaRow.fecha.slice(5)}`;
+      const lyDia   = (datosMesLY || []).find(d => d.fecha === lyFecha);
+      const lyOcc    = lyDia?.hab_disponibles > 0 ? lyDia.hab_ocupadas / lyDia.hab_disponibles * 100 : null;
+      const lyAdr    = lyDia?.hab_ocupadas > 0 && lyDia?.revenue_hab ? lyDia.revenue_hab / lyDia.hab_ocupadas : null;
+      const lyRevpar = lyDia?.hab_disponibles > 0 && lyDia?.revenue_hab ? lyDia.revenue_hab / lyDia.hab_disponibles : null;
+      const lyTrevpar= lyDia?.hab_disponibles > 0 && lyDia?.revenue_total ? lyDia.revenue_total / lyDia.hab_disponibles : null;
+
+      const occ    = diaRow.hab_disponibles > 0 ? diaRow.hab_ocupadas / diaRow.hab_disponibles * 100 : null;
+      const adr    = diaRow.adr    ?? (diaRow.hab_ocupadas > 0 && diaRow.revenue_hab ? diaRow.revenue_hab / diaRow.hab_ocupadas : null);
+      const revpar = diaRow.revpar ?? (diaRow.hab_disponibles > 0 && diaRow.revenue_hab ? diaRow.revenue_hab / diaRow.hab_disponibles : null);
+      const trevpar= diaRow.trevpar?? (diaRow.hab_disponibles > 0 && diaRow.revenue_total ? diaRow.revenue_total / diaRow.hab_disponibles : null);
+
+      await fetch('/api/daily-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
         body: JSON.stringify({
           email: session.user.email,
           hotelNombre: hotelNombreProp || null,
-          fecha: diaRow.fecha,
-          occ: diaRow.hab_disponibles > 0 ? Math.round(diaRow.hab_ocupadas / diaRow.hab_disponibles * 1000) / 10 : null,
-          adr: diaRow.adr ?? null,
-          revpar: diaRow.revpar ?? null,
-          trevpar: diaRow.trevpar ?? null,
-          hab_ocupadas: diaRow.hab_ocupadas,
-          hab_disponibles: diaRow.hab_disponibles,
-          revenue_hab: diaRow.revenue_hab,
-          revenue_total: diaRow.revenue_total,
+          kpis: {
+            fecha: diaRow.fecha,
+            mesNombre: MESES[mesActual - 1],
+            occ, adr, revpar, trevpar,
+            hab_ocupadas: diaRow.hab_ocupadas,
+            hab_disponibles: diaRow.hab_disponibles,
+            revenue_hab: diaRow.revenue_hab,
+            revenue_total: diaRow.revenue_total,
+            pickup_neto: nuevasAyer,
+            cancelaciones: cancelAyer,
+            revenue_pickup_ayer: revPickupAyer,
+            revenueAcumulado,
+            presupuestoMensual: null,
+            ly_occ: lyOcc, ly_adr: lyAdr, ly_revpar: lyRevpar, ly_trevpar: lyTrevpar,
+          },
         }),
       });
     } catch { /* ignored */ }
