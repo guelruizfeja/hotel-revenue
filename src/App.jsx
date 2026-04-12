@@ -5866,8 +5866,8 @@ export default function App() {
       `}</style>
 
       {/* Barra título con logo */}
-      <div style={{ background: C.bg, borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center", padding: "10px clamp(12px,4vw,32px)", position: "sticky", top: 0, zIndex: 101 }}>
-        <img src="/fastrev-logo.png" alt="FastRevenue" style={{ height: 44, width: "auto" }} />
+      <div style={{ background: "#111111", display: "flex", alignItems: "center", justifyContent: "center", padding: "8px clamp(12px,4vw,32px)", position: "sticky", top: 0, zIndex: 101 }}>
+        <img src="/fastrev-logo.png" alt="FastRevenue" style={{ height: 36, width: "auto", filter: "invert(1)" }} />
       </div>
 
       {/* Topbar */}
