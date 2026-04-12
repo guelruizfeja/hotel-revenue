@@ -6,7 +6,7 @@ import {
   PieChart, Pie, Cell,
 } from "recharts";
 
-const LOGO_B64 = "/fastrev-logo.jpg";
+const LOGO_B64 = "/fastrev-logo.png";
 const C = {
   bg: "#FDFDFD", bgCard: "#FFFFFF", bgDeep: "#0A2540",
   accent: "#004B87", accentLight: "#E8F0F9", accentDark: "#003366",
@@ -5367,7 +5367,7 @@ function AuthScreen() {
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;0,800;1,400;1,600&family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap'); * { box-sizing: border-box; margin: 0; padding: 0; } html, body, #root { width: 100%; min-height: 100vh; } @keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }`}</style>
       <div style={{ width: 420, background: C.bgCard, borderRadius: 20, padding: "40px 36px", boxShadow: "0 32px 80px rgba(0,0,0,0.4)", animation: "fadeUp 0.5s ease both" }}>
         <div style={{ textAlign: "center", marginBottom: 32 }}>
-          <img src="/fastrev-logo.jpg" alt="FastRevenue" style={{ height: 140, marginBottom: 12 }} />
+          <img src="/fastrev-logo.png" alt="FastRevenue" style={{ height: 140, marginBottom: 12 }} />
         </div>
         <div style={{ display: "flex", background: C.bg, borderRadius: 10, padding: 4, marginBottom: 24 }}>
           {[["login","Iniciar sesión"],["register","Crear cuenta"]].map(([k,l]) => (
@@ -5957,7 +5957,7 @@ export default function App() {
           </select>
 
           {/* Logo derecha */}
-          <img src="/fastrev-logo.jpg" alt="FastRevenue" style={{ height: 48, width: "auto", mixBlendMode: "multiply", filter: "contrast(8) brightness(1.08)", flexShrink: 0 }} />
+          <img src="/fastrev-logo.png" alt="FastRevenue" style={{ height: 48, width: "auto", flexShrink: 0 }} />
         </div>
       </div></header>
 
