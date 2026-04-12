@@ -393,8 +393,10 @@ const CustomTooltip = ({ active, payload, label, unit }) => {
   );
 };
 
-function WeatherBar({ ciudad, datos }) {
+function WeatherBar({ ciudad, datos, lang }) {
   const [weather, setWeather] = useState(null);
+  const [ahora, setAhora] = useState(new Date());
+  useEffect(() => { const id = setInterval(() => setAhora(new Date()), 1000); return () => clearInterval(id); }, []);
 
   useEffect(() => {
     if (!ciudad) return;
@@ -512,25 +514,37 @@ function WeatherBar({ ciudad, datos }) {
   if (!ciudad) return null;
 
   return (
-    <div style={{ background:"#F4F8FD", borderBottom:`1px solid #D8E6F3`, position:"sticky", top:52, zIndex:99, height:36, display:"flex", alignItems:"center", overflow:"hidden" }}>
+    <div style={{ background:"#1a1a1a", borderBottom:`1px solid #2e2e2e`, position:"sticky", top:52, zIndex:99, height:40, display:"flex", alignItems:"center", overflow:"hidden" }}>
 
       {/* Ticker */}
       <div style={{ flex:1, overflow:"hidden", padding:"0 16px 0 clamp(12px,4vw,32px)" }}>
         {tickerText ? (
-          <div style={{ display:"inline-block", whiteSpace:"nowrap", fontSize:11, color:C.textMid, fontFamily:"'Plus Jakarta Sans',sans-serif", fontWeight:500, animationName:"ticker", animationTimingFunction:"linear", animationIterationCount:"infinite", animationDuration:`${duration}s` }}>
+          <div style={{ display:"inline-block", whiteSpace:"nowrap", fontSize:11, color:"#fff", fontFamily:"'Plus Jakarta Sans',sans-serif", fontWeight:500, animationName:"ticker", animationTimingFunction:"linear", animationIterationCount:"infinite", animationDuration:`${duration}s` }}>
             {tickerText}
           </div>
         ) : (
-          <span style={{ fontSize:11, color:C.textLight }}>Cargando datos...</span>
+          <span style={{ fontSize:11, color:"#fff" }}>Cargando datos...</span>
         )}
       </div>
 
-      {/* Ciudad + Tiempo — derecha */}
-      <div style={{ display:"flex", alignItems:"center", gap:8, padding:"0 clamp(12px,4vw,32px) 0 12px", borderLeft:`1px solid #C8D8EA`, flexShrink:0, height:"100%" }}>
+      {/* Ciudad + Tiempo + Fecha/Hora — derecha */}
+      <div style={{ display:"flex", alignItems:"center", gap:8, padding:"0 clamp(12px,4vw,32px) 0 12px", borderLeft:`1px solid rgba(255,255,255,0.12)`, flexShrink:0, height:"100%" }}>
         {weather && <span style={{ fontSize:14, lineHeight:1 }}>{weatherEmoji(weather.code)}</span>}
-        {weather && <span style={{ fontSize:12, fontWeight:800, color:C.accent }}>{weather.temp}°C</span>}
-        {weather && <span style={{ fontSize:11, fontWeight:700, color:C.text }}>{ciudad}</span>}
-        {weather && <span style={{ fontSize:11, color:C.textMid }}>{WEATHER_ES[weather.code] || ""}</span>}
+        {weather && <span style={{ fontSize:12, fontWeight:800, color:"#fff" }}>{weather.temp}°C</span>}
+        {weather && (
+          <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-start", justifyContent:"center", lineHeight:1.15 }}>
+            <span style={{ fontSize:11, fontWeight:700, color:"#fff" }}>{ciudad}</span>
+            <span style={{ fontSize:9.5, color:"#fff" }}>
+              {ahora.toLocaleDateString(lang==="en"?"en-GB":lang==="fr"?"fr-FR":"es-ES",{weekday:"short",day:"numeric",month:"short"})}
+              {" · "}
+              {ahora.toLocaleTimeString(lang==="en"?"en-GB":lang==="fr"?"fr-FR":"es-ES",{hour:"2-digit",minute:"2-digit"})}
+              {" "}
+              <span style={{ fontSize:8.5, color:"#fff", background:"rgba(255,255,255,0.15)", borderRadius:2, padding:"0 3px" }}>
+                {ahora.toLocaleTimeString("en-GB",{timeZoneName:"short"}).split(" ").pop()}
+              </span>
+            </span>
+          </div>
+        )}
       </div>
 
     </div>
@@ -5865,109 +5879,97 @@ export default function App() {
         }
       `}</style>
 
-      {/* Barra título con logo */}
-      <div style={{ background: "#111111", display: "flex", alignItems: "center", justifyContent: "center", padding: "8px clamp(12px,4vw,32px)", position: "sticky", top: 0, zIndex: 101 }}>
-        <img src="/fastrev-logo.png" alt="FastRevenue" style={{ height: 36, width: "auto", filter: "invert(1)" }} />
-      </div>
+      {/* Barra principal negra: logo + nav + botones */}
+      <header style={{ background: "#111111", position: "sticky", top: 0, zIndex: 101, minHeight: 52 }}>
+        <div style={{ width: "100%", minHeight: 52, display: "flex", alignItems: "center", padding: "0 clamp(12px,4vw,32px)", gap: 6, flexWrap: "nowrap" }}>
+          {/* Logo */}
+          <img src="/fastrev-logo.png" alt="FastRevenue" style={{ height: 30, width: "auto", filter: "invert(1)", flexShrink: 0, marginRight: 8 }} />
 
-      {/* Topbar */}
-      <header style={{ background: C.bg, minHeight: 52, position: "sticky", top: 64, zIndex: 100, borderBottom: `1px solid ${C.border}` }}><div style={{ width: "100%", minHeight: 52, display: "flex", alignItems: "center", padding: "0 clamp(12px, 4vw, 32px)", gap: 6, flexWrap: "nowrap" }}>
-        {/* Fecha y hora centro */}
-        <div style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", pointerEvents: "none", display: "flex", alignItems: "center", gap: 10, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
-          <span style={{ fontSize: 12, color: "#000000", fontWeight: 500, letterSpacing: 0.3, whiteSpace: "nowrap" }}>
-            {new Date().toLocaleDateString(lang === "en" ? "en-GB" : lang === "fr" ? "fr-FR" : "es-ES", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).replace(/^\w/, c => c.toUpperCase())}
-          </span>
-          <LiveClock lang={lang} />
-        </div>
-
-        {/* Nav links */}
-        <nav style={{ display: "flex", alignItems: "center", gap: 2 }}>
-          {NAV.map(n => {
-            const navColor = n.key==="budget" ? "#1A7A3C" : n.key==="pickup" ? "#B8860B" : n.key==="grupos" ? "#7C3AED" : C.accent;
-            const isActive = view===n.key;
-            return (
-              <button key={n.key} id={`ob-nav-${n.key}`} onClick={() => { setView(n.key); setMesDetalle(null); localStorage.setItem("fr_view", n.key); }}
-                style={{ padding: "6px clamp(6px,2vw,16px)", borderRadius: 7, border: "none", cursor: "pointer", background: isActive ? navColor+"18" : "transparent", color: isActive ? navColor : C.textLight, fontSize: "clamp(11px,2.5vw,13px)", fontWeight: isActive ? 700 : 400, fontFamily: "'Plus Jakarta Sans', sans-serif", transition: "all 0.15s", whiteSpace: "nowrap", outline: isActive ? `1.5px solid ${navColor}44` : "1.5px solid transparent" }}
-                onMouseEnter={e=>{ if(!isActive){ e.currentTarget.style.color=C.text; } }}
-                onMouseLeave={e=>{ e.currentTarget.style.color=isActive?navColor:C.textLight; }}>
-                <span className="topbar-nav-label">{t(n.labelKey)}</span>
-                <span style={{ display:"none" }} className="topbar-nav-icon">{t(n.labelKey).slice(0,3)}</span>
-              </button>
-            );
-          })}
-        </nav>
-
-        {/* Botones + Email + logout */}
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginLeft: "auto" }}>
-          {view !== "gestion" && (
-            <button id="ob-importar" onClick={() => { setView("gestion"); localStorage.setItem("fr_view","gestion"); }} style={{ background: C.accent, color: "#fff", border: "none", borderRadius: 7, padding: "7px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "'Plus Jakarta Sans',sans-serif", whiteSpace: "nowrap", display:"flex", alignItems:"center", gap:5 }}>
-              <span className="topbar-importar-label">Gestión de datos</span>
-            </button>
-          )}
-
-          {/* Menú Mi Perfil */}
-          <div data-menu style={{ position:"relative" }}>
-            <button onClick={() => setMostrarPerfil(v=>!v)}
-              style={{ display:"flex", alignItems:"center", gap:6, padding:"5px 8px", borderRadius:7, border:`1px solid ${C.border}`, background:"transparent", color:C.text, cursor:"pointer", fontSize:12, fontWeight:500, fontFamily:"'Plus Jakarta Sans',sans-serif", transition:"all 0.15s", letterSpacing:0.2 }}>
-              <span style={{ width:26, height:26, borderRadius:"50%", background:C.accent, color:"#fff", fontSize:11, fontWeight:700, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-                {session.user.email[0].toUpperCase()}
-              </span>
-              <span className="topbar-perfil-label">{t("mi_perfil")}</span>
-            </button>
-            {mostrarPerfil && (
-              <div style={{ position:"absolute", top:42, right:0, width:240, background:C.bgCard, border:`1px solid ${C.border}`, borderRadius:10, boxShadow:"0 4px 24px rgba(0,0,0,0.08)", zIndex:200, overflow:"hidden" }}>
-                {/* Email */}
-                <div style={{ padding:"10px 16px", borderBottom:`1px solid ${C.border}`, background:C.bg }}>
-                  <p style={{ fontSize:11, color:C.textLight, marginBottom:2 }}>{t("conectado_como")}</p>
-                  <p style={{ fontSize:12, fontWeight:600, color:C.text, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{session.user.email}</p>
-                </div>
-                {/* Opciones */}
-                {[
-                  { label:t("suscripcion"), key:"suscripcion" },
-                  { label:t("extranets"), key:"extranets" },
-                  { label:t("informe_mensual"), key:"informe" },
-                ].map(op => (
-                  <button key={op.key} onClick={async () => {
-                      if (op.key === "informe") {
-                        setMostrarPerfil(false);
-                        setGenerandoPDF(true);
-                        await generarReportePDF(datos, mesSel, anioSel, datos.hotel?.nombre||"Mi Hotel");
-                        setGenerandoPDF(false);
-                      } else {
-                        setPerfilSeccion(op.key);
-                        setMostrarPerfil(false);
-                      }
-                    }}
-                    style={{ width:"100%", display:"flex", alignItems:"center", padding:"10px 16px", background:"transparent", border:"none", borderBottom:`1px solid ${C.border}`, cursor:"pointer", fontSize:12, color:C.text, fontFamily:"'Plus Jakarta Sans',sans-serif", textAlign:"left", letterSpacing:0.2 }}
-                    onMouseEnter={e=>e.currentTarget.style.background=C.bg}
-                    onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
-                    {op.key === "informe" && generandoPDF ? t("generando") : op.label}
-                  </button>
-                ))}
-                {/* Idioma */}
-                <div style={{ padding:"10px 16px", borderTop:`1px solid ${C.border}`, display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-                  <span style={{ fontSize:12, color:C.textMid, fontFamily:"'Plus Jakarta Sans',sans-serif" }}>{t("idioma") ?? "Idioma"}</span>
-                  <select value={lang} onChange={e => { setLang(e.target.value); localStorage.setItem("fr_lang", e.target.value); }}
-                    style={{ border:`1px solid ${C.border}`, borderRadius:6, padding:"3px 6px", fontSize:11, fontWeight:500, color:C.text, background:C.bgCard, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", outline:"none" }}>
-                    <option value="es">Español</option>
-                    <option value="en">English</option>
-                    <option value="fr">Français</option>
-                  </select>
-                </div>
-                <button onClick={handleLogout}
-                  style={{ width:"100%", display:"flex", alignItems:"center", padding:"10px 16px", background:"transparent", border:"none", borderTop:`1px solid ${C.border}`, cursor:"pointer", fontSize:12, color:C.red, fontFamily:"'Plus Jakarta Sans',sans-serif", textAlign:"left", letterSpacing:0.2 }}
-                  onMouseEnter={e=>e.currentTarget.style.background=C.redLight}
-                  onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
-                  {t("cerrar_sesion")}
+          {/* Nav links */}
+          <nav style={{ display: "flex", alignItems: "center", gap: 2 }}>
+            {NAV.map(n => {
+              const navColor = n.key==="budget" ? "#4ade80" : n.key==="pickup" ? "#fbbf24" : n.key==="grupos" ? "#a78bfa" : "#60a5fa";
+              const isActive = view===n.key;
+              return (
+                <button key={n.key} id={`ob-nav-${n.key}`} onClick={() => { setView(n.key); setMesDetalle(null); localStorage.setItem("fr_view", n.key); }}
+                  style={{ padding: "6px clamp(6px,2vw,16px)", borderRadius: 7, border: "none", cursor: "pointer", background: isActive ? "rgba(255,255,255,0.12)" : "transparent", color: "#fff", fontSize: "clamp(11px,2.5vw,13px)", fontWeight: isActive ? 700 : 400, fontFamily: "'Plus Jakarta Sans', sans-serif", transition: "all 0.15s", whiteSpace: "nowrap", outline: isActive ? `1.5px solid rgba(255,255,255,0.3)` : "1.5px solid transparent" }}>
+                  <span className="topbar-nav-label">{t(n.labelKey)}</span>
+                  <span style={{ display:"none" }} className="topbar-nav-icon">{t(n.labelKey).slice(0,3)}</span>
                 </button>
-              </div>
+              );
+            })}
+          </nav>
+
+          {/* Botones derecha */}
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginLeft: "auto" }}>
+            {view !== "gestion" && (
+              <button id="ob-importar" onClick={() => { setView("gestion"); localStorage.setItem("fr_view","gestion"); }} style={{ background: "transparent", color: "#fff", border: "1px solid rgba(255,255,255,0.35)", borderRadius: 7, padding: "6px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "'Plus Jakarta Sans',sans-serif", whiteSpace: "nowrap", display:"flex", alignItems:"center", gap:5, transition:"all 0.15s" }} onMouseEnter={e=>e.currentTarget.style.background="rgba(255,255,255,0.1)"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                <span className="topbar-importar-label">Gestión de datos</span>
+              </button>
             )}
+
+            {/* Menú Mi Perfil */}
+            <div data-menu style={{ position:"relative" }}>
+              <button onClick={() => setMostrarPerfil(v=>!v)}
+                style={{ display:"flex", alignItems:"center", gap:6, padding:"5px 8px", borderRadius:7, border:"1px solid rgba(255,255,255,0.25)", background:"transparent", color:"#fff", cursor:"pointer", fontSize:12, fontWeight:500, fontFamily:"'Plus Jakarta Sans',sans-serif", transition:"all 0.15s", letterSpacing:0.2 }}>
+                <span style={{ width:26, height:26, borderRadius:"50%", background:C.accent, color:"#fff", fontSize:11, fontWeight:700, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                  {session.user.email[0].toUpperCase()}
+                </span>
+                <span className="topbar-perfil-label">{t("mi_perfil")}</span>
+              </button>
+              {mostrarPerfil && (
+                <div style={{ position:"absolute", top:42, right:0, width:240, background:C.bgCard, border:`1px solid ${C.border}`, borderRadius:10, boxShadow:"0 4px 24px rgba(0,0,0,0.15)", zIndex:200, overflow:"hidden" }}>
+                  <div style={{ padding:"10px 16px", borderBottom:`1px solid ${C.border}`, background:C.bg }}>
+                    <p style={{ fontSize:11, color:C.textLight, marginBottom:2 }}>{t("conectado_como")}</p>
+                    <p style={{ fontSize:12, fontWeight:600, color:C.text, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{session.user.email}</p>
+                  </div>
+                  {[
+                    { label:t("suscripcion"), key:"suscripcion" },
+                    { label:t("extranets"), key:"extranets" },
+                    { label:t("informe_mensual"), key:"informe" },
+                  ].map(op => (
+                    <button key={op.key} onClick={async () => {
+                        if (op.key === "informe") {
+                          setMostrarPerfil(false);
+                          setGenerandoPDF(true);
+                          await generarReportePDF(datos, mesSel, anioSel, datos.hotel?.nombre||"Mi Hotel");
+                          setGenerandoPDF(false);
+                        } else {
+                          setPerfilSeccion(op.key);
+                          setMostrarPerfil(false);
+                        }
+                      }}
+                      style={{ width:"100%", display:"flex", alignItems:"center", padding:"10px 16px", background:"transparent", border:"none", borderBottom:`1px solid ${C.border}`, cursor:"pointer", fontSize:12, color:C.text, fontFamily:"'Plus Jakarta Sans',sans-serif", textAlign:"left", letterSpacing:0.2 }}
+                      onMouseEnter={e=>e.currentTarget.style.background=C.bg}
+                      onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                      {op.key === "informe" && generandoPDF ? t("generando") : op.label}
+                    </button>
+                  ))}
+                  <div style={{ padding:"10px 16px", borderTop:`1px solid ${C.border}`, display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+                    <span style={{ fontSize:12, color:C.textMid, fontFamily:"'Plus Jakarta Sans',sans-serif" }}>{t("idioma") ?? "Idioma"}</span>
+                    <select value={lang} onChange={e => { setLang(e.target.value); localStorage.setItem("fr_lang", e.target.value); }}
+                      style={{ border:`1px solid ${C.border}`, borderRadius:6, padding:"3px 6px", fontSize:11, fontWeight:500, color:C.text, background:C.bgCard, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", outline:"none" }}>
+                      <option value="es">Español</option>
+                      <option value="en">English</option>
+                      <option value="fr">Français</option>
+                    </select>
+                  </div>
+                  <button onClick={handleLogout}
+                    style={{ width:"100%", display:"flex", alignItems:"center", padding:"10px 16px", background:"transparent", border:"none", borderTop:`1px solid ${C.border}`, cursor:"pointer", fontSize:12, color:C.red, fontFamily:"'Plus Jakarta Sans',sans-serif", textAlign:"left", letterSpacing:0.2 }}
+                    onMouseEnter={e=>e.currentTarget.style.background=C.redLight}
+                    onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                    {t("cerrar_sesion")}
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
-
         </div>
-      </div></header>
+      </header>
 
-      <WeatherBar ciudad={datos.hotel?.ciudad} datos={datos} />
+      <div style={{ height: "0.5px", background: "#fff", width: "100%", position:"sticky", top:52, zIndex:100 }} />
+      <WeatherBar ciudad={datos.hotel?.ciudad} datos={datos} lang={lang} />
+      <div style={{ height: 8, background: "#fff", width: "100%" }} />
 
       {/* Main */}
       <main id="main-scroll" onScroll={e => localStorage.setItem("fr_scroll", e.currentTarget.scrollTop)} style={{ padding: "clamp(14px,4vw,28px) clamp(12px,4vw,32px)", width: "100%", boxSizing: "border-box" }}>
