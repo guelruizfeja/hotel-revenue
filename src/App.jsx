@@ -1511,18 +1511,24 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
       const mesPrefijo = `${anioActual}-${String(mesActual).padStart(2,'0')}`;
 
       // Datos del mes para acumulado y cierre mensual
+      const mesStr  = String(mesActual).padStart(2,'0');
+      const inicioMes = `${anioActual}-${mesStr}-01`;
+      const inicioSig = mesActual === 12 ? `${anioActual+1}-01-01` : `${anioActual}-${String(mesActual+1).padStart(2,'0')}-01`;
       const { data: datosMes } = await supabase.from("produccion_diaria")
-        .select("fecha,hab_ocupadas,hab_disponibles,revenue_hab,revenue_total,adr,revpar,trevpar")
+        .select("fecha,hab_ocupadas,hab_disponibles,revenue_hab,revenue_total,revenue_fnb")
         .eq("hotel_id", session.user.id)
-        .like("fecha", `${mesPrefijo}%`)
+        .gte("fecha", inicioMes)
+        .lt("fecha", inicioSig)
         .order("fecha", { ascending: true });
 
       // LY: mismo mes año anterior
-      const lyPrefijo = `${anioActual - 1}-${String(mesActual).padStart(2,'0')}`;
+      const inicioMesLY = `${anioActual-1}-${mesStr}-01`;
+      const inicioSigLY = mesActual === 12 ? `${anioActual}-01-01` : `${anioActual-1}-${String(mesActual+1).padStart(2,'0')}-01`;
       const { data: datosMesLY } = await supabase.from("produccion_diaria")
-        .select("fecha,hab_ocupadas,hab_disponibles,revenue_hab,revenue_total,adr,revpar,trevpar")
+        .select("fecha,hab_ocupadas,hab_disponibles,revenue_hab,revenue_total,revenue_fnb")
         .eq("hotel_id", session.user.id)
-        .like("fecha", `${lyPrefijo}%`);
+        .gte("fecha", inicioMesLY)
+        .lt("fecha", inicioSigLY);
 
       // Pickup de ayer
       const { data: pickupAyerRows } = await supabase.from("pickup_entries")
@@ -1544,9 +1550,19 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
         return { dia: parseInt(d.fecha.split('-')[2]), acum: Math.round(acum) };
       });
 
-      // LY mismo día
+      // LY mismo día — calcular métricas desde datos básicos
       const lyFecha = `${anioActual - 1}-${diaRow.fecha.slice(5)}`;
       const lyDia = (datosMesLY || []).find(d => d.fecha === lyFecha);
+      const lyOcc    = lyDia?.hab_disponibles > 0 ? (lyDia.hab_ocupadas / lyDia.hab_disponibles * 100) : null;
+      const lyAdr    = lyDia?.hab_ocupadas > 0 && lyDia?.revenue_hab ? Math.round(lyDia.revenue_hab / lyDia.hab_ocupadas * 100) / 100 : null;
+      const lyRevpar = lyDia?.hab_disponibles > 0 && lyDia?.revenue_hab ? Math.round(lyDia.revenue_hab / lyDia.hab_disponibles * 100) / 100 : null;
+      const lyTrevpar= lyDia?.hab_disponibles > 0 && lyDia?.revenue_total ? Math.round(lyDia.revenue_total / lyDia.hab_disponibles * 100) / 100 : null;
+
+      // Calcular adr/revpar/trevpar del día desde diaRow si no vienen calculados
+      const occDia    = diaRow.hab_disponibles > 0 ? (diaRow.hab_ocupadas / diaRow.hab_disponibles * 100) : null;
+      const adrDia    = diaRow.adr    ?? (diaRow.hab_ocupadas > 0 && diaRow.revenue_hab ? Math.round(diaRow.revenue_hab / diaRow.hab_ocupadas * 100) / 100 : null);
+      const revparDia = diaRow.revpar ?? (diaRow.hab_disponibles > 0 && diaRow.revenue_hab ? Math.round(diaRow.revenue_hab / diaRow.hab_disponibles * 100) / 100 : null);
+      const trevparDia= diaRow.trevpar?? (diaRow.hab_disponibles > 0 && diaRow.revenue_total ? Math.round(diaRow.revenue_total / diaRow.hab_disponibles * 100) / 100 : null);
 
       console.log('[email] datos listos, llamando /api/import-report', { revenueAcumuladoLen: revenueAcumulado.length, pickup: nuevasAyer });
       const r = await fetch('/api/import-report', {
@@ -1558,10 +1574,10 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
           kpis: {
             fecha: diaRow.fecha,
             mesNombre: MESES[mesActual - 1],
-            occ: diaRow.hab_disponibles > 0 ? (diaRow.hab_ocupadas / diaRow.hab_disponibles * 100) : null,
-            adr: diaRow.adr,
-            revpar: diaRow.revpar,
-            trevpar: diaRow.trevpar,
+            occ: occDia,
+            adr: adrDia,
+            revpar: revparDia,
+            trevpar: trevparDia,
             revenue_hab: diaRow.revenue_hab,
             hab_ocupadas: diaRow.hab_ocupadas,
             hab_disponibles: diaRow.hab_disponibles,
@@ -1571,10 +1587,7 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
             revenueAcumulado,
             presupuestoMensual: null,
             total_registros: (datosMes || []).length,
-            ly_occ:    lyDia && lyDia.hab_disponibles > 0 ? (lyDia.hab_ocupadas / lyDia.hab_disponibles * 100) : null,
-            ly_adr:    lyDia?.adr    ?? null,
-            ly_revpar: lyDia?.revpar ?? null,
-            ly_trevpar:lyDia?.trevpar?? null,
+            ly_occ: lyOcc, ly_adr: lyAdr, ly_revpar: lyRevpar, ly_trevpar: lyTrevpar,
           },
         }),
       });
