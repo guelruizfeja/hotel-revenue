@@ -1547,7 +1547,7 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
       const lyFecha = `${anioActual - 1}-${diaRow.fecha.slice(5)}`;
       const lyDia = (datosMesLY || []).find(d => d.fecha === lyFecha);
 
-      fetch('/api/import-report', {
+      const r = await fetch('/api/import-report', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
         body: JSON.stringify({
@@ -1575,7 +1575,8 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
             ly_trevpar:lyDia?.trevpar?? null,
           },
         }),
-      }).catch(() => {});
+      });
+      if (!r.ok) { const t = await r.text(); console.error('[import-report]', r.status, t); }
 
       // Informe mensual: solo el último día del mes
       const lastDayOfMonth = new Date(anioActual, mesActual, 0).getDate();
@@ -1598,7 +1599,7 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
           pdfBase64 = await generarReportePDF({ produccion: todaProd || [], presupuesto: [] }, mesActual - 1, anioActual, hotelNombreProp || 'Mi Hotel', true);
         } catch (pdfErr) { console.error('PDF gen error:', pdfErr); }
 
-        fetch('/api/monthly-report', {
+        const rm = await fetch('/api/monthly-report', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
           body: JSON.stringify({
@@ -1622,7 +1623,8 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
               ly_revenue_total: lyRevTot > 0 ? lyRevTot : null,
             },
           }),
-        }).catch(() => {});
+        });
+        if (!rm.ok) { const t = await rm.text(); console.error('[monthly-report]', rm.status, t); }
       }
     } catch(e) { console.error('Error enviando informe diario:', e); }
   };

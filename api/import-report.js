@@ -135,7 +135,7 @@ function buildAlerts(kpis) {
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
-  if (!await rateLimit(getIP(req), 10, 10 * 60_000)) {
+  if (!await rateLimit(getIP(req), 60, 10 * 60_000)) {
     return res.status(429).json({ error: 'Demasiadas solicitudes. Inténtalo más tarde.' });
   }
 
@@ -362,7 +362,7 @@ export default async function handler(req, res) {
       subject: `Informe ${fmtDate(safeFecha)} — ${hotel}`,
       html,
       headers: {
-        'X-Entity-Ref-ID': `import-${email}-${fecha}`,
+        'X-Entity-Ref-ID': `daily-${email}-${fecha}-${Date.now()}`,
         'List-Unsubscribe': '<mailto:info@fastrevenue.app?subject=unsubscribe>',
         'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
       },
