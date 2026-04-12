@@ -6,7 +6,7 @@ import {
   PieChart, Pie, Cell,
 } from "recharts";
 
-const LOGO_B64 = "data:image/png;base64,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";
+const LOGO_B64 = "/fastrev-logo.svg";
 const C = {
   bg: "#FDFDFD", bgCard: "#FFFFFF", bgDeep: "#0A2540",
   accent: "#004B87", accentLight: "#E8F0F9", accentDark: "#003366",
@@ -991,11 +991,14 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
   const [errorPickup, setErrorPickup] = useState("");
   const [pickupRecientes, setPickupRecientes] = useState([]);
   const [okPickup, setOkPickup] = useState(false);
+  const [preciosDiferentes, setPreciosDiferentes] = useState(false);
+  const [preciosPorNoche, setPreciosPorNoche] = useState([]);
+  const [canalPersonalizado, setCanalPersonalizado] = useState("");
   // Estado producción diaria
   const [prodForm, setProdForm] = useState({
     fecha: new Date().toISOString().slice(0,10),
     hab_ocupadas: "", hab_disponibles: "",
-    revenue_hab: "", revenue_total: "", revenue_fnb: "",
+    revenue_hab: "", revenue_fnb: "", revenue_salas: "",
   });
   const [guardandoProd, setGuardandoProd] = useState(false);
   const [errorProd, setErrorProd] = useState("");
@@ -1004,6 +1007,31 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
   // Vaciar
   const [vaciando, setVaciando] = useState(false);
   const [confirmVaciar, setConfirmVaciar] = useState(false);
+  // Estado de importación existente
+  const [importStatusHistorico, setImportStatusHistorico] = useState(null); // null=comprobando, false=sin datos, {fecha,count}
+  const [importStatusPresupuesto, setImportStatusPresupuesto] = useState(null);
+  const [modoHistorico, setModoHistorico] = useState("status"); // "status" | "upload" | "edit"
+  const [modoPpto, setModoPpto] = useState("status"); // "status" | "upload"
+  const [confirmEliminarHistorico, setConfirmEliminarHistorico] = useState(false);
+  const [confirmEliminarPresupuesto, setConfirmEliminarPresupuesto] = useState(false);
+  const [eliminandoHistorico, setEliminandoHistorico] = useState(false);
+  const [eliminandoPresupuesto, setEliminandoPresupuesto] = useState(false);
+  const [showPptoZone, setShowPptoZone] = useState(true);
+
+  // Comprobar si ya hay datos importados al montar
+  useEffect(() => {
+    const checkImports = async () => {
+      const [{ count: countH }, { count: countP }] = await Promise.all([
+        supabase.from("produccion_diaria").select("*", { count: "exact", head: true }).eq("hotel_id", session.user.id),
+        supabase.from("presupuesto").select("*", { count: "exact", head: true }).eq("hotel_id", session.user.id),
+      ]);
+      const fechaH = localStorage.getItem(`fr_import_hist_${session.user.id}`);
+      const fechaP = localStorage.getItem(`fr_import_ppto_${session.user.id}`);
+      setImportStatusHistorico(countH > 0 ? { fecha: fechaH, count: countH } : false);
+      setImportStatusPresupuesto(countP > 0 ? { fecha: fechaP, count: countP } : false);
+    };
+    checkImports();
+  }, []);
 
   const vaciarDatos = async () => {
     setVaciando(true);
@@ -1020,6 +1048,37 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
       setErrorMain("Error al vaciar datos: " + e.message);
     }
     setVaciando(false);
+  };
+
+  const eliminarHistorico = async () => {
+    setEliminandoHistorico(true);
+    try {
+      await Promise.all([
+        supabase.from("produccion_diaria").delete().eq("hotel_id", session.user.id),
+        supabase.from("pickup_entries").delete().eq("hotel_id", session.user.id),
+      ]);
+      localStorage.removeItem(`fr_import_hist_${session.user.id}`);
+      setImportStatusHistorico(false);
+      setModoHistorico("status");
+      setConfirmEliminarHistorico(false);
+      setResultadoMain(null);
+      if (onImportado) onImportado();
+    } catch(e) { setErrorMain("Error al eliminar: " + e.message); }
+    setEliminandoHistorico(false);
+  };
+
+  const eliminarPresupuesto = async () => {
+    setEliminandoPresupuesto(true);
+    try {
+      await supabase.from("presupuesto").delete().eq("hotel_id", session.user.id);
+      localStorage.removeItem(`fr_import_ppto_${session.user.id}`);
+      setImportStatusPresupuesto(false);
+      setModoPpto("status");
+      setConfirmEliminarPresupuesto(false);
+      setResultadoPpto(null);
+      if (onImportado) onImportado();
+    } catch(e) { setErrorPpto("Error al eliminar: " + e.message); }
+    setEliminandoPresupuesto(false);
   };
 
   const validarArchivo = (file) => {
@@ -1191,6 +1250,10 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
 
       setProgresoPctMain(100);
       setResultadoMain({ produccion: produccionRows.length, pickup: pickupRows.length });
+      const fechaImportH = new Date().toLocaleString("es-ES", { day:"2-digit", month:"2-digit", year:"numeric", hour:"2-digit", minute:"2-digit" });
+      localStorage.setItem(`fr_import_hist_${session.user.id}`, fechaImportH);
+      setImportStatusHistorico({ fecha: fechaImportH, count: produccionRows.length });
+      setModoHistorico("status");
       if (onImportado) onImportado();
 
       // Enviar informe por email (fire & forget)
@@ -1391,6 +1454,10 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
 
       setProgresoPctPpto(100);
       setResultadoPpto({ presupuesto: presupuestoRows.length });
+      const fechaImportP = new Date().toLocaleString("es-ES", { day:"2-digit", month:"2-digit", year:"numeric", hour:"2-digit", minute:"2-digit" });
+      localStorage.setItem(`fr_import_ppto_${session.user.id}`, fechaImportP);
+      setImportStatusPresupuesto({ fecha: fechaImportP, count: presupuestoRows.length });
+      setModoPpto("status");
       setShowPptoZone(false);
       if (onImportado) onImportado();
     } catch (e) {
@@ -1409,12 +1476,13 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
       const hab_ocupadas    = parseFloat(prodForm.hab_ocupadas)    || null;
       const hab_disponibles = parseFloat(prodForm.hab_disponibles) || null;
       const revenue_hab     = parseFloat(prodForm.revenue_hab)     || null;
-      const revenue_total   = parseFloat(prodForm.revenue_total)   || null;
       const revenue_fnb     = parseFloat(prodForm.revenue_fnb)     || null;
+      const revenue_salas   = parseFloat(prodForm.revenue_salas)   || null;
+      const revenue_total   = Math.round(((revenue_hab||0) + (revenue_fnb||0) + (revenue_salas||0)) * 100) / 100 || null;
       if (!hab_ocupadas && !revenue_hab) throw new Error("Introduce al menos Hab. Ocupadas o Rev. Habitaciones");
       const adr    = hab_ocupadas > 0 && revenue_hab ? Math.round(revenue_hab / hab_ocupadas * 100) / 100 : null;
       const revpar = hab_disponibles > 0 && revenue_hab ? Math.round(revenue_hab / hab_disponibles * 100) / 100 : null;
-      const trevpar = hab_disponibles > 0 ? Math.round(((revenue_hab||0)+(revenue_fnb||0)) / hab_disponibles * 100) / 100 : null;
+      const trevpar = hab_disponibles > 0 ? Math.round(((revenue_hab||0)+(revenue_fnb||0)+(revenue_salas||0)) / hab_disponibles * 100) / 100 : null;
       const row = {
         hotel_id: session.user.id, fecha: prodForm.fecha,
         hab_ocupadas, hab_disponibles, revenue_hab, revenue_total, revenue_fnb,
@@ -1427,7 +1495,7 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
         : await supabase.from("produccion_diaria").insert(row);
       if (error) throw new Error(error.message);
       setProdRecientes(prev => [row, ...prev.filter(r => r.fecha !== prodForm.fecha)].slice(0, 8));
-      setProdForm(f => ({...f, hab_ocupadas:"", hab_disponibles:"", revenue_hab:"", revenue_total:"", revenue_fnb:""}));
+      setProdForm(f => ({...f, hab_ocupadas:"", hab_disponibles:"", revenue_hab:"", revenue_fnb:"", revenue_salas:""}));
       setOkProd(true); setTimeout(() => setOkProd(false), 3000);
       if (onImportado) onImportado();
     } catch(e) { setErrorProd(e.message); }
@@ -1479,22 +1547,125 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
         hotel_id:      session.user.id,
         fecha_pickup:  pickupForm.fecha_pickup,
         fecha_llegada: pickupForm.fecha_llegada,
-        canal:         pickupForm.canal || null,
+        canal:         (pickupForm.canal === "otro" ? canalPersonalizado : pickupForm.canal) || null,
         num_reservas:  parseInt(pickupForm.num_reservas) || 1,
         fecha_salida:  pickupForm.fecha_salida || null,
         noches:        pickupForm.noches ? parseInt(pickupForm.noches) : null,
-        precio_total:  pickupForm.precio_total ? parseFloat(pickupForm.precio_total) : null,
+        precio_total:  (() => {
+          if (preciosDiferentes && preciosPorNoche.length > 0) {
+            const suma = preciosPorNoche.reduce((a, v) => a + (parseFloat(v) || 0), 0);
+            return suma > 0 ? Math.round(suma * 100) / 100 : null;
+          }
+          return pickupForm.precio_total ? parseFloat(pickupForm.precio_total) : null;
+        })(),
         estado:        pickupForm.estado || "confirmada",
       };
       const { error } = await supabase.from("pickup_entries").insert(row);
       if (error) throw new Error(error.message);
       setPickupRecientes(prev => [row, ...prev].slice(0, 8));
       setPickupForm(f => ({...f, fecha_llegada:"", canal:"", num_reservas:"1", fecha_salida:"", noches:"", precio_total:""}));
+      setPreciosDiferentes(false);
+      setPreciosPorNoche([]);
+      setCanalPersonalizado("");
       setOkPickup(true);
       setTimeout(() => setOkPickup(false), 3000);
       if (onImportado) onImportado();
     } catch(e) { setErrorPickup(e.message); }
     setGuardandoPickup(false);
+  };
+
+  // ── Generar pickup mock de ayer basado en histórico ──
+  const [generandoMock, setGenerandoMock] = useState(false);
+  const [okMock, setOkMock] = useState(false);
+  const generarPickupMock = async () => {
+    setGenerandoMock(true);
+    try {
+      const ayer = new Date(); ayer.setDate(ayer.getDate() - 1);
+      const ayerStr = ayer.toISOString().slice(0, 10);
+
+      // Leer todos los pickup del año para calcular patrones
+      const { data: todos } = await supabase.from("pickup_entries")
+        .select("canal,num_reservas,noches,precio_total,estado,fecha_llegada")
+        .eq("hotel_id", session.user.id)
+        .neq("estado", "cancelada");
+
+      // Calcular patrones si hay datos, si no usar defaults de hotel urbano
+      let patronCanales, mediaNoches, mediaADR;
+      if (todos && todos.length > 50) {
+        // Distribución de canales
+        const canalCount = {};
+        todos.forEach(r => { const c = r.canal || "Directo / Web"; canalCount[c] = (canalCount[c]||0) + (r.num_reservas||1); });
+        const totalRes = Object.values(canalCount).reduce((a,b)=>a+b,0);
+        patronCanales = Object.entries(canalCount)
+          .sort((a,b)=>b[1]-a[1]).slice(0,5)
+          .map(([canal, cnt]) => ({ canal, peso: cnt/totalRes }));
+        // Media noches
+        const conNoches = todos.filter(r => r.noches > 0);
+        mediaNoches = conNoches.length ? conNoches.reduce((a,r)=>a+r.noches,0)/conNoches.length : 2;
+        // Media ADR
+        const conPrecio = todos.filter(r => r.precio_total > 0 && r.noches > 0);
+        mediaADR = conPrecio.length
+          ? conPrecio.reduce((a,r)=>a+(r.precio_total/r.noches),0)/conPrecio.length
+          : 120;
+      } else {
+        // Defaults hotel estándar
+        patronCanales = [
+          { canal:"Booking.com",        peso:0.38 },
+          { canal:"Directo / Web",       peso:0.26 },
+          { canal:"Expedia",             peso:0.14 },
+          { canal:"Empresa / Corporativo", peso:0.12 },
+          { canal:"Tour operador",       peso:0.10 },
+        ];
+        mediaNoches = 2;
+        mediaADR = 120;
+      }
+
+      // Número de reservas del día: entre 3 y 8 (típico hotel ~80 hab)
+      const totalReservasDia = 3 + Math.floor(Math.random() * 5);
+
+      // Repartir entre canales según peso
+      const filas = [];
+      let asignadas = 0;
+      for (let ci = 0; ci < patronCanales.length && asignadas < totalReservasDia; ci++) {
+        const { canal, peso } = patronCanales[ci];
+        const esUltimo = ci === patronCanales.length - 1;
+        const n = esUltimo
+          ? totalReservasDia - asignadas
+          : Math.max(0, Math.round(peso * totalReservasDia));
+        if (n === 0) continue;
+
+        // Variación de noches y precio por canal
+        const factorADR = canal.includes("Directo") ? 1.05 : canal.includes("Empresa") ? 1.10 : canal.includes("Tour") ? 0.88 : 1.0;
+        const noches = Math.max(1, Math.round(mediaNoches + (Math.random()-0.5)*1.5));
+        const adr = Math.round(mediaADR * factorADR * (0.92 + Math.random()*0.16));
+        const diasAnticipacion = canal.includes("Tour") ? 45 + Math.floor(Math.random()*60)
+          : canal.includes("Empresa") ? 3 + Math.floor(Math.random()*10)
+          : 10 + Math.floor(Math.random()*50);
+        const llegada = new Date(ayer); llegada.setDate(llegada.getDate() + diasAnticipacion);
+        const llegadaStr = llegada.toISOString().slice(0,10);
+        const salida = new Date(llegada); salida.setDate(salida.getDate() + noches);
+
+        filas.push({
+          hotel_id:      session.user.id,
+          fecha_pickup:  ayerStr,
+          fecha_llegada: llegadaStr,
+          fecha_salida:  salida.toISOString().slice(0,10),
+          canal,
+          num_reservas:  n,
+          noches,
+          precio_total:  Math.round(adr * noches * n * 100) / 100,
+          estado:        "confirmada",
+        });
+        asignadas += n;
+      }
+
+      const { error } = await supabase.from("pickup_entries").insert(filas);
+      if (error) throw new Error(error.message);
+      setOkMock(true);
+      setTimeout(() => setOkMock(false), 4000);
+      if (onImportado) onImportado();
+    } catch(e) { setErrorPickup("Error generando datos: " + e.message); }
+    setGenerandoMock(false);
   };
 
   // ── Paleta clara (igual que el resto de la web) ──
@@ -1617,73 +1788,196 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
           {/* ── PRESUPUESTO ── */}
           {activeBlock === "presupuesto" && (
             <div>
-              <p style={{ fontSize:12, color:H.textMid, marginBottom:16, lineHeight:1.5 }}>{t("imp_ppto_sub")}</p>
-              <UploadZone
-                id="excel-input-ppto"
-                loading={loadingPpto} resultado={resultadoPpto ? true : null} error={errorPpto}
-                progreso={progresoPpto} progresoPct={progresoPctPpto}
-                onFile={procesarPresupuesto}
-                okContent={<p style={{ color:H.green, fontSize:12 }}>✓ {resultadoPpto?.presupuesto} {t("meses_presupuesto")}</p>}
-              />
+              {/* Banner datos ya importados */}
+              {importStatusPresupuesto && modoPpto === "status" && !confirmEliminarPresupuesto && (
+                <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", flexWrap:"wrap", gap:10, background:"rgba(0,159,77,0.07)", border:"1px solid rgba(0,159,77,0.25)", borderRadius:10, padding:"12px 16px", marginBottom:16 }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={H.green} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    <div>
+                      <p style={{ fontSize:13, fontWeight:700, color:H.green, margin:0 }}>Datos ya importados</p>
+                      {importStatusPresupuesto.fecha && <p style={{ fontSize:11, color:H.textMid, margin:0, marginTop:2 }}>{importStatusPresupuesto.fecha}</p>}
+                    </div>
+                  </div>
+                  <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+                    <button onClick={() => setModoPpto("upload")}
+                      style={{ padding:"6px 12px", borderRadius:6, border:`1px solid ${H.blue}`, background:"none", color:H.blue, fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+                      Importar nuevos datos
+                    </button>
+                    <button onClick={() => setConfirmEliminarPresupuesto(true)}
+                      style={{ padding:"6px 12px", borderRadius:6, border:`1px solid rgba(211,47,47,0.4)`, background:"none", color:H.red, fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+                      Eliminar datos
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Confirmación eliminar presupuesto */}
+              {confirmEliminarPresupuesto && (
+                <div style={{ background:"rgba(211,47,47,0.08)", border:"1px solid rgba(211,47,47,0.25)", borderRadius:10, padding:"14px 16px", marginBottom:16 }}>
+                  <p style={{ fontSize:13, fontWeight:700, color:H.red, marginBottom:4 }}>¿Eliminar los datos de presupuesto?</p>
+                  <p style={{ fontSize:11, color:H.textMid, marginBottom:12 }}>Se eliminarán todos los datos de presupuesto. Esta acción no se puede deshacer.</p>
+                  <div style={{ display:"flex", gap:8 }}>
+                    <button onClick={() => setConfirmEliminarPresupuesto(false)} style={{ padding:"6px 14px", borderRadius:6, border:`1px solid ${H.border}`, background:H.card2, color:H.textMid, fontSize:11, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>Cancelar</button>
+                    <button onClick={eliminarPresupuesto} disabled={eliminandoPresupuesto} style={{ padding:"6px 14px", borderRadius:6, border:"none", background:H.red, color:"#fff", fontSize:11, fontWeight:700, cursor:eliminandoPresupuesto?"not-allowed":"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+                      {eliminandoPresupuesto ? "Eliminando…" : "Sí, eliminar"}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Zona de subida */}
+              {(!importStatusPresupuesto || modoPpto === "upload") && !confirmEliminarPresupuesto && (
+                <div>
+                  {modoPpto === "upload" && (
+                    <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:12 }}>
+                      <button onClick={() => setModoPpto("status")} style={{ padding:"5px 12px", borderRadius:6, border:`1px solid ${H.border}`, background:"none", color:H.textMid, fontSize:11, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>← Volver</button>
+                      <span style={{ fontSize:12, fontWeight:600, color:H.text }}>Importar nuevos datos de presupuesto</span>
+                    </div>
+                  )}
+                  {importStatusPresupuesto === null && (
+                    <p style={{ fontSize:12, color:H.textMid, marginBottom:12 }}>Comprobando datos…</p>
+                  )}
+                  {importStatusPresupuesto !== null && (
+                    <>
+                      <p style={{ fontSize:12, color:H.textMid, marginBottom:16, lineHeight:1.5 }}>{t("imp_ppto_sub")}</p>
+                      <UploadZone
+                        id="excel-input-ppto"
+                        loading={loadingPpto} resultado={resultadoPpto ? true : null} error={errorPpto}
+                        progreso={progresoPpto} progresoPct={progresoPctPpto}
+                        onFile={procesarPresupuesto}
+                        okContent={<p style={{ color:H.green, fontSize:12 }}>✓ {resultadoPpto?.presupuesto} {t("meses_presupuesto")}</p>}
+                      />
+                    </>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
           {/* ── HISTÓRICO ── */}
           {activeBlock === "historico" && (
             <div>
-              <p style={{ fontSize:11, fontWeight:700, color:H.text, marginBottom:3 }}>Carga inicial</p>
-              <p style={{ fontSize:12, color:H.textMid, marginBottom:14, lineHeight:1.5 }}>Importa todos los datos históricos de producción diaria y reservas OTB desde el Excel.</p>
-              <UploadZone
-                id="excel-input-main"
-                loading={loadingMain} resultado={resultadoMain ? true : null} error={errorMain}
-                progreso={progresoMain} progresoPct={progresoPctMain}
-                onFile={procesarPrincipal}
-                okContent={<>
-                  <p style={{ color:H.green, fontSize:12 }}>✓ {resultadoMain?.produccion} {t("dias_produccion")}</p>
-                  {resultadoMain?.pickup > 0 && <p style={{ color:H.green, fontSize:12, marginTop:3 }}>{resultadoMain?.pickup} {t("reservas_pickup")}</p>}
-                </>}
-              />
-              <div style={{ marginTop:22, paddingTop:18, borderTop:`1px solid ${H.border}` }}>
-                <p style={{ fontSize:11, fontWeight:700, color:H.text, marginBottom:3 }}>Editar día</p>
-                <p style={{ fontSize:12, color:H.textMid, marginBottom:12 }}>Busca una fecha para corregir los datos de ese día.</p>
-                <div style={{ display:"flex", gap:8, marginBottom:10 }}>
-                  <input type="date" value={fechaBusqueda}
-                    onChange={e => { setFechaBusqueda(e.target.value); setDiaEncontrado(null); setOkEdit(false); setErrorEdit(""); }}
-                    style={{ flex:1, padding:"8px 10px", border:`1px solid ${H.border}`, borderRadius:6, fontSize:12, fontFamily:"'Plus Jakarta Sans',sans-serif", background:H.card2, color:H.text, outline:"none" }}
-                  />
-                  <button onClick={buscarDia} disabled={buscando || !fechaBusqueda}
-                    style={{ padding:"8px 18px", background:H.blue, color:"#fff", border:"none", borderRadius:6, fontSize:12, fontWeight:600, cursor:buscando||!fechaBusqueda?"not-allowed":"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", opacity:!fechaBusqueda?0.4:1 }}>
-                    {buscando ? "…" : "Buscar"}
-                  </button>
-                </div>
-                {errorEdit && !diaEncontrado && <p style={{ fontSize:11, color:H.red, marginBottom:8 }}>{errorEdit}</p>}
-                {diaEncontrado && (
-                  <div style={{ background:H.card2, border:`1px solid ${H.border}`, borderRadius:10, padding:"14px" }}>
-                    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"8px 12px", marginBottom:12 }}>
-                      {[
-                        { label:"Hab. Ocupadas",       key:"hab_ocupadas" },
-                        { label:"Hab. Disponibles",    key:"hab_disponibles" },
-                        { label:"Rev. Habitaciones €", key:"revenue_hab" },
-                        { label:"Rev. Total €",        key:"revenue_total" },
-                        { label:"Rev. F&B €",          key:"revenue_fnb" },
-                      ].map(({ label, key }) => (
-                        <div key={key}>
-                          <label style={labelStyle}>{label}</label>
-                          <input type="number" value={editValues[key]}
-                            onChange={e => setEditValues(v => ({...v, [key]: e.target.value}))}
-                            style={inputStyle} />
-                        </div>
-                      ))}
+              {/* Banner datos ya importados */}
+              {importStatusHistorico && modoHistorico === "status" && !confirmEliminarHistorico && (
+                <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", flexWrap:"wrap", gap:10, background:"rgba(0,159,77,0.07)", border:"1px solid rgba(0,159,77,0.25)", borderRadius:10, padding:"12px 16px", marginBottom:16 }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={H.green} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    <div>
+                      <p style={{ fontSize:13, fontWeight:700, color:H.green, margin:0 }}>Datos ya importados</p>
+                      {importStatusHistorico.fecha && <p style={{ fontSize:11, color:H.textMid, margin:0, marginTop:2 }}>{importStatusHistorico.fecha}</p>}
                     </div>
-                    {okEdit && <p style={{ fontSize:11, color:H.green, marginBottom:8 }}>✓ Datos guardados</p>}
-                    {errorEdit && <p style={{ fontSize:11, color:H.red, marginBottom:8 }}>{errorEdit}</p>}
-                    <button onClick={guardarDia} disabled={guardandoEdit}
-                      style={{ width:"100%", padding:"9px", background:H.blue, color:"#fff", border:"none", borderRadius:7, fontSize:12, fontWeight:700, cursor:guardandoEdit?"not-allowed":"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
-                      {guardandoEdit ? "Guardando…" : "Guardar cambios"}
+                  </div>
+                  <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+                    <button onClick={() => setModoHistorico("edit")}
+                      style={{ padding:"6px 12px", borderRadius:6, border:`1px solid ${H.border}`, background:"none", color:H.text, fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+                      Editar datos
+                    </button>
+                    <button onClick={() => setConfirmEliminarHistorico(true)}
+                      style={{ padding:"6px 12px", borderRadius:6, border:`1px solid rgba(211,47,47,0.4)`, background:"none", color:H.red, fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+                      Eliminar datos
+                    </button>
+                    <button onClick={() => setModoHistorico("upload")}
+                      style={{ padding:"6px 12px", borderRadius:6, border:`1px solid ${H.blue}`, background:"none", color:H.blue, fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+                      Importar nuevos datos
                     </button>
                   </div>
-                )}
-              </div>
+                </div>
+              )}
+
+              {/* Confirmación eliminar histórico */}
+              {confirmEliminarHistorico && (
+                <div style={{ background:"rgba(211,47,47,0.08)", border:"1px solid rgba(211,47,47,0.25)", borderRadius:10, padding:"14px 16px", marginBottom:16 }}>
+                  <p style={{ fontSize:13, fontWeight:700, color:H.red, marginBottom:4 }}>¿Eliminar los datos de producción e histórico?</p>
+                  <p style={{ fontSize:11, color:H.textMid, marginBottom:12 }}>Se eliminarán todos los datos de producción diaria y pickup. Esta acción no se puede deshacer.</p>
+                  <div style={{ display:"flex", gap:8 }}>
+                    <button onClick={() => setConfirmEliminarHistorico(false)} style={{ padding:"6px 14px", borderRadius:6, border:`1px solid ${H.border}`, background:H.card2, color:H.textMid, fontSize:11, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>Cancelar</button>
+                    <button onClick={eliminarHistorico} disabled={eliminandoHistorico} style={{ padding:"6px 14px", borderRadius:6, border:"none", background:H.red, color:"#fff", fontSize:11, fontWeight:700, cursor:eliminandoHistorico?"not-allowed":"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+                      {eliminandoHistorico ? "Eliminando…" : "Sí, eliminar"}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Importar nuevos datos */}
+              {(!importStatusHistorico || modoHistorico === "upload") && !confirmEliminarHistorico && (
+                <div>
+                  {modoHistorico === "upload" && (
+                    <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:12 }}>
+                      <button onClick={() => setModoHistorico("status")} style={{ padding:"5px 12px", borderRadius:6, border:`1px solid ${H.border}`, background:"none", color:H.textMid, fontSize:11, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>← Volver</button>
+                      <span style={{ fontSize:12, fontWeight:600, color:H.text }}>Importar nuevos datos históricos</span>
+                    </div>
+                  )}
+                  {importStatusHistorico === null ? (
+                    <p style={{ fontSize:12, color:H.textMid }}>Comprobando datos…</p>
+                  ) : (
+                    <>
+                      <p style={{ fontSize:11, fontWeight:700, color:H.text, marginBottom:3 }}>Carga inicial</p>
+                      <p style={{ fontSize:12, color:H.textMid, marginBottom:14, lineHeight:1.5 }}>Importa todos los datos históricos de producción diaria y reservas OTB desde el Excel.</p>
+                      <UploadZone
+                        id="excel-input-main"
+                        loading={loadingMain} resultado={resultadoMain ? true : null} error={errorMain}
+                        progreso={progresoMain} progresoPct={progresoPctMain}
+                        onFile={procesarPrincipal}
+                        okContent={<>
+                          <p style={{ color:H.green, fontSize:12 }}>✓ {resultadoMain?.produccion} {t("dias_produccion")}</p>
+                          {resultadoMain?.pickup > 0 && <p style={{ color:H.green, fontSize:12, marginTop:3 }}>{resultadoMain?.pickup} {t("reservas_pickup")}</p>}
+                        </>}
+                      />
+                    </>
+                  )}
+                </div>
+              )}
+
+              {/* Editar día */}
+              {(modoHistorico === "edit" || (!importStatusHistorico && importStatusHistorico !== null)) && !confirmEliminarHistorico && modoHistorico !== "upload" && (
+                <div style={{ marginTop: modoHistorico === "edit" ? 0 : 22, paddingTop: modoHistorico === "edit" ? 0 : 18, borderTop: modoHistorico === "edit" ? "none" : `1px solid ${H.border}` }}>
+                  {modoHistorico === "edit" && (
+                    <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:14 }}>
+                      <button onClick={() => setModoHistorico("status")} style={{ padding:"5px 12px", borderRadius:6, border:`1px solid ${H.border}`, background:"none", color:H.textMid, fontSize:11, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>← Volver</button>
+                      <span style={{ fontSize:12, fontWeight:600, color:H.text }}>Editar datos importados</span>
+                    </div>
+                  )}
+                  <p style={{ fontSize:11, fontWeight:700, color:H.text, marginBottom:3 }}>Editar día</p>
+                  <p style={{ fontSize:12, color:H.textMid, marginBottom:12 }}>Busca una fecha para corregir los datos de ese día.</p>
+                  <div style={{ display:"flex", gap:8, marginBottom:10 }}>
+                    <input type="date" value={fechaBusqueda}
+                      onChange={e => { setFechaBusqueda(e.target.value); setDiaEncontrado(null); setOkEdit(false); setErrorEdit(""); }}
+                      style={{ flex:1, padding:"8px 10px", border:`1px solid ${H.border}`, borderRadius:6, fontSize:12, fontFamily:"'Plus Jakarta Sans',sans-serif", background:H.card2, color:H.text, outline:"none" }}
+                    />
+                    <button onClick={buscarDia} disabled={buscando || !fechaBusqueda}
+                      style={{ padding:"8px 18px", background:H.blue, color:"#fff", border:"none", borderRadius:6, fontSize:12, fontWeight:600, cursor:buscando||!fechaBusqueda?"not-allowed":"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", opacity:!fechaBusqueda?0.4:1 }}>
+                      {buscando ? "…" : "Buscar"}
+                    </button>
+                  </div>
+                  {errorEdit && !diaEncontrado && <p style={{ fontSize:11, color:H.red, marginBottom:8 }}>{errorEdit}</p>}
+                  {diaEncontrado && (
+                    <div style={{ background:H.card2, border:`1px solid ${H.border}`, borderRadius:10, padding:"14px" }}>
+                      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"8px 12px", marginBottom:12 }}>
+                        {[
+                          { label:"Hab. Ocupadas",       key:"hab_ocupadas" },
+                          { label:"Hab. Disponibles",    key:"hab_disponibles" },
+                          { label:"Rev. Habitaciones €", key:"revenue_hab" },
+                          { label:"Rev. Total €",        key:"revenue_total" },
+                          { label:"Rev. F&B €",          key:"revenue_fnb" },
+                        ].map(({ label, key }) => (
+                          <div key={key}>
+                            <label style={labelStyle}>{label}</label>
+                            <input type="number" value={editValues[key]}
+                              onChange={e => setEditValues(v => ({...v, [key]: e.target.value}))}
+                              style={inputStyle} />
+                          </div>
+                        ))}
+                      </div>
+                      {okEdit && <p style={{ fontSize:11, color:H.green, marginBottom:8 }}>✓ Datos guardados</p>}
+                      {errorEdit && <p style={{ fontSize:11, color:H.red, marginBottom:8 }}>{errorEdit}</p>}
+                      <button onClick={guardarDia} disabled={guardandoEdit}
+                        style={{ width:"100%", padding:"9px", background:H.blue, color:"#fff", border:"none", borderRadius:7, fontSize:12, fontWeight:700, cursor:guardandoEdit?"not-allowed":"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+                        {guardandoEdit ? "Guardando…" : "Guardar cambios"}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
@@ -1714,14 +2008,26 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
                       onChange={e => setProdForm(f=>({...f, revenue_hab:e.target.value}))} style={inputStyle} />
                   </div>
                   <div>
-                    <label style={labelStyle}>Revenue Total €</label>
-                    <input type="number" min="0" step="0.01" value={prodForm.revenue_total} placeholder="0.00"
-                      onChange={e => setProdForm(f=>({...f, revenue_total:e.target.value}))} style={inputStyle} />
-                  </div>
-                  <div>
                     <label style={labelStyle}>Revenue F&B €</label>
                     <input type="number" min="0" step="0.01" value={prodForm.revenue_fnb} placeholder="0.00"
                       onChange={e => setProdForm(f=>({...f, revenue_fnb:e.target.value}))} style={inputStyle} />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Revenue Salas €</label>
+                    <input type="number" min="0" step="0.01" value={prodForm.revenue_salas} placeholder="0.00"
+                      onChange={e => setProdForm(f=>({...f, revenue_salas:e.target.value}))} style={inputStyle} />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Revenue Total € <span style={{ fontWeight:400, fontSize:9, color:H.textMid, textTransform:"none", letterSpacing:0 }}>(calculado)</span></label>
+                    <div style={{ ...inputStyle, background:"#F5F7FA", color:H.textMid, display:"flex", alignItems:"center" }}>
+                      {(() => {
+                        const rh = parseFloat(prodForm.revenue_hab) || 0;
+                        const rf = parseFloat(prodForm.revenue_fnb) || 0;
+                        const rs = parseFloat(prodForm.revenue_salas) || 0;
+                        const total = rh + rf + rs;
+                        return total > 0 ? `€ ${total.toLocaleString("es-ES", { minimumFractionDigits:2, maximumFractionDigits:2 })}` : "—";
+                      })()}
+                    </div>
                   </div>
                   {(prodForm.hab_ocupadas || prodForm.revenue_hab) && (() => {
                     const ho = parseFloat(prodForm.hab_ocupadas) || 0;
@@ -1775,7 +2081,16 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
           {/* ── PICK UP ── */}
           {activeBlock === "pickup" && (
             <div>
-              <p style={{ fontSize:12, color:H.textMid, marginBottom:16, lineHeight:1.5 }}>Añade el pick up diario de reservas en el mismo formato que el Excel.</p>
+              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16, flexWrap:"wrap", gap:8 }}>
+                <p style={{ fontSize:12, color:H.textMid, lineHeight:1.5, margin:0 }}>Añade el pick up diario de reservas en el mismo formato que el Excel.</p>
+                <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                  {okMock && <span style={{ fontSize:11, color:H.green, fontWeight:600 }}>✓ Pickup de ayer generado</span>}
+                  <button onClick={generarPickupMock} disabled={generandoMock}
+                    style={{ padding:"6px 13px", borderRadius:6, border:`1px solid ${H.border}`, background:H.card, color:H.textMid, fontSize:11, fontWeight:600, cursor:generandoMock?"not-allowed":"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", whiteSpace:"nowrap" }}>
+                    {generandoMock ? "Generando…" : "⚡ Generar pickup de ayer"}
+                  </button>
+                </div>
+              </div>
               <div style={{ background:H.card2, border:`1px solid ${H.border}`, borderRadius:10, padding:"16px", marginBottom:12 }}>
                 <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"10px 14px", marginBottom:14 }}>
                   <div>
@@ -1790,8 +2105,28 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
                   </div>
                   <div>
                     <label style={labelStyle}>Canal</label>
-                    <input type="text" value={pickupForm.canal} placeholder="Booking.com, Directo…"
-                      onChange={e => setPickupForm(f=>({...f, canal:e.target.value}))} style={inputStyle} />
+                    <select value={pickupForm.canal}
+                      onChange={e => { setPickupForm(f=>({...f, canal:e.target.value})); if (e.target.value !== "otro") setCanalPersonalizado(""); }}
+                      style={{...inputStyle, cursor:"pointer"}}>
+                      <option value="">— Selecciona canal —</option>
+                      <option value="Directo / Web">Directo / Web</option>
+                      <option value="Teléfono / Email">Teléfono / Email</option>
+                      <option value="Booking.com">Booking.com</option>
+                      <option value="Expedia">Expedia</option>
+                      <option value="Airbnb">Airbnb</option>
+                      <option value="Hotelbeds">Hotelbeds</option>
+                      <option value="GDS">GDS</option>
+                      <option value="Tour operador">Tour operador</option>
+                      <option value="Agencia de viajes">Agencia de viajes</option>
+                      <option value="Empresa / Corporativo">Empresa / Corporativo</option>
+                      <option value="Grupos / MICE">Grupos / MICE</option>
+                      <option value="otro">Otro…</option>
+                    </select>
+                    {pickupForm.canal === "otro" && (
+                      <input type="text" value={canalPersonalizado} placeholder="Nombre del canal"
+                        onChange={e => setCanalPersonalizado(e.target.value)}
+                        style={{...inputStyle, marginTop:6}} />
+                    )}
                   </div>
                   <div>
                     <label style={labelStyle}>Nº Reservas</label>
@@ -1799,20 +2134,90 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
                       onChange={e => setPickupForm(f=>({...f, num_reservas:e.target.value}))} style={inputStyle} />
                   </div>
                   <div>
-                    <label style={labelStyle}>Fecha Salida</label>
-                    <input type="date" value={pickupForm.fecha_salida}
-                      onChange={e => setPickupForm(f=>({...f, fecha_salida:e.target.value}))} style={inputStyle} />
-                  </div>
-                  <div>
                     <label style={labelStyle}>Noches</label>
                     <input type="number" min="1" value={pickupForm.noches} placeholder="—"
-                      onChange={e => setPickupForm(f=>({...f, noches:e.target.value}))} style={inputStyle} />
+                      onChange={e => {
+                        const val = e.target.value;
+                        const n = parseInt(val) || 0;
+                        // Calcular fecha salida a partir de llegada + noches
+                        let nuevaFechaSalida = pickupForm.fecha_salida;
+                        if (n > 0 && pickupForm.fecha_llegada) {
+                          const d = new Date(pickupForm.fecha_llegada + "T00:00:00");
+                          d.setDate(d.getDate() + n);
+                          nuevaFechaSalida = d.toISOString().slice(0, 10);
+                        }
+                        setPickupForm(f => ({...f, noches: val, fecha_salida: nuevaFechaSalida}));
+                        if (n > 1) {
+                          setPreciosPorNoche(prev => Array.from({length:n}, (_,i) => prev[i] || ""));
+                        } else {
+                          setPreciosDiferentes(false);
+                          setPreciosPorNoche([]);
+                        }
+                      }} style={inputStyle} />
                   </div>
                   <div>
-                    <label style={labelStyle}>Precio Total €</label>
-                    <input type="number" step="0.01" value={pickupForm.precio_total} placeholder="—"
-                      onChange={e => setPickupForm(f=>({...f, precio_total:e.target.value}))} style={inputStyle} />
+                    <label style={labelStyle}>Fecha Salida</label>
+                    <input type="date" value={pickupForm.fecha_salida}
+                      onChange={e => {
+                        const nuevaFechaSalida = e.target.value;
+                        // Calcular noches a partir de llegada y salida
+                        let nuevasNoches = pickupForm.noches;
+                        if (nuevaFechaSalida && pickupForm.fecha_llegada) {
+                          const diff = Math.round((new Date(nuevaFechaSalida + "T00:00:00") - new Date(pickupForm.fecha_llegada + "T00:00:00")) / 86400000);
+                          if (diff > 0) {
+                            nuevasNoches = String(diff);
+                            if (diff > 1) setPreciosPorNoche(prev => Array.from({length:diff}, (_,i) => prev[i] || ""));
+                            else { setPreciosDiferentes(false); setPreciosPorNoche([]); }
+                          }
+                        }
+                        setPickupForm(f => ({...f, fecha_salida: nuevaFechaSalida, noches: nuevasNoches}));
+                      }} style={inputStyle} />
                   </div>
+                  {/* Precio total o precios por noche */}
+                  {parseInt(pickupForm.noches) > 1 ? (
+                    <div style={{ gridColumn:"1 / -1" }}>
+                      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:8 }}>
+                        <label style={labelStyle}>Precio Total €</label>
+                        <label style={{ display:"flex", alignItems:"center", gap:6, cursor:"pointer", fontSize:11, color:H.textMid, fontWeight:500 }}>
+                          <input type="checkbox" checked={preciosDiferentes}
+                            onChange={e => {
+                              setPreciosDiferentes(e.target.checked);
+                              if (!e.target.checked) setPreciosPorNoche(Array.from({length: parseInt(pickupForm.noches)||0}, () => ""));
+                            }}
+                            style={{ cursor:"pointer" }} />
+                          Precio diferente por noche
+                        </label>
+                      </div>
+                      {preciosDiferentes ? (
+                        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(90px, 1fr))", gap:6 }}>
+                          {preciosPorNoche.map((precio, idx) => (
+                            <div key={idx}>
+                              <label style={{ fontSize:9, color:H.textMid, display:"block", marginBottom:3 }}>Noche {idx+1}</label>
+                              <input type="number" min="0" step="0.01" value={precio} placeholder="0.00"
+                                onChange={e => setPreciosPorNoche(prev => prev.map((v,i) => i===idx ? e.target.value : v))}
+                                style={inputStyle} />
+                            </div>
+                          ))}
+                          {preciosPorNoche.some(v => parseFloat(v) > 0) && (
+                            <div style={{ display:"flex", alignItems:"flex-end", paddingBottom:1 }}>
+                              <div style={{ ...inputStyle, background:"#F5F7FA", color:H.textMid, fontSize:12, fontWeight:600 }}>
+                                Total: €{preciosPorNoche.reduce((a,v) => a+(parseFloat(v)||0), 0).toLocaleString("es-ES", {minimumFractionDigits:2, maximumFractionDigits:2})}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <input type="number" step="0.01" value={pickupForm.precio_total} placeholder="—"
+                          onChange={e => setPickupForm(f=>({...f, precio_total:e.target.value}))} style={inputStyle} />
+                      )}
+                    </div>
+                  ) : (
+                    <div>
+                      <label style={labelStyle}>Precio Total €</label>
+                      <input type="number" step="0.01" value={pickupForm.precio_total} placeholder="—"
+                        onChange={e => setPickupForm(f=>({...f, precio_total:e.target.value}))} style={inputStyle} />
+                    </div>
+                  )}
                   <div>
                     <label style={labelStyle}>Estado</label>
                     <select value={pickupForm.estado}
@@ -4962,7 +5367,7 @@ function AuthScreen() {
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;0,800;1,400;1,600&family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap'); * { box-sizing: border-box; margin: 0; padding: 0; } html, body, #root { width: 100%; min-height: 100vh; } @keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }`}</style>
       <div style={{ width: 420, background: C.bgCard, borderRadius: 20, padding: "40px 36px", boxShadow: "0 32px 80px rgba(0,0,0,0.4)", animation: "fadeUp 0.5s ease both" }}>
         <div style={{ textAlign: "center", marginBottom: 32 }}>
-          <img src="/fastrev-logo.png" alt="FastRevenue" style={{ height: 140, marginBottom: 12 }} />
+          <img src="/fastrev-logo.svg" alt="FastRevenue" style={{ height: 140, marginBottom: 12 }} />
         </div>
         <div style={{ display: "flex", background: C.bg, borderRadius: 10, padding: 4, marginBottom: 24 }}>
           {[["login","Iniciar sesión"],["register","Crear cuenta"]].map(([k,l]) => (
@@ -5464,7 +5869,7 @@ export default function App() {
       <header style={{ background: C.bg, minHeight: 52, position: "sticky", top: 0, zIndex: 100, borderBottom: `1px solid ${C.border}` }}><div style={{ width: "100%", minHeight: 52, display: "flex", alignItems: "center", padding: "0 clamp(12px, 4vw, 32px)", gap: 6, flexWrap: "nowrap" }}>
         {/* Logo centro */}
         <div style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", pointerEvents: "none", display: "flex", alignItems: "center", gap: 12 }}>
-          <img src="/fastrev-logo.png" alt="FastRevenue" style={{ height: 92, width: "auto", transform: "scaleX(1.08)" }} />
+          <img src="/fastrev-logo.svg" alt="FastRevenue" style={{ height: 92, width: "auto", transform: "scaleX(1.08)" }} />
           <span className="topbar-date" style={{ display:"flex", alignItems:"center", gap:10, fontFamily:"'Plus Jakarta Sans', sans-serif" }}>
             <span style={{ fontSize: 12, color: "#000000", fontWeight: 500, letterSpacing: 0.3, whiteSpace: "nowrap" }}>
               {new Date().toLocaleDateString(lang === "en" ? "en-GB" : lang === "fr" ? "fr-FR" : "es-ES", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).replace(/^\w/, c => c.toUpperCase())}

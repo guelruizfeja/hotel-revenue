@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 100">
+  <!-- Black octagon (stop-sign shape) -->
+  <polygon fill="#111111" points="31,5 69,5 95,31 95,69 69,95 31,95 5,69 5,31"/>
+
+  <!-- Interlocked double-S design: two ribbon paths, evenodd fill rule
+       Where both ribbons overlap the octagon background (black) shows through,
+       creating the interlocked chain-link visual. -->
+  <path fill="white" fill-rule="evenodd" d="
+    M 65,18 C 82,27 82,45 50,50 C 18,55 18,73 35,82
+    L 43,74 C 26,66 27,52 50,50 C 73,48 71,30 58,24 Z
+
+    M 35,18 C 18,27 18,45 50,50 C 82,55 82,73 65,82
+    L 57,74 C 74,66 73,52 50,50 C 27,48 29,30 42,24 Z
+  "/>
+
+  <!-- FastRevenue wordmark -->
+  <text x="112" y="67"
+        font-family="'Arial Black','Segoe UI Black','Franklin Gothic Heavy',sans-serif"
+        font-weight="900"
+        font-size="44"
+        fill="#111111">FastRevenue</text>
+</svg>
