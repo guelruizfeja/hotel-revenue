@@ -4960,9 +4960,14 @@ function GruposView({ datos, onRecargar }) {
             ))}
           </select>
         </div>
-        <button onClick={()=>abrirNuevo()} style={{ background:"#7C3AED", color:"#fff", border:"none", borderRadius:8, padding:"8px 18px", fontSize:13, fontWeight:600, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
-          {t("nuevo_evento")}
-        </button>
+        <div style={{ display:"flex", gap:8 }}>
+          <button onClick={()=>abrirNuevo()} style={{ background:"#0A2540", color:"#fff", border:"none", borderRadius:8, padding:"8px 18px", fontSize:13, fontWeight:600, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+            + Añadir grupo
+          </button>
+          <button onClick={()=>abrirNuevo()} style={{ background:"#7C3AED", color:"#fff", border:"none", borderRadius:8, padding:"8px 18px", fontSize:13, fontWeight:600, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+            {t("nuevo_evento")}
+          </button>
+        </div>
       </div>
 
       {/* ── VISTA CALENDARIO — lista eventos del mes ── */}
