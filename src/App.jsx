@@ -5957,7 +5957,9 @@ export default function App() {
           </select>
 
           {/* Logo derecha */}
-          <img src="/fastrev-logo.png" alt="FastRevenue" style={{ height: 34, width: "auto", flexShrink: 0 }} />
+          <div style={{ height: 34, overflow: "visible", display: "flex", alignItems: "center", flexShrink: 0 }}>
+            <img src="/fastrev-logo.png" alt="FastRevenue" style={{ height: 100, width: "auto" }} />
+          </div>
         </div>
       </div></header>
 
