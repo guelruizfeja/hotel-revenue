@@ -5865,8 +5865,13 @@ export default function App() {
         }
       `}</style>
 
+      {/* Barra título con logo */}
+      <div style={{ background: C.bg, borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center", padding: "10px clamp(12px,4vw,32px)", position: "sticky", top: 0, zIndex: 101 }}>
+        <img src="/fastrev-logo.png" alt="FastRevenue" style={{ height: 44, width: "auto" }} />
+      </div>
+
       {/* Topbar */}
-      <header style={{ background: C.bg, minHeight: 52, position: "sticky", top: 0, zIndex: 100, borderBottom: `1px solid ${C.border}` }}><div style={{ width: "100%", minHeight: 52, display: "flex", alignItems: "center", padding: "0 clamp(12px, 4vw, 32px)", gap: 6, flexWrap: "nowrap" }}>
+      <header style={{ background: C.bg, minHeight: 52, position: "sticky", top: 64, zIndex: 100, borderBottom: `1px solid ${C.border}` }}><div style={{ width: "100%", minHeight: 52, display: "flex", alignItems: "center", padding: "0 clamp(12px, 4vw, 32px)", gap: 6, flexWrap: "nowrap" }}>
         {/* Fecha y hora centro */}
         <div style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", pointerEvents: "none", display: "flex", alignItems: "center", gap: 10, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
           <span style={{ fontSize: 12, color: "#000000", fontWeight: 500, letterSpacing: 0.3, whiteSpace: "nowrap" }}>
@@ -5894,9 +5899,6 @@ export default function App() {
 
         {/* Botones + Email + logout */}
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginLeft: "auto" }}>
-          {/* Logo letras */}
-          <img src="/fastrev-logo.png" alt="FastRevenue" style={{ height: 32, width: "auto", flexShrink: 0 }} />
-
           {view !== "gestion" && (
             <button id="ob-importar" onClick={() => { setView("gestion"); localStorage.setItem("fr_view","gestion"); }} style={{ background: C.accent, color: "#fff", border: "none", borderRadius: 7, padding: "7px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "'Plus Jakarta Sans',sans-serif", whiteSpace: "nowrap", display:"flex", alignItems:"center", gap:5 }}>
               <span className="topbar-importar-label">Gestión de datos</span>
