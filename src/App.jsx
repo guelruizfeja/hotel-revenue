@@ -82,9 +82,12 @@ const TRANSLATIONS = {
     th_forecast:"Forecast Cierre", total_ytd:"TOTAL YTD", vs_ppto:"vs ppto",
     confianza:"confianza", real_badge:"✓ Real",
     // Grupos
-    nuevo_evento:"+ Nuevo evento", sin_eventos:"Sin eventos", rev_estimado:"Revenue estimado",
+    nuevo_evento:"+ Nuevo evento", sin_eventos:"Sin grupos/eventos", rev_estimado:"Revenue estimado",
     editar_evento:"Editar evento", nuevo_evento_title:"Nuevo evento",
-    eliminar_grupo:"¿Eliminar este grupo?",
+    nuevo_grupo_title:"Nuevo grupo", editar_grupo:"Editar grupo",
+    eliminar_grupo:"¿Eliminar este grupo?", eliminar_evento:"¿Eliminar este evento?",
+    form_hora_inicio:"Hora inicio", form_hora_fin:"Hora fin", form_sala_nombre:"Sala / Espacio",
+    form_servicio_incluido:"Servicio incluido",
     vista_calendario:"Calendario", vista_lista:"Lista", vista_pipeline:"Pipeline", vista_tabla:"Tabla",
     rev_confirmado:"Revenue confirmado", rev_tentativo:"Revenue tentativo (50%)",
     pipeline_cotizacion:"Pipeline en cotización", cancelados_perdidos:"Cancelados / Perdidos",
@@ -187,9 +190,12 @@ const TRANSLATIONS = {
     th_rev_ppto:"Budget Rev.", th_rev_real:"Actual Rev.", th_desv_rev:"Rev. Dev.",
     th_forecast:"Closing Forecast", total_ytd:"TOTAL YTD", vs_ppto:"vs budget",
     confianza:"confidence", real_badge:"✓ Actual",
-    nuevo_evento:"+ New event", sin_eventos:"No events", rev_estimado:"Estimated revenue",
+    nuevo_evento:"+ New event", sin_eventos:"No groups/events", rev_estimado:"Estimated revenue",
     editar_evento:"Edit event", nuevo_evento_title:"New event",
-    eliminar_grupo:"Delete this group?",
+    nuevo_grupo_title:"New group", editar_grupo:"Edit group",
+    eliminar_grupo:"Delete this group?", eliminar_evento:"Delete this event?",
+    form_hora_inicio:"Start time", form_hora_fin:"End time", form_sala_nombre:"Room / Space",
+    form_servicio_incluido:"Service included",
     vista_calendario:"Calendar", vista_lista:"List", vista_pipeline:"Pipeline", vista_tabla:"Table",
     rev_confirmado:"Confirmed revenue", rev_tentativo:"Tentative revenue (50%)",
     pipeline_cotizacion:"Quotation pipeline", cancelados_perdidos:"Cancelled / Lost",
@@ -289,9 +295,12 @@ const TRANSLATIONS = {
     th_rev_ppto:"Rev. Budget", th_rev_real:"Rev. Réelle", th_desv_rev:"Écart Rev.",
     th_forecast:"Prévision Clôture", total_ytd:"TOTAL YTD", vs_ppto:"vs budget",
     confianza:"confiance", real_badge:"✓ Réel",
-    nuevo_evento:"+ Nouvel événement", sin_eventos:"Aucun événement", rev_estimado:"Chiffre d'affaires estimé",
+    nuevo_evento:"+ Nouvel événement", sin_eventos:"Aucun groupe/événement", rev_estimado:"Chiffre d'affaires estimé",
     editar_evento:"Modifier l'événement", nuevo_evento_title:"Nouvel événement",
-    eliminar_grupo:"Supprimer ce groupe ?",
+    nuevo_grupo_title:"Nouveau groupe", editar_grupo:"Modifier le groupe",
+    eliminar_grupo:"Supprimer ce groupe ?", eliminar_evento:"Supprimer cet événement ?",
+    form_hora_inicio:"Heure début", form_hora_fin:"Heure fin", form_sala_nombre:"Salle / Espace",
+    form_servicio_incluido:"Service inclus",
     vista_calendario:"Calendrier", vista_lista:"Liste", vista_pipeline:"Pipeline", vista_tabla:"Tableau",
     rev_confirmado:"Revenu confirmé", rev_tentativo:"Revenu tentative (50%)",
     pipeline_cotizacion:"Pipeline en devis", cancelados_perdidos:"Annulés / Perdus",
@@ -4803,12 +4812,98 @@ function GruposView({ datos, onRecargar }) {
   const grupos = datos.grupos || [];
   const session = datos.session;
 
+  // ── Seed datos demo ──────────────────────────────────────────────────────
+  const [seedando, setSeedando] = useState(false);
+
+  const rnd = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+  const fmt  = (y, m, d)  => `${y}-${String(m).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+  const packEv = (hi, hf, sala, serv, notas="") =>
+    `[ev:hi=${hi},hf=${hf},sala=${sala},serv=${serv?"sí":"no"}]${notas?"\n"+notas:""}`;
+
+  const seedDemoData = async () => {
+    if (!window.confirm("¿Insertar datos demo (2 grupos + 1 evento × 24 meses)?")) return;
+    setSeedando(true);
+    const hotel_id = session.user.id;
+    const anioActual = new Date().getFullYear();
+    const mesActual  = new Date().getMonth() + 1;
+
+    const NOMBRES_G = [
+      ["Pharma Congress","Congreso Médico","Feria Tecnología","Cumbre Directivos","Convención RRHH"],
+      ["Boda García-López","Boda Martínez","Boda Silva","Celebración Pérez","Enlace Fernández"],
+      ["Torneo Golf","Copa Baloncesto","Maratón Ciudad","Liga Padel","Campeonato Natación"],
+      ["Grupo TechCo","Grupo IBEX","Grupo Repsol","Grupo Inditex","Grupo Santander"],
+      ["Congreso Arquitectura","Feria FITUR","Salón del Automóvil","Feria del Libro","Expo Gastro"],
+    ];
+    const NOMBRES_EV = [
+      "Gala Benéfica","Cena de Empresa","Presentación Producto","Cóctel Inauguración",
+      "Evento Networking","Aniversario Corporativo","Fiesta Fin de Año","Conferencia Interna",
+      "Workshop Design","Cocktail Party","Noche de Gala","Summit Ejecutivo",
+    ];
+    const SALAS = ["Salón Principal","Salón Mediterráneo","Terraza","Salón Jardín","Salón Panorámico","Auditorio"];
+    const CATS_LIST = ["corporativo","boda","feria","deportivo","otros"];
+    const estadoPasado = () => ["confirmado","confirmado","confirmado","cancelado"][rnd(0,3)];
+    const estadoFuturo = () => ["confirmado","tentativo","tentativo","cotizacion"][rnd(0,3)];
+
+    const records = [];
+    for (const anio of [anioActual - 1, anioActual]) {
+      for (let mes = 1; mes <= 12; mes++) {
+        const esFuturo = anio > anioActual || (anio === anioActual && mes > mesActual);
+        // Grupo 1
+        const cat1 = CATS_LIST[(mes) % CATS_LIST.length];
+        const di1  = rnd(3, 8); const df1 = Math.min(di1 + rnd(2,5), 28);
+        const est1 = esFuturo ? estadoFuturo() : estadoPasado();
+        records.push({
+          hotel_id, nombre: NOMBRES_G[mes % CATS_LIST.length][(mes*2) % 5],
+          categoria: cat1, estado: est1,
+          fecha_inicio: fmt(anio,mes,di1), fecha_fin: fmt(anio,mes,df1),
+          fecha_confirmacion: est1==="confirmado" ? fmt(anio, mes===1?12:mes-1, rnd(1,28)) : null,
+          habitaciones: rnd(15,80), adr_grupo: rnd(85,220),
+          revenue_fnb: rnd(0,1)?rnd(2000,18000):0, revenue_sala: rnd(0,1)?rnd(500,4000):0,
+          notas: null, motivo_perdida: est1==="cancelado"?["Precio","Competencia","Fechas","Presupuesto"][rnd(0,3)]:null,
+        });
+        // Grupo 2
+        const cat2 = CATS_LIST[(mes+2) % CATS_LIST.length];
+        const di2  = rnd(15, 20); const df2 = Math.min(di2 + rnd(2,5), 28);
+        const est2 = esFuturo ? estadoFuturo() : estadoPasado();
+        records.push({
+          hotel_id, nombre: NOMBRES_G[(mes+2) % CATS_LIST.length][(mes*3) % 5],
+          categoria: cat2, estado: est2,
+          fecha_inicio: fmt(anio,mes,di2), fecha_fin: fmt(anio,mes,df2),
+          fecha_confirmacion: est2==="confirmado" ? fmt(anio, mes===1?12:mes-1, rnd(1,28)) : null,
+          habitaciones: rnd(10,60), adr_grupo: rnd(70,200),
+          revenue_fnb: rnd(0,1)?rnd(1500,12000):0, revenue_sala: rnd(0,1)?rnd(400,3000):0,
+          notas: null, motivo_perdida: est2==="cancelado"?["Precio","Otro proveedor","Presupuesto"][rnd(0,2)]:null,
+        });
+        // Evento
+        const hiH = rnd(10,14); const hfH = Math.min(hiH+rnd(3,6),23);
+        const estEv = esFuturo ? estadoFuturo() : estadoPasado();
+        records.push({
+          hotel_id, nombre: NOMBRES_EV[(mes + anio) % NOMBRES_EV.length],
+          categoria: "evento", estado: estEv,
+          fecha_inicio: fmt(anio,mes,rnd(22,27)), fecha_fin: fmt(anio,mes,rnd(22,27)),
+          fecha_confirmacion: null,
+          habitaciones: 0, adr_grupo: 0,
+          revenue_fnb: rnd(3000,20000), revenue_sala: rnd(800,5000),
+          notas: packEv(`${String(hiH).padStart(2,"0")}:00`,`${String(hfH).padStart(2,"0")}:00`,SALAS[mes%SALAS.length],rnd(0,1)===1),
+          motivo_perdida: estEv==="cancelado"?["Presupuesto","Otro proveedor","Fecha cambiada"][rnd(0,2)]:null,
+        });
+      }
+    }
+
+    const { error } = await supabase.from("grupos_eventos").insert(records);
+    setSeedando(false);
+    if (error) { alert("Error: " + error.message); return; }
+    onRecargar();
+  };
+  // ────────────────────────────────────────────────────────────────────────────
+
   const CATS = {
     corporativo: { label: t("cat_corporativo"), color: "#2B7EC1" },
     boda:        { label: t("cat_boda"),        color: "#D4547A" },
     feria:       { label: t("cat_feria"),       color: "#E85D04" },
     deportivo:   { label: t("cat_deportivo"),   color: "#059669" },
     otros:       { label: t("cat_otros"),       color: "#7C3AED" },
+    evento:      { label: "Evento",             color: "#0A7C6A" },
   };
 
   const ESTADOS = {
@@ -4827,7 +4922,8 @@ function GruposView({ datos, onRecargar }) {
   const [modalGrupo, setModalGrupo] = useState(null); // null | {} (nuevo) | {id,...} (editar)
   const [detalleGrupo, setDetalleGrupo] = useState(null); // evento para panel de métricas
   const [guardando, setGuardando] = useState(false);
-  const [vistaActiva, setVistaActiva] = useState("calendario"); // calendario | tabla
+  const [vistaActiva, setVistaActiva] = useState(() => localStorage.getItem("fr_grupos_vista") || "calendario");
+  const [menuNuevo, setMenuNuevo] = useState(false);
   useEffect(() => {
     const handler = (e) => {
       if (e.key !== "Escape") return;
@@ -4842,42 +4938,61 @@ function GruposView({ datos, onRecargar }) {
   const nextMes = () => { if (mes === 11) { setMes(0); setAnio(a => a + 1); } else setMes(m => m + 1); };
 
   // ── Formulario estado ──
-  const FORM_VACIO = { nombre:"", categoria:"corporativo", estado:"cotizacion", fecha_inicio:"", fecha_fin:"", fecha_confirmacion:"", habitaciones:"", pax:"", adr_grupo:"", revenue_fnb:"", revenue_sala:"", notas:"", motivo_perdida:"" };
+  const FORM_VACIO = { tipo:"grupo", nombre:"", categoria:"corporativo", estado:"cotizacion", fecha_inicio:"", fecha_fin:"", fecha_confirmacion:"", habitaciones:"", pax:"", adr_grupo:"", revenue_fnb:"", revenue_sala:"", notas:"", motivo_perdida:"", hora_inicio:"", hora_fin:"", sala_nombre:"", servicio_incluido:false };
   const [form, setForm] = useState(FORM_VACIO);
 
-  const abrirNuevo = (fecha = "") => {
-    setForm({ ...FORM_VACIO, fecha_inicio: fecha, fecha_fin: fecha });
+  // Parsea el prefijo de metadata de evento de las notas
+  const parseNotasEvento = (notas) => {
+    if (!notas) return { hora_inicio:"", hora_fin:"", sala_nombre:"", servicio_incluido:false, notasUser:"" };
+    const m = notas.match(/^\[ev:([^\]]*)\]\n?([\s\S]*)$/);
+    if (!m) return { hora_inicio:"", hora_fin:"", sala_nombre:"", servicio_incluido:false, notasUser: notas };
+    const parts = Object.fromEntries(m[1].split(",").map(p => p.split("=")));
+    return { hora_inicio: parts.hi||"", hora_fin: parts.hf||"", sala_nombre: parts.sala||"", servicio_incluido: parts.serv==="sí", notasUser: m[2] };
+  };
+
+  const packNotasEvento = (form) => {
+    const meta = `[ev:hi=${form.hora_inicio},hf=${form.hora_fin},sala=${form.sala_nombre},serv=${form.servicio_incluido?"sí":"no"}]`;
+    return meta + (form.notas ? "\n" + form.notas : "");
+  };
+
+  const abrirNuevo = (fecha = "", tipo = "grupo") => {
+    setForm({ ...FORM_VACIO, fecha_inicio: fecha, fecha_fin: fecha, tipo, categoria: tipo === "evento" ? "evento" : "corporativo" });
     setModalGrupo({});
   };
 
   const abrirEditar = (g) => {
+    const esEvento = g.categoria === "evento";
+    const { hora_inicio, hora_fin, sala_nombre, servicio_incluido, notasUser } = esEvento ? parseNotasEvento(g.notas) : {};
     setForm({
+      tipo: esEvento ? "evento" : "grupo",
       nombre: g.nombre||"", categoria: g.categoria||"corporativo", estado: g.estado||"cotizacion",
       fecha_inicio: g.fecha_inicio||"", fecha_fin: g.fecha_fin||"", fecha_confirmacion: g.fecha_confirmacion||"",
       habitaciones: g.habitaciones||"", pax: g.pax||"", adr_grupo: g.adr_grupo||"",
       revenue_fnb: g.revenue_fnb||"", revenue_sala: g.revenue_sala||"",
-      notas: g.notas||"", motivo_perdida: g.motivo_perdida||"",
+      notas: esEvento ? (notasUser||"") : (g.notas||""), motivo_perdida: g.motivo_perdida||"",
+      hora_inicio: hora_inicio||"", hora_fin: hora_fin||"", sala_nombre: sala_nombre||"", servicio_incluido: servicio_incluido||false,
     });
     setModalGrupo(g);
   };
 
   const guardar = async () => {
-    if (!form.nombre || !form.fecha_inicio || !form.fecha_fin) return;
+    if (!form.nombre || !form.fecha_inicio) return;
+    if (form.tipo === "grupo" && !form.fecha_fin) return;
     setGuardando(true);
+    const esEvento = form.tipo === "evento";
     const payload = {
       hotel_id: session.user.id,
       nombre: form.nombre,
-      categoria: form.categoria,
+      categoria: esEvento ? "evento" : form.categoria,
       estado: form.estado,
       fecha_inicio: form.fecha_inicio,
-      fecha_fin: form.fecha_fin,
-      habitaciones: parseInt(form.habitaciones)||0,
-      pax: parseInt(form.pax)||0,
-      adr_grupo: parseFloat(form.adr_grupo)||0,
+      fecha_fin: esEvento ? form.fecha_inicio : (form.fecha_fin || form.fecha_inicio),
+      habitaciones: esEvento ? 0 : (parseInt(form.habitaciones)||0),
+      adr_grupo: esEvento ? 0 : (parseFloat(form.adr_grupo)||0),
       revenue_fnb: parseFloat(form.revenue_fnb)||0,
       revenue_sala: parseFloat(form.revenue_sala)||0,
-      fecha_confirmacion: form.fecha_confirmacion||null,
-      notas: form.notas||null,
+      fecha_confirmacion: esEvento ? null : (form.fecha_confirmacion||null),
+      notas: esEvento ? packNotasEvento(form) : (form.notas||null),
       motivo_perdida: form.motivo_perdida||null,
     };
     if (modalGrupo?.id) {
@@ -4890,8 +5005,9 @@ function GruposView({ datos, onRecargar }) {
     onRecargar();
   };
 
-  const eliminar = async (id) => {
-    if (!window.confirm(t("eliminar_grupo"))) return;
+  const eliminar = async (id, tipo) => {
+    const msg = tipo === "evento" ? t("eliminar_evento") : t("eliminar_grupo");
+    if (!window.confirm(msg)) return;
     await supabase.from("grupos_eventos").delete().eq("id", id);
     setModalGrupo(null);
     onRecargar();
@@ -4953,20 +5069,47 @@ function GruposView({ datos, onRecargar }) {
             <button onClick={()=>setAnio(a=>a+1)} style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:6, width:28, height:28, cursor:"pointer", color:C.textMid, display:"flex", alignItems:"center", justifyContent:"center", fontSize:16, padding:0 }}>›</button>
           </>)}
           {/* Selector vista */}
-          <select value={vistaActiva} onChange={e=>setVistaActiva(e.target.value)}
+          <select value={vistaActiva} onChange={e=>{ setVistaActiva(e.target.value); localStorage.setItem("fr_grupos_vista", e.target.value); }}
             style={{ marginLeft:8, padding:"5px 10px", borderRadius:7, border:`1.5px solid ${C.border}`, fontSize:12, fontWeight:600, color:C.text, background:C.bg, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", outline:"none" }}>
             {[["calendario","📅 Calendario"],["tabla","⊞ Tabla"]].map(([k,label])=>(
               <option key={k} value={k}>{label}</option>
             ))}
           </select>
         </div>
-        <div style={{ display:"flex", gap:8 }}>
-          <button onClick={()=>abrirNuevo()} style={{ background:"#0A2540", color:"#fff", border:"none", borderRadius:8, padding:"8px 18px", fontSize:13, fontWeight:600, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
-            + Añadir grupo
+        <div style={{ display:"flex", gap:8, alignItems:"center" }}>
+          <button onClick={seedDemoData} disabled={seedando}
+            style={{ background:"#E0F0FF", color:"#2B7EC1", border:"1.5px dashed #2B7EC1", borderRadius:8, padding:"8px 16px", fontSize:12, fontWeight:600, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", opacity:seedando?0.6:1 }}>
+            {seedando ? "Cargando..." : "Datos demo"}
           </button>
-          <button onClick={()=>abrirNuevo()} style={{ background:"#7C3AED", color:"#fff", border:"none", borderRadius:8, padding:"8px 18px", fontSize:13, fontWeight:600, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
-            {t("nuevo_evento")}
-          </button>
+          {/* Botón Nueva reserva con dropdown */}
+          <div style={{ position:"relative" }}>
+            <button onClick={()=>setMenuNuevo(v=>!v)}
+              style={{ background:"#0A2540", color:"#fff", border:"none", borderRadius:8, padding:"8px 18px", fontSize:13, fontWeight:600, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", display:"flex", alignItems:"center", gap:6 }}>
+              + Nueva reserva
+              <span style={{ fontSize:10, opacity:0.7 }}>▾</span>
+            </button>
+            {menuNuevo && (
+              <>
+                {/* overlay para cerrar al hacer clic fuera */}
+                <div style={{ position:"fixed", inset:0, zIndex:999 }} onClick={()=>setMenuNuevo(false)}/>
+                <div style={{ position:"absolute", right:0, top:"calc(100% + 6px)", background:C.bgCard, border:`1px solid ${C.border}`, borderRadius:10, boxShadow:"0 8px 24px rgba(0,0,0,0.12)", zIndex:1000, minWidth:180, overflow:"hidden" }}>
+                  <button onClick={()=>{ setMenuNuevo(false); abrirNuevo(); }}
+                    style={{ width:"100%", padding:"11px 16px", background:"none", border:"none", textAlign:"left", cursor:"pointer", fontSize:13, fontWeight:600, color:C.text, fontFamily:"'Plus Jakarta Sans',sans-serif" }}
+                    onMouseEnter={e=>e.currentTarget.style.background=C.bg}
+                    onMouseLeave={e=>e.currentTarget.style.background="none"}>
+                    Grupo
+                  </button>
+                  <div style={{ height:1, background:C.border, margin:"0 12px" }}/>
+                  <button onClick={()=>{ setMenuNuevo(false); abrirNuevo("", "evento"); }}
+                    style={{ width:"100%", padding:"11px 16px", background:"none", border:"none", textAlign:"left", cursor:"pointer", fontSize:13, fontWeight:600, color:C.text, fontFamily:"'Plus Jakarta Sans',sans-serif" }}
+                    onMouseEnter={e=>e.currentTarget.style.background=C.bg}
+                    onMouseLeave={e=>e.currentTarget.style.background="none"}>
+                    Evento
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </div>
 
@@ -4998,8 +5141,17 @@ function GruposView({ datos, onRecargar }) {
                         onMouseEnter={e => e.currentTarget.style.borderColor = ESTADOS[g.estado]?.color || "#7C3AED"}
                         onMouseLeave={e => e.currentTarget.style.borderColor = C.border}>
                         <div style={{ flex:1, minWidth:0 }}>
-                          <p style={{ fontSize:13, fontWeight:700, color:C.text, marginBottom:2, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{g.nombre}</p>
-                          <p style={{ fontSize:11, color:C.textLight }}>{g.fecha_inicio} → {g.fecha_fin} · {noches} noche{noches !== 1 ? "s" : ""} · {g.habitaciones || 0} hab.</p>
+                          <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:2 }}>
+                            <p style={{ fontSize:13, fontWeight:700, color:C.text, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{g.nombre}</p>
+                            <span style={{ fontSize:9, fontWeight:700, padding:"2px 6px", borderRadius:6, background: g.categoria==="evento" ? "#EDE9FE" : "#E0F0FF", color: g.categoria==="evento" ? "#7C3AED" : "#2B7EC1", whiteSpace:"nowrap", flexShrink:0 }}>
+                              {g.categoria === "evento" ? "Evento" : "Grupo"}
+                            </span>
+                          </div>
+                          <p style={{ fontSize:11, color:C.textLight }}>
+                            {g.categoria === "evento"
+                              ? g.fecha_inicio
+                              : `${g.fecha_inicio} → ${g.fecha_fin} · ${noches} noche${noches !== 1 ? "s" : ""} · ${g.habitaciones || 0} hab.`}
+                          </p>
                         </div>
                         <span style={{ fontSize:10, fontWeight:700, padding:"3px 10px", borderRadius:10, background:ESTADOS[g.estado]?.bg, color:ESTADOS[g.estado]?.color, whiteSpace:"nowrap", flexShrink:0 }}>
                           {ESTADOS[g.estado]?.label}
@@ -5087,7 +5239,12 @@ function GruposView({ datos, onRecargar }) {
                           onMouseEnter={e=>e.currentTarget.style.background=C.accentLight}
                           onMouseLeave={e=>e.currentTarget.style.background= i % 2 === 0 ? C.bg : C.bgCard}>
                           <td style={{ padding:"9px 14px", fontWeight:600, color:C.text, whiteSpace:"nowrap" }}>
-                            {g.nombre}
+                            <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                              {g.nombre}
+                              <span style={{ fontSize:9, fontWeight:700, padding:"2px 6px", borderRadius:6, background: g.categoria==="evento" ? "#EDE9FE" : "#E0F0FF", color: g.categoria==="evento" ? "#7C3AED" : "#2B7EC1" }}>
+                                {g.categoria === "evento" ? "Evento" : "Grupo"}
+                              </span>
+                            </div>
                           </td>
                           <td style={{ padding:"9px 14px" }}>
                             <span style={{ fontSize:10, fontWeight:700, padding:"2px 8px", borderRadius:10, background:ESTADOS[g.estado]?.bg, color:ESTADOS[g.estado]?.color, whiteSpace:"nowrap" }}>
@@ -5095,7 +5252,7 @@ function GruposView({ datos, onRecargar }) {
                             </span>
                           </td>
                           <td style={{ padding:"9px 14px", color:C.textMid, whiteSpace:"nowrap" }}>{g.fecha_inicio||"—"}</td>
-                          <td style={{ padding:"9px 14px", color:C.textMid, whiteSpace:"nowrap" }}>{g.fecha_fin||"—"}</td>
+                          <td style={{ padding:"9px 14px", color:C.textMid, whiteSpace:"nowrap" }}>{g.categoria === "evento" ? "—" : (g.fecha_fin||"—")}</td>
                           <td style={{ padding:"9px 14px", color:C.textMid, textAlign:"center" }}>{noches}</td>
                           <td style={{ padding:"9px 14px", color:C.textMid, textAlign:"center" }}>{g.habitaciones||0}</td>
                           <td style={{ padding:"9px 14px", color:C.textMid, textAlign:"center" }}>{g.pax||0}</td>
@@ -5224,7 +5381,7 @@ function GruposView({ datos, onRecargar }) {
             <div style={{ display:"flex", justifyContent:"flex-end", marginTop:20 }}>
               <button onClick={()=>{ setDetalleGrupo(null); abrirEditar(detalleGrupo); }}
                 style={{ background:"#7C3AED", color:"#fff", border:"none", borderRadius:7, padding:"9px 22px", fontSize:13, fontWeight:600, cursor:"pointer" }}>
-                ✏️ Editar evento
+                ✏️ {detalleGrupo?.categoria === "evento" ? t("editar_evento") : t("editar_grupo")}
               </button>
             </div>
           </div>
@@ -5239,7 +5396,11 @@ function GruposView({ datos, onRecargar }) {
             onClick={e=>e.stopPropagation()}>
 
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20 }}>
-              <h3 style={{ fontSize:18, fontWeight:700, color:C.text }}>{modalGrupo?.id?t("editar_evento"):t("nuevo_evento_title")}</h3>
+              <h3 style={{ fontSize:18, fontWeight:700, color:C.text }}>
+                {modalGrupo?.id
+                  ? (form.tipo === "evento" ? t("editar_evento") : t("editar_grupo"))
+                  : (form.tipo === "evento" ? t("nuevo_evento_title") : t("nuevo_grupo_title"))}
+              </h3>
               <button onClick={()=>setModalGrupo(null)} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, width:28, height:28, cursor:"pointer", fontSize:16, color:C.textMid, display:"flex", alignItems:"center", justifyContent:"center", padding:0 }}>×</button>
             </div>
 
@@ -5250,13 +5411,15 @@ function GruposView({ datos, onRecargar }) {
                 <input style={inp} placeholder="Boda García · Congreso Pharma..." value={form.nombre} onChange={e=>setForm(f=>({...f,nombre:e.target.value}))}/>
               </div>
 
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
-                <div>
-                  <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>{t("form_categoria")}</p>
-                  <select style={inp} value={form.categoria} onChange={e=>setForm(f=>({...f,categoria:e.target.value}))}>
-                    {Object.entries(CATS).map(([k,v])=><option key={k} value={k}>{v.icon} {v.label}</option>)}
-                  </select>
-                </div>
+              <div style={{ display:"grid", gridTemplateColumns: form.tipo === "evento" ? "1fr" : "1fr 1fr", gap:10 }}>
+                {form.tipo !== "evento" && (
+                  <div>
+                    <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>{t("form_categoria")}</p>
+                    <select style={inp} value={form.categoria} onChange={e=>setForm(f=>({...f,categoria:e.target.value}))}>
+                      {Object.entries(CATS).filter(([k])=>k!=="evento").map(([k,v])=><option key={k} value={k}>{v.label}</option>)}
+                    </select>
+                  </div>
+                )}
                 <div>
                   <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>{t("form_estado")}</p>
                   <select style={inp} value={form.estado} onChange={e=>setForm(f=>({...f,estado:e.target.value}))}>
@@ -5265,45 +5428,85 @@ function GruposView({ datos, onRecargar }) {
                 </div>
               </div>
 
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
+              {/* Fechas — eventos solo tienen fecha de celebración; grupos tienen entrada+salida */}
+              {form.tipo === "evento" ? (
                 <div>
-                  <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>{t("form_fecha_entrada")}</p>
-                  <input style={inp} type="date" value={form.fecha_inicio} onChange={e=>setForm(f=>({...f,fecha_inicio:e.target.value}))}/>
+                  <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>Fecha del evento *</p>
+                  <input style={inp} type="date" value={form.fecha_inicio} onChange={e=>setForm(f=>({...f,fecha_inicio:e.target.value,fecha_fin:e.target.value}))}/>
                 </div>
-                <div>
-                  <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>{t("form_fecha_salida")}</p>
-                  <input style={inp} type="date" value={form.fecha_fin} onChange={e=>setForm(f=>({...f,fecha_fin:e.target.value}))}/>
-                </div>
-              </div>
-
-              <div>
-                <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>{t("form_fecha_confirmacion")}</p>
-                <input style={inp} type="date" value={form.fecha_confirmacion} onChange={e=>setForm(f=>({...f,fecha_confirmacion:e.target.value}))}/>
-              </div>
-
-              {form.fecha_inicio && form.fecha_fin && (() => {
-                const noches = Math.max(0, Math.round((new Date(form.fecha_fin) - new Date(form.fecha_inicio)) / 86400000));
-                return noches > 0 ? (
-                  <div style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:7, padding:"7px 12px", fontSize:12, color:C.textMid, display:"flex", alignItems:"center", gap:6 }}>
-                    <span style={{ fontWeight:700, color:C.text }}>{noches}</span> noche{noches !== 1 ? "s" : ""} de duración
+              ) : (
+                <>
+                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
+                    <div>
+                      <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>{t("form_fecha_entrada")}</p>
+                      <input style={inp} type="date" value={form.fecha_inicio} onChange={e=>setForm(f=>({...f,fecha_inicio:e.target.value}))}/>
+                    </div>
+                    <div>
+                      <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>{t("form_fecha_salida")}</p>
+                      <input style={inp} type="date" value={form.fecha_fin} onChange={e=>setForm(f=>({...f,fecha_fin:e.target.value}))}/>
+                    </div>
                   </div>
-                ) : null;
-              })()}
+                  <div>
+                    <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>{t("form_fecha_confirmacion")}</p>
+                    <input style={inp} type="date" value={form.fecha_confirmacion} onChange={e=>setForm(f=>({...f,fecha_confirmacion:e.target.value}))}/>
+                  </div>
+                  {form.fecha_inicio && form.fecha_fin && (() => {
+                    const noches = Math.max(0, Math.round((new Date(form.fecha_fin) - new Date(form.fecha_inicio)) / 86400000));
+                    return noches > 0 ? (
+                      <div style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:7, padding:"7px 12px", fontSize:12, color:C.textMid, display:"flex", alignItems:"center", gap:6 }}>
+                        <span style={{ fontWeight:700, color:C.text }}>{noches}</span> noche{noches !== 1 ? "s" : ""} de duración
+                      </div>
+                    ) : null;
+                  })()}
+                </>
+              )}
 
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:10 }}>
-                <div>
-                  <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>{t("form_habitaciones")}</p>
-                  <input style={inp} type="number" placeholder="20" value={form.habitaciones} onChange={e=>setForm(f=>({...f,habitaciones:e.target.value}))}/>
+              {/* Campos específicos de evento: hora y sala */}
+              {form.tipo === "evento" && (
+                <>
+                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
+                    <div>
+                      <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>{t("form_hora_inicio")}</p>
+                      <input style={inp} type="time" value={form.hora_inicio} onChange={e=>setForm(f=>({...f,hora_inicio:e.target.value}))}/>
+                    </div>
+                    <div>
+                      <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>{t("form_hora_fin")}</p>
+                      <input style={inp} type="time" value={form.hora_fin} onChange={e=>setForm(f=>({...f,hora_fin:e.target.value}))}/>
+                    </div>
+                  </div>
+                  <div>
+                    <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>{t("form_sala_nombre")}</p>
+                    <input style={inp} placeholder="Salón principal, Terraza..." value={form.sala_nombre} onChange={e=>setForm(f=>({...f,sala_nombre:e.target.value}))}/>
+                  </div>
+                  <label style={{ display:"flex", alignItems:"center", gap:8, cursor:"pointer" }}>
+                    <input type="checkbox" checked={form.servicio_incluido} onChange={e=>setForm(f=>({...f,servicio_incluido:e.target.checked}))} style={{ width:16, height:16 }}/>
+                    <span style={{ fontSize:13, color:C.text }}>{t("form_servicio_incluido")}</span>
+                  </label>
+                </>
+              )}
+
+              {/* Campos específicos de grupo: habitaciones y ADR */}
+              {form.tipo === "grupo" ? (
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:10 }}>
+                  <div>
+                    <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>{t("form_habitaciones")}</p>
+                    <input style={inp} type="number" placeholder="20" value={form.habitaciones} onChange={e=>setForm(f=>({...f,habitaciones:e.target.value}))}/>
+                  </div>
+                  <div>
+                    <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>PAX</p>
+                    <input style={inp} type="number" placeholder="40" value={form.pax} onChange={e=>setForm(f=>({...f,pax:e.target.value}))}/>
+                  </div>
+                  <div>
+                    <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>{t("form_adr")}</p>
+                    <input style={inp} type="number" placeholder="89" value={form.adr_grupo} onChange={e=>setForm(f=>({...f,adr_grupo:e.target.value}))}/>
+                  </div>
                 </div>
+              ) : (
                 <div>
                   <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>PAX</p>
                   <input style={inp} type="number" placeholder="40" value={form.pax} onChange={e=>setForm(f=>({...f,pax:e.target.value}))}/>
                 </div>
-                <div>
-                  <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>{t("form_adr")}</p>
-                  <input style={inp} type="number" placeholder="89" value={form.adr_grupo} onChange={e=>setForm(f=>({...f,adr_grupo:e.target.value}))}/>
-                </div>
-              </div>
+              )}
 
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
                 <div>
@@ -5453,12 +5656,12 @@ function GruposView({ datos, onRecargar }) {
 
               <div style={{ display:"flex", justifyContent:"space-between", marginTop:4 }}>
                 {modalGrupo?.id
-                  ? <button onClick={()=>eliminar(modalGrupo.id)} style={{ background:"none", border:`1px solid ${C.red}`, color:C.red, borderRadius:7, padding:"8px 16px", fontSize:12, cursor:"pointer" }}>{t("form_eliminar")}</button>
+                  ? <button onClick={()=>eliminar(modalGrupo.id, form.tipo)} style={{ background:"none", border:`1px solid ${C.red}`, color:C.red, borderRadius:7, padding:"8px 16px", fontSize:12, cursor:"pointer" }}>{t("form_eliminar")}</button>
                   : <div/>
                 }
                 <div style={{ display:"flex", gap:8 }}>
                   <button onClick={()=>setModalGrupo(null)} style={{ background:"none", border:`1px solid ${C.border}`, color:C.textMid, borderRadius:7, padding:"8px 16px", fontSize:12, cursor:"pointer" }}>{t("form_cancelar")}</button>
-                  <button onClick={guardar} disabled={guardando||!form.nombre||!form.fecha_inicio||!form.fecha_fin}
+                  <button onClick={guardar} disabled={guardando||!form.nombre||!form.fecha_inicio||(form.tipo==="grupo"&&!form.fecha_fin)}
                     style={{ background:"#7C3AED", color:"#fff", border:"none", borderRadius:7, padding:"8px 20px", fontSize:13, fontWeight:600, cursor:"pointer", opacity:guardando?0.6:1 }}>
                     {guardando?t("guardando_btn"):t("form_guardar")}
                   </button>
