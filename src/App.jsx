@@ -20,7 +20,7 @@ const useT = () => { const lang = useContext(LangContext); return (k) => (TRANSL
 const TRANSLATIONS = {
   es: {
     // Nav & topbar
-    nav_dashboard:"Dashboard", nav_pickup:"Pickup", nav_budget:"Presupuesto", nav_grupos:"Grupos/Eventos",
+    nav_dashboard:"Dashboard", nav_pickup:"Pickup", nav_budget:"Presupuesto", nav_grupos:"Grupos/Eventos", nav_gestion:"Gestión de datos",
     importar:"Importar", mi_perfil:"Mi perfil", cerrar_sesion:"Cerrar sesión",
     suscripcion:"Suscripción", extranets:"Extranets", informe_mensual:"Informe mensual",
     conectado_como:"Conectado como", cargando:"Cargando...",
@@ -134,7 +134,7 @@ const TRANSLATIONS = {
     si:"Sí", no:"No", todos:"Todos",
   },
   en: {
-    nav_dashboard:"Dashboard", nav_pickup:"Pickup", nav_budget:"Budget", nav_grupos:"Grupos/Eventos",
+    nav_dashboard:"Dashboard", nav_pickup:"Pickup", nav_budget:"Budget", nav_grupos:"Grupos/Eventos", nav_gestion:"Data management",
     importar:"Import", mi_perfil:"My profile", cerrar_sesion:"Log out",
     suscripcion:"Subscription", extranets:"Extranets", informe_mensual:"Monthly report",
     conectado_como:"Signed in as", cargando:"Loading...",
@@ -236,7 +236,7 @@ const TRANSLATIONS = {
     si:"Yes", no:"No", todos:"All",
   },
   fr: {
-    nav_dashboard:"Dashboard", nav_pickup:"Pickup", nav_budget:"Budget", nav_grupos:"Grupos/Eventos",
+    nav_dashboard:"Dashboard", nav_pickup:"Pickup", nav_budget:"Budget", nav_grupos:"Grupos/Eventos", nav_gestion:"Gestion des données",
     importar:"Importer", mi_perfil:"Mon profil", cerrar_sesion:"Déconnexion",
     suscripcion:"Abonnement", extranets:"Extranets", informe_mensual:"Rapport mensuel",
     conectado_como:"Connecté en tant que", cargando:"Chargement...",
@@ -1018,6 +1018,8 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
   const [errorProd, setErrorProd] = useState("");
   const [okProd, setOkProd] = useState(false);
   const [prodRecientes, setProdRecientes] = useState([]);
+  const [generandoProdMock, setGenerandoProdMock] = useState(false);
+  const [okProdMock, setOkProdMock] = useState(false);
   // Vaciar
   const [vaciando, setVaciando] = useState(false);
   const [confirmVaciar, setConfirmVaciar] = useState(false);
@@ -1269,128 +1271,6 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
       setImportStatusHistorico({ fecha: fechaImportH, count: produccionRows.length });
       setModoHistorico("status");
       if (onImportado) onImportado();
-
-      // Enviar informe por email (fire & forget)
-      const ultimoDia = [...produccionRows].sort((a, b) => b.fecha.localeCompare(a.fecha))[0];
-      if (ultimoDia && session?.user?.email) {
-        const mesActual  = parseInt(ultimoDia.fecha.split('-')[1]);
-        const anioActual = parseInt(ultimoDia.fecha.split('-')[0]);
-        const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-
-        // Revenue acumulado del mes día a día
-        const mesPrefijo = `${anioActual}-${String(mesActual).padStart(2,'0')}`;
-        const datosMes = produccionRows
-          .filter(d => d.fecha.startsWith(mesPrefijo))
-          .sort((a, b) => a.fecha.localeCompare(b.fecha));
-        let acum = 0;
-        const revenueAcumulado = datosMes.map(d => {
-          acum += d.revenue_hab || 0;
-          return { dia: parseInt(d.fecha.split('-')[2]), acum: Math.round(acum) };
-        });
-
-        const presupuestoMensual = null; // El presupuesto se importa por separado
-
-        // Pickup de ayer
-        const ayerStr = ultimoDia.fecha;
-        const pickupAyer = pickupRows.filter(p => p.fecha_pickup === ayerStr);
-        let nuevasAyer = 0, cancelAyer = 0, revPickupAyer = 0;
-        for (const p of pickupAyer) {
-          const nr = p.num_reservas || 1;
-          if (p.estado === 'cancelada') { cancelAyer += nr; }
-          else { nuevasAyer += nr; revPickupAyer += p.precio_total || nr * (ultimoDia.adr || 0); }
-        }
-
-        // LY: mismo día del año anterior
-        const lyFecha = `${anioActual - 1}-${ultimoDia.fecha.slice(5)}`;
-        const lyDia   = produccionRows.find(d => d.fecha === lyFecha);
-        const lyOcc   = lyDia && lyDia.hab_disponibles > 0 ? (lyDia.hab_ocupadas / lyDia.hab_disponibles * 100) : null;
-
-        fetch('/api/import-report', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
-          body: JSON.stringify({
-            email: session.user.email,
-            hotelNombre: hotelNombreProp || null,
-            kpis: {
-              fecha: ultimoDia.fecha,
-              mesNombre: MESES[mesActual - 1],
-              occ: ultimoDia.hab_disponibles > 0 ? (ultimoDia.hab_ocupadas / ultimoDia.hab_disponibles * 100) : null,
-              adr: ultimoDia.adr,
-              revpar: ultimoDia.revpar,
-              trevpar: ultimoDia.trevpar,
-              revenue_hab: ultimoDia.revenue_hab,
-              hab_ocupadas: ultimoDia.hab_ocupadas,
-              hab_disponibles: ultimoDia.hab_disponibles,
-              pickup_neto: nuevasAyer,
-              cancelaciones: cancelAyer,
-              revenue_pickup_ayer: revPickupAyer,
-              revenueAcumulado,
-              presupuestoMensual,
-              total_registros: produccionRows.length,
-              ly_occ:    lyOcc,
-              ly_adr:    lyDia?.adr    ?? null,
-              ly_revpar: lyDia?.revpar ?? null,
-              ly_trevpar:lyDia?.trevpar?? null,
-            },
-          }),
-        }).catch(() => {});
-
-        // Informe mensual: solo el último día del mes
-        const lastDayOfMonth = new Date(anioActual, mesActual, 0).getDate();
-        if (parseInt(ultimoDia.fecha.split('-')[2]) === lastDayOfMonth) {
-          const totalHabOcup = datosMes.reduce((a, d) => a + (d.hab_ocupadas  || 0), 0);
-          const totalHabDisp = datosMes.reduce((a, d) => a + (d.hab_disponibles || 0), 0);
-          const totalRevHab  = datosMes.reduce((a, d) => a + (d.revenue_hab   || 0), 0);
-          const totalRevTot  = datosMes.reduce((a, d) => a + (d.revenue_total || 0), 0);
-          const occMes    = totalHabDisp > 0 ? totalHabOcup / totalHabDisp * 100 : null;
-          const adrMes    = totalHabOcup > 0 ? totalRevHab  / totalHabOcup       : null;
-          const revparMes = totalHabDisp > 0 ? totalRevHab  / totalHabDisp       : null;
-          const trevparMes= totalHabDisp > 0 ? totalRevTot  / totalHabDisp       : null;
-
-          const datosMesLY   = produccionRows.filter(d => d.fecha.startsWith(`${anioActual - 1}-${String(mesActual).padStart(2,'0')}`));
-          const lyHabOcup = datosMesLY.reduce((a, d) => a + (d.hab_ocupadas  || 0), 0);
-          const lyHabDisp = datosMesLY.reduce((a, d) => a + (d.hab_disponibles || 0), 0);
-          const lyRevHab  = datosMesLY.reduce((a, d) => a + (d.revenue_hab   || 0), 0);
-          const lyRevTot  = datosMesLY.reduce((a, d) => a + (d.revenue_total || 0), 0);
-
-          // Generar PDF en cliente y enviarlo como adjunto
-          let pdfBase64 = null;
-          try {
-            const datosParaPDF = { produccion: produccionRows, presupuesto: [] };
-            pdfBase64 = await generarReportePDF(datosParaPDF, mesActual - 1, anioActual, hotelNombreProp || 'Mi Hotel', true);
-          } catch (pdfErr) { console.error('PDF gen error:', pdfErr); }
-
-          fetch('/api/monthly-report', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
-            body: JSON.stringify({
-              email: session.user.email,
-              hotelNombre: hotelNombreProp || null,
-              pdfBase64,
-              pdfNombre: `Informe_${MESES[mesActual - 1]}_${anioActual}.pdf`,
-              kpis: {
-                mes: mesActual,
-                anio: anioActual,
-                mesNombre: MESES[mesActual - 1],
-                occ:     occMes,
-                adr:     adrMes,
-                revpar:  revparMes,
-                trevpar: trevparMes,
-                revenue_hab:   totalRevHab,
-                revenue_total: totalRevTot,
-                hab_ocupadas:  totalHabOcup,
-                hab_disponibles: totalHabDisp,
-                presupuesto: presupuestoMensual,
-                ly_occ:           lyHabDisp > 0 ? lyHabOcup / lyHabDisp * 100 : null,
-                ly_adr:           lyHabOcup > 0 ? lyRevHab  / lyHabOcup       : null,
-                ly_revpar:        lyHabDisp > 0 ? lyRevHab  / lyHabDisp       : null,
-                ly_trevpar:       lyHabDisp > 0 ? lyRevTot  / lyHabDisp       : null,
-                ly_revenue_total: lyRevTot > 0 ? lyRevTot : null,
-              },
-            }),
-          }).catch(() => {});
-        }
-      }
     } catch (e) {
       setErrorMain(e.message);
       setProgresoPctMain(0);
@@ -1512,8 +1392,193 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
       setProdForm(f => ({...f, hab_ocupadas:"", hab_disponibles:"", revenue_hab:"", revenue_fnb:"", revenue_salas:""}));
       setOkProd(true); setTimeout(() => setOkProd(false), 3000);
       if (onImportado) onImportado();
+      enviarInformeDiario(row);
     } catch(e) { setErrorProd(e.message); }
     setGuardandoProd(false);
+  };
+
+  // ── Generar producción mock de ayer ──
+  const generarProduccionMock = async () => {
+    setGenerandoProdMock(true);
+    try {
+      const ayer = new Date(); ayer.setDate(ayer.getDate() - 1);
+      const ayerStr = ayer.toISOString().slice(0, 10);
+
+      // Leer histórico para calcular patrones reales
+      const { data: historico } = await supabase.from("produccion_diaria")
+        .select("hab_ocupadas,hab_disponibles,revenue_hab,revenue_fnb,revenue_total")
+        .eq("hotel_id", session.user.id)
+        .limit(90);
+
+      let habDis, mediaOcc, mediaADR, mediaFnbRatio;
+      if (historico && historico.length > 10) {
+        const conHab = historico.filter(d => d.hab_disponibles > 0);
+        habDis = Math.round(conHab.reduce((a, d) => a + d.hab_disponibles, 0) / conHab.length);
+        mediaOcc = conHab.reduce((a, d) => a + d.hab_ocupadas / d.hab_disponibles, 0) / conHab.length;
+        const conADR = historico.filter(d => d.hab_ocupadas > 0 && d.revenue_hab > 0);
+        mediaADR = conADR.length ? conADR.reduce((a, d) => a + d.revenue_hab / d.hab_ocupadas, 0) / conADR.length : 110;
+        const conFnb = historico.filter(d => d.revenue_hab > 0);
+        mediaFnbRatio = conFnb.length ? conFnb.reduce((a, d) => a + (d.revenue_fnb || 0) / d.revenue_hab, 0) / conFnb.length : 0.15;
+      } else {
+        habDis = 80; mediaOcc = 0.72; mediaADR = 110; mediaFnbRatio = 0.15;
+      }
+
+      const occ = Math.min(1, Math.max(0.3, mediaOcc + (Math.random() - 0.5) * 0.15));
+      const hab_ocupadas = Math.round(habDis * occ);
+      const adr = Math.round(mediaADR * (0.92 + Math.random() * 0.16) * 100) / 100;
+      const revenue_hab = Math.round(hab_ocupadas * adr * 100) / 100;
+      const revenue_fnb = Math.round(revenue_hab * mediaFnbRatio * (0.8 + Math.random() * 0.4) * 100) / 100;
+      const revenue_total = Math.round((revenue_hab + revenue_fnb) * 100) / 100;
+      const revpar = Math.round(revenue_hab / habDis * 100) / 100;
+      const trevpar = Math.round(revenue_total / habDis * 100) / 100;
+
+      const row = {
+        hotel_id: session.user.id, fecha: ayerStr,
+        hab_ocupadas, hab_disponibles: habDis,
+        revenue_hab, revenue_fnb, revenue_total,
+        adr, revpar, trevpar,
+      };
+
+      const { data: existing } = await supabase.from("produccion_diaria")
+        .select("id").eq("hotel_id", session.user.id).eq("fecha", ayerStr).maybeSingle();
+      const { error } = existing
+        ? await supabase.from("produccion_diaria").update(row).eq("hotel_id", session.user.id).eq("fecha", ayerStr)
+        : await supabase.from("produccion_diaria").insert(row);
+      if (error) throw new Error(error.message);
+
+      setProdRecientes(prev => [row, ...prev.filter(r => r.fecha !== ayerStr)].slice(0, 8));
+      setOkProdMock(true);
+      setTimeout(() => setOkProdMock(false), 4000);
+      if (onImportado) onImportado();
+    } catch(e) { setErrorProd("Error generando datos: " + e.message); }
+    setGenerandoProdMock(false);
+  };
+
+  // ── Enviar informe diario por email (fire & forget) ──
+  const enviarInformeDiario = async (diaRow) => {
+    if (!diaRow || !session?.user?.email) return;
+    try {
+      const mesActual  = parseInt(diaRow.fecha.split('-')[1]);
+      const anioActual = parseInt(diaRow.fecha.split('-')[0]);
+      const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+      const mesPrefijo = `${anioActual}-${String(mesActual).padStart(2,'0')}`;
+
+      // Datos del mes para acumulado y cierre mensual
+      const { data: datosMes } = await supabase.from("produccion_diaria")
+        .select("fecha,hab_ocupadas,hab_disponibles,revenue_hab,revenue_total,adr,revpar,trevpar")
+        .eq("hotel_id", session.user.id)
+        .like("fecha", `${mesPrefijo}%`)
+        .order("fecha", { ascending: true });
+
+      // LY: mismo mes año anterior
+      const lyPrefijo = `${anioActual - 1}-${String(mesActual).padStart(2,'0')}`;
+      const { data: datosMesLY } = await supabase.from("produccion_diaria")
+        .select("fecha,hab_ocupadas,hab_disponibles,revenue_hab,revenue_total,adr,revpar,trevpar")
+        .eq("hotel_id", session.user.id)
+        .like("fecha", `${lyPrefijo}%`);
+
+      // Pickup de ayer
+      const { data: pickupAyerRows } = await supabase.from("pickup_entries")
+        .select("num_reservas,precio_total,estado")
+        .eq("hotel_id", session.user.id)
+        .eq("fecha_pickup", diaRow.fecha);
+
+      let nuevasAyer = 0, cancelAyer = 0, revPickupAyer = 0;
+      for (const p of (pickupAyerRows || [])) {
+        const nr = p.num_reservas || 1;
+        if (p.estado === 'cancelada') { cancelAyer += nr; }
+        else { nuevasAyer += nr; revPickupAyer += p.precio_total || nr * (diaRow.adr || 0); }
+      }
+
+      // Revenue acumulado del mes
+      let acum = 0;
+      const revenueAcumulado = (datosMes || []).map(d => {
+        acum += d.revenue_hab || 0;
+        return { dia: parseInt(d.fecha.split('-')[2]), acum: Math.round(acum) };
+      });
+
+      // LY mismo día
+      const lyFecha = `${anioActual - 1}-${diaRow.fecha.slice(5)}`;
+      const lyDia = (datosMesLY || []).find(d => d.fecha === lyFecha);
+
+      fetch('/api/import-report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+        body: JSON.stringify({
+          email: session.user.email,
+          hotelNombre: hotelNombreProp || null,
+          kpis: {
+            fecha: diaRow.fecha,
+            mesNombre: MESES[mesActual - 1],
+            occ: diaRow.hab_disponibles > 0 ? (diaRow.hab_ocupadas / diaRow.hab_disponibles * 100) : null,
+            adr: diaRow.adr,
+            revpar: diaRow.revpar,
+            trevpar: diaRow.trevpar,
+            revenue_hab: diaRow.revenue_hab,
+            hab_ocupadas: diaRow.hab_ocupadas,
+            hab_disponibles: diaRow.hab_disponibles,
+            pickup_neto: nuevasAyer,
+            cancelaciones: cancelAyer,
+            revenue_pickup_ayer: revPickupAyer,
+            revenueAcumulado,
+            presupuestoMensual: null,
+            total_registros: (datosMes || []).length,
+            ly_occ:    lyDia && lyDia.hab_disponibles > 0 ? (lyDia.hab_ocupadas / lyDia.hab_disponibles * 100) : null,
+            ly_adr:    lyDia?.adr    ?? null,
+            ly_revpar: lyDia?.revpar ?? null,
+            ly_trevpar:lyDia?.trevpar?? null,
+          },
+        }),
+      }).catch(() => {});
+
+      // Informe mensual: solo el último día del mes
+      const lastDayOfMonth = new Date(anioActual, mesActual, 0).getDate();
+      if (parseInt(diaRow.fecha.split('-')[2]) === lastDayOfMonth) {
+        const meses = datosMes || [];
+        const totalHabOcup = meses.reduce((a, d) => a + (d.hab_ocupadas    || 0), 0);
+        const totalHabDisp = meses.reduce((a, d) => a + (d.hab_disponibles || 0), 0);
+        const totalRevHab  = meses.reduce((a, d) => a + (d.revenue_hab     || 0), 0);
+        const totalRevTot  = meses.reduce((a, d) => a + (d.revenue_total   || 0), 0);
+        const ly = datosMesLY || [];
+        const lyHabOcup = ly.reduce((a, d) => a + (d.hab_ocupadas    || 0), 0);
+        const lyHabDisp = ly.reduce((a, d) => a + (d.hab_disponibles || 0), 0);
+        const lyRevHab  = ly.reduce((a, d) => a + (d.revenue_hab     || 0), 0);
+        const lyRevTot  = ly.reduce((a, d) => a + (d.revenue_total   || 0), 0);
+
+        let pdfBase64 = null;
+        try {
+          const { data: todaProd } = await supabase.from("produccion_diaria")
+            .select("*").eq("hotel_id", session.user.id);
+          pdfBase64 = await generarReportePDF({ produccion: todaProd || [], presupuesto: [] }, mesActual - 1, anioActual, hotelNombreProp || 'Mi Hotel', true);
+        } catch (pdfErr) { console.error('PDF gen error:', pdfErr); }
+
+        fetch('/api/monthly-report', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+          body: JSON.stringify({
+            email: session.user.email,
+            hotelNombre: hotelNombreProp || null,
+            pdfBase64,
+            pdfNombre: `Informe_${MESES[mesActual - 1]}_${anioActual}.pdf`,
+            kpis: {
+              mes: mesActual, anio: anioActual, mesNombre: MESES[mesActual - 1],
+              occ:     totalHabDisp > 0 ? totalHabOcup / totalHabDisp * 100 : null,
+              adr:     totalHabOcup > 0 ? totalRevHab  / totalHabOcup       : null,
+              revpar:  totalHabDisp > 0 ? totalRevHab  / totalHabDisp       : null,
+              trevpar: totalHabDisp > 0 ? totalRevTot  / totalHabDisp       : null,
+              revenue_hab: totalRevHab, revenue_total: totalRevTot,
+              hab_ocupadas: totalHabOcup, hab_disponibles: totalHabDisp,
+              presupuesto: null,
+              ly_occ:           lyHabDisp > 0 ? lyHabOcup / lyHabDisp * 100 : null,
+              ly_adr:           lyHabOcup > 0 ? lyRevHab  / lyHabOcup       : null,
+              ly_revpar:        lyHabDisp > 0 ? lyRevHab  / lyHabDisp       : null,
+              ly_trevpar:       lyHabDisp > 0 ? lyRevTot  / lyHabDisp       : null,
+              ly_revenue_total: lyRevTot > 0 ? lyRevTot : null,
+            },
+          }),
+        }).catch(() => {});
+      }
+    } catch(e) { console.error('Error enviando informe diario:', e); }
   };
 
   // ── Buscar y editar día histórico ──
@@ -1998,7 +2063,16 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
           {/* ── PRODUCCIÓN DIARIA ── */}
           {activeBlock === "produccion" && (
             <div>
-              <p style={{ fontSize:12, color:H.textMid, marginBottom:16, lineHeight:1.5 }}>Introduce la producción del día. Si ya existe registro para esa fecha, se actualizará.</p>
+              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16, flexWrap:"wrap", gap:8 }}>
+                <p style={{ fontSize:12, color:H.textMid, lineHeight:1.5, margin:0 }}>Introduce la producción del día. Si ya existe registro para esa fecha, se actualizará.</p>
+                <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                  {okProdMock && <span style={{ fontSize:11, color:H.green, fontWeight:600 }}>✓ Producción de ayer generada</span>}
+                  <button onClick={generarProduccionMock} disabled={generandoProdMock}
+                    style={{ padding:"6px 13px", borderRadius:6, border:`1px solid ${H.border}`, background:H.card, color:H.textMid, fontSize:11, fontWeight:600, cursor:generandoProdMock?"not-allowed":"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", whiteSpace:"nowrap" }}>
+                    {generandoProdMock ? "Generando…" : "⚡ Generar producción de ayer"}
+                  </button>
+                </div>
+              </div>
               <div style={{ background:H.card2, border:`1px solid ${H.border}`, borderRadius:10, padding:"16px", marginBottom:12 }}>
                 <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"10px 14px", marginBottom:14 }}>
                   <div style={{ gridColumn:"1 / -1" }}>
@@ -5435,6 +5509,7 @@ const NAV = [
   { key: "pickup",                  labelKey: "nav_pickup" },
   { key: "budget",     icon: "💰", labelKey: "nav_budget" },
   { key: "grupos",     icon: "🎪", labelKey: "nav_grupos" },
+  { key: "gestion",                 labelKey: "nav_gestion" },
 ];
 
 
@@ -5902,11 +5977,6 @@ export default function App() {
 
           {/* Botones derecha */}
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginLeft: "auto" }}>
-            {view !== "gestion" && (
-              <button id="ob-importar" onClick={() => { setView("gestion"); localStorage.setItem("fr_view","gestion"); }} style={{ background: "transparent", color: "#fff", border: "1px solid rgba(255,255,255,0.35)", borderRadius: 7, padding: "6px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "'Plus Jakarta Sans',sans-serif", whiteSpace: "nowrap", display:"flex", alignItems:"center", gap:5, transition:"all 0.15s" }} onMouseEnter={e=>e.currentTarget.style.background="rgba(255,255,255,0.1)"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
-                <span className="topbar-importar-label">Gestión de datos</span>
-              </button>
-            )}
 
             {/* Menú Mi Perfil */}
             <div data-menu style={{ position:"relative" }}>
