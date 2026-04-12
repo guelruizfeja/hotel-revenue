@@ -1659,7 +1659,11 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
       .update({ hab_ocupadas, hab_disponibles, revenue_hab, revenue_total, revenue_fnb, adr, revpar, trevpar })
       .eq("hotel_id", session.user.id).eq("fecha", fechaBusqueda);
     if (error) { setErrorEdit("Error: " + error.message); }
-    else { setOkEdit(true); if (onImportado) onImportado(); }
+    else {
+      setOkEdit(true);
+      if (onImportado) onImportado();
+      enviarInformeDiario({ fecha: fechaBusqueda, hab_ocupadas, hab_disponibles, revenue_hab, revenue_fnb, revenue_total, adr, revpar, trevpar });
+    }
     setGuardandoEdit(false);
   };
 
