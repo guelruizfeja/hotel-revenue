@@ -20,13 +20,21 @@ const fmtDate = (iso) => {
 };
 
 export default async function handler(req, res) {
+  try {
   if (req.method !== 'POST') return res.status(405).end();
 
   // JWT
   const token = (req.headers.authorization || '').replace('Bearer ', '').trim();
   if (!token) return res.status(401).json({ error: 'No autorizado' });
-  const { data: { user }, error: authErr } = await supabase.auth.getUser(token);
-  if (authErr || !user) return res.status(401).json({ error: 'No autorizado' });
+  let user;
+  try {
+    const resp = await supabase.auth.getUser(token);
+    user = resp.data?.user;
+    if (!user) return res.status(401).json({ error: 'No autorizado' });
+  } catch (authEx) {
+    console.error('daily-email auth crash:', authEx);
+    return res.status(401).json({ error: 'Auth error: ' + authEx.message });
+  }
 
   const {
     email, hotelNombre, fecha,
@@ -145,7 +153,11 @@ export default async function handler(req, res) {
     if (error) throw new Error(error.message);
     res.status(200).json({ ok: true });
   } catch (e) {
-    console.error('daily-email error:', e);
-    res.status(500).json({ error: e.message });
+    console.error('daily-email resend error:', e);
+    res.status(500).json({ error: 'resend: ' + e.message });
+  }
+  } catch (outerErr) {
+    console.error('daily-email crash:', outerErr);
+    res.status(500).json({ error: 'crash: ' + outerErr.message });
   }
 }
