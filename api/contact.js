@@ -65,7 +65,6 @@ export default async function handler(req, res) {
     if (error) throw new Error(error.message);
     res.status(200).json({ ok: true });
   } catch (e) {
-    console.error('Error enviando contacto');
-    res.status(500).json({ error: 'Error interno' });
+res.status(500).json({ error: 'Error interno' });
   }
 }

@@ -1521,8 +1521,7 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
           revenue_total: diaRow.revenue_total,
         }),
       });
-      if (!r.ok) console.error('[daily-email] error', r.status, await r.text());
-    } catch(e) { console.error('[daily-email] excepción:', e); }
+    } catch { /* ignored */ }
   };
 
   // ── Buscar y editar día histórico ──
@@ -5533,7 +5532,6 @@ function PantallaSubscripcion({ session, onPagar }) {
       if (error) throw new Error(error);
       window.location.href = url;
     } catch(e) {
-      console.error("Error al iniciar el pago:", e);
     }
     setCargando(false);
   };
@@ -6153,7 +6151,6 @@ export default function App() {
                         setSuscripcion(s => ({ ...s, estado: "cancelando", periodo_fin: json.periodo_fin }));
                         setConfirmCancelar(false);
                       } catch(e) {
-                        console.error("Error al cancelar:", e);
                       }
                       setCancelandoSub(false);
                     }}

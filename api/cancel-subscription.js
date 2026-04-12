@@ -48,7 +48,6 @@ export default async function handler(req, res) {
 
     res.status(200).json({ ok: true, periodo_fin });
   } catch (e) {
-    console.error('cancel-subscription error');
-    res.status(500).json({ error: 'Error interno' });
+res.status(500).json({ error: 'Error interno' });
   }
 }

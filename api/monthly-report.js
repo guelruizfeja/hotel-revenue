@@ -44,7 +44,7 @@ export default async function handler(req, res) {
   const safeMes       = validateNum(mes, 1, 12) ?? '';
   const safeMesNombre = escapeHtml(cleanString(mesNombre, 20) ?? '');
 
-  console.log('monthly-report:', hotel, mes, anio);
+
 
   const pct = presupuesto && revenue_total
     ? Math.round((revenue_total / presupuesto) * 100)
@@ -155,7 +155,7 @@ export default async function handler(req, res) {
         filename: cleanPdfNombre || `Informe_${safeMesNombre}_${safeAnio}.pdf`,
         content: Buffer.from(pdfBase64, 'base64'),
       });
-    } catch (e) { console.error('PDF attachment error:', e); }
+    } catch { /* ignored */ }
   }
 
   try {
@@ -174,7 +174,6 @@ export default async function handler(req, res) {
     if (error) throw new Error(error.message);
     res.status(200).json({ ok: true });
   } catch (e) {
-    console.error('Error enviando informe mensual:', e);
     res.status(500).json({ error: 'Error interno' });
   }
 }

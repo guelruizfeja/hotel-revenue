@@ -25,7 +25,6 @@ export default async function handler(req, res) {
   try {
     event = stripe.webhooks.constructEvent(buf, sig, process.env.STRIPE_WEBHOOK_SECRET);
   } catch (e) {
-    console.error('Webhook signature error:', e.message);
     return res.status(400).send('Webhook Error: firma inválida');
   }
 
@@ -35,7 +34,6 @@ export default async function handler(req, res) {
     const session = data.object;
     const user_id = session.metadata?.user_id;
     if (!user_id) {
-      console.error('checkout.session.completed: metadata.user_id missing', session.id);
       return res.status(200).json({ received: true });
     }
     const subscription = await stripe.subscriptions.retrieve(session.subscription);
@@ -58,7 +56,6 @@ export default async function handler(req, res) {
     const subscription = await stripe.subscriptions.retrieve(invoice.subscription);
     const user_id = subscription.metadata?.user_id;
     if (!user_id) {
-      console.error('invoice.payment_succeeded: metadata.user_id missing', invoice.id);
       return res.status(200).json({ received: true });
     }
     const periodo_fin = new Date(subscription.current_period_end * 1000).toISOString();

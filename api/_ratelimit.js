@@ -44,8 +44,7 @@ async function rateLimitRedis(key, limit, windowMs) {
 
   if (!r.ok) {
     // Si Redis falla, permitir la request (fail open) para no bloquear usuarios legítimos
-    console.error('Redis rate limit error:', r.status);
-    return true;
+return true;
   }
 
   const [[, count]] = await r.json();

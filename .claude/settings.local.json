@@ -1,0 +1,38 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(node -e \"try{require\\(''sharp''\\);console.log\\(''sharp ok''\\)}catch\\(e\\){console.log\\(''no sharp''\\)}\")",
+      "Bash(node -e \"try{require\\(''jimp''\\);console.log\\(''jimp ok''\\)}catch\\(e\\){console.log\\(''no jimp''\\)}\")",
+      "Bash(cwebp -version)",
+      "Bash(node -e \":*)",
+      "Bash(grep -r \"daily\\\\|reporte\\\\|report\\\\|email\\\\|mail\" /c/Users/guelr/hotel-revenue/src --include=*.js --include=*.jsx --include=*.ts -l)",
+      "Bash(find /c/Users/guelr/hotel-revenue -type f \\\\\\(-name *.md -o -name *schema* -o -name *database* \\\\\\))",
+      "Bash(xargs grep:*)",
+      "Bash(find /c/Users/guelr/hotel-revenue -type f \\\\\\(-name *.jsx -o -name *.js -o -name *.json -o -name *.html -o -name *.cjs \\\\\\))",
+      "Bash(find /c/Users/guelr/hotel-revenue -type f -name *.js -o -name *.jsx -o -name *.json -o -name .env*)",
+      "Bash(find . -name .env* -o -name *.env)",
+      "Bash(xargs -I {} wc -l {})",
+      "Bash(grep:*)",
+      "Bash(npm list:*)",
+      "Bash(node:*)",
+      "Bash(npx vite:*)",
+      "Bash(npm run:*)",
+      "Bash(git checkout:*)",
+      "Bash(gh run:*)",
+      "Bash(npx --yes acorn --ecma2022 --module src/App.jsx)",
+      "Bash(npx acorn:*)",
+      "Bash(npx --yes acorn --ecma2020 --module src/App.jsx)",
+      "Bash(npx react-scripts:*)",
+      "Bash(awk -F: '$1>1580 && $1<1620')",
+      "Bash(identify \"/c/Users/guelr/Downloads/Diseño sin título.png\")",
+      "Bash(python3 -c ':*)",
+      "Bash(python3.exe --version)",
+      "Bash(python.exe --version)",
+      "Bash(py --version)",
+      "Bash(ls \"/c/Users/guelr/Downloads/\"*Dise*)"
+    ]
+  }
+}

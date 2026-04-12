@@ -166,10 +166,8 @@ export default async function handler(req, res) {
 
   const safeFecha     = cleanString(fecha, 10) ?? '';
   const safeMesNombre = escapeHtml(cleanString(mesNombre, 20) ?? '');
-  console.log('import-report:', hotel, safeFecha);
-
   let progressBar = '';
-  try { progressBar = buildProgressBar(revenueAcumulado, presupuestoMensual); } catch (e) { console.error('progressBar error:', e); }
+  try { progressBar = buildProgressBar(revenueAcumulado, presupuestoMensual); } catch { /* ignored */ }
 
   const alerts    = buildAlerts(kpis);
   const pickupRev = revenue_pickup_ayer ? `+€${Math.round(revenue_pickup_ayer).toLocaleString('es-ES')}` : '';
@@ -370,11 +368,9 @@ export default async function handler(req, res) {
     if (error) throw new Error(error.message);
     res.status(200).json({ ok: true });
   } catch (e) {
-    console.error('Error enviando informe:', e);
     res.status(500).json({ error: 'Error al enviar: ' + e.message });
   }
   } catch (outerErr) {
-    console.error('Handler crash:', outerErr);
     res.status(500).json({ error: 'Crash: ' + outerErr.message });
   }
 }
