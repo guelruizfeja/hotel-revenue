@@ -5895,9 +5895,7 @@ export default function App() {
         {/* Botones + Email + logout */}
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginLeft: "auto" }}>
           {/* Logo letras */}
-          <div style={{ height: 34, overflow: "visible", display: "flex", alignItems: "center", flexShrink: 0 }}>
-            <img src="/fastrev-logo.png" alt="FastRevenue" style={{ height: 150, width: "auto" }} />
-          </div>
+          <img src="/fastrev-logo.png" alt="FastRevenue" style={{ height: 32, width: "auto", flexShrink: 0 }} />
 
           {view !== "gestion" && (
             <button id="ob-importar" onClick={() => { setView("gestion"); localStorage.setItem("fr_view","gestion"); }} style={{ background: C.accent, color: "#fff", border: "none", borderRadius: 7, padding: "7px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "'Plus Jakarta Sans',sans-serif", whiteSpace: "nowrap", display:"flex", alignItems:"center", gap:5 }}>
