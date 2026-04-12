@@ -1,12 +1,9 @@
 export const config = { api: { bodyParser: { sizeLimit: '2mb' } } };
 
-import { Resend } from 'resend';
 import { createClient } from '@supabase/supabase-js';
 import { rateLimit, getIP } from './_ratelimit.js';
 import { validateEmail, cleanString, escapeHtml } from './_validate.js';
 
-let resend;
-try { resend = new Resend(process.env.RESEND_API_KEY); } catch(e) { console.error('Resend init error:', e.message); }
 const supabase = createClient(
   process.env.SUPABASE_URL   || 'missing',
   process.env.SUPABASE_SERVICE_ROLE_KEY || 'missing'
@@ -358,6 +355,8 @@ export default async function handler(req, res) {
 </html>`;
 
   try {
+    const { Resend } = await import('resend');
+    const resend = new Resend(process.env.RESEND_API_KEY);
     const { error } = await resend.emails.send({
       from: 'FastRevenue <info@fastrevenue.app>',
       to: cleanEmail,
@@ -373,7 +372,7 @@ export default async function handler(req, res) {
     res.status(200).json({ ok: true });
   } catch (e) {
     console.error('Error enviando informe:', e);
-    res.status(500).json({ error: 'Error interno al enviar: ' + e.message });
+    res.status(500).json({ error: 'Error al enviar: ' + e.message });
   }
   } catch (outerErr) {
     console.error('Handler crash:', outerErr);
