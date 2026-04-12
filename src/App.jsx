@@ -5875,9 +5875,6 @@ export default function App() {
           <LiveClock lang={lang} />
         </div>
 
-        {/* Logo icono izquierda */}
-        <img src="/fastrev-favicon.png" alt="FastRevenue" style={{ height: 32, width: 32, flexShrink: 0, marginRight: 2 }} />
-
         {/* Nav links */}
         <nav style={{ display: "flex", alignItems: "center", gap: 2 }}>
           {NAV.map(n => {
