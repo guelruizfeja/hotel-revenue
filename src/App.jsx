@@ -1027,7 +1027,13 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
   const [importStatusHistorico, setImportStatusHistorico] = useState(null); // null=comprobando, false=sin datos, {fecha,count}
   const [importStatusPresupuesto, setImportStatusPresupuesto] = useState(null);
   const [modoHistorico, setModoHistorico] = useState("status"); // "status" | "upload" | "edit"
-  const [modoPpto, setModoPpto] = useState("status"); // "status" | "upload"
+  const [modoPpto, setModoPpto] = useState("status"); // "status" | "upload" | "edit"
+  const [pptoEditAnio, setPptoEditAnio] = useState(() => new Date().getFullYear());
+  const [pptoEditMes, setPptoEditMes] = useState(() => new Date().getMonth() + 1);
+  const [pptoEditValues, setPptoEditValues] = useState({ occ_ppto:"", adr_ppto:"", revpar_ppto:"", rev_total_ppto:"" });
+  const [pptoEditLoading, setPptoEditLoading] = useState(false);
+  const [okEditPpto, setOkEditPpto] = useState(false);
+  const [errorEditPpto, setErrorEditPpto] = useState("");
   const [confirmEliminarHistorico, setConfirmEliminarHistorico] = useState(false);
   const [confirmEliminarPresupuesto, setConfirmEliminarPresupuesto] = useState(false);
   const [eliminandoHistorico, setEliminandoHistorico] = useState(false);
@@ -1279,6 +1285,46 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
   };
 
   // ── Import presupuesto: sólo hoja 💰 Presupuesto ──
+  // ── Cargar mes de presupuesto para editar ──
+  const cargarMesPpto = async (anio, mes) => {
+    setPptoEditLoading(true); setErrorEditPpto(""); setOkEditPpto(false);
+    const { data } = await supabase.from("presupuesto")
+      .select("occ_ppto,adr_ppto,revpar_ppto,rev_total_ppto")
+      .eq("hotel_id", session.user.id).eq("anio", anio).eq("mes", mes).maybeSingle();
+    setPptoEditValues({
+      occ_ppto:       data?.occ_ppto       ?? "",
+      adr_ppto:       data?.adr_ppto       ?? "",
+      revpar_ppto:    data?.revpar_ppto     ?? "",
+      rev_total_ppto: data?.rev_total_ppto  ?? "",
+    });
+    setPptoEditLoading(false);
+  };
+
+  // ── Guardar mes de presupuesto editado (upsert) ──
+  const guardarMesPpto = async () => {
+    setPptoEditLoading(true); setErrorEditPpto(""); setOkEditPpto(false);
+    try {
+      const row = {
+        hotel_id:       session.user.id,
+        anio:           pptoEditAnio,
+        mes:            pptoEditMes,
+        occ_ppto:       parseFloat(pptoEditValues.occ_ppto)       || null,
+        adr_ppto:       parseFloat(pptoEditValues.adr_ppto)       || null,
+        revpar_ppto:    parseFloat(pptoEditValues.revpar_ppto)     || null,
+        rev_total_ppto: parseFloat(pptoEditValues.rev_total_ppto)  || null,
+      };
+      const { data: existing } = await supabase.from("presupuesto")
+        .select("id").eq("hotel_id", session.user.id).eq("anio", pptoEditAnio).eq("mes", pptoEditMes).maybeSingle();
+      const { error } = existing
+        ? await supabase.from("presupuesto").update(row).eq("hotel_id", session.user.id).eq("anio", pptoEditAnio).eq("mes", pptoEditMes)
+        : await supabase.from("presupuesto").insert(row);
+      if (error) throw new Error(error.message);
+      setOkEditPpto(true); setTimeout(() => setOkEditPpto(false), 3000);
+      if (onImportado) onImportado();
+    } catch(e) { setErrorEditPpto("Error: " + e.message); }
+    setPptoEditLoading(false);
+  };
+
   const procesarPresupuesto = async (file) => {
     setLoadingPpto(true); setErrorPpto(""); setResultadoPpto(null); setProgresoPctPpto(0);
     try {
@@ -1878,6 +1924,10 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
                     </div>
                   </div>
                   <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+                    <button onClick={() => { setModoPpto("edit"); cargarMesPpto(pptoEditAnio, pptoEditMes); }}
+                      style={{ padding:"6px 12px", borderRadius:6, border:`1px solid ${H.border}`, background:"none", color:H.text, fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+                      Editar datos
+                    </button>
                     <button onClick={() => setModoPpto("upload")}
                       style={{ padding:"6px 12px", borderRadius:6, border:`1px solid ${H.blue}`, background:"none", color:H.blue, fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
                       Importar nuevos datos
@@ -1905,7 +1955,7 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
               )}
 
               {/* Zona de subida */}
-              {(!importStatusPresupuesto || modoPpto === "upload") && !confirmEliminarPresupuesto && (
+              {(!importStatusPresupuesto || modoPpto === "upload") && !confirmEliminarPresupuesto && modoPpto !== "edit" && (
                 <div>
                   {modoPpto === "upload" && (
                     <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:12 }}>
@@ -1928,6 +1978,58 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
                       />
                     </>
                   )}
+                </div>
+              )}
+
+              {/* ── Editar mes de presupuesto ── */}
+              {modoPpto === "edit" && !confirmEliminarPresupuesto && (
+                <div>
+                  <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:14 }}>
+                    <button onClick={() => setModoPpto("status")} style={{ padding:"5px 12px", borderRadius:6, border:`1px solid ${H.border}`, background:"none", color:H.textMid, fontSize:11, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>← Volver</button>
+                    <span style={{ fontSize:12, fontWeight:600, color:H.text }}>Editar datos de presupuesto</span>
+                  </div>
+                  <p style={{ fontSize:12, color:H.textMid, marginBottom:14 }}>Selecciona el año y mes para editar sus objetivos. Si no existe, se creará.</p>
+
+                  {/* Selección año/mes */}
+                  <div style={{ display:"flex", gap:8, marginBottom:14 }}>
+                    <div style={{ flex:1 }}>
+                      <label style={labelStyle}>Año</label>
+                      <select value={pptoEditAnio} onChange={e => { const a = parseInt(e.target.value); setPptoEditAnio(a); cargarMesPpto(a, pptoEditMes); }} style={{...inputStyle, cursor:"pointer"}}>
+                        {[new Date().getFullYear()-1, new Date().getFullYear(), new Date().getFullYear()+1].map(a => <option key={a} value={a}>{a}</option>)}
+                      </select>
+                    </div>
+                    <div style={{ flex:2 }}>
+                      <label style={labelStyle}>Mes</label>
+                      <select value={pptoEditMes} onChange={e => { const m = parseInt(e.target.value); setPptoEditMes(m); cargarMesPpto(pptoEditAnio, m); }} style={{...inputStyle, cursor:"pointer"}}>
+                        {["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"].map((mn,i) => <option key={i+1} value={i+1}>{mn}</option>)}
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Campos */}
+                  <div style={{ background:H.card2, border:`1px solid ${H.border}`, borderRadius:10, padding:"14px" }}>
+                    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"8px 12px", marginBottom:12 }}>
+                      {[
+                        { label:"OCC % objetivo",       key:"occ_ppto",       placeholder:"72.5" },
+                        { label:"ADR € objetivo",        key:"adr_ppto",       placeholder:"120.00" },
+                        { label:"RevPAR € objetivo",     key:"revpar_ppto",    placeholder:"86.40" },
+                        { label:"Revenue Total € objetivo", key:"rev_total_ppto", placeholder:"250000" },
+                      ].map(({ label, key, placeholder }) => (
+                        <div key={key}>
+                          <label style={labelStyle}>{label}</label>
+                          <input type="number" min="0" step="0.01" value={pptoEditValues[key]} placeholder={placeholder}
+                            onChange={e => setPptoEditValues(v => ({...v, [key]: e.target.value}))}
+                            style={inputStyle} />
+                        </div>
+                      ))}
+                    </div>
+                    {okEditPpto && <p style={{ fontSize:11, color:H.green, marginBottom:8 }}>✓ Datos guardados</p>}
+                    {errorEditPpto && <p style={{ fontSize:11, color:H.red, marginBottom:8 }}>{errorEditPpto}</p>}
+                    <button onClick={guardarMesPpto} disabled={pptoEditLoading}
+                      style={{ width:"100%", padding:"9px", background:H.blue, color:"#fff", border:"none", borderRadius:7, fontSize:12, fontWeight:700, cursor:pptoEditLoading?"not-allowed":"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+                      {pptoEditLoading ? "Guardando…" : "Guardar cambios"}
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
