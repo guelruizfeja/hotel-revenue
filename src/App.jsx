@@ -1502,7 +1502,8 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
 
   // ── Enviar informe diario por email (fire & forget) ──
   const enviarInformeDiario = async (diaRow) => {
-    if (!diaRow || !session?.user?.email) return;
+    if (!diaRow || !session?.user?.email) { console.warn('[email] abortado: sin diaRow o sin email', { diaRow, email: session?.user?.email }); return; }
+    console.log('[email] iniciando envío para fecha:', diaRow.fecha);
     try {
       const mesActual  = parseInt(diaRow.fecha.split('-')[1]);
       const anioActual = parseInt(diaRow.fecha.split('-')[0]);
@@ -1547,6 +1548,7 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
       const lyFecha = `${anioActual - 1}-${diaRow.fecha.slice(5)}`;
       const lyDia = (datosMesLY || []).find(d => d.fecha === lyFecha);
 
+      console.log('[email] datos listos, llamando /api/import-report', { revenueAcumuladoLen: revenueAcumulado.length, pickup: nuevasAyer });
       const r = await fetch('/api/import-report', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
@@ -1576,7 +1578,9 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
           },
         }),
       });
-      if (!r.ok) { const t = await r.text(); console.error('[import-report]', r.status, t); }
+      const rBody = await r.text();
+      if (!r.ok) { console.error('[import-report] ERROR', r.status, rBody); }
+      else { console.log('[email] ✓ informe enviado correctamente', r.status); }
 
       // Informe mensual: solo el último día del mes
       const lastDayOfMonth = new Date(anioActual, mesActual, 0).getDate();
@@ -1626,7 +1630,7 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
         });
         if (!rm.ok) { const t = await rm.text(); console.error('[monthly-report]', rm.status, t); }
       }
-    } catch(e) { console.error('Error enviando informe diario:', e); }
+    } catch(e) { console.error('[email] excepción en enviarInformeDiario:', e); }
   };
 
   // ── Buscar y editar día histórico ──
