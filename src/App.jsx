@@ -5875,6 +5875,9 @@ export default function App() {
           <LiveClock lang={lang} />
         </div>
 
+        {/* Logo icono izquierda */}
+        <img src="/fastrev-favicon.png" alt="FastRevenue" style={{ height: 32, width: 32, flexShrink: 0, marginRight: 2 }} />
+
         {/* Nav links */}
         <nav style={{ display: "flex", alignItems: "center", gap: 2 }}>
           {NAV.map(n => {
@@ -5891,11 +5894,6 @@ export default function App() {
             );
           })}
         </nav>
-
-        {/* Logo entre nav y fecha */}
-        <div style={{ height: 34, overflow: "visible", display: "flex", alignItems: "center", flexShrink: 0, marginLeft: 16 }}>
-          <img src="/fastrev-logo.png" alt="FastRevenue" style={{ height: 150, width: "auto" }} />
-        </div>
 
         {/* Botones + Email + logout */}
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginLeft: "auto" }}>
@@ -5944,6 +5942,16 @@ export default function App() {
                     {op.key === "informe" && generandoPDF ? t("generando") : op.label}
                   </button>
                 ))}
+                {/* Idioma */}
+                <div style={{ padding:"10px 16px", borderTop:`1px solid ${C.border}`, display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+                  <span style={{ fontSize:12, color:C.textMid, fontFamily:"'Plus Jakarta Sans',sans-serif" }}>{t("idioma") ?? "Idioma"}</span>
+                  <select value={lang} onChange={e => { setLang(e.target.value); localStorage.setItem("fr_lang", e.target.value); }}
+                    style={{ border:`1px solid ${C.border}`, borderRadius:6, padding:"3px 6px", fontSize:11, fontWeight:500, color:C.text, background:C.bgCard, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", outline:"none" }}>
+                    <option value="es">Español</option>
+                    <option value="en">English</option>
+                    <option value="fr">Français</option>
+                  </select>
+                </div>
                 <button onClick={handleLogout}
                   style={{ width:"100%", display:"flex", alignItems:"center", padding:"10px 16px", background:"transparent", border:"none", borderTop:`1px solid ${C.border}`, cursor:"pointer", fontSize:12, color:C.red, fontFamily:"'Plus Jakarta Sans',sans-serif", textAlign:"left", letterSpacing:0.2 }}
                   onMouseEnter={e=>e.currentTarget.style.background=C.redLight}
@@ -5954,14 +5962,6 @@ export default function App() {
             )}
           </div>
 
-          <select value={lang} onChange={e => { setLang(e.target.value); localStorage.setItem("fr_lang", e.target.value); }}
-            style={{ border:`1px solid ${C.border}`, borderRadius:7, padding:"5px 8px", fontSize:11, fontWeight:500, color:C.text, background:C.bgCard, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", outline:"none" }}>
-            <option value="es">Español</option>
-            <option value="en">English</option>
-            <option value="fr">Français</option>
-          </select>
-
-          {/* Logo derecha */}
         </div>
       </div></header>
 
