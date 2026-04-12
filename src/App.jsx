@@ -5867,15 +5867,12 @@ export default function App() {
 
       {/* Topbar */}
       <header style={{ background: C.bg, minHeight: 52, position: "sticky", top: 0, zIndex: 100, borderBottom: `1px solid ${C.border}` }}><div style={{ width: "100%", minHeight: 52, display: "flex", alignItems: "center", padding: "0 clamp(12px, 4vw, 32px)", gap: 6, flexWrap: "nowrap" }}>
-        {/* Logo centro */}
-        <div style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", pointerEvents: "none", display: "flex", alignItems: "center", gap: 12 }}>
-          <img src="/fastrev-logo.jpg" alt="FastRevenue" style={{ height: 92, width: "auto", transform: "scaleX(1.08)" }} />
-          <span className="topbar-date" style={{ display:"flex", alignItems:"center", gap:10, fontFamily:"'Plus Jakarta Sans', sans-serif" }}>
-            <span style={{ fontSize: 12, color: "#000000", fontWeight: 500, letterSpacing: 0.3, whiteSpace: "nowrap" }}>
-              {new Date().toLocaleDateString(lang === "en" ? "en-GB" : lang === "fr" ? "fr-FR" : "es-ES", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).replace(/^\w/, c => c.toUpperCase())}
-            </span>
-            <LiveClock lang={lang} />
+        {/* Fecha y hora centro */}
+        <div style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", pointerEvents: "none", display: "flex", alignItems: "center", gap: 10, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+          <span style={{ fontSize: 12, color: "#000000", fontWeight: 500, letterSpacing: 0.3, whiteSpace: "nowrap" }}>
+            {new Date().toLocaleDateString(lang === "en" ? "en-GB" : lang === "fr" ? "fr-FR" : "es-ES", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).replace(/^\w/, c => c.toUpperCase())}
           </span>
+          <LiveClock lang={lang} />
         </div>
 
         {/* Nav links */}
@@ -5958,6 +5955,9 @@ export default function App() {
             <option value="en">English</option>
             <option value="fr">Français</option>
           </select>
+
+          {/* Logo derecha */}
+          <img src="/fastrev-logo.jpg" alt="FastRevenue" style={{ height: 36, width: "auto", mixBlendMode: "multiply", flexShrink: 0 }} />
         </div>
       </div></header>
 
