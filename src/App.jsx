@@ -5957,7 +5957,7 @@ export default function App() {
           </select>
 
           {/* Logo derecha */}
-          <img src="/fastrev-logo.jpg" alt="FastRevenue" style={{ height: 48, width: "auto", mixBlendMode: "multiply", flexShrink: 0 }} />
+          <img src="/fastrev-logo.jpg" alt="FastRevenue" style={{ height: 48, width: "auto", mixBlendMode: "multiply", filter: "contrast(8) brightness(1.08)", flexShrink: 0 }} />
         </div>
       </div></header>
 
