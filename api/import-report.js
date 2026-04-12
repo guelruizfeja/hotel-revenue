@@ -5,10 +5,11 @@ import { createClient } from '@supabase/supabase-js';
 import { rateLimit, getIP } from './_ratelimit.js';
 import { validateEmail, cleanString, escapeHtml } from './_validate.js';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+let resend;
+try { resend = new Resend(process.env.RESEND_API_KEY); } catch(e) { console.error('Resend init error:', e.message); }
 const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
+  process.env.SUPABASE_URL   || 'missing',
+  process.env.SUPABASE_SERVICE_ROLE_KEY || 'missing'
 );
 
 const fmt    = (n, dec = 1) => n != null ? Number(n).toFixed(dec) : '—';
@@ -134,10 +135,11 @@ function buildAlerts(kpis) {
 }
 
 export default async function handler(req, res) {
+  try {
   if (req.method !== 'POST') return res.status(405).end();
-  if (!await rateLimit(getIP(req), 60, 10 * 60_000)) {
-    return res.status(429).json({ error: 'Demasiadas solicitudes. Inténtalo más tarde.' });
-  }
+  const allowed = await rateLimit(getIP(req), 60, 10 * 60_000).catch(() => true);
+  if (!allowed) return res.status(429).json({ error: 'Demasiadas solicitudes. Inténtalo más tarde.' });
+  if (!resend) return res.status(500).json({ error: 'Resend no inicializado — falta RESEND_API_KEY en variables de entorno' });
 
   // Verificar JWT
   const token = (req.headers.authorization || '').replace('Bearer ', '').trim();
@@ -371,6 +373,10 @@ export default async function handler(req, res) {
     res.status(200).json({ ok: true });
   } catch (e) {
     console.error('Error enviando informe:', e);
-    res.status(500).json({ error: 'Error interno' });
+    res.status(500).json({ error: 'Error interno al enviar: ' + e.message });
+  }
+  } catch (outerErr) {
+    console.error('Handler crash:', outerErr);
+    res.status(500).json({ error: 'Crash: ' + outerErr.message });
   }
 }
