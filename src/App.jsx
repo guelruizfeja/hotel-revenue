@@ -1502,148 +1502,27 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
 
   // ── Enviar informe diario por email (fire & forget) ──
   const enviarInformeDiario = async (diaRow) => {
-    if (!diaRow || !session?.user?.email) { console.warn('[email] abortado: sin diaRow o sin email', { diaRow, email: session?.user?.email }); return; }
-    console.log('[email] iniciando envío para fecha:', diaRow.fecha);
+    if (!diaRow || !session?.user?.email) return;
     try {
-      const mesActual  = parseInt(diaRow.fecha.split('-')[1]);
-      const anioActual = parseInt(diaRow.fecha.split('-')[0]);
-      const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-      const mesPrefijo = `${anioActual}-${String(mesActual).padStart(2,'0')}`;
-
-      // Datos del mes para acumulado y cierre mensual
-      const mesStr  = String(mesActual).padStart(2,'0');
-      const inicioMes = `${anioActual}-${mesStr}-01`;
-      const inicioSig = mesActual === 12 ? `${anioActual+1}-01-01` : `${anioActual}-${String(mesActual+1).padStart(2,'0')}-01`;
-      const { data: datosMes } = await supabase.from("produccion_diaria")
-        .select("fecha,hab_ocupadas,hab_disponibles,revenue_hab,revenue_total,revenue_fnb")
-        .eq("hotel_id", session.user.id)
-        .gte("fecha", inicioMes)
-        .lt("fecha", inicioSig)
-        .order("fecha", { ascending: true });
-
-      // LY: mismo mes año anterior
-      const inicioMesLY = `${anioActual-1}-${mesStr}-01`;
-      const inicioSigLY = mesActual === 12 ? `${anioActual}-01-01` : `${anioActual-1}-${String(mesActual+1).padStart(2,'0')}-01`;
-      const { data: datosMesLY } = await supabase.from("produccion_diaria")
-        .select("fecha,hab_ocupadas,hab_disponibles,revenue_hab,revenue_total,revenue_fnb")
-        .eq("hotel_id", session.user.id)
-        .gte("fecha", inicioMesLY)
-        .lt("fecha", inicioSigLY);
-
-      // Pickup de ayer
-      const { data: pickupAyerRows } = await supabase.from("pickup_entries")
-        .select("num_reservas,precio_total,estado")
-        .eq("hotel_id", session.user.id)
-        .eq("fecha_pickup", diaRow.fecha);
-
-      let nuevasAyer = 0, cancelAyer = 0, revPickupAyer = 0;
-      for (const p of (pickupAyerRows || [])) {
-        const nr = p.num_reservas || 1;
-        if (p.estado === 'cancelada') { cancelAyer += nr; }
-        else { nuevasAyer += nr; revPickupAyer += p.precio_total || nr * (diaRow.adr || 0); }
-      }
-
-      // Revenue acumulado del mes
-      let acum = 0;
-      const revenueAcumulado = (datosMes || []).map(d => {
-        acum += d.revenue_hab || 0;
-        return { dia: parseInt(d.fecha.split('-')[2]), acum: Math.round(acum) };
-      });
-
-      // LY mismo día — calcular métricas desde datos básicos
-      const lyFecha = `${anioActual - 1}-${diaRow.fecha.slice(5)}`;
-      const lyDia = (datosMesLY || []).find(d => d.fecha === lyFecha);
-      const lyOcc    = lyDia?.hab_disponibles > 0 ? (lyDia.hab_ocupadas / lyDia.hab_disponibles * 100) : null;
-      const lyAdr    = lyDia?.hab_ocupadas > 0 && lyDia?.revenue_hab ? Math.round(lyDia.revenue_hab / lyDia.hab_ocupadas * 100) / 100 : null;
-      const lyRevpar = lyDia?.hab_disponibles > 0 && lyDia?.revenue_hab ? Math.round(lyDia.revenue_hab / lyDia.hab_disponibles * 100) / 100 : null;
-      const lyTrevpar= lyDia?.hab_disponibles > 0 && lyDia?.revenue_total ? Math.round(lyDia.revenue_total / lyDia.hab_disponibles * 100) / 100 : null;
-
-      // Calcular adr/revpar/trevpar del día desde diaRow si no vienen calculados
-      const occDia    = diaRow.hab_disponibles > 0 ? (diaRow.hab_ocupadas / diaRow.hab_disponibles * 100) : null;
-      const adrDia    = diaRow.adr    ?? (diaRow.hab_ocupadas > 0 && diaRow.revenue_hab ? Math.round(diaRow.revenue_hab / diaRow.hab_ocupadas * 100) / 100 : null);
-      const revparDia = diaRow.revpar ?? (diaRow.hab_disponibles > 0 && diaRow.revenue_hab ? Math.round(diaRow.revenue_hab / diaRow.hab_disponibles * 100) / 100 : null);
-      const trevparDia= diaRow.trevpar?? (diaRow.hab_disponibles > 0 && diaRow.revenue_total ? Math.round(diaRow.revenue_total / diaRow.hab_disponibles * 100) / 100 : null);
-
-      console.log('[email] datos listos, llamando /api/import-report', { revenueAcumuladoLen: revenueAcumulado.length, pickup: nuevasAyer });
-      const r = await fetch('/api/import-report', {
+      const r = await fetch('/api/daily-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
         body: JSON.stringify({
           email: session.user.email,
           hotelNombre: hotelNombreProp || null,
-          kpis: {
-            fecha: diaRow.fecha,
-            mesNombre: MESES[mesActual - 1],
-            occ: occDia,
-            adr: adrDia,
-            revpar: revparDia,
-            trevpar: trevparDia,
-            revenue_hab: diaRow.revenue_hab,
-            hab_ocupadas: diaRow.hab_ocupadas,
-            hab_disponibles: diaRow.hab_disponibles,
-            pickup_neto: nuevasAyer,
-            cancelaciones: cancelAyer,
-            revenue_pickup_ayer: revPickupAyer,
-            revenueAcumulado,
-            presupuestoMensual: null,
-            total_registros: (datosMes || []).length,
-            ly_occ: lyOcc, ly_adr: lyAdr, ly_revpar: lyRevpar, ly_trevpar: lyTrevpar,
-          },
+          fecha: diaRow.fecha,
+          occ: diaRow.hab_disponibles > 0 ? Math.round(diaRow.hab_ocupadas / diaRow.hab_disponibles * 1000) / 10 : null,
+          adr: diaRow.adr ?? null,
+          revpar: diaRow.revpar ?? null,
+          trevpar: diaRow.trevpar ?? null,
+          hab_ocupadas: diaRow.hab_ocupadas,
+          hab_disponibles: diaRow.hab_disponibles,
+          revenue_hab: diaRow.revenue_hab,
+          revenue_total: diaRow.revenue_total,
         }),
       });
-      const rBody = await r.text();
-      if (!r.ok) { console.error('[import-report] ERROR', r.status, rBody); }
-      else { console.log('[email] ✓ informe enviado correctamente', r.status); }
-
-      // Informe mensual: solo el último día del mes
-      const lastDayOfMonth = new Date(anioActual, mesActual, 0).getDate();
-      if (parseInt(diaRow.fecha.split('-')[2]) === lastDayOfMonth) {
-        const meses = datosMes || [];
-        const totalHabOcup = meses.reduce((a, d) => a + (d.hab_ocupadas    || 0), 0);
-        const totalHabDisp = meses.reduce((a, d) => a + (d.hab_disponibles || 0), 0);
-        const totalRevHab  = meses.reduce((a, d) => a + (d.revenue_hab     || 0), 0);
-        const totalRevTot  = meses.reduce((a, d) => a + (d.revenue_total   || 0), 0);
-        const ly = datosMesLY || [];
-        const lyHabOcup = ly.reduce((a, d) => a + (d.hab_ocupadas    || 0), 0);
-        const lyHabDisp = ly.reduce((a, d) => a + (d.hab_disponibles || 0), 0);
-        const lyRevHab  = ly.reduce((a, d) => a + (d.revenue_hab     || 0), 0);
-        const lyRevTot  = ly.reduce((a, d) => a + (d.revenue_total   || 0), 0);
-
-        let pdfBase64 = null;
-        try {
-          const { data: todaProd } = await supabase.from("produccion_diaria")
-            .select("*").eq("hotel_id", session.user.id);
-          pdfBase64 = await generarReportePDF({ produccion: todaProd || [], presupuesto: [] }, mesActual - 1, anioActual, hotelNombreProp || 'Mi Hotel', true);
-        } catch (pdfErr) { console.error('PDF gen error:', pdfErr); }
-
-        const rm = await fetch('/api/monthly-report', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
-          body: JSON.stringify({
-            email: session.user.email,
-            hotelNombre: hotelNombreProp || null,
-            pdfBase64,
-            pdfNombre: `Informe_${MESES[mesActual - 1]}_${anioActual}.pdf`,
-            kpis: {
-              mes: mesActual, anio: anioActual, mesNombre: MESES[mesActual - 1],
-              occ:     totalHabDisp > 0 ? totalHabOcup / totalHabDisp * 100 : null,
-              adr:     totalHabOcup > 0 ? totalRevHab  / totalHabOcup       : null,
-              revpar:  totalHabDisp > 0 ? totalRevHab  / totalHabDisp       : null,
-              trevpar: totalHabDisp > 0 ? totalRevTot  / totalHabDisp       : null,
-              revenue_hab: totalRevHab, revenue_total: totalRevTot,
-              hab_ocupadas: totalHabOcup, hab_disponibles: totalHabDisp,
-              presupuesto: null,
-              ly_occ:           lyHabDisp > 0 ? lyHabOcup / lyHabDisp * 100 : null,
-              ly_adr:           lyHabOcup > 0 ? lyRevHab  / lyHabOcup       : null,
-              ly_revpar:        lyHabDisp > 0 ? lyRevHab  / lyHabDisp       : null,
-              ly_trevpar:       lyHabDisp > 0 ? lyRevTot  / lyHabDisp       : null,
-              ly_revenue_total: lyRevTot > 0 ? lyRevTot : null,
-            },
-          }),
-        });
-        if (!rm.ok) { const t = await rm.text(); console.error('[monthly-report]', rm.status, t); }
-      }
-    } catch(e) { console.error('[email] excepción en enviarInformeDiario:', e); }
+      if (!r.ok) console.error('[daily-email] error', r.status, await r.text());
+    } catch(e) { console.error('[daily-email] excepción:', e); }
   };
 
   // ── Buscar y editar día histórico ──
@@ -1665,7 +1544,6 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
   };
 
   const guardarDia = async () => {
-    console.log('[guardarDia] iniciando, fecha:', fechaBusqueda);
     setGuardandoEdit(true); setErrorEdit(""); setOkEdit(false);
     const hab_ocupadas    = parseFloat(editValues.hab_ocupadas)    || null;
     const hab_disponibles = parseFloat(editValues.hab_disponibles) || null;
@@ -1678,12 +1556,10 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
     const { error } = await supabase.from("produccion_diaria")
       .update({ hab_ocupadas, hab_disponibles, revenue_hab, revenue_total, revenue_fnb, adr, revpar, trevpar })
       .eq("hotel_id", session.user.id).eq("fecha", fechaBusqueda);
-    console.log('[guardarDia] resultado supabase:', { error });
     if (error) { setErrorEdit("Error: " + error.message); }
     else {
       setOkEdit(true);
       if (onImportado) onImportado();
-      console.log('[guardarDia] llamando enviarInformeDiario');
       enviarInformeDiario({ fecha: fechaBusqueda, hab_ocupadas, hab_disponibles, revenue_hab, revenue_fnb, revenue_total, adr, revpar, trevpar });
     }
     setGuardandoEdit(false);
