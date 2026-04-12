@@ -5958,7 +5958,7 @@ export default function App() {
 
           {/* Logo derecha */}
           <div style={{ height: 34, overflow: "visible", display: "flex", alignItems: "center", flexShrink: 0 }}>
-            <img src="/fastrev-logo.png" alt="FastRevenue" style={{ height: 200, width: "auto" }} />
+            <img src="/fastrev-logo.png" alt="FastRevenue" style={{ height: 150, width: "auto" }} />
           </div>
         </div>
       </div></header>
