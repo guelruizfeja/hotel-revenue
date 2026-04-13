@@ -4007,97 +4007,89 @@ function PickupView({ datos }) {
 
       {/* ── PICKUP AYER ── */}
       <Card>
-        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:16 }}>
+        {/* Header */}
+        <div style={{ display:"flex", alignItems:"flex-start", gap:16, marginBottom:20 }}>
+          <div style={{ background:"#111", borderRadius:10, padding:"10px 18px", textAlign:"center", flexShrink:0 }}>
+            <p style={{ fontSize:30, fontWeight:800, color:"#fff", fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1 }}>{ayerTotal}</p>
+            <p style={{ fontSize:9, color:"rgba(255,255,255,0.65)", fontWeight:700, textTransform:"uppercase", letterSpacing:1, marginTop:4 }}>Nuevas reservas</p>
+          </div>
           <div>
             <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:18, color:C.text }}>{t("reservas_ayer")}</p>
             <p style={{ fontSize:12, color:C.textLight, marginTop:2 }}>
               {ayerD.toLocaleDateString("es-ES",{weekday:"long",day:"numeric",month:"long"}).replace(/^\w/,c=>c.toUpperCase())}
             </p>
-          </div>
-          <div style={{ background:"#B8860B22", border:"1px solid #B8860B44", borderRadius:10, padding:"10px 20px", textAlign:"center" }}>
-            <p style={{ fontSize:28, fontWeight:800, color:"#B8860B", fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1 }}>{ayerTotal}</p>
-            <p style={{ fontSize:10, color:"#B8860B", fontWeight:600, textTransform:"uppercase", letterSpacing:0.8, marginTop:3 }}>{t("reservas_captadas")}</p>
+            {ultDia && <p style={{ fontSize:11, color:C.textLight, marginTop:2 }}>Captadas el {fmtDatePU(ultDia)}</p>}
           </div>
         </div>
 
         {ayerTotal === 0 ? (
           <p style={{ color:C.textLight, fontSize:13, textAlign:"center", padding:"20px 0" }}>{t("no_reservas_ayer")}</p>
-        ) : (
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:20 }}>
+        ) : (() => {
+          // Computar stats por canal desde reservasUltDia
+          const canalStats = {};
+          reservasUltDia.forEach(e => {
+            const c = normCanal(e.canal);
+            if (!canalStats[c]) canalStats[c] = { count:0, precioTotal:0, nochesTotal:0, antTotal:0, antCount:0 };
+            const nr = e.num_reservas || 1;
+            canalStats[c].count      += nr;
+            canalStats[c].precioTotal += (e.precio_total || 0);
+            canalStats[c].nochesTotal += (e.noches || 0) * nr;
+            if (e.fecha_llegada && e.fecha_pickup) {
+              const dias = Math.round((new Date(e.fecha_llegada) - new Date(e.fecha_pickup)) / 86400000);
+              if (dias >= 0) { canalStats[c].antTotal += dias * nr; canalStats[c].antCount += nr; }
+            }
+          });
+          const canalData = Object.entries(canalStats).map(([canal, d]) => ({
+            canal,
+            color: CANAL_COLORS[canal] || C.accent,
+            count: d.count,
+            adr:   d.nochesTotal > 0 ? Math.round(d.precioTotal / (d.nochesTotal / (d.count||1))) : null,
+            noches: d.count > 0 ? (d.nochesTotal / d.count).toFixed(1) : null,
+            antelacion: d.antCount > 0 ? Math.round(d.antTotal / d.antCount) : null,
+          })).sort((a,b) => b.count - a.count);
 
-            {/* Tabla reservas captadas último día */}
-            <div style={{ overflowY:"auto", maxHeight:220 }}>
-              <p style={{ fontSize:11, fontWeight:700, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:8 }}>
-                Captadas el {fmtDatePU(ultDia)}
-              </p>
-              {reservasUltDia.length === 0 ? (
-                <p style={{ fontSize:12, color:C.textLight }}>Sin reservas</p>
-              ) : (
-                <table style={{ width:"100%", borderCollapse:"collapse", fontSize:11 }}>
-                  <thead>
-                    <tr>
-                      {["Llegada","Canal","Noches","ADR"].map((h,hi)=>(
-                        <th key={h} style={{ padding:"4px 8px", textAlign:hi>=2?"right":"left", fontSize:9, color:C.textLight, textTransform:"uppercase", letterSpacing:"1px", fontWeight:600, borderBottom:`1px solid ${C.border}` }}>{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {reservasUltDia.map((e,i)=>{
-                      const adr = (e.precio_total && e.noches && e.noches>0) ? Math.round(e.precio_total/e.noches) : null;
-                      return (
-                        <tr key={i} style={{ borderBottom:`1px solid ${C.border}`, background:i%2===0?C.bg:C.bgCard }}>
-                          <td style={{ padding:"5px 8px", fontWeight:600, color:C.accent }}>{fmtDatePU(e.fecha_llegada)}</td>
-                          <td style={{ padding:"5px 8px", color:C.textMid }}>{e.canal||"—"}</td>
-                          <td style={{ padding:"5px 8px", textAlign:"right", color:C.textMid }}>{e.noches??'—'}</td>
-                          <td style={{ padding:"5px 8px", textAlign:"right", fontWeight:700, color:C.text }}>{adr!=null?`€${adr}`:"—"}</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              )}
-            </div>
-
-            {/* Por canal — Pie chart */}
+          const MiniTable = ({ title, rows, valFn, suffix="" }) => (
             <div>
-              <p style={{ fontSize:11, fontWeight:700, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:10 }}>{t("por_canal")}</p>
-              {Object.keys(ayerPorCanal).length > 0 ? (() => {
-                const pieData = Object.entries(ayerPorCanal).sort((a,b)=>b[1]-a[1]).map(([canal, nr]) => ({
-                  name: canal, value: nr, color: CANAL_COLORS[canal] || C.accent
-                }));
-                return (
-                  <div style={{ display:"flex", alignItems:"center", gap:16 }}>
-                    <PieChart width={110} height={110}>
-                      <defs>
-                        {pieData.map((entry, i) => (
-                          <linearGradient key={i} id={`pieGrad_${i}`} x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor={entry.color} stopOpacity={1}/>
-                            <stop offset="100%" stopColor={entry.color} stopOpacity={0.65}/>
-                          </linearGradient>
-                        ))}
-                      </defs>
-                      <Pie data={pieData} cx={50} cy={50} innerRadius={28} outerRadius={50}
-                        dataKey="value" startAngle={90} endAngle={-270} paddingAngle={2}>
-                        {pieData.map((entry, i) => <Cell key={i} fill={`url(#pieGrad_${i})`} stroke="none"/>)}
-                      </Pie>
-                    </PieChart>
-                    <div style={{ display:"flex", flexDirection:"column", gap:6, flex:1 }}>
-                      {pieData.map((entry, i) => (
-                        <div key={i} style={{ display:"flex", alignItems:"center", gap:7 }}>
-                          <div style={{ width:8, height:8, borderRadius:"50%", background:entry.color, flexShrink:0 }}/>
-                          <span style={{ fontSize:11, color:C.textMid, flex:1 }}>{entry.name}</span>
-                          <span style={{ fontSize:11, color:C.textLight }}>{Math.round(entry.value/ayerTotal*100)}%</span>
-                          <span style={{ fontSize:11, fontWeight:700, color:entry.color }}>{entry.value}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })() : <p style={{ fontSize:12, color:C.textLight }}>{t("sin_datos")}</p>}
+              <p style={{ fontSize:10, fontWeight:700, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:8 }}>{title}</p>
+              <table style={{ width:"100%", borderCollapse:"collapse" }}>
+                <tbody>
+                  {rows.map(d => {
+                    const val = valFn(d);
+                    const max = Math.max(...rows.map(r => valFn(r) || 0));
+                    const pct = max > 0 ? (val || 0) / max * 100 : 0;
+                    return (
+                      <tr key={d.canal} style={{ borderBottom:`1px solid ${C.border}` }}>
+                        <td style={{ padding:"6px 0", width:"40%" }}>
+                          <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                            <div style={{ width:8, height:8, borderRadius:"50%", background:d.color, flexShrink:0 }}/>
+                            <span style={{ fontSize:11, color:C.textMid }}>{d.canal}</span>
+                          </div>
+                        </td>
+                        <td style={{ padding:"6px 8px", width:"40%" }}>
+                          <div style={{ height:5, borderRadius:3, background:C.border, overflow:"hidden" }}>
+                            <div style={{ height:"100%", width:`${pct}%`, background:d.color, borderRadius:3 }}/>
+                          </div>
+                        </td>
+                        <td style={{ padding:"6px 0", textAlign:"right", fontSize:12, fontWeight:700, color:C.text, whiteSpace:"nowrap" }}>
+                          {val != null ? `${val}${suffix}` : "—"}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
+          );
 
-          </div>
-        )}
+          return (
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:24 }}>
+              <MiniTable title="Por canal" rows={canalData} valFn={d=>d.count} suffix=" res." />
+              <MiniTable title="Precio medio (ADR)" rows={canalData} valFn={d=>d.adr} suffix="€" />
+              <MiniTable title="Duración media" rows={canalData} valFn={d=>d.noches ? parseFloat(d.noches) : null} suffix=" noches" />
+              <MiniTable title="Antelación media" rows={canalData} valFn={d=>d.antelacion} suffix=" días" />
+            </div>
+          );
+        })()}
       </Card>
 
       {/* Selector año */}
