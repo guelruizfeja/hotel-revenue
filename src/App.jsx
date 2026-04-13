@@ -3830,6 +3830,7 @@ function PickupView({ datos }) {
   const [trimSel, setTrimSel] = useState(null);
   const [trimTip, setTrimTip] = useState(null); // { x, y, d }
   const [canalMetric, setCanalMetric]     = useState("adr"); // "adr" | "noches"
+  const [ayerVista, setAyerVista]         = useState("count"); // "count"|"adr"|"noches"|"antelacion"
 
   const hoy     = new Date();
   const padL    = n => String(n).padStart(2,"0");
@@ -4025,13 +4026,12 @@ function PickupView({ datos }) {
         {ayerTotal === 0 ? (
           <p style={{ color:C.textLight, fontSize:13, textAlign:"center", padding:"20px 0" }}>{t("no_reservas_ayer")}</p>
         ) : (() => {
-          // Computar stats por canal desde reservasUltDia
           const canalStats = {};
           reservasUltDia.forEach(e => {
             const c = normCanal(e.canal);
             if (!canalStats[c]) canalStats[c] = { count:0, precioTotal:0, nochesTotal:0, antTotal:0, antCount:0 };
             const nr = e.num_reservas || 1;
-            canalStats[c].count      += nr;
+            canalStats[c].count       += nr;
             canalStats[c].precioTotal += (e.precio_total || 0);
             canalStats[c].nochesTotal += (e.noches || 0) * nr;
             if (e.fecha_llegada && e.fecha_pickup) {
@@ -4040,53 +4040,55 @@ function PickupView({ datos }) {
             }
           });
           const canalData = Object.entries(canalStats).map(([canal, d]) => ({
-            canal,
-            color: CANAL_COLORS[canal] || C.accent,
+            canal, color: CANAL_COLORS[canal] || C.accent,
             count: d.count,
             adr:   d.nochesTotal > 0 ? Math.round(d.precioTotal / (d.nochesTotal / (d.count||1))) : null,
-            noches: d.count > 0 ? (d.nochesTotal / d.count).toFixed(1) : null,
+            noches: d.count > 0 ? parseFloat((d.nochesTotal / d.count).toFixed(1)) : null,
             antelacion: d.antCount > 0 ? Math.round(d.antTotal / d.antCount) : null,
           })).sort((a,b) => b.count - a.count);
 
-          const MiniTable = ({ title, rows, valFn, suffix="" }) => (
-            <div>
-              <p style={{ fontSize:10, fontWeight:700, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:8 }}>{title}</p>
-              <table style={{ width:"100%", borderCollapse:"collapse" }}>
-                <tbody>
-                  {rows.map(d => {
-                    const val = valFn(d);
-                    const max = Math.max(...rows.map(r => valFn(r) || 0));
-                    const pct = max > 0 ? (val || 0) / max * 100 : 0;
-                    return (
-                      <tr key={d.canal} style={{ borderBottom:`1px solid ${C.border}` }}>
-                        <td style={{ padding:"6px 0", width:"40%" }}>
-                          <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-                            <div style={{ width:8, height:8, borderRadius:"50%", background:d.color, flexShrink:0 }}/>
-                            <span style={{ fontSize:11, color:C.textMid }}>{d.canal}</span>
-                          </div>
-                        </td>
-                        <td style={{ padding:"6px 8px", width:"40%" }}>
-                          <div style={{ height:5, borderRadius:3, background:C.border, overflow:"hidden" }}>
-                            <div style={{ height:"100%", width:`${pct}%`, background:d.color, borderRadius:3 }}/>
-                          </div>
-                        </td>
-                        <td style={{ padding:"6px 0", textAlign:"right", fontSize:12, fontWeight:700, color:C.text, whiteSpace:"nowrap" }}>
-                          {val != null ? `${val}${suffix}` : "—"}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          );
+          const VISTAS = [
+            { key:"count",      label:"Por canal",      valFn: d=>d.count,      fmt: v=>`${v} res.` },
+            { key:"adr",        label:"Precio medio",   valFn: d=>d.adr,        fmt: v=>`€${v}` },
+            { key:"noches",     label:"Duración",       valFn: d=>d.noches,     fmt: v=>`${v} noches` },
+            { key:"antelacion", label:"Antelación",     valFn: d=>d.antelacion, fmt: v=>`${v} días` },
+          ];
+          const vista = VISTAS.find(v=>v.key===ayerVista) || VISTAS[0];
+          const rows  = [...canalData].sort((a,b) => (vista.valFn(b)||0) - (vista.valFn(a)||0));
+          const max   = Math.max(...rows.map(d => vista.valFn(d)||0));
 
           return (
-            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:24 }}>
-              <MiniTable title="Por canal" rows={canalData} valFn={d=>d.count} suffix=" res." />
-              <MiniTable title="Precio medio (ADR)" rows={canalData} valFn={d=>d.adr} suffix="€" />
-              <MiniTable title="Duración media" rows={canalData} valFn={d=>d.noches ? parseFloat(d.noches) : null} suffix=" noches" />
-              <MiniTable title="Antelación media" rows={canalData} valFn={d=>d.antelacion} suffix=" días" />
+            <div>
+              {/* Tabs */}
+              <div style={{ display:"flex", gap:6, marginBottom:20, flexWrap:"wrap" }}>
+                {VISTAS.map(v => (
+                  <button key={v.key} onClick={()=>setAyerVista(v.key)}
+                    style={{ padding:"5px 14px", borderRadius:20, border:`1.5px solid ${ayerVista===v.key?"#111":C.border}`, background:ayerVista===v.key?"#111":"transparent", color:ayerVista===v.key?"#fff":C.textMid, fontSize:12, fontWeight:ayerVista===v.key?700:400, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", transition:"all 0.15s" }}>
+                    {v.label}
+                  </button>
+                ))}
+              </div>
+              {/* Gráfico de barras horizontales */}
+              <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+                {rows.map(d => {
+                  const val = vista.valFn(d);
+                  const pct = max > 0 ? ((val||0) / max * 100) : 0;
+                  return (
+                    <div key={d.canal} style={{ display:"grid", gridTemplateColumns:"160px 1fr 80px", alignItems:"center", gap:12 }}>
+                      <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                        <div style={{ width:10, height:10, borderRadius:"50%", background:d.color, flexShrink:0 }}/>
+                        <span style={{ fontSize:12, color:C.textMid, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{d.canal}</span>
+                      </div>
+                      <div style={{ height:10, borderRadius:5, background:C.border, overflow:"hidden" }}>
+                        <div style={{ height:"100%", width:`${pct}%`, background:d.color, borderRadius:5, transition:"width 0.4s ease" }}/>
+                      </div>
+                      <span style={{ fontSize:13, fontWeight:700, color:C.text, textAlign:"right", whiteSpace:"nowrap" }}>
+                        {val != null ? vista.fmt(val) : "—"}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           );
         })()}
