@@ -1730,11 +1730,21 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
       const ayer = new Date(); ayer.setDate(ayer.getDate() - 1);
       const ayerStr = ayer.toISOString().slice(0, 10);
 
-      // Limpiar entradas previas de ayer (incluidos grupos/eventos viejos)
-      await supabase.from("pickup_entries")
-        .delete()
-        .eq("hotel_id", session.user.id)
-        .eq("fecha_pickup", ayerStr);
+      // Limpiar entradas de ayer y todas las entradas de Grupos/Eventos de cualquier fecha
+      await Promise.all([
+        supabase.from("pickup_entries")
+          .delete()
+          .eq("hotel_id", session.user.id)
+          .eq("fecha_pickup", ayerStr),
+        supabase.from("pickup_entries")
+          .delete()
+          .eq("hotel_id", session.user.id)
+          .ilike("canal", "%grupo%"),
+        supabase.from("pickup_entries")
+          .delete()
+          .eq("hotel_id", session.user.id)
+          .ilike("canal", "%evento%"),
+      ]);
 
       // Leer todos los pickup para calcular patrones (excluir grupos/eventos)
       const { data: todos } = await supabase.from("pickup_entries")
