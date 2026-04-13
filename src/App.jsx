@@ -5726,8 +5726,11 @@ function AuthScreen() {
     <div style={{ minHeight: "100vh", background: C.bgDeep, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;0,800;1,400;1,600&family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap'); * { box-sizing: border-box; margin: 0; padding: 0; } html, body, #root { width: 100%; min-height: 100vh; } @keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }`}</style>
       <div style={{ width: 420, background: C.bgCard, borderRadius: 20, padding: "40px 36px", boxShadow: "0 32px 80px rgba(0,0,0,0.4)", animation: "fadeUp 0.5s ease both" }}>
-        <div style={{ textAlign: "center", marginBottom: 32 }}>
-          <img src="/fastrev-logo.png" alt="FastRevenue" style={{ height: 140, marginBottom: 12 }} />
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginBottom: 32 }}>
+          <img src="/fastrev-icon.png" alt="FastRevenue" style={{ height: 52, width: "auto" }} />
+          <span style={{ fontSize: 24, fontWeight: 800, color: C.bgDeep, letterSpacing: 0.5, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+            FAST<span style={{ fontWeight: 400 }}>REVENUE</span>
+          </span>
         </div>
         <div style={{ display: "flex", background: C.bg, borderRadius: 10, padding: 4, marginBottom: 24 }}>
           {[["login","Iniciar sesión"],["register","Crear cuenta"]].map(([k,l]) => (
