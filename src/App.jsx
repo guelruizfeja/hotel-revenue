@@ -1589,23 +1589,27 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
     } catch { /* ignored */ }
   };
 
-  // ── Enviar informe mensual por email (fire & forget) ──
+  // ── Enviar informe mensual por email con PDF adjunto (fire & forget) ──
   const enviarInformeMensual = async (anio, mes) => {
     if (!session?.user?.email) return;
     try {
       const MESES_FULL = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
       const mesStr = String(mes).padStart(2, '0');
-      const [{ data: rowsMes }, { data: ppto }] = await Promise.all([
+      const inicioFetch = new Date(anio - 1, mes - 1, 1).toISOString().slice(0, 10);
+      const [{ data: produccion }, { data: presupuesto }, { data: ppto }] = await Promise.all([
         supabase.from("produccion_diaria")
-          .select("hab_ocupadas,hab_disponibles,revenue_hab,revenue_total")
+          .select("fecha,hab_ocupadas,hab_disponibles,revenue_hab,revenue_fnb,revenue_total")
           .eq("hotel_id", session.user.id)
-          .gte("fecha", `${anio}-${mesStr}-01`)
-          .lte("fecha", `${anio}-${mesStr}-31`),
+          .gte("fecha", inicioFetch),
+        supabase.from("presupuesto")
+          .select("mes,anio,occ_ppto,adr_ppto,revpar_ppto,rev_total_ppto")
+          .eq("hotel_id", session.user.id),
         supabase.from("presupuesto")
           .select("rev_total_ppto")
           .eq("hotel_id", session.user.id).eq("anio", anio).eq("mes", mes).maybeSingle(),
       ]);
-      if (!rowsMes?.length) return;
+      const rowsMes = (produccion || []).filter(r => r.fecha.startsWith(`${anio}-${mesStr}`));
+      if (!rowsMes.length) return;
       let totalHabOcup = 0, totalHabDis = 0, totalRevHab = 0, totalRevTotal = 0;
       for (const r of rowsMes) {
         totalHabOcup  += r.hab_ocupadas    || 0;
@@ -1616,6 +1620,8 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
       const occ    = totalHabDis > 0 ? totalHabOcup / totalHabDis * 100 : null;
       const adr    = totalHabOcup > 0 ? totalRevHab / totalHabOcup : null;
       const revpar = totalHabDis > 0 ? totalRevHab / totalHabDis : null;
+      const datos  = { produccion: produccion || [], presupuesto: presupuesto || [] };
+      const pdfBase64 = await generarReportePDF(datos, mes - 1, anio, hotelNombreProp || 'Mi Hotel', true);
       await fetch('/api/monthly-report', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
@@ -1629,6 +1635,8 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
             revenue_total: Math.round(totalRevTotal),
             presupuesto: ppto?.rev_total_ppto ?? null,
           },
+          pdfBase64,
+          pdfNombre: `Informe_${MESES_FULL[mes - 1]}_${anio}.pdf`,
         }),
       });
     } catch { /* ignored */ }
