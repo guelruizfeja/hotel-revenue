@@ -3823,7 +3823,10 @@ function PickupView({ datos }) {
   const { session, presupuesto, produccion } = datos;
   const pickupEntries = datos.pickupEntries || [];
   const cargando = false;
-  const [anio, setAnio]                   = useState(new Date().getFullYear());
+  const [anio, setAnio] = useState(() => {
+    const saved = localStorage.getItem("fr_pickup_anio");
+    return saved ? parseInt(saved) : new Date().getFullYear();
+  });
   const [trimSel, setTrimSel] = useState(null);
   const [trimTip, setTrimTip] = useState(null); // { x, y, d }
   const [canalMetric, setCanalMetric]     = useState("adr"); // "adr" | "noches"
@@ -3833,13 +3836,7 @@ function PickupView({ datos }) {
   const hoyStr  = `${hoy.getFullYear()}-${padL(hoy.getMonth()+1)}-${padL(hoy.getDate())}`;
   const MESES   = t("meses_corto");
 
-  // Año inicial: el más reciente con datos
-  useEffect(() => {
-    if (pickupEntries.length > 0) {
-      const anios = [...new Set(pickupEntries.map(e => String(e.fecha_llegada||"").slice(0,4)).filter(Boolean).map(Number))].sort();
-      if (anios.length > 0) setAnio(anios[anios.length - 1]);
-    }
-  }, [pickupEntries.length]);
+  const setAnioGuardado = (a) => { setAnio(a); localStorage.setItem("fr_pickup_anio", a); };
 
   useEffect(() => {
     const handler = (e) => { if (e.key === "Escape" && trimSel !== null) setTrimSel(null); };
@@ -4107,12 +4104,12 @@ function PickupView({ datos }) {
       <div style={{ display:"flex", justifyContent:"flex-end" }}>
         <div style={{ display:"flex", alignItems:"center", gap:8 }}>
           <button
-            onClick={()=>setAnio(a=>{const i=aniosDisp.indexOf(a); return i>0?aniosDisp[i-1]:a;})}
+            onClick={()=>setAnioGuardado(aniosDisp[Math.max(0,aniosDisp.indexOf(anio)-1)])}
             disabled={aniosDisp.indexOf(anio)===0}
             style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, width:28, height:28, cursor: aniosDisp.indexOf(anio)===0?"default":"pointer", fontSize:15, color: aniosDisp.indexOf(anio)===0?C.border:C.textMid, display:"flex", alignItems:"center", justifyContent:"center" }}>‹</button>
           <span style={{ fontWeight:700, fontSize:16, color:C.text, minWidth:44, textAlign:"center", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>{anio}</span>
           <button
-            onClick={()=>setAnio(a=>{const i=aniosDisp.indexOf(a); return i<aniosDisp.length-1?aniosDisp[i+1]:a;})}
+            onClick={()=>setAnioGuardado(aniosDisp[Math.min(aniosDisp.length-1,aniosDisp.indexOf(anio)+1)])}
             disabled={aniosDisp.indexOf(anio)===aniosDisp.length-1}
             style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, width:28, height:28, cursor: aniosDisp.indexOf(anio)===aniosDisp.length-1?"default":"pointer", fontSize:15, color: aniosDisp.indexOf(anio)===aniosDisp.length-1?C.border:C.textMid, display:"flex", alignItems:"center", justifyContent:"center" }}>›</button>
         </div>
