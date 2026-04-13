@@ -4012,7 +4012,7 @@ function PickupView({ datos }) {
         <div style={{ display:"flex", alignItems:"flex-start", gap:16, marginBottom:20 }}>
           <div style={{ background:"#111", borderRadius:10, padding:"10px 18px", textAlign:"center", flexShrink:0 }}>
             <p style={{ fontSize:30, fontWeight:800, color:"#fff", fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1 }}>{ayerTotal}</p>
-            <p style={{ fontSize:9, color:"rgba(255,255,255,0.65)", fontWeight:700, textTransform:"uppercase", letterSpacing:1, marginTop:4 }}>Nuevas reservas</p>
+            <p style={{ fontSize:9, color:"#ffffff", fontWeight:700, textTransform:"uppercase", letterSpacing:1, marginTop:4 }}>Nuevas reservas</p>
           </div>
           <div>
             <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:18, color:C.text }}>{t("reservas_ayer")}</p>
