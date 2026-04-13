@@ -384,7 +384,7 @@ const CustomTooltip = ({ active, payload, label, unit }) => {
   const OCC_NAMES = ["Ocupación","occ","OCC"];
   const displayLabel = payload[0]?.payload?.mesNombre || payload[0]?.payload?.fecha || label;
   return (
-    <div style={{ background: C.bgDeep, borderRadius: 10, padding: "12px 16px", boxShadow: "0 8px 24px rgba(0,0,0,0.22)" }}>
+    <div style={{ background: "#111111", borderRadius: 10, padding: "12px 16px", boxShadow: "0 8px 24px rgba(0,0,0,0.35)" }}>
       <p style={{ color: "#fff", fontSize: 10, fontWeight: 700, marginBottom: 6, textTransform: "uppercase", letterSpacing: "1px" }}>{displayLabel}</p>
       {payload.map((p, i) => {
         const isOcc = unit === "%" || OCC_NAMES.includes(p.name);
@@ -4086,7 +4086,7 @@ function PickupView({ datos }) {
                 <YAxis domain={[0, ayerYMax]} tickFormatter={vista.fmt} tick={{ fill:C.textLight, fontSize:10 }} axisLine={false} tickLine={false} width={52}/>
                 <Tooltip
                   formatter={(v) => [vista.fmt(v), vista.label]}
-                  contentStyle={{ background:"#0A2540", border:`1px solid ${C.border}`, borderRadius:8, fontSize:12 }}
+                  contentStyle={{ background:"#111111", border:"1px solid #333", borderRadius:8, fontSize:12 }}
                   labelStyle={{ color:"#ffffff", fontWeight:700 }}
                   itemStyle={{ color:"#ffffff" }}
                   cursor={false}
@@ -4350,7 +4350,7 @@ function PickupView({ datos }) {
                 <YAxis domain={[0, yMax]} tickFormatter={fmt} tick={{ fill:C.textLight, fontSize:10 }} axisLine={false} tickLine={false} width={44}/>
                 <Tooltip
                   formatter={(v) => [fmt(v), canalMetric==="adr"?"ADR":"Noches"]}
-                  contentStyle={{ background:"#0A2540", border:`1px solid ${C.border}`, borderRadius:8, fontSize:12 }}
+                  contentStyle={{ background:"#111111", border:"1px solid #333", borderRadius:8, fontSize:12 }}
                   labelStyle={{ color:"#ffffff", fontWeight:700 }}
                   itemStyle={{ color:"#ffffff" }}
                   cursor={false}
