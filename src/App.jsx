@@ -1448,6 +1448,9 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
       setOkProd(true); setTimeout(() => setOkProd(false), 3000);
       if (onImportado) onImportado();
       enviarInformeDiario(row);
+      const d = new Date(prodForm.fecha + 'T00:00:00');
+      const nextDay = new Date(d); nextDay.setDate(d.getDate() + 1);
+      if (nextDay.getMonth() !== d.getMonth()) enviarInformeMensual(d.getFullYear(), d.getMonth() + 1);
     } catch(e) { setErrorProd(e.message); }
     setGuardandoProd(false);
   };
@@ -1586,6 +1589,51 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
     } catch { /* ignored */ }
   };
 
+  // ── Enviar informe mensual por email (fire & forget) ──
+  const enviarInformeMensual = async (anio, mes) => {
+    if (!session?.user?.email) return;
+    try {
+      const MESES_FULL = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+      const mesStr = String(mes).padStart(2, '0');
+      const [{ data: rowsMes }, { data: ppto }] = await Promise.all([
+        supabase.from("produccion_diaria")
+          .select("hab_ocupadas,hab_disponibles,revenue_hab,revenue_total")
+          .eq("hotel_id", session.user.id)
+          .gte("fecha", `${anio}-${mesStr}-01`)
+          .lte("fecha", `${anio}-${mesStr}-31`),
+        supabase.from("presupuesto")
+          .select("rev_total_ppto")
+          .eq("hotel_id", session.user.id).eq("anio", anio).eq("mes", mes).maybeSingle(),
+      ]);
+      if (!rowsMes?.length) return;
+      let totalHabOcup = 0, totalHabDis = 0, totalRevHab = 0, totalRevTotal = 0;
+      for (const r of rowsMes) {
+        totalHabOcup  += r.hab_ocupadas    || 0;
+        totalHabDis   += r.hab_disponibles || 0;
+        totalRevHab   += r.revenue_hab     || 0;
+        totalRevTotal += r.revenue_total   || 0;
+      }
+      const occ    = totalHabDis > 0 ? totalHabOcup / totalHabDis * 100 : null;
+      const adr    = totalHabOcup > 0 ? totalRevHab / totalHabOcup : null;
+      const revpar = totalHabDis > 0 ? totalRevHab / totalHabDis : null;
+      await fetch('/api/monthly-report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+        body: JSON.stringify({
+          email: session.user.email,
+          hotelNombre: hotelNombreProp || null,
+          kpis: {
+            mes, anio,
+            mesNombre: MESES_FULL[mes - 1],
+            occ, adr, revpar,
+            revenue_total: Math.round(totalRevTotal),
+            presupuesto: ppto?.rev_total_ppto ?? null,
+          },
+        }),
+      });
+    } catch { /* ignored */ }
+  };
+
   // ── Buscar y editar día histórico ──
   const buscarDia = async () => {
     if (!fechaBusqueda) return;
@@ -1622,6 +1670,9 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
       setOkEdit(true);
       if (onImportado) onImportado();
       enviarInformeDiario({ fecha: fechaBusqueda, hab_ocupadas, hab_disponibles, revenue_hab, revenue_fnb, revenue_total, adr, revpar, trevpar });
+      const d = new Date(fechaBusqueda + 'T00:00:00');
+      const nextDay = new Date(d); nextDay.setDate(d.getDate() + 1);
+      if (nextDay.getMonth() !== d.getMonth()) enviarInformeMensual(d.getFullYear(), d.getMonth() + 1);
     }
     setGuardandoEdit(false);
   };
