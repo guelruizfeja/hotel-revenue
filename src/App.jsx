@@ -6639,11 +6639,11 @@ export default function App() {
             {/* Menú Mi Perfil */}
             <div data-menu style={{ position:"relative" }}>
               <button onClick={() => setMostrarPerfil(v=>!v)}
-                style={{ display:"flex", alignItems:"center", gap:6, padding:"5px 8px", borderRadius:7, border:"1px solid rgba(255,255,255,0.25)", background:"transparent", color:"#fff", cursor:"pointer", fontSize:12, fontWeight:500, fontFamily:"'Plus Jakarta Sans',sans-serif", transition:"all 0.15s", letterSpacing:0.2 }}>
-                <span style={{ width:26, height:26, borderRadius:"50%", background:C.accent, color:"#fff", fontSize:11, fontWeight:700, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                style={{ display:"flex", alignItems:"center", gap:7, padding:"5px 10px", borderRadius:7, border:"1px solid rgba(255,255,255,0.25)", background:"transparent", color:"#fff", cursor:"pointer", fontSize:13, fontWeight:500, fontFamily:"'Plus Jakarta Sans',sans-serif", transition:"all 0.15s", letterSpacing:0.2 }}>
+                <span style={{ width:32, height:32, borderRadius:"50%", background:C.accent, color:"#fff", fontSize:14, fontWeight:700, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
                   {session.user.email[0].toUpperCase()}
                 </span>
-                <span className="topbar-perfil-label">{t("mi_perfil")}</span>
+                <span className="topbar-perfil-label" style={{ color:"#ffffff" }}>{t("mi_perfil")}</span>
               </button>
               {mostrarPerfil && (
                 <div style={{ position:"absolute", top:42, right:0, width:240, background:C.bgCard, border:`1px solid ${C.border}`, borderRadius:10, boxShadow:"0 4px 24px rgba(0,0,0,0.15)", zIndex:200, overflow:"hidden" }}>
