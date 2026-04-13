@@ -40,9 +40,9 @@
     backdrop-filter: blur(16px);
     border-bottom: 1px solid rgba(200,212,228,0.8);
   }
-  .nav-logo { display: flex; align-items: center; gap: 10px; }
-  .nav-logo img { height: 88px; width: auto; }
-  .nav-logo span { font-family: 'Cormorant Garamond', serif; font-size: 26px; font-weight: 700; color: var(--accent); letter-spacing: -0.5px; }
+  .nav-logo { display: flex; align-items: center; gap: 8px; }
+  .nav-logo img { height: 36px; width: auto; filter: invert(1); }
+  .nav-logo span { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 16px; font-weight: 800; color: #ffffff; letter-spacing: 0.5px; white-space: nowrap; }
   .nav-links { display: flex; gap: 28px; align-items: center; }
   .nav-links a {
     font-size: 13px; color: var(--gray); text-decoration: none;
@@ -545,7 +545,7 @@
 
   /* Nav */
   nav { background: rgba(17,17,17,0.97); border-bottom: 1px solid rgba(255,255,255,0.07); }
-  .nav-logo img { height: 32px; width: auto; filter: invert(1); }
+  .nav-logo img { height: 36px; width: auto; filter: invert(1); }
   .nav-logo span { color: #fff; }
   .nav-links a { color: rgba(255,255,255,0.55); }
   .nav-links a:hover { color: #fff; }
@@ -618,7 +618,10 @@
 <body>
 
 <nav>
-  <div class="nav-logo"><img src="/fastrev-logo.png" alt="FastRevenue"></div>
+  <div class="nav-logo">
+    <img src="/fastrev-icon.png" alt="FastRevenue">
+    <span>FAST<span style="font-weight:400">REVENUE</span></span>
+  </div>
   <div class="nav-links">
     <a href="#producto">Producto</a>
     <a href="#funciones">Funciones</a>
