@@ -6611,7 +6611,7 @@ export default function App() {
       <header style={{ background: "#111111", position: "sticky", top: 0, zIndex: 101, minHeight: 52, overflow: "visible" }}>
         <div style={{ width: "100%", minHeight: 52, display: "flex", alignItems: "center", padding: "0 clamp(12px,4vw,32px)", gap: 6, flexWrap: "nowrap", overflow: "visible" }}>
           {/* Logo */}
-          <img src="/fastrev-logo.png" alt="FastRevenue" style={{ height: 56, width: "auto", filter: "invert(1)", flexShrink: 0, marginRight: 8 }} />
+          <img src="/fastrev-logo.png" alt="FastRevenue" style={{ height: 68, width: "auto", filter: "invert(1)", flexShrink: 0, marginRight: 8 }} />
 
           {/* Nav links */}
           <nav style={{ display: "flex", alignItems: "center", gap: 2 }}>
