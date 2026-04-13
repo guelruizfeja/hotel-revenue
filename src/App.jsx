@@ -5771,11 +5771,11 @@ function AuthScreen() {
             )}
             <div>
               <p style={{ fontSize: 11, color: C.textLight, marginBottom: 5, textTransform: "uppercase", letterSpacing: "1px" }}>Email *</p>
-              <input style={inp} type="email" placeholder="correo@tuhotel.com" value={email} onChange={e => setEmail(e.target.value)} />
+              <input style={inp} type="email" placeholder="correo@tuhotel.com" value={email} onChange={e => setEmail(e.target.value)} autoComplete="off" />
             </div>
             <div>
               <p style={{ fontSize: 11, color: C.textLight, marginBottom: 5, textTransform: "uppercase", letterSpacing: "1px" }}>Contraseña *</p>
-              <input style={inp} type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} onKeyDown={e => e.key==="Enter" && (mode==="login" ? handleLogin() : handleRegister())} />
+              <input style={inp} type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} onKeyDown={e => e.key==="Enter" && (mode==="login" ? handleLogin() : handleRegister())} autoComplete="new-password" />
               {mode === "register" && <p style={{ fontSize: 11, color: C.textLight, marginTop: 4 }}>Mín. 8 caracteres, una mayúscula y un número</p>}
             </div>
             {error && <div style={{ background: C.redLight, color: C.red, padding: "10px 14px", borderRadius: 8, fontSize: 13 }}>{error}</div>}
