@@ -681,21 +681,19 @@ function KpiModal({ kpi, datos, mes, anio, onClose }) {
   const unit = kpi==="Ocupación"?"%":"€";
 
   return (
-    <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", zIndex:1000, display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}>
-      <div style={{ background:C.bgCard, borderRadius:14, width:"100%", maxWidth:820, maxHeight:"90vh", overflow:"auto", padding:28, boxShadow:"0 20px 60px rgba(0,0,0,0.2)" }} onClick={e=>e.stopPropagation()}>
+    <div style={{ position:"fixed", inset:0, background:C.bgCard, zIndex:1000, overflow:"auto" }}>
+      <div style={{ maxWidth:960, margin:"0 auto", padding:"32px clamp(20px,5vw,56px)" }}>
 
-        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20 }}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:28, paddingBottom:20, borderBottom:`1px solid ${C.border}` }}>
           <div>
             <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:2 }}>{MESES_FULL[mes]} {anio}</p>
-            <h3 style={{ fontSize:22, fontWeight:800, color:C.text, fontFamily:"'Plus Jakarta Sans',sans-serif", letterSpacing:-0.5 }}>{kpiLabel}</h3>
+            <h3 style={{ fontSize:28, fontWeight:800, color:C.text, fontFamily:"'Plus Jakarta Sans',sans-serif", letterSpacing:-0.5, marginTop:4 }}>{kpiLabel}</h3>
           </div>
-          <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-            <button onClick={onClose} style={{ background:"none", border:`1.5px solid ${C.border}`, borderRadius:8, width:34, height:34, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", fontSize:16, color:C.textMid, fontWeight:300, transition:"all 0.15s" }}
-              onMouseEnter={e=>{ e.currentTarget.style.background=C.accent; e.currentTarget.style.borderColor=C.accent; e.currentTarget.style.color="#fff"; }}
-              onMouseLeave={e=>{ e.currentTarget.style.background="none"; e.currentTarget.style.borderColor=C.border; e.currentTarget.style.color=C.textMid; }}>
-              ×
-            </button>
-          </div>
+          <button onClick={onClose} style={{ background:"none", border:`1.5px solid ${C.border}`, borderRadius:8, padding:"6px 16px", cursor:"pointer", display:"flex", alignItems:"center", gap:6, fontSize:13, color:C.textMid, fontWeight:600, fontFamily:"'Plus Jakarta Sans',sans-serif", transition:"all 0.15s" }}
+            onMouseEnter={e=>{ e.currentTarget.style.background=C.accent; e.currentTarget.style.borderColor=C.accent; e.currentTarget.style.color="#fff"; }}
+            onMouseLeave={e=>{ e.currentTarget.style.background="none"; e.currentTarget.style.borderColor=C.border; e.currentTarget.style.color=C.textMid; }}>
+            ← Volver
+          </button>
         </div>
 
         {kpi === "Revenue Total" ? (() => {
@@ -767,7 +765,7 @@ function KpiModal({ kpi, datos, mes, anio, onClose }) {
           {kpi==="Revenue Mensual" ? (() => {
             const dailyData = diasMesCompleto.map(d=>({ dia:d.dia, revHab:d.revHab, revFnb:d.revFnb }));
             return (
-              <ResponsiveContainer width="100%" height={220}>
+              <ResponsiveContainer width="100%" height={420}>
                 <BarChart data={dailyData} barSize={10} barCategoryGap="20%">
                   <defs>
                     <linearGradient id="gradHabD" x1="0" y1="0" x2="0" y2="1">
@@ -802,7 +800,7 @@ function KpiModal({ kpi, datos, mes, anio, onClose }) {
               };
             }).filter(d=>d.revHab+d.revFnb>0);
             return (
-            <ResponsiveContainer width="100%" height={220}>
+            <ResponsiveContainer width="100%" height={420}>
               <BarChart data={revPorMes} barSize={18} barCategoryGap="32%">
                 <defs>
                   <linearGradient id="gradHab" x1="0" y1="0" x2="0" y2="1">
@@ -845,7 +843,7 @@ function KpiModal({ kpi, datos, mes, anio, onClose }) {
                 </div>
               </div>
             </div>
-            <ResponsiveContainer width="100%" height={220}>
+            <ResponsiveContainer width="100%" height={420}>
               <ComposedChart data={chartData}>
                 <defs>
                   <linearGradient id="kpiGradBar" x1="0" y1="0" x2="0" y2="1">
