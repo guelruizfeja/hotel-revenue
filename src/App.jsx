@@ -873,8 +873,8 @@ function KpiCard({ label, subtitle, value, changeLm, upLm, changeLy, upLy, i, on
   const kpiAccent = accentColor || C.accent;
   return (
     <div onClick={onClick} style={{
-      background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: 10,
-      padding: "20px 22px", animation: `fadeUp 0.5s ease ${i * 0.08}s both`,
+      background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: 8,
+      padding: "14px 18px", animation: `fadeUp 0.5s ease ${i * 0.08}s both`,
       borderLeft: `3px solid ${kpiAccent}`, position: "relative", overflow: "hidden",
       boxShadow: "0 1px 4px rgba(0,0,0,0.06)", cursor: "pointer",
       transition: "box-shadow 0.2s, transform 0.2s, border-color 0.2s, background 0.2s",
@@ -893,9 +893,9 @@ function KpiCard({ label, subtitle, value, changeLm, upLm, changeLy, upLy, i, on
       e.currentTarget.style.borderLeftColor=kpiAccent;
       e.currentTarget.style.background=C.bgCard;
     }}>
-      <p style={{ fontSize: 12, color: C.text, textTransform: "uppercase", letterSpacing: "1.5px", fontWeight: 700 }}>{label}</p>
-      {subtitle && <p style={{ fontSize: 10, color: C.textMid, marginTop: 2, letterSpacing: "0.5px", opacity: 0.7 }}>{subtitle}</p>}
-      <p style={{ fontSize: "clamp(22px,5vw,30px)", fontWeight: 700, fontFamily: "'Plus Jakarta Sans', sans-serif", color: C.text, margin: "8px 0 6px", letterSpacing: "-1px", lineHeight: 1 }}>{value}</p>
+      <p style={{ fontSize: 11, color: C.text, textTransform: "uppercase", letterSpacing: "1.5px", fontWeight: 700 }}>{label}</p>
+      {subtitle && <p style={{ fontSize: 9, color: C.textMid, marginTop: 1, letterSpacing: "0.5px", opacity: 0.7 }}>{subtitle}</p>}
+      <p style={{ fontSize: "clamp(18px,4vw,24px)", fontWeight: 700, fontFamily: "'Plus Jakarta Sans', sans-serif", color: C.text, margin: "5px 0 4px", letterSpacing: "-1px", lineHeight: 1 }}>{value}</p>
     </div>
   );
 }
