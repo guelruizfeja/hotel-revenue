@@ -66,12 +66,12 @@ export default async function handler(req, res) {
 
   <!-- HEADER -->
   <tr><td style="background:#0A2540;border-radius:10px 10px 0 0;padding:28px 32px 22px;text-align:center;">
-    <svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 48 48" style="display:block;margin:0 auto 10px;">
-      <rect x="4" y="28" width="8" height="14" fill="#D4A017" rx="2"/>
-      <rect x="15" y="20" width="8" height="22" fill="#D4A017" rx="2"/>
-      <rect x="26" y="11" width="8" height="31" fill="#D4A017" rx="2"/>
-      <circle cx="40" cy="17" r="8" fill="none" stroke="#D4A017" stroke-width="2.5"/>
-      <text x="40" y="22" text-anchor="middle" font-size="10" font-weight="700" fill="#D4A017" font-family="Helvetica,Arial,sans-serif">$</text>
+    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 100 100" style="display:block;margin:0 auto 10px;">
+      <path d="M50,2 L82,17 L98,50 L82,83 L50,98 L18,83 L2,50 L18,17 Z" fill="#ffffff"/>
+      <path d="M50,14 L76,27 L86,50 L76,73 L50,86 L24,73 L14,50 L24,27 Z" fill="#0A2540"/>
+      <rect x="27" y="25" width="13" height="50" fill="#ffffff"/>
+      <rect x="27" y="25" width="40" height="13" fill="#ffffff"/>
+      <rect x="27" y="47" width="30" height="11" fill="#ffffff"/>
     </svg>
     <p style="margin:0 0 4px;font-size:11px;font-weight:700;color:rgba(255,255,255,0.5);letter-spacing:2px;text-transform:uppercase;">Cierre Mensual</p>
     <p style="margin:0 0 6px;font-size:22px;font-weight:700;color:#FFFFFF;letter-spacing:1px;">${safeMesNombre} ${safeAnio}</p>

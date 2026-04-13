@@ -1,13 +1,12 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="2 0 28 32">
-  <defs>
-    <linearGradient id="g" x1="0.3" y1="1" x2="0.7" y2="0">
-      <stop offset="0%"   stop-color="#0D3560"/>
-      <stop offset="100%" stop-color="#1ABCCE"/>
-    </linearGradient>
-  </defs>
-  <!-- Escudo -->
-  <path d="M16 2 L29 6.5 L29 18 Q29 27 16 31 Q3 27 3 18 L3 6.5 Z" fill="url(#g)"/>
-  <!-- Flecha diagonal arriba-derecha -->
-  <path d="M9.5 23.5 L20.5 11.5 M15.5 11.5 L20.5 11.5 L20.5 16.5"
-        stroke="white" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Octagonal badge outline (filled black) -->
+  <path d="M50,2 L82,17 L98,50 L82,83 L50,98 L18,83 L2,50 L18,17 Z" fill="#0A0A0A"/>
+  <!-- Inner cutout (white) to create thick border -->
+  <path d="M50,14 L76,27 L86,50 L76,73 L50,86 L24,73 L14,50 L24,27 Z" fill="#ffffff"/>
+  <!-- F letter: stem -->
+  <rect x="27" y="25" width="13" height="50" fill="#0A0A0A"/>
+  <!-- F letter: top bar -->
+  <rect x="27" y="25" width="40" height="13" fill="#0A0A0A"/>
+  <!-- F letter: middle bar -->
+  <rect x="27" y="47" width="30" height="11" fill="#0A0A0A"/>
 </svg>
