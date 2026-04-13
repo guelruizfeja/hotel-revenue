@@ -3931,8 +3931,9 @@ function PickupView({ datos }) {
   const ayerStr = `${ayerD.getFullYear()}-${String(ayerD.getMonth()+1).padStart(2,"0")}-${String(ayerD.getDate()).padStart(2,"0")}`;
   const MESES_FULL_PU = t("meses_full");
 
-  const ultDia = [...pickupEntries].map(e=>String(e.fecha_pickup||"").slice(0,10)).filter(f=>f.length===10).sort().pop() || "";
-  const reservasUltDia = pickupEntries.filter(e => String(e.fecha_pickup||"").slice(0,10) === ultDia && (e.estado||"confirmada") !== "cancelada").sort((a,b)=>(a.fecha_llegada||"").localeCompare(b.fecha_llegada||""));
+  const esGrupoEvento = e => { const c = (e.canal||"").toLowerCase(); return c.includes("grupo") || c.includes("evento"); };
+  const ultDia = [...pickupEntries].filter(e => !esGrupoEvento(e)).map(e=>String(e.fecha_pickup||"").slice(0,10)).filter(f=>f.length===10).sort().pop() || "";
+  const reservasUltDia = pickupEntries.filter(e => !esGrupoEvento(e) && String(e.fecha_pickup||"").slice(0,10) === ultDia && (e.estado||"confirmada") !== "cancelada").sort((a,b)=>(a.fecha_llegada||"").localeCompare(b.fecha_llegada||""));
   const fmtDatePU = d => { if (!d) return "—"; const p=d.split("-"); return p.length===3?`${p[2]}/${p[1]}/${p[0]}`:d; };
 
   const reservasAyer = pickupEntries.filter(e => String(e.fecha_pickup||"").slice(0,10) === ayerStr);
