@@ -5728,7 +5728,7 @@ function AuthScreen() {
       <div style={{ width: 420, background: C.bgCard, borderRadius: 20, padding: "40px 36px", boxShadow: "0 32px 80px rgba(0,0,0,0.4)", animation: "fadeUp 0.5s ease both" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginBottom: 32 }}>
           <img src="/fastrev-icon.png" alt="FastRevenue" style={{ height: 52, width: "auto" }} />
-          <span style={{ fontSize: 24, fontWeight: 800, color: C.bgDeep, letterSpacing: 0.5, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+          <span style={{ fontSize: 24, fontWeight: 800, color: "#000000", letterSpacing: 0.5, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
             FAST<span style={{ fontWeight: 400 }}>REVENUE</span>
           </span>
         </div>
