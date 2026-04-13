@@ -5703,8 +5703,17 @@ function AuthScreen() {
     setLoading(false);
   };
 
+  const validarPassword = (pw) => {
+    if (pw.length < 8) return "La contraseña debe tener al menos 8 caracteres";
+    if (!/[A-Z]/.test(pw)) return "Debe incluir al menos una mayúscula";
+    if (!/[0-9]/.test(pw)) return "Debe incluir al menos un número";
+    return null;
+  };
+
   const handleRegister = async () => {
     if (!hotelNombre || !email || !password) { setError("Rellena todos los campos obligatorios"); return; }
+    const pwError = validarPassword(password);
+    if (pwError) { setError(pwError); return; }
     setLoading(true); setError("");
     const { data, error } = await supabase.auth.signUp({ email, password });
     if (error) { setError(error.message); setLoading(false); return; }
@@ -5745,16 +5754,16 @@ function AuthScreen() {
               <>
                 <div>
                   <p style={{ fontSize: 11, color: C.textLight, marginBottom: 5, textTransform: "uppercase", letterSpacing: "1px" }}>Nombre del hotel *</p>
-                  <input style={inp} placeholder="Hotel San Marcos" value={hotelNombre} onChange={e => setHotelNombre(e.target.value)} />
+                  <input style={inp} placeholder="Nombre del hotel" value={hotelNombre} onChange={e => setHotelNombre(e.target.value)} />
                 </div>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                   <div>
                     <p style={{ fontSize: 11, color: C.textLight, marginBottom: 5, textTransform: "uppercase", letterSpacing: "1px" }}>Ciudad</p>
-                    <input style={inp} placeholder="Madrid" value={hotelCiudad} onChange={e => setHotelCiudad(e.target.value)} />
+                    <input style={inp} placeholder="Ciudad" value={hotelCiudad} onChange={e => setHotelCiudad(e.target.value)} />
                   </div>
                   <div>
                     <p style={{ fontSize: 11, color: C.textLight, marginBottom: 5, textTransform: "uppercase", letterSpacing: "1px" }}>Habitaciones</p>
-                    <input style={inp} placeholder="45" type="number" value={habitaciones} onChange={e => setHabitaciones(e.target.value)} />
+                    <input style={inp} placeholder="Nº habitaciones" type="number" value={habitaciones} onChange={e => setHabitaciones(e.target.value)} />
                   </div>
                 </div>
                 <div style={{ height: 1, background: C.border, margin: "4px 0" }} />
@@ -5762,11 +5771,12 @@ function AuthScreen() {
             )}
             <div>
               <p style={{ fontSize: 11, color: C.textLight, marginBottom: 5, textTransform: "uppercase", letterSpacing: "1px" }}>Email *</p>
-              <input style={inp} type="email" placeholder="gerente@mihotel.com" value={email} onChange={e => setEmail(e.target.value)} />
+              <input style={inp} type="email" placeholder="correo@tuhotel.com" value={email} onChange={e => setEmail(e.target.value)} />
             </div>
             <div>
               <p style={{ fontSize: 11, color: C.textLight, marginBottom: 5, textTransform: "uppercase", letterSpacing: "1px" }}>Contraseña *</p>
               <input style={inp} type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} onKeyDown={e => e.key==="Enter" && (mode==="login" ? handleLogin() : handleRegister())} />
+              {mode === "register" && <p style={{ fontSize: 11, color: C.textLight, marginTop: 4 }}>Mín. 8 caracteres, una mayúscula y un número</p>}
             </div>
             {error && <div style={{ background: C.redLight, color: C.red, padding: "10px 14px", borderRadius: 8, fontSize: 13 }}>{error}</div>}
             <button onClick={mode==="login" ? handleLogin : handleRegister} disabled={loading} style={{ width: "100%", padding: "13px", borderRadius: 10, border: "none", background: loading ? C.accentLight : C.accent, color: loading ? C.accentDark : "#fff", fontSize: 14, fontWeight: 700, cursor: loading ? "not-allowed" : "pointer", fontFamily: "'Plus Jakarta Sans', sans-serif", marginTop: 4 }}>
