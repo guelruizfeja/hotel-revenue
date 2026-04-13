@@ -1770,44 +1770,37 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
         mediaADR = 120;
       }
 
-      // Número de reservas del día: entre 3 y 8 (típico hotel ~80 hab)
-      const totalReservasDia = 3 + Math.floor(Math.random() * 5);
+      // 7 reservas individuales con canales variados y llegadas distribuidas en el año
+      const plantilla = [
+        { canal:"Booking.com",           mesesDesde:1,  mesesHasta:3,  nochesDef:2, factorADR:0.97 },
+        { canal:"Directo / Web",          mesesDesde:2,  mesesHasta:5,  nochesDef:3, factorADR:1.05 },
+        { canal:"Expedia",                mesesDesde:3,  mesesHasta:6,  nochesDef:2, factorADR:0.95 },
+        { canal:"Empresa / Corporativo",  mesesDesde:1,  mesesHasta:2,  nochesDef:1, factorADR:1.10 },
+        { canal:"Booking.com",           mesesDesde:5,  mesesHasta:8,  nochesDef:3, factorADR:0.98 },
+        { canal:"Agencia",               mesesDesde:7,  mesesHasta:10, nochesDef:4, factorADR:0.90 },
+        { canal:"Directo / Web",          mesesDesde:9,  mesesHasta:12, nochesDef:2, factorADR:1.05 },
+      ];
 
-      // Repartir entre canales según peso
-      const filas = [];
-      let asignadas = 0;
-      for (let ci = 0; ci < patronCanales.length && asignadas < totalReservasDia; ci++) {
-        const { canal, peso } = patronCanales[ci];
-        const esUltimo = ci === patronCanales.length - 1;
-        const n = esUltimo
-          ? totalReservasDia - asignadas
-          : Math.max(0, Math.round(peso * totalReservasDia));
-        if (n === 0) continue;
-
-        // Variación de noches y precio por canal
-        const factorADR = canal.includes("Directo") ? 1.05 : canal.includes("Empresa") ? 1.10 : canal.includes("Tour") ? 0.88 : 1.0;
-        const noches = Math.max(1, Math.round(mediaNoches + (Math.random()-0.5)*1.5));
-        const adr = Math.round(mediaADR * factorADR * (0.92 + Math.random()*0.16));
-        const diasAnticipacion = canal.includes("Tour") ? 45 + Math.floor(Math.random()*60)
-          : canal.includes("Empresa") ? 3 + Math.floor(Math.random()*10)
-          : 10 + Math.floor(Math.random()*50);
-        const llegada = new Date(ayer); llegada.setDate(llegada.getDate() + diasAnticipacion);
-        const llegadaStr = llegada.toISOString().slice(0,10);
+      const filas = plantilla.map(({ canal, mesesDesde, mesesHasta, nochesDef, factorADR }) => {
+        const diasOffset = Math.round(
+          (mesesDesde * 30) + Math.random() * ((mesesHasta - mesesDesde) * 30)
+        );
+        const llegada = new Date(ayer); llegada.setDate(llegada.getDate() + diasOffset);
+        const noches = Math.max(1, Math.round(nochesDef + (Math.random()-0.5)));
+        const adr = Math.round(mediaADR * factorADR * (0.93 + Math.random() * 0.14));
         const salida = new Date(llegada); salida.setDate(salida.getDate() + noches);
-
-        filas.push({
+        return {
           hotel_id:      session.user.id,
           fecha_pickup:  ayerStr,
-          fecha_llegada: llegadaStr,
+          fecha_llegada: llegada.toISOString().slice(0,10),
           fecha_salida:  salida.toISOString().slice(0,10),
           canal,
-          num_reservas:  n,
+          num_reservas:  1,
           noches,
-          precio_total:  Math.round(adr * noches * n * 100) / 100,
+          precio_total:  Math.round(adr * noches * 100) / 100,
           estado:        "confirmada",
-        });
-        asignadas += n;
-      }
+        };
+      });
 
       const { error } = await supabase.from("pickup_entries").insert(filas);
       if (error) throw new Error(error.message);
