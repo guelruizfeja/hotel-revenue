@@ -4057,6 +4057,8 @@ function PickupView({ datos }) {
           const rows  = [...canalData].sort((a,b) => (vista.valFn(b)||0) - (vista.valFn(a)||0));
           const max   = Math.max(...rows.map(d => vista.valFn(d)||0));
 
+          const ayerChartData = rows.map(d => ({ canal: d.canal, valor: vista.valFn(d) ?? 0, color: d.color }));
+          const ayerYMax = max > 0 ? Math.ceil(max * 1.2) : 10;
           return (
             <div>
               {/* Tabs */}
@@ -4068,26 +4070,34 @@ function PickupView({ datos }) {
                   </button>
                 ))}
               </div>
-              {/* Gráfico de barras horizontales */}
-              <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
-                {rows.map(d => {
-                  const val = vista.valFn(d);
-                  const pct = max > 0 ? ((val||0) / max * 100) : 0;
-                  return (
-                    <div key={d.canal} style={{ display:"grid", gridTemplateColumns:"160px 1fr 80px", alignItems:"center", gap:12 }}>
-                      <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                        <div style={{ width:10, height:10, borderRadius:"50%", background:d.color, flexShrink:0 }}/>
-                        <span style={{ fontSize:12, color:C.textMid, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{d.canal}</span>
-                      </div>
-                      <div style={{ height:10, borderRadius:5, background:C.border, overflow:"hidden" }}>
-                        <div style={{ height:"100%", width:`${pct}%`, background:d.color, borderRadius:5, transition:"width 0.4s ease" }}/>
-                      </div>
-                      <span style={{ fontSize:13, fontWeight:700, color:C.text, textAlign:"right", whiteSpace:"nowrap" }}>
-                        {val != null ? vista.fmt(val) : "—"}
-                      </span>
-                    </div>
-                  );
-                })}
+              <div onMouseDown={e=>e.preventDefault()}>
+              <ResponsiveContainer width="100%" height={280}>
+              <BarChart data={ayerChartData} margin={{ top:16, right:16, left:8, bottom:8 }}>
+                <defs>
+                  {ayerChartData.map((d,i) => (
+                    <linearGradient key={i} id={`ag_${i}`} x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor={d.color} stopOpacity={1}/>
+                      <stop offset="100%" stopColor={d.color} stopOpacity={0.55}/>
+                    </linearGradient>
+                  ))}
+                </defs>
+                <CartesianGrid vertical={false} stroke={C.border} strokeDasharray="4 4"/>
+                <XAxis dataKey="canal" tick={{ fill:C.textMid, fontSize:11, fontWeight:600 }} axisLine={false} tickLine={false}/>
+                <YAxis domain={[0, ayerYMax]} tickFormatter={vista.fmt} tick={{ fill:C.textLight, fontSize:10 }} axisLine={false} tickLine={false} width={52}/>
+                <Tooltip
+                  formatter={(v) => [vista.fmt(v), vista.label]}
+                  contentStyle={{ background:"#0A2540", border:`1px solid ${C.border}`, borderRadius:8, fontSize:12 }}
+                  labelStyle={{ color:"#ffffff", fontWeight:700 }}
+                  itemStyle={{ color:"#ffffff" }}
+                  cursor={false}
+                />
+                <Bar dataKey="valor" radius={[4,4,0,0]} maxBarSize={56} shape={(p) => <SimpleBar {...p}/>}>
+                  {ayerChartData.map((d,i) => (
+                    <Cell key={i} fill={`url(#ag_${i})`}/>
+                  ))}
+                </Bar>
+              </BarChart>
+              </ResponsiveContainer>
               </div>
             </div>
           );
