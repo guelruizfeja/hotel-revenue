@@ -1736,32 +1736,35 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
         .eq("hotel_id", session.user.id)
         .neq("estado", "cancelada");
 
-      // Calcular patrones si hay datos, si no usar defaults de hotel urbano
+      // Calcular patrones solo con reservas individuales (excluir grupos/eventos)
+      const CANALES_EXCLUIDOS = ["grupos/eventos", "grupo", "evento", "groups/events"];
+      const individuales = (todos || []).filter(r => {
+        const c = (r.canal || "").toLowerCase();
+        return !CANALES_EXCLUIDOS.some(x => c.includes(x));
+      });
+
       let patronCanales, mediaNoches, mediaADR;
-      if (todos && todos.length > 50) {
-        // Distribución de canales
+      if (individuales.length > 20) {
         const canalCount = {};
-        todos.forEach(r => { const c = r.canal || "Directo / Web"; canalCount[c] = (canalCount[c]||0) + (r.num_reservas||1); });
+        individuales.forEach(r => { const c = r.canal || "Directo / Web"; canalCount[c] = (canalCount[c]||0) + (r.num_reservas||1); });
         const totalRes = Object.values(canalCount).reduce((a,b)=>a+b,0);
         patronCanales = Object.entries(canalCount)
           .sort((a,b)=>b[1]-a[1]).slice(0,5)
           .map(([canal, cnt]) => ({ canal, peso: cnt/totalRes }));
-        // Media noches
-        const conNoches = todos.filter(r => r.noches > 0);
+        const conNoches = individuales.filter(r => r.noches > 0);
         mediaNoches = conNoches.length ? conNoches.reduce((a,r)=>a+r.noches,0)/conNoches.length : 2;
-        // Media ADR
-        const conPrecio = todos.filter(r => r.precio_total > 0 && r.noches > 0);
+        const conPrecio = individuales.filter(r => r.precio_total > 0 && r.noches > 0);
         mediaADR = conPrecio.length
           ? conPrecio.reduce((a,r)=>a+(r.precio_total/r.noches),0)/conPrecio.length
           : 120;
       } else {
         // Defaults hotel estándar
         patronCanales = [
-          { canal:"Booking.com",        peso:0.38 },
-          { canal:"Directo / Web",       peso:0.26 },
-          { canal:"Expedia",             peso:0.14 },
-          { canal:"Empresa / Corporativo", peso:0.12 },
-          { canal:"Tour operador",       peso:0.10 },
+          { canal:"Booking.com",           peso:0.38 },
+          { canal:"Directo / Web",          peso:0.26 },
+          { canal:"Expedia",                peso:0.14 },
+          { canal:"Empresa / Corporativo",  peso:0.12 },
+          { canal:"Tour operador",          peso:0.10 },
         ];
         mediaNoches = 2;
         mediaADR = 120;
