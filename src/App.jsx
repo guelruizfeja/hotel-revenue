@@ -3034,7 +3034,6 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
   const presupuesto   = datos.presupuesto   || [];
   const [hmMesSel, setHmMesSel] = useState(null);
   const [modalDiario, setModalDiario] = useState(null); // {mesIdx, anioIdx}
-  const [desgloseMovimiento, setDesgloseMovimiento] = useState(null); // null | "entradas" | "salidas" | "estancias"
 
   // ── Pickup del último día importado por mes de llegada ──
   const todasFechasPickup = pickupEntries
@@ -3606,15 +3605,57 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
               const lbl = () => ({ fontSize:9, color:C.textMid, textTransform:"uppercase", letterSpacing:"1.2px", fontWeight:600 });
               const num = () => ({ fontSize:30, fontWeight:800, color:C.text, fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1 });
               const sep = { gridColumn:"1 / -1", borderTop:`1px solid ${C.border}` };
-              const rowClick = (tipo) => ({ gridColumn:"1 / -1", display:"contents", cursor:"pointer" });
-              const rowStyle = (tipo) => ({
-                display:"contents", cursor:"pointer",
-              });
+              const abrirDesglose = (tipo) => {
+                const TITULO = { entradas:"Entradas hoy", salidas:"Salidas hoy", estancias:"Estancias hoy" };
+                const reservas = todasActivas.filter(e => {
+                  const fl = String(e.fecha_llegada||"").slice(0,10);
+                  const fs = getFechaSalida(e);
+                  if (tipo === "entradas")  return fl === hoyStr;
+                  if (tipo === "salidas")   return fs === hoyStr;
+                  if (tipo === "estancias") return fl < hoyStr && fs > hoyStr;
+                  return false;
+                }).sort((a,b) => (a.canal||"").localeCompare(b.canal||""));
+
+                const total = reservas.reduce((a,e)=>a+(e.num_reservas||1),0);
+                const filas = reservas.map((e,i) => `
+                  <tr style="background:${i%2===0?"#F8FAFC":"#FFFFFF"}">
+                    <td>${e.canal||"—"}</td>
+                    <td>${String(e.fecha_llegada||"").slice(0,10)}</td>
+                    <td>${getFechaSalida(e)||"—"}</td>
+                    <td style="text-align:center">${e.noches||"—"}</td>
+                    <td style="text-align:center">${e.num_reservas||1}</td>
+                    <td style="text-align:right;color:#1A7A3C;font-weight:700">${e.precio_total?`€${Number(e.precio_total).toLocaleString("es-ES")}`:"—"}</td>
+                  </tr>`).join("");
+
+                const html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">
+                  <title>${TITULO[tipo]} — ${hoyStr}</title>
+                  <style>
+                    *{box-sizing:border-box;margin:0;padding:0}
+                    body{font-family:'Segoe UI',system-ui,sans-serif;background:#F8FAFC;color:#1A1A1A;padding:32px}
+                    h1{font-size:22px;font-weight:700;margin-bottom:4px}
+                    p.sub{font-size:13px;color:#888;margin-bottom:24px}
+                    table{width:100%;border-collapse:collapse;font-size:13px;background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.07)}
+                    th{padding:10px 14px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#888;border-bottom:2px solid #E0E0E0;background:#F8FAFC}
+                    td{padding:10px 14px;border-bottom:1px solid #F0F0F0}
+                  </style>
+                </head><body>
+                  <h1>${TITULO[tipo]}</h1>
+                  <p class="sub">${hoyStr} &nbsp;·&nbsp; ${total} reservas</p>
+                  ${reservas.length === 0
+                    ? `<p style="color:#aaa;padding:32px 0;text-align:center">Sin reservas</p>`
+                    : `<table><thead><tr><th>Canal</th><th>Llegada</th><th>Salida</th><th>Noches</th><th>Habs</th><th>Precio</th></tr></thead><tbody>${filas}</tbody></table>`}
+                </body></html>`;
+
+                const win = window.open("", "_blank", "width=680,height=520,scrollbars=yes");
+                win.document.write(html);
+                win.document.close();
+              };
+
               const FilaMovimiento = ({ tipo, icon, label, count, countAyer, extra }) => (
                 <>
                   <div style={sep}/>
                   <div style={{ gridColumn:"1 / -1", display:"grid", gridTemplateColumns:"22px 1fr auto auto", alignItems:"center", columnGap:8, padding:"6px 8px", borderRadius:8, cursor:"pointer", transition:"background 0.12s" }}
-                    onClick={() => setDesgloseMovimiento(tipo)}
+                    onClick={() => abrirDesglose(tipo)}
                     onMouseEnter={e => e.currentTarget.style.background = C.accentLight}
                     onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
                     {icon}
@@ -3667,60 +3708,6 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
                     </>}
                   </div>
 
-                  {/* ── MODAL DESGLOSE ── */}
-                  {desgloseMovimiento && (() => {
-                    const TITULO = { entradas:"Entradas hoy", salidas:"Salidas hoy", estancias:"Estancias hoy" };
-                    const reservas = todasActivas.filter(e => {
-                      const fl = String(e.fecha_llegada||"").slice(0,10);
-                      const fs = getFechaSalida(e);
-                      if (desgloseMovimiento === "entradas")  return fl === hoyStr;
-                      if (desgloseMovimiento === "salidas")   return fs === hoyStr;
-                      if (desgloseMovimiento === "estancias") return fl < hoyStr && fs > hoyStr;
-                      return false;
-                    }).sort((a,b) => (a.canal||"").localeCompare(b.canal||""));
-
-                    return (
-                      <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", zIndex:1100, display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}
-                        onClick={() => setDesgloseMovimiento(null)}>
-                        <div style={{ background:C.bgCard, borderRadius:14, width:"100%", maxWidth:560, maxHeight:"80vh", display:"flex", flexDirection:"column", boxShadow:"0 24px 80px rgba(0,0,0,0.2)" }}
-                          onClick={e => e.stopPropagation()}>
-                          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"20px 24px", borderBottom:`1px solid ${C.border}` }}>
-                            <div>
-                              <p style={{ fontSize:16, fontWeight:700, color:C.text, margin:0 }}>{TITULO[desgloseMovimiento]}</p>
-                              <p style={{ fontSize:11, color:C.textLight, margin:0, marginTop:2 }}>{hoyStr} · {reservas.reduce((a,e)=>a+(e.num_reservas||1),0)} reservas</p>
-                            </div>
-                            <button onClick={() => setDesgloseMovimiento(null)} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, width:28, height:28, cursor:"pointer", fontSize:16, color:C.textMid, display:"flex", alignItems:"center", justifyContent:"center", padding:0 }}>×</button>
-                          </div>
-                          <div style={{ overflowY:"auto", flex:1 }}>
-                            {reservas.length === 0
-                              ? <p style={{ textAlign:"center", color:C.textLight, padding:"32px 0", fontSize:13 }}>Sin reservas para hoy</p>
-                              : <table style={{ width:"100%", borderCollapse:"collapse", fontSize:13 }}>
-                                  <thead>
-                                    <tr style={{ background:C.bg }}>
-                                      {["Canal","Llegada","Salida","Noches","Habs","Precio"].map(h => (
-                                        <th key={h} style={{ padding:"9px 14px", textAlign:"left", fontSize:10, fontWeight:600, color:C.textLight, textTransform:"uppercase", letterSpacing:"1px", borderBottom:`1px solid ${C.border}`, whiteSpace:"nowrap" }}>{h}</th>
-                                      ))}
-                                    </tr>
-                                  </thead>
-                                  <tbody>
-                                    {reservas.map((e, i) => (
-                                      <tr key={i} style={{ borderBottom:`1px solid ${C.border}`, background: i%2===0 ? C.bg : C.bgCard }}>
-                                        <td style={{ padding:"9px 14px", fontWeight:600, color:C.text }}>{e.canal || "—"}</td>
-                                        <td style={{ padding:"9px 14px", color:C.textMid }}>{String(e.fecha_llegada||"").slice(0,10)}</td>
-                                        <td style={{ padding:"9px 14px", color:C.textMid }}>{getFechaSalida(e) || "—"}</td>
-                                        <td style={{ padding:"9px 14px", color:C.textMid, textAlign:"center" }}>{e.noches || "—"}</td>
-                                        <td style={{ padding:"9px 14px", color:C.textMid, textAlign:"center" }}>{e.num_reservas || 1}</td>
-                                        <td style={{ padding:"9px 14px", fontWeight:600, color:"#1A7A3C", textAlign:"right" }}>{e.precio_total ? `€${Number(e.precio_total).toLocaleString("es-ES")}` : "—"}</td>
-                                      </tr>
-                                    ))}
-                                  </tbody>
-                                </table>
-                            }
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })()}
                 </div>
               );
             })()}
