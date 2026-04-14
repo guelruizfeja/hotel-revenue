@@ -3034,6 +3034,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
   const presupuesto   = datos.presupuesto   || [];
   const [hmMesSel, setHmMesSel] = useState(null);
   const [modalDiario, setModalDiario] = useState(null); // {mesIdx, anioIdx}
+  const [desgloseMovimiento, setDesgloseMovimiento] = useState(null); // null | "entradas" | "salidas" | "estancias"
 
   // ── Pickup del último día importado por mes de llegada ──
   const todasFechasPickup = pickupEntries
@@ -3605,6 +3606,24 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
               const lbl = () => ({ fontSize:9, color:C.textMid, textTransform:"uppercase", letterSpacing:"1.2px", fontWeight:600 });
               const num = () => ({ fontSize:30, fontWeight:800, color:C.text, fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1 });
               const sep = { gridColumn:"1 / -1", borderTop:`1px solid ${C.border}` };
+              const rowClick = (tipo) => ({ gridColumn:"1 / -1", display:"contents", cursor:"pointer" });
+              const rowStyle = (tipo) => ({
+                display:"contents", cursor:"pointer",
+              });
+              const FilaMovimiento = ({ tipo, icon, label, count, countAyer, extra }) => (
+                <>
+                  <div style={sep}/>
+                  <div style={{ gridColumn:"1 / -1", display:"grid", gridTemplateColumns:"22px 1fr auto auto", alignItems:"center", columnGap:8, padding:"6px 8px", borderRadius:8, cursor:"pointer", transition:"background 0.12s" }}
+                    onClick={() => setDesgloseMovimiento(tipo)}
+                    onMouseEnter={e => e.currentTarget.style.background = C.accentLight}
+                    onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                    {icon}
+                    <span style={lbl()}>{label}{extra}</span>
+                    <span style={num()}>{count}</span>
+                    <Delta hoy={count} ayer={countAyer}/>
+                  </div>
+                </>
+              );
               const Rc=20, SWc=3.5, circC=2*Math.PI*Rc, sizeC=Rc*2+SWc*2;
 
               return (
@@ -3615,41 +3634,25 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
                   </div>
                   <div style={{ display:"grid", gridTemplateColumns:"22px 1fr auto auto", alignItems:"center", rowGap:10, columnGap:8 }}>
 
-                    <svg width="22" height="22" viewBox="0 0 32 32" fill="none">
-                      <rect x="8" y="4" width="16" height="24" rx="1.5" stroke={C.text} strokeWidth="2"/>
-                      <line x1="8" y1="28" x2="24" y2="28" stroke={C.text} strokeWidth="2" strokeLinecap="round"/>
-                      <circle cx="20" cy="16" r="1.5" fill={C.text}/>
-                      <line x1="0" y1="16" x2="13" y2="16" stroke={C.text} strokeWidth="2" strokeLinecap="round"/>
-                      <polyline points="9,12 13,16 9,20" stroke={C.text} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                    <span style={lbl()}>Entradas{proxEntrada&&<span style={{ color:C.textLight, fontWeight:400 }}> · próx. {proxEntrada}</span>}</span>
-                    <span style={num()}>{numEntradas}</span>
-                    <Delta hoy={numEntradas} ayer={numEntradasAyer}/>
+                    {/* Entradas */}
+                    <FilaMovimiento tipo="entradas"
+                      icon={<svg width="22" height="22" viewBox="0 0 32 32" fill="none"><rect x="8" y="4" width="16" height="24" rx="1.5" stroke={C.text} strokeWidth="2"/><line x1="8" y1="28" x2="24" y2="28" stroke={C.text} strokeWidth="2" strokeLinecap="round"/><circle cx="20" cy="16" r="1.5" fill={C.text}/><line x1="0" y1="16" x2="13" y2="16" stroke={C.text} strokeWidth="2" strokeLinecap="round"/><polyline points="9,12 13,16 9,20" stroke={C.text} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                      label="Entradas"
+                      extra={proxEntrada&&<span style={{ color:C.textLight, fontWeight:400 }}> · próx. {proxEntrada}</span>}
+                      count={numEntradas} countAyer={numEntradasAyer}/>
 
-                    <div style={sep}/>
+                    {/* Estancias */}
+                    <FilaMovimiento tipo="estancias"
+                      icon={<svg width="22" height="22" viewBox="0 0 32 32" fill="none"><rect x="4" y="6" width="24" height="20" rx="2" stroke={C.text} strokeWidth="2"/><line x1="4" y1="12" x2="28" y2="12" stroke={C.text} strokeWidth="2"/><circle cx="16" cy="20" r="3" stroke={C.text} strokeWidth="1.5"/></svg>}
+                      label="Estancias" extra={null}
+                      count={numEstancias} countAyer={numEstanciasAyer}/>
 
-                    <svg width="22" height="22" viewBox="0 0 32 32" fill="none">
-                      <rect x="4" y="6" width="24" height="20" rx="2" stroke={C.text} strokeWidth="2"/>
-                      <line x1="4" y1="12" x2="28" y2="12" stroke={C.text} strokeWidth="2"/>
-                      <circle cx="16" cy="20" r="3" stroke={C.text} strokeWidth="1.5"/>
-                    </svg>
-                    <span style={lbl()}>Estancias</span>
-                    <span style={num()}>{numEstancias}</span>
-                    <Delta hoy={numEstancias} ayer={numEstanciasAyer}/>
-
-                    <div style={sep}/>
-
-                    <svg width="22" height="22" viewBox="0 0 32 32" fill="none">
-                      <rect x="8" y="4" width="16" height="24" rx="1.5" stroke={C.text} strokeWidth="2"/>
-                      <line x1="8" y1="28" x2="24" y2="28" stroke={C.text} strokeWidth="2" strokeLinecap="round"/>
-                      <circle cx="12" cy="16" r="1.5" fill={C.text}/>
-                      <line x1="8" y1="16" x2="21" y2="16" stroke={C.text} strokeWidth="2" strokeLinecap="round"/>
-                      <polyline points="17,12 21,16 17,20" stroke={C.text} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      <line x1="21" y1="16" x2="32" y2="16" stroke={C.text} strokeWidth="2" strokeLinecap="round"/>
-                    </svg>
-                    <span style={lbl()}>Salidas{proxSalida&&<span style={{ color:C.textLight, fontWeight:400 }}> · próx. {proxSalida}</span>}</span>
-                    <span style={num()}>{numSalidas}</span>
-                    <Delta hoy={numSalidas} ayer={numSalidasAyer}/>
+                    {/* Salidas */}
+                    <FilaMovimiento tipo="salidas"
+                      icon={<svg width="22" height="22" viewBox="0 0 32 32" fill="none"><rect x="8" y="4" width="16" height="24" rx="1.5" stroke={C.text} strokeWidth="2"/><line x1="8" y1="28" x2="24" y2="28" stroke={C.text} strokeWidth="2" strokeLinecap="round"/><circle cx="12" cy="16" r="1.5" fill={C.text}/><line x1="8" y1="16" x2="21" y2="16" stroke={C.text} strokeWidth="2" strokeLinecap="round"/><polyline points="17,12 21,16 17,20" stroke={C.text} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><line x1="21" y1="16" x2="32" y2="16" stroke={C.text} strokeWidth="2" strokeLinecap="round"/></svg>}
+                      label="Salidas"
+                      extra={proxSalida&&<span style={{ color:C.textLight, fontWeight:400 }}> · próx. {proxSalida}</span>}
+                      count={numSalidas} countAyer={numSalidasAyer}/>
 
                     {occHoy !== null && <>
                       <div style={sep}/>
@@ -3663,6 +3666,61 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
                       {occAyer !== null ? <Delta hoy={occHoy} ayer={occAyer}/> : <span/>}
                     </>}
                   </div>
+
+                  {/* ── MODAL DESGLOSE ── */}
+                  {desgloseMovimiento && (() => {
+                    const TITULO = { entradas:"Entradas hoy", salidas:"Salidas hoy", estancias:"Estancias hoy" };
+                    const reservas = todasActivas.filter(e => {
+                      const fl = String(e.fecha_llegada||"").slice(0,10);
+                      const fs = getFechaSalida(e);
+                      if (desgloseMovimiento === "entradas")  return fl === hoyStr;
+                      if (desgloseMovimiento === "salidas")   return fs === hoyStr;
+                      if (desgloseMovimiento === "estancias") return fl < hoyStr && fs > hoyStr;
+                      return false;
+                    }).sort((a,b) => (a.canal||"").localeCompare(b.canal||""));
+
+                    return (
+                      <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", zIndex:1100, display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}
+                        onClick={() => setDesgloseMovimiento(null)}>
+                        <div style={{ background:C.bgCard, borderRadius:14, width:"100%", maxWidth:560, maxHeight:"80vh", display:"flex", flexDirection:"column", boxShadow:"0 24px 80px rgba(0,0,0,0.2)" }}
+                          onClick={e => e.stopPropagation()}>
+                          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"20px 24px", borderBottom:`1px solid ${C.border}` }}>
+                            <div>
+                              <p style={{ fontSize:16, fontWeight:700, color:C.text, margin:0 }}>{TITULO[desgloseMovimiento]}</p>
+                              <p style={{ fontSize:11, color:C.textLight, margin:0, marginTop:2 }}>{hoyStr} · {reservas.reduce((a,e)=>a+(e.num_reservas||1),0)} reservas</p>
+                            </div>
+                            <button onClick={() => setDesgloseMovimiento(null)} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, width:28, height:28, cursor:"pointer", fontSize:16, color:C.textMid, display:"flex", alignItems:"center", justifyContent:"center", padding:0 }}>×</button>
+                          </div>
+                          <div style={{ overflowY:"auto", flex:1 }}>
+                            {reservas.length === 0
+                              ? <p style={{ textAlign:"center", color:C.textLight, padding:"32px 0", fontSize:13 }}>Sin reservas para hoy</p>
+                              : <table style={{ width:"100%", borderCollapse:"collapse", fontSize:13 }}>
+                                  <thead>
+                                    <tr style={{ background:C.bg }}>
+                                      {["Canal","Llegada","Salida","Noches","Habs","Precio"].map(h => (
+                                        <th key={h} style={{ padding:"9px 14px", textAlign:"left", fontSize:10, fontWeight:600, color:C.textLight, textTransform:"uppercase", letterSpacing:"1px", borderBottom:`1px solid ${C.border}`, whiteSpace:"nowrap" }}>{h}</th>
+                                      ))}
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {reservas.map((e, i) => (
+                                      <tr key={i} style={{ borderBottom:`1px solid ${C.border}`, background: i%2===0 ? C.bg : C.bgCard }}>
+                                        <td style={{ padding:"9px 14px", fontWeight:600, color:C.text }}>{e.canal || "—"}</td>
+                                        <td style={{ padding:"9px 14px", color:C.textMid }}>{String(e.fecha_llegada||"").slice(0,10)}</td>
+                                        <td style={{ padding:"9px 14px", color:C.textMid }}>{getFechaSalida(e) || "—"}</td>
+                                        <td style={{ padding:"9px 14px", color:C.textMid, textAlign:"center" }}>{e.noches || "—"}</td>
+                                        <td style={{ padding:"9px 14px", color:C.textMid, textAlign:"center" }}>{e.num_reservas || 1}</td>
+                                        <td style={{ padding:"9px 14px", fontWeight:600, color:"#1A7A3C", textAlign:"right" }}>{e.precio_total ? `€${Number(e.precio_total).toLocaleString("es-ES")}` : "—"}</td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                            }
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
               );
             })()}
