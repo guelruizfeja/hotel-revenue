@@ -4931,6 +4931,39 @@ function GruposView({ datos, onRecargar }) {
     const hotel_id = session.user.id;
     const anioActual = new Date().getFullYear();
     const mesActual  = new Date().getMonth() + 1;
+    const totalHab   = datos.hotel?.habitaciones || 30;
+    const hoyStr     = new Date().toISOString().slice(0,10);
+
+    // ── OTB por día a partir de pickupEntries (solo transient, confirmadas) ──
+    const otbPorDia = {};
+    (datos.pickupEntries || []).forEach(e => {
+      if (e._grupo) return; // excluir sintéticos de grupos
+      const c = (e.canal || "").toLowerCase();
+      if (c.includes("grupo") || c.includes("evento")) return;
+      if ((e.estado || "confirmada") === "cancelada") return;
+      const fl = String(e.fecha_llegada || "").slice(0,10);
+      if (fl.length < 10) return;
+      otbPorDia[fl] = (otbPorDia[fl] || 0) + (e.num_reservas || 1);
+    });
+
+    // Devuelve las habitaciones disponibles (mín. a lo largo del rango fecha_inicio..fecha_fin-1)
+    // Descuenta OTB transient + grupos ya en records (confirmados)
+    const disponiblesEnRango = (fi, ff, recordsYa) => {
+      const gruposYa = recordsYa.filter(r => r.estado === "confirmado" && r.habitaciones > 0);
+      let min = totalHab;
+      const ini = new Date(fi + "T00:00:00");
+      const fin = new Date(ff + "T00:00:00");
+      for (let d = new Date(ini); d < fin; d.setDate(d.getDate() + 1)) {
+        const dia = d.toISOString().slice(0,10);
+        const otb = otbPorDia[dia] || 0;
+        const grp = gruposYa.reduce((a, r) => {
+          if (r.fecha_inicio <= dia && r.fecha_fin > dia) return a + r.habitaciones;
+          return a;
+        }, 0);
+        min = Math.min(min, totalHab - otb - grp);
+      }
+      return Math.max(0, min);
+    };
 
     const NOMBRES_G = [
       ["Pharma Congress","Congreso Médico","Feria Tecnología","Cumbre Directivos","Convención RRHH"],
@@ -4953,33 +4986,75 @@ function GruposView({ datos, onRecargar }) {
     for (const anio of [anioActual - 1, anioActual]) {
       for (let mes = 1; mes <= 12; mes++) {
         const esFuturo = anio > anioActual || (anio === anioActual && mes > mesActual);
-        // Grupo 1
+        const esFutura = (fi) => fi > hoyStr;
+
+        // ── Grupo 1 ──
         const cat1 = CATS_LIST[(mes) % CATS_LIST.length];
         const di1  = rnd(3, 8); const df1 = Math.min(di1 + rnd(2,5), 28);
+        const fi1  = fmt(anio,mes,di1); const ff1 = fmt(anio,mes,df1);
         const est1 = esFuturo ? estadoFuturo() : estadoPasado();
-        records.push({
-          hotel_id, nombre: NOMBRES_G[mes % CATS_LIST.length][(mes*2) % 5],
-          categoria: cat1, estado: est1,
-          fecha_inicio: fmt(anio,mes,di1), fecha_fin: fmt(anio,mes,df1),
-          fecha_confirmacion: est1==="confirmado" ? fmt(anio, mes===1?12:mes-1, rnd(1,28)) : null,
-          habitaciones: rnd(15,80), adr_grupo: rnd(85,220),
-          revenue_fnb: rnd(0,1)?rnd(2000,18000):0, revenue_sala: rnd(0,1)?rnd(500,4000):0,
-          notas: null, motivo_perdida: est1==="cancelado"?["Precio","Competencia","Fechas","Presupuesto"][rnd(0,3)]:null,
-        });
-        // Grupo 2
+        let hab1 = rnd(15,80);
+        if (esFutura(fi1) && est1 === "confirmado") {
+          const disp1 = disponiblesEnRango(fi1, ff1, records);
+          if (disp1 <= 0) { /* sin hueco, saltar grupo */ }
+          else {
+            hab1 = Math.min(hab1, disp1);
+            records.push({
+              hotel_id, nombre: NOMBRES_G[mes % CATS_LIST.length][(mes*2) % 5],
+              categoria: cat1, estado: est1,
+              fecha_inicio: fi1, fecha_fin: ff1,
+              fecha_confirmacion: fmt(anio, mes===1?12:mes-1, rnd(1,28)),
+              habitaciones: hab1, adr_grupo: rnd(85,220),
+              revenue_fnb: rnd(0,1)?rnd(2000,18000):0, revenue_sala: rnd(0,1)?rnd(500,4000):0,
+              notas: null, motivo_perdida: null,
+            });
+          }
+        } else {
+          records.push({
+            hotel_id, nombre: NOMBRES_G[mes % CATS_LIST.length][(mes*2) % 5],
+            categoria: cat1, estado: est1,
+            fecha_inicio: fi1, fecha_fin: ff1,
+            fecha_confirmacion: est1==="confirmado" ? fmt(anio, mes===1?12:mes-1, rnd(1,28)) : null,
+            habitaciones: hab1, adr_grupo: rnd(85,220),
+            revenue_fnb: rnd(0,1)?rnd(2000,18000):0, revenue_sala: rnd(0,1)?rnd(500,4000):0,
+            notas: null, motivo_perdida: est1==="cancelado"?["Precio","Competencia","Fechas","Presupuesto"][rnd(0,3)]:null,
+          });
+        }
+
+        // ── Grupo 2 ──
         const cat2 = CATS_LIST[(mes+2) % CATS_LIST.length];
         const di2  = rnd(15, 20); const df2 = Math.min(di2 + rnd(2,5), 28);
+        const fi2  = fmt(anio,mes,di2); const ff2 = fmt(anio,mes,df2);
         const est2 = esFuturo ? estadoFuturo() : estadoPasado();
-        records.push({
-          hotel_id, nombre: NOMBRES_G[(mes+2) % CATS_LIST.length][(mes*3) % 5],
-          categoria: cat2, estado: est2,
-          fecha_inicio: fmt(anio,mes,di2), fecha_fin: fmt(anio,mes,df2),
-          fecha_confirmacion: est2==="confirmado" ? fmt(anio, mes===1?12:mes-1, rnd(1,28)) : null,
-          habitaciones: rnd(10,60), adr_grupo: rnd(70,200),
-          revenue_fnb: rnd(0,1)?rnd(1500,12000):0, revenue_sala: rnd(0,1)?rnd(400,3000):0,
-          notas: null, motivo_perdida: est2==="cancelado"?["Precio","Otro proveedor","Presupuesto"][rnd(0,2)]:null,
-        });
-        // Evento
+        let hab2 = rnd(10,60);
+        if (esFutura(fi2) && est2 === "confirmado") {
+          const disp2 = disponiblesEnRango(fi2, ff2, records);
+          if (disp2 <= 0) { /* sin hueco, saltar grupo */ }
+          else {
+            hab2 = Math.min(hab2, disp2);
+            records.push({
+              hotel_id, nombre: NOMBRES_G[(mes+2) % CATS_LIST.length][(mes*3) % 5],
+              categoria: cat2, estado: est2,
+              fecha_inicio: fi2, fecha_fin: ff2,
+              fecha_confirmacion: fmt(anio, mes===1?12:mes-1, rnd(1,28)),
+              habitaciones: hab2, adr_grupo: rnd(70,200),
+              revenue_fnb: rnd(0,1)?rnd(1500,12000):0, revenue_sala: rnd(0,1)?rnd(400,3000):0,
+              notas: null, motivo_perdida: null,
+            });
+          }
+        } else {
+          records.push({
+            hotel_id, nombre: NOMBRES_G[(mes+2) % CATS_LIST.length][(mes*3) % 5],
+            categoria: cat2, estado: est2,
+            fecha_inicio: fi2, fecha_fin: ff2,
+            fecha_confirmacion: est2==="confirmado" ? fmt(anio, mes===1?12:mes-1, rnd(1,28)) : null,
+            habitaciones: hab2, adr_grupo: rnd(70,200),
+            revenue_fnb: rnd(0,1)?rnd(1500,12000):0, revenue_sala: rnd(0,1)?rnd(400,3000):0,
+            notas: null, motivo_perdida: est2==="cancelado"?["Precio","Otro proveedor","Presupuesto"][rnd(0,2)]:null,
+          });
+        }
+
+        // ── Evento (no ocupa habitaciones, siempre se genera) ──
         const hiH = rnd(10,14); const hfH = Math.min(hiH+rnd(3,6),23);
         const estEv = esFuturo ? estadoFuturo() : estadoPasado();
         records.push({
