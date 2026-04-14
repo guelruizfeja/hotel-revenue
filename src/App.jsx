@@ -3033,7 +3033,7 @@ function DesgloseMovimientoView({ datos, tipo, onBack }) {
   const _p = n => String(n).padStart(2,"0");
   const hoy = new Date();
   const hoyStr = `${hoy.getFullYear()}-${_p(hoy.getMonth()+1)}-${_p(hoy.getDate())}`;
-  const TITULOS = { entradas:"Entradas hoy", salidas:"Salidas hoy", estancias:"Estancias hoy" };
+  const TITULOS = { entradas:"Entradas hoy", salidas:"Salidas hoy" };
 
   const getFechaSalida = e => {
     if (e.fecha_salida) return String(e.fecha_salida).slice(0,10);
@@ -3656,10 +3656,8 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
 
               const numEntradas      = activas.filter(e => String(e.fecha_llegada||"").slice(0,10) === hoyStr).reduce((a,e)=>a+(e.num_reservas||1),0);
               const numSalidas       = activas.filter(e => getFechaSalida(e) === hoyStr).reduce((a,e)=>a+(e.num_reservas||1),0);
-              const numEstancias     = activas.filter(e => { const fl=String(e.fecha_llegada||"").slice(0,10); const fs=getFechaSalida(e); return fl < hoyStr && fs > hoyStr; }).reduce((a,e)=>a+(e.num_reservas||1),0);
               const numEntradasAyer  = activas.filter(e => String(e.fecha_llegada||"").slice(0,10) === ayerStr).reduce((a,e)=>a+(e.num_reservas||1),0);
               const numSalidasAyer   = activas.filter(e => getFechaSalida(e) === ayerStr).reduce((a,e)=>a+(e.num_reservas||1),0);
-              const numEstanciasAyer = activas.filter(e => { const fl=String(e.fecha_llegada||"").slice(0,10); const fs=getFechaSalida(e); return fl < ayerStr && fs > ayerStr; }).reduce((a,e)=>a+(e.num_reservas||1),0);
 
               const proxEntrada = numEntradas===0 ? todasActivas.map(e=>String(e.fecha_llegada||"").slice(0,10)).filter(f=>f>hoyStr).sort()[0]||null : null;
               const proxSalida  = numSalidas===0  ? todasActivas.map(e=>getFechaSalida(e)).filter(f=>f&&f>hoyStr).sort()[0]||null : null;
@@ -3731,11 +3729,6 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
                       extra={proxEntrada&&<span style={{ color:C.textLight, fontWeight:400 }}> · próx. {proxEntrada}</span>}
                       count={numEntradas} countAyer={numEntradasAyer}/>
 
-                    {/* Estancias */}
-                    <FilaMovimiento tipo="estancias"
-                      icon={<svg width="22" height="22" viewBox="0 0 32 32" fill="none"><rect x="4" y="6" width="24" height="20" rx="2" stroke={C.text} strokeWidth="2"/><line x1="4" y1="12" x2="28" y2="12" stroke={C.text} strokeWidth="2"/><circle cx="16" cy="20" r="3" stroke={C.text} strokeWidth="1.5"/></svg>}
-                      label="Estancias" extra={null}
-                      count={numEstancias} countAyer={numEstanciasAyer}/>
 
                     {/* Salidas */}
                     <FilaMovimiento tipo="salidas"
