@@ -7,6 +7,7 @@ import {
 } from "recharts";
 
 const LOGO_B64 = "/fastrev-logo.png";
+const SALAS_FIJAS = ["Salón Principal", "Sala de Reuniones", "Terraza"];
 const C = {
   bg: "#FDFDFD", bgCard: "#FFFFFF", bgDeep: "#0A2540",
   accent: "#004B87", accentLight: "#E8F0F9", accentDark: "#003366",
@@ -494,7 +495,7 @@ function WeatherBar({ ciudad, datos, lang }) {
     // Próximos eventos (grupos confirmados/tentativos con fecha_inicio >= hoy)
     const grupos = datos?.grupos || [];
     const proximos = grupos
-      .filter(g => g.fecha_inicio >= hoyStr && (g.estado === "confirmado" || g.estado === "tentativo"))
+      .filter(g => g.fecha_inicio >= hoyStr && g.estado === "confirmado")
       .sort((a, b) => a.fecha_inicio.localeCompare(b.fecha_inicio))
       .slice(0, 5);
     if (proximos.length > 0) {
@@ -503,7 +504,7 @@ function WeatherBar({ ciudad, datos, lang }) {
         return `${d}/${m}/${y.slice(2)}`;
       };
       const partes = proximos.map(g => {
-        let txt = `${g.estado === "tentativo" ? "⚠ " : ""}${g.nombre}`;
+        let txt = g.nombre;
         if (g.fecha_inicio) txt += `  ${fmtFecha(g.fecha_inicio)}`;
         if (g.fecha_fin && g.fecha_fin !== g.fecha_inicio) txt += `→${fmtFecha(g.fecha_fin)}`;
         if (g.habitaciones) txt += `  ·  ${g.habitaciones} hab.`;
@@ -1032,6 +1033,9 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
   // Vaciar
   const [vaciando, setVaciando] = useState(false);
   const [confirmVaciar, setConfirmVaciar] = useState(false);
+  // Limpiar solo pickup
+  const [limpiandoPickup, setLimpiandoPickup] = useState(false);
+  const [confirmLimpiarPickup, setConfirmLimpiarPickup] = useState(false);
   // Estado de importación existente
   const [importStatusHistorico, setImportStatusHistorico] = useState(null); // null=comprobando, false=sin datos, {fecha,count}
   const [importStatusPresupuesto, setImportStatusPresupuesto] = useState(null);
@@ -1079,6 +1083,18 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
       setErrorMain("Error al vaciar datos: " + e.message);
     }
     setVaciando(false);
+  };
+
+  const limpiarPickup = async () => {
+    setLimpiandoPickup(true);
+    try {
+      await supabase.from("pickup_entries").delete().eq("hotel_id", session.user.id);
+      setConfirmLimpiarPickup(false);
+      if (onImportado) onImportado();
+    } catch(e) {
+      setErrorMain("Error al limpiar pickup: " + e.message);
+    }
+    setLimpiandoPickup(false);
   };
 
   const eliminarHistorico = async () => {
@@ -2481,6 +2497,22 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
           {(resultadoMain || resultadoPpto || prodRecientes.length > 0 || pickupRecientes.length > 0) && (
             <button onClick={onClose} style={{ width:"100%", marginTop:20, marginBottom:10, background:H.accent, color:"#fff", border:"none", borderRadius:10, padding:"12px", fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", boxShadow:`0 4px 20px rgba(200,147,58,0.35)` }}>
               {t("ver_dashboard")}
+            </button>
+          )}
+
+          {/* Limpiar solo Pickup */}
+          {confirmLimpiarPickup ? (
+            <div style={{ background:"rgba(231,76,60,0.08)", border:"1px solid rgba(231,76,60,0.25)", borderRadius:8, padding:"14px", textAlign:"center", marginTop:8 }}>
+              <p style={{ fontWeight:700, color:H.red, marginBottom:4, fontSize:13 }}>¿Limpiar datos de Pickup?</p>
+              <p style={{ fontSize:11, color:H.textMid, marginBottom:10 }}>Se eliminarán todas las entradas de pickup. Producción y presupuesto no se tocan. Podrás re-importar el Excel para cargar datos correctos.</p>
+              <div style={{ display:"flex", gap:8, justifyContent:"center" }}>
+                <button onClick={()=>setConfirmLimpiarPickup(false)} style={{ padding:"6px 16px", borderRadius:7, border:`1px solid ${H.border}`, background:H.card2, color:H.textMid, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:11 }}>Cancelar</button>
+                <button onClick={limpiarPickup} disabled={limpiandoPickup} style={{ padding:"6px 16px", borderRadius:7, border:"none", background:H.red, color:"#fff", cursor:limpiandoPickup?"not-allowed":"pointer", fontWeight:700, fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:11 }}>{limpiandoPickup?"Limpiando...":"Sí, limpiar pickup"}</button>
+              </div>
+            </div>
+          ) : (
+            <button onClick={()=>setConfirmLimpiarPickup(true)} style={{ width:"100%", padding:"7px", borderRadius:7, border:"1px solid rgba(231,76,60,0.15)", background:"none", color:"rgba(231,76,60,0.5)", cursor:"pointer", fontSize:11, fontFamily:"'Plus Jakarta Sans',sans-serif", marginTop:8 }}>
+              Limpiar solo datos de Pickup
             </button>
           )}
 
@@ -4912,10 +4944,10 @@ function GruposView({ datos, onRecargar }) {
       "Evento Networking","Aniversario Corporativo","Fiesta Fin de Año","Conferencia Interna",
       "Workshop Design","Cocktail Party","Noche de Gala","Summit Ejecutivo",
     ];
-    const SALAS = ["Salón Principal","Salón Mediterráneo","Terraza","Salón Jardín","Salón Panorámico","Auditorio"];
+    const SALAS = SALAS_FIJAS;
     const CATS_LIST = ["corporativo","boda","feria","deportivo","otros"];
     const estadoPasado = () => ["confirmado","confirmado","confirmado","cancelado"][rnd(0,3)];
-    const estadoFuturo = () => ["confirmado","tentativo","tentativo","cotizacion"][rnd(0,3)];
+    const estadoFuturo = () => ["confirmado","confirmado","confirmado","cancelado"][rnd(0,3)];
 
     const records = [];
     for (const anio of [anioActual - 1, anioActual]) {
@@ -4981,8 +5013,6 @@ function GruposView({ datos, onRecargar }) {
 
   const ESTADOS = {
     confirmado:  { label: t("estado_confirmado"), color: "#1A7A3C", bg: "#E6F7EE", peso: 1.0 },
-    tentativo:   { label: t("estado_tentativo"),  color: "#B8860B", bg: "#FFF8E7", peso: 0.5 },
-    cotizacion:  { label: t("estado_cotizacion"), color: "#2B7EC1", bg: "#E8F0F9", peso: 0 },
     cancelado:   { label: t("estado_cancelado"),  color: "#999",    bg: "#F5F5F5", peso: 0 },
   };
 
@@ -5011,7 +5041,7 @@ function GruposView({ datos, onRecargar }) {
   const nextMes = () => { if (mes === 11) { setMes(0); setAnio(a => a + 1); } else setMes(m => m + 1); };
 
   // ── Formulario estado ──
-  const FORM_VACIO = { tipo:"grupo", nombre:"", categoria:"corporativo", estado:"cotizacion", fecha_inicio:"", fecha_fin:"", fecha_confirmacion:"", habitaciones:"", pax:"", adr_grupo:"", revenue_fnb:"", revenue_sala:"", notas:"", motivo_perdida:"", hora_inicio:"", hora_fin:"", sala_nombre:"", servicio_incluido:false };
+  const FORM_VACIO = { tipo:"grupo", nombre:"", categoria:"corporativo", estado:"confirmado", fecha_inicio:"", fecha_fin:"", fecha_confirmacion:"", habitaciones:"", pax:"", adr_grupo:"", revenue_fnb:"", revenue_sala:"", notas:"", motivo_perdida:"", hora_inicio:"", hora_fin:"", sala_nombre:"", servicio_incluido:false };
   const [form, setForm] = useState(FORM_VACIO);
 
   // Parsea el prefijo de metadata de evento de las notas
@@ -5038,7 +5068,7 @@ function GruposView({ datos, onRecargar }) {
     const { hora_inicio, hora_fin, sala_nombre, servicio_incluido, notasUser } = esEvento ? parseNotasEvento(g.notas) : {};
     setForm({
       tipo: esEvento ? "evento" : "grupo",
-      nombre: g.nombre||"", categoria: g.categoria||"corporativo", estado: g.estado||"cotizacion",
+      nombre: g.nombre||"", categoria: g.categoria||"corporativo", estado: g.estado||"confirmado",
       fecha_inicio: g.fecha_inicio||"", fecha_fin: g.fecha_fin||"", fecha_confirmacion: g.fecha_confirmacion||"",
       habitaciones: g.habitaciones||"", pax: g.pax||"", adr_grupo: g.adr_grupo||"",
       revenue_fnb: g.revenue_fnb||"", revenue_sala: g.revenue_sala||"",
@@ -5098,13 +5128,9 @@ function GruposView({ datos, onRecargar }) {
   const mesStr = String(anio) + "-" + String(mes + 1).padStart(2, "0");
   const gruposMes = grupos.filter(g => g.fecha_inicio?.slice(0,7) === mesStr || g.fecha_fin?.slice(0,7) === mesStr);
   const confirmados = gruposMes.filter(g => g.estado === "confirmado");
-  const tentativos  = gruposMes.filter(g => g.estado === "tentativo");
-  const pipeline    = gruposMes.filter(g => g.estado === "cotizacion");
   const cancelados  = gruposMes.filter(g => g.estado === "cancelado");
 
   const revConfirmado = confirmados.reduce((a,g) => a + calcRevTotal(g), 0);
-  const revTentativo  = tentativos.reduce((a,g)  => a + calcRevTotal(g) * 0.5, 0);
-  const revPipeline   = pipeline.reduce((a,g)    => a + calcRevTotal(g), 0);
 
   // ── Datos para gráfico de evolución anual ──
   const produccion = datos.produccion || [];
@@ -5498,7 +5524,10 @@ function GruposView({ datos, onRecargar }) {
                   </div>
                   <div>
                     <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>{t("form_sala_nombre")}</p>
-                    <input style={inp} placeholder="Salón principal, Terraza..." value={form.sala_nombre} onChange={e=>setForm(f=>({...f,sala_nombre:e.target.value}))}/>
+                    <select style={inp} value={form.sala_nombre} onChange={e=>setForm(f=>({...f,sala_nombre:e.target.value}))}>
+                      <option value="">— Seleccionar sala —</option>
+                      {SALAS_FIJAS.map(s => <option key={s} value={s}>{s}</option>)}
+                    </select>
                   </div>
                   <label style={{ display:"flex", alignItems:"center", gap:8, cursor:"pointer" }}>
                     <input type="checkbox" checked={form.servicio_incluido} onChange={e=>setForm(f=>({...f,servicio_incluido:e.target.checked}))} style={{ width:16, height:16 }}/>
@@ -5833,13 +5862,7 @@ function SalasView({ datos, onRecargar, onVolver }) {
   const [planningDia, setPlanningDia] = useState(null);
 
   // Salas: las de los eventos + las guardadas manualmente
-  const salasDeEventos = [...new Set(
-    grupos.filter(g => g.categoria === "evento")
-      .map(g => parseEv(g.notas).sala_nombre)
-      .filter(Boolean)
-  )];
-  const salasGuardadas = Object.keys(salaMeta);
-  const todasSalas = [...new Set([...salasDeEventos, ...salasGuardadas])].sort();
+  const todasSalas = SALAS_FIJAS;
 
   const hoy = new Date().toISOString().slice(0,10);
   const anioActual = new Date().getFullYear();
@@ -5896,8 +5919,8 @@ function SalasView({ datos, onRecargar, onVolver }) {
       parseEv(g.notas).sala_nombre === salaDetalle &&
       g.fecha_inicio?.slice(0,7) === mesStr
     );
-    const estadoColor = { confirmado:"#1A7A3C", tentativo:"#B8860B", cotizacion:"#2B7EC1", cancelado:"#999" };
-    const estadoBg    = { confirmado:"#E6F7EE", tentativo:"#FFF8E7", cotizacion:"#E8F0F9", cancelado:"#F5F5F5" };
+    const estadoColor = { confirmado:"#1A7A3C", cancelado:"#999" };
+    const estadoBg    = { confirmado:"#E6F7EE", cancelado:"#F5F5F5" };
 
     // ── Vista diaria ────────────────────────────────────────────────────────
     if (planningDia) {
@@ -6074,68 +6097,56 @@ function SalasView({ datos, onRecargar, onVolver }) {
           {onVolver && <button onClick={onVolver} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, padding:"5px 10px", cursor:"pointer", fontSize:12, color:C.textMid }}>← Volver</button>}
           <h2 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:24, fontWeight:700, color:C.text, margin:0 }}>Salas</h2>
         </div>
-        <button onClick={abrirNuevaSala} style={{ background:"#0A2540", color:"#fff", border:"none", borderRadius:8, padding:"7px 16px", fontSize:13, fontWeight:600, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
-          + Añadir sala
-        </button>
+        <span/>
       </div>
 
-      {todasSalas.length === 0 ? (
-        <Card>
-          <p style={{ textAlign:"center", color:C.textLight, padding:"40px 0", fontSize:13 }}>No hay salas registradas.<br/>Las salas se detectan automáticamente de los eventos, o puedes añadirlas manualmente.</p>
-        </Card>
-      ) : (
-        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))", gap:14 }}>
-          {todasSalas.map(nombre => {
-            const meta  = salaMeta[nombre] || {};
-            const stats = statsSala(nombre);
-            return (
-              <Card key={nombre} style={{ cursor:"pointer", transition:"box-shadow 0.15s" }}
-                onClick={()=>{ setSalaDetalle(nombre); setPlanningDia(null); }}>
-                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:12 }}>
-                  <div>
-                    <p style={{ fontSize:15, fontWeight:700, color:C.text, marginBottom:3 }}>{nombre}</p>
-                    <p style={{ fontSize:11, color:C.textLight }}>{meta.tipo || "Sin tipo"}{meta.capacidad ? ` · ${meta.capacidad} pax` : ""}</p>
-                  </div>
-                  <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:4 }}>
-                    <span style={{ fontSize:10, fontWeight:700, padding:"2px 8px", borderRadius:8, background: stats.ocupadaHoy ? "#FFF8E7" : "#E6F7EE", color: stats.ocupadaHoy ? "#B8860B" : "#1A7A3C" }}>
-                      {stats.ocupadaHoy ? "Ocupada hoy" : "Disponible"}
-                    </span>
-                  </div>
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))", gap:14 }}>
+        {todasSalas.map(nombre => {
+          const meta  = salaMeta[nombre] || {};
+          const stats = statsSala(nombre);
+          return (
+            <Card key={nombre} style={{ cursor:"pointer", transition:"box-shadow 0.15s" }}
+              onClick={()=>{ setSalaDetalle(nombre); setPlanningDia(null); }}>
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:12 }}>
+                <div>
+                  <p style={{ fontSize:15, fontWeight:700, color:C.text, marginBottom:3 }}>{nombre}</p>
+                  <p style={{ fontSize:11, color:C.textLight }}>{meta.tipo || "Sin tipo"}{meta.capacidad ? ` · ${meta.capacidad} pax` : ""}</p>
                 </div>
-
-                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:12 }}>
-                  <div style={{ background:C.bg, borderRadius:7, padding:"8px 10px" }}>
-                    <p style={{ fontSize:10, color:C.textLight, marginBottom:2 }}>Eventos este año</p>
-                    <p style={{ fontSize:16, fontWeight:700, color:C.text }}>{stats.total}</p>
-                  </div>
-                  <div style={{ background:C.bg, borderRadius:7, padding:"8px 10px" }}>
-                    <p style={{ fontSize:10, color:C.textLight, marginBottom:2 }}>Revenue confirmado</p>
-                    <p style={{ fontSize:15, fontWeight:700, color:"#1A7A3C" }}>€{Math.round(stats.revTotal/1000)}k</p>
-                  </div>
+                <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:4 }}>
+                  <span style={{ fontSize:10, fontWeight:700, padding:"2px 8px", borderRadius:8, background: stats.ocupadaHoy ? "#FFF8E7" : "#E6F7EE", color: stats.ocupadaHoy ? "#B8860B" : "#1A7A3C" }}>
+                    {stats.ocupadaHoy ? "Ocupada hoy" : "Disponible"}
+                  </span>
                 </div>
+              </div>
 
-                {stats.proximoEv && (
-                  <div style={{ background:C.bg, borderRadius:7, padding:"8px 10px", fontSize:11, color:C.textMid }}>
-                    Próximo: <span style={{ fontWeight:600, color:C.text }}>{stats.proximoEv.nombre}</span> · {stats.proximoEv.fecha_inicio}
-                  </div>
-                )}
-
-                <div style={{ display:"flex", justifyContent:"flex-end", gap:6, marginTop:12 }}
-                  onClick={e=>e.stopPropagation()}>
-                  <button onClick={()=>abrirEditarSala(nombre)}
-                    style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, padding:"4px 10px", fontSize:11, cursor:"pointer", color:C.textMid }}>
-                    Editar
-                  </button>
-                  <button onClick={()=>eliminarSala(nombre)}
-                    style={{ background:"none", border:`1px solid ${C.red||"#e55"}`, borderRadius:6, padding:"4px 10px", fontSize:11, cursor:"pointer", color:C.red||"#e55" }}>
-                    Eliminar
-                  </button>
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:12 }}>
+                <div style={{ background:C.bg, borderRadius:7, padding:"8px 10px" }}>
+                  <p style={{ fontSize:10, color:C.textLight, marginBottom:2 }}>Eventos este año</p>
+                  <p style={{ fontSize:16, fontWeight:700, color:C.text }}>{stats.total}</p>
                 </div>
-              </Card>
-            );
-          })}
-        </div>
-      )}
+                <div style={{ background:C.bg, borderRadius:7, padding:"8px 10px" }}>
+                  <p style={{ fontSize:10, color:C.textLight, marginBottom:2 }}>Revenue confirmado</p>
+                  <p style={{ fontSize:15, fontWeight:700, color:"#1A7A3C" }}>€{Math.round(stats.revTotal/1000)}k</p>
+                </div>
+              </div>
+
+              {stats.proximoEv && (
+                <div style={{ background:C.bg, borderRadius:7, padding:"8px 10px", fontSize:11, color:C.textMid }}>
+                  Próximo: <span style={{ fontWeight:600, color:C.text }}>{stats.proximoEv.nombre}</span> · {stats.proximoEv.fecha_inicio}
+                </div>
+              )}
+
+              <div style={{ display:"flex", justifyContent:"flex-end", marginTop:12 }}
+                onClick={e=>e.stopPropagation()}>
+                <button onClick={()=>abrirEditarSala(nombre)}
+                  style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, padding:"4px 10px", fontSize:11, cursor:"pointer", color:C.textMid }}>
+                  Editar
+                </button>
+              </div>
+            </Card>
+          );
+        })}
+      </div>
 
       {/* Modal sala */}
       {modalSala !== null && (
