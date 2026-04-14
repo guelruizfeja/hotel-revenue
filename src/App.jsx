@@ -6854,9 +6854,6 @@ export default function App() {
             <div data-menu style={{ position:"relative" }}>
               <button onClick={() => setMostrarPerfil(v=>!v)}
                 style={{ display:"flex", alignItems:"center", gap:7, padding:"5px 10px", borderRadius:7, border:"1px solid rgba(255,255,255,0.25)", background:"transparent", color:"#fff", cursor:"pointer", fontSize:13, fontWeight:500, fontFamily:"'Plus Jakarta Sans',sans-serif", transition:"all 0.15s", letterSpacing:0.2 }}>
-                <span style={{ width:32, height:32, borderRadius:"50%", background:C.accent, color:"#fff", fontSize:14, fontWeight:700, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-                  {session.user.email[0].toUpperCase()}
-                </span>
                 <span className="topbar-perfil-label" style={{ color:"#ffffff" }}>{t("mi_perfil")}</span>
               </button>
               {mostrarPerfil && (
