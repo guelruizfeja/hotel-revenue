@@ -1251,11 +1251,8 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
             .eq("hotel_id", session.user.id)
             .gte("fecha", `${anio}-01-01`).lte("fecha", `${anio}-12-31`)
         ),
-        ...todosAnios.map(anio =>
-          supabase.from("pickup_entries").delete()
-            .eq("hotel_id", session.user.id)
-            .gte("fecha_llegada", `${anio}-01-01`).lte("fecha_llegada", `${anio}-12-31`)
-        ),
+        // Borrar TODOS los pickup (no solo por año) para eliminar mocks y entradas huérfanas
+        supabase.from("pickup_entries").delete().eq("hotel_id", session.user.id),
       ]);
 
       setProgresoMain(t("guardando")); setProgresoPctMain(55);
