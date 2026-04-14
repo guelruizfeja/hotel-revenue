@@ -3027,7 +3027,78 @@ async function generarReportePDF(datos, mes, anio, hotelNombre, returnData = fal
 }
 
 // ─── DASHBOARD VIEW ───────────────────────────────────────────────
-function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, setKpiModal, kpiModalExterno, onKpiModalExternoHandled }) {
+// ─── DESGLOSE MOVIMIENTO VIEW ────────────────────────────────────────────────
+function DesgloseMovimientoView({ datos, tipo, onBack }) {
+  const pickupEntries = datos.pickupEntries || [];
+  const _p = n => String(n).padStart(2,"0");
+  const hoy = new Date();
+  const hoyStr = `${hoy.getFullYear()}-${_p(hoy.getMonth()+1)}-${_p(hoy.getDate())}`;
+  const TITULOS = { entradas:"Entradas hoy", salidas:"Salidas hoy", estancias:"Estancias hoy" };
+
+  const getFechaSalida = e => {
+    if (e.fecha_salida) return String(e.fecha_salida).slice(0,10);
+    if (e.noches && e.fecha_llegada) {
+      const d = new Date(e.fecha_llegada); d.setDate(d.getDate() + Number(e.noches));
+      return d.toISOString().slice(0,10);
+    }
+    return null;
+  };
+
+  const todasActivas = pickupEntries.filter(e => !e._grupo && (e.estado||"confirmada") !== "cancelada");
+  const reservas = todasActivas.filter(e => {
+    const fl = String(e.fecha_llegada||"").slice(0,10);
+    const fs = getFechaSalida(e);
+    if (tipo === "entradas")  return fl === hoyStr;
+    if (tipo === "salidas")   return fs === hoyStr;
+    if (tipo === "estancias") return fl < hoyStr && fs > hoyStr;
+    return false;
+  }).sort((a,b) => (a.canal||"").localeCompare(b.canal||""));
+
+  const total = reservas.reduce((a,e) => a + (e.num_reservas||1), 0);
+
+  return (
+    <div style={{ display:"flex", flexDirection:"column", gap:20 }}>
+      <div style={{ display:"flex", alignItems:"center", gap:16 }}>
+        <button onClick={onBack} style={{ background:C.bgCard, border:`1px solid ${C.border}`, borderRadius:8, padding:"8px 16px", cursor:"pointer", fontSize:13, color:C.textMid, fontFamily:"'Plus Jakarta Sans',sans-serif", display:"flex", alignItems:"center", gap:6 }}>← Volver</button>
+        <div>
+          <h2 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:24, fontWeight:700, color:C.text, margin:0 }}>{TITULOS[tipo]}</h2>
+          <p style={{ fontSize:12, color:C.textLight, margin:0, marginTop:2 }}>{hoyStr} · {total} reservas</p>
+        </div>
+      </div>
+
+      <Card>
+        {reservas.length === 0
+          ? <p style={{ textAlign:"center", color:C.textLight, padding:"40px 0", fontSize:13 }}>Sin reservas para hoy</p>
+          : <div style={{ overflowX:"auto" }}>
+              <table style={{ width:"100%", borderCollapse:"collapse", fontSize:13 }}>
+                <thead>
+                  <tr>
+                    {["Canal","Llegada","Salida","Noches","Habitaciones","Precio total"].map(h => (
+                      <th key={h} style={{ padding:"10px 16px", textAlign:"left", fontSize:10, fontWeight:600, color:C.textLight, textTransform:"uppercase", letterSpacing:"1px", borderBottom:`2px solid ${C.border}`, whiteSpace:"nowrap" }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {reservas.map((e, i) => (
+                    <tr key={i} style={{ borderBottom:`1px solid ${C.border}`, background: i%2===0 ? C.bg : C.bgCard }}>
+                      <td style={{ padding:"11px 16px", fontWeight:600, color:C.text }}>{e.canal || "—"}</td>
+                      <td style={{ padding:"11px 16px", color:C.textMid }}>{String(e.fecha_llegada||"").slice(0,10)}</td>
+                      <td style={{ padding:"11px 16px", color:C.textMid }}>{getFechaSalida(e) || "—"}</td>
+                      <td style={{ padding:"11px 16px", color:C.textMid, textAlign:"center" }}>{e.noches || "—"}</td>
+                      <td style={{ padding:"11px 16px", color:C.textMid, textAlign:"center" }}>{e.num_reservas || 1}</td>
+                      <td style={{ padding:"11px 16px", fontWeight:700, color:"#1A7A3C", textAlign:"right" }}>{e.precio_total ? `€${Number(e.precio_total).toLocaleString("es-ES")}` : "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+        }
+      </Card>
+    </div>
+  );
+}
+
+function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMovimiento, kpiModal, setKpiModal, kpiModalExterno, onKpiModalExternoHandled }) {
   const t = useT();
   const { produccion } = datos;
   const pickupEntries = datos.pickupEntries || [];
@@ -3605,51 +3676,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, kpiModal, se
               const lbl = () => ({ fontSize:9, color:C.textMid, textTransform:"uppercase", letterSpacing:"1.2px", fontWeight:600 });
               const num = () => ({ fontSize:30, fontWeight:800, color:C.text, fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1 });
               const sep = { gridColumn:"1 / -1", borderTop:`1px solid ${C.border}` };
-              const abrirDesglose = (tipo) => {
-                const TITULO = { entradas:"Entradas hoy", salidas:"Salidas hoy", estancias:"Estancias hoy" };
-                const reservas = todasActivas.filter(e => {
-                  const fl = String(e.fecha_llegada||"").slice(0,10);
-                  const fs = getFechaSalida(e);
-                  if (tipo === "entradas")  return fl === hoyStr;
-                  if (tipo === "salidas")   return fs === hoyStr;
-                  if (tipo === "estancias") return fl < hoyStr && fs > hoyStr;
-                  return false;
-                }).sort((a,b) => (a.canal||"").localeCompare(b.canal||""));
-
-                const total = reservas.reduce((a,e)=>a+(e.num_reservas||1),0);
-                const filas = reservas.map((e,i) => `
-                  <tr style="background:${i%2===0?"#F8FAFC":"#FFFFFF"}">
-                    <td>${e.canal||"—"}</td>
-                    <td>${String(e.fecha_llegada||"").slice(0,10)}</td>
-                    <td>${getFechaSalida(e)||"—"}</td>
-                    <td style="text-align:center">${e.noches||"—"}</td>
-                    <td style="text-align:center">${e.num_reservas||1}</td>
-                    <td style="text-align:right;color:#1A7A3C;font-weight:700">${e.precio_total?`€${Number(e.precio_total).toLocaleString("es-ES")}`:"—"}</td>
-                  </tr>`).join("");
-
-                const html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">
-                  <title>${TITULO[tipo]} — ${hoyStr}</title>
-                  <style>
-                    *{box-sizing:border-box;margin:0;padding:0}
-                    body{font-family:'Segoe UI',system-ui,sans-serif;background:#F8FAFC;color:#1A1A1A;padding:32px}
-                    h1{font-size:22px;font-weight:700;margin-bottom:4px}
-                    p.sub{font-size:13px;color:#888;margin-bottom:24px}
-                    table{width:100%;border-collapse:collapse;font-size:13px;background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.07)}
-                    th{padding:10px 14px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#888;border-bottom:2px solid #E0E0E0;background:#F8FAFC}
-                    td{padding:10px 14px;border-bottom:1px solid #F0F0F0}
-                  </style>
-                </head><body>
-                  <h1>${TITULO[tipo]}</h1>
-                  <p class="sub">${hoyStr} &nbsp;·&nbsp; ${total} reservas</p>
-                  ${reservas.length === 0
-                    ? `<p style="color:#aaa;padding:32px 0;text-align:center">Sin reservas</p>`
-                    : `<table><thead><tr><th>Canal</th><th>Llegada</th><th>Salida</th><th>Noches</th><th>Habs</th><th>Precio</th></tr></thead><tbody>${filas}</tbody></table>`}
-                </body></html>`;
-
-                const win = window.open("", "_blank", "width=680,height=520,scrollbars=yes");
-                win.document.write(html);
-                win.document.close();
-              };
+              const abrirDesglose = (tipo) => onDesgloseMovimiento && onDesgloseMovimiento(tipo);
 
               const FilaMovimiento = ({ tipo, icon, label, count, countAyer, extra }) => (
                 <>
@@ -6644,6 +6671,7 @@ export default function App() {
   const handleLogout = async () => { await supabase.auth.signOut(); };
 
   const [mesDetalle, setMesDetalle] = useState(null);
+  const [desgloseMovimiento, setDesgloseMovimiento] = useState(null); // null | "entradas" | "salidas" | "estancias"
   const [generandoPDF, setGenerandoPDF] = useState(false);
   const [mostrarPerfil, setMostrarPerfil] = useState(false);
   useEffect(() => {
@@ -6667,11 +6695,12 @@ export default function App() {
       if (kpiModal)        { setKpiModal(null); return; }
       if (importar)        { setImportar(false); return; }
       if (perfilSeccion)   { setPerfilSeccion(null); setConfirmCancelar(false); return; }
-      if (mesDetalle)      { setMesDetalle(null); return; }
+      if (mesDetalle)           { setMesDetalle(null); return; }
+      if (desgloseMovimiento)   { setDesgloseMovimiento(null); return; }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [kpiModal, importar, perfilSeccion, mesDetalle]);
+  }, [kpiModal, importar, perfilSeccion, mesDetalle, desgloseMovimiento]);
   const [lang, setLang] = useState(() => localStorage.getItem("fr_lang") || "es");
   const t = useT();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -6685,7 +6714,7 @@ export default function App() {
   const handleOnboardingSkip = () => { localStorage.setItem("fr_onboarding_v1", "1"); setOnboardingStep(null); };
 
   const views = {
-    dashboard: (props) => <DashboardView {...props} onMesDetalle={(m, a) => setMesDetalle({ mes: m, anio: a })} kpiModal={kpiModal} setKpiModal={setKpiModal} kpiModalExterno={kpiModalApp} onKpiModalExternoHandled={() => setKpiModalApp(null)} />,
+    dashboard: (props) => <DashboardView {...props} onMesDetalle={(m, a) => setMesDetalle({ mes: m, anio: a })} onDesgloseMovimiento={tipo => setDesgloseMovimiento(tipo)} kpiModal={kpiModal} setKpiModal={setKpiModal} kpiModalExterno={kpiModalApp} onKpiModalExternoHandled={() => setKpiModalApp(null)} />,
     pickup:    (props) => <PickupView    {...props} />,
     budget:    (props) => <BudgetView    {...props} />,
     grupos:    (props) => <GruposView    {...props} onRecargar={() => cargarDatos(true)} />,
@@ -6875,6 +6904,8 @@ export default function App() {
 
         {cargandoDatos ? <LoadingSpinner /> : mesDetalle ? (
           <div style={{ width:"100%" }}><MonthDetailView datos={datos} mes={mesDetalle.mes} anio={mesDetalle.anio} onBack={() => setMesDetalle(null)} /></div>
+        ) : desgloseMovimiento ? (
+          <div style={{ width:"100%" }}><DesgloseMovimientoView datos={datos} tipo={desgloseMovimiento} onBack={() => setDesgloseMovimiento(null)} /></div>
         ) : (
           <div style={{ width:"100%" }}><View datos={datos} mes={mesSel} anio={anioSel} onGuardado={cargarDatos} onPeriodo={(m,a) => { setMesSel(m); setAnioSel(a); localStorage.setItem("rm_mes", m); localStorage.setItem("rm_anio", a); }} /></div>
         )}
