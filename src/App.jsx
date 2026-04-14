@@ -3044,7 +3044,16 @@ function DesgloseMovimientoView({ datos, tipo, onBack }) {
     return null;
   };
 
-  const todasActivas = pickupEntries.filter(e => !e._grupo && (e.estado||"confirmada") !== "cancelada");
+  const todasBruto = pickupEntries.filter(e => !e._grupo && (e.estado||"confirmada") !== "cancelada");
+  const deduped = {};
+  todasBruto.forEach(e => {
+    const fl = String(e.fecha_llegada||"").slice(0,10);
+    const fs = getFechaSalida(e) || "";
+    const key = `${fl}|${e.canal||""}|${fs}`;
+    const fp  = String(e.fecha_pickup||"").slice(0,10);
+    if (!deduped[key] || fp > deduped[key]._fp) deduped[key] = { ...e, _fp: fp };
+  });
+  const todasActivas = Object.values(deduped);
   const reservas = todasActivas.filter(e => {
     const fl = String(e.fecha_llegada||"").slice(0,10);
     const fs = getFechaSalida(e);
@@ -3632,12 +3641,25 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
               };
               const todasActivas = (pickupEntries||[]).filter(e => !e._grupo && (e.estado||"confirmada") !== "cancelada");
 
-              const numEntradas      = todasActivas.filter(e => String(e.fecha_llegada||"").slice(0,10) === hoyStr).reduce((a,e)=>a+(e.num_reservas||1),0);
-              const numSalidas       = todasActivas.filter(e => getFechaSalida(e) === hoyStr).reduce((a,e)=>a+(e.num_reservas||1),0);
-              const numEstancias     = todasActivas.filter(e => { const fl=String(e.fecha_llegada||"").slice(0,10); const fs=getFechaSalida(e); return fl < hoyStr && fs > hoyStr; }).reduce((a,e)=>a+(e.num_reservas||1),0);
-              const numEntradasAyer  = todasActivas.filter(e => String(e.fecha_llegada||"").slice(0,10) === ayerStr).reduce((a,e)=>a+(e.num_reservas||1),0);
-              const numSalidasAyer   = todasActivas.filter(e => getFechaSalida(e) === ayerStr).reduce((a,e)=>a+(e.num_reservas||1),0);
-              const numEstanciasAyer = todasActivas.filter(e => { const fl=String(e.fecha_llegada||"").slice(0,10); const fs=getFechaSalida(e); return fl < ayerStr && fs > ayerStr; }).reduce((a,e)=>a+(e.num_reservas||1),0);
+              // Deduplicar: si el Excel usa snapshots diarios de OTB, la misma reserva
+              // aparece en múltiples fecha_pickup. Quedarse solo con la entrada más reciente
+              // por clave (fecha_llegada + canal + fecha_salida/noches).
+              const deduped = {};
+              todasActivas.forEach(e => {
+                const fl = String(e.fecha_llegada||"").slice(0,10);
+                const fs = getFechaSalida(e) || "";
+                const key = `${fl}|${e.canal||""}|${fs}`;
+                const fp  = String(e.fecha_pickup||"").slice(0,10);
+                if (!deduped[key] || fp > deduped[key]._fp) deduped[key] = { ...e, _fp: fp };
+              });
+              const activas = Object.values(deduped);
+
+              const numEntradas      = activas.filter(e => String(e.fecha_llegada||"").slice(0,10) === hoyStr).reduce((a,e)=>a+(e.num_reservas||1),0);
+              const numSalidas       = activas.filter(e => getFechaSalida(e) === hoyStr).reduce((a,e)=>a+(e.num_reservas||1),0);
+              const numEstancias     = activas.filter(e => { const fl=String(e.fecha_llegada||"").slice(0,10); const fs=getFechaSalida(e); return fl < hoyStr && fs > hoyStr; }).reduce((a,e)=>a+(e.num_reservas||1),0);
+              const numEntradasAyer  = activas.filter(e => String(e.fecha_llegada||"").slice(0,10) === ayerStr).reduce((a,e)=>a+(e.num_reservas||1),0);
+              const numSalidasAyer   = activas.filter(e => getFechaSalida(e) === ayerStr).reduce((a,e)=>a+(e.num_reservas||1),0);
+              const numEstanciasAyer = activas.filter(e => { const fl=String(e.fecha_llegada||"").slice(0,10); const fs=getFechaSalida(e); return fl < ayerStr && fs > ayerStr; }).reduce((a,e)=>a+(e.num_reservas||1),0);
 
               const proxEntrada = numEntradas===0 ? todasActivas.map(e=>String(e.fecha_llegada||"").slice(0,10)).filter(f=>f>hoyStr).sort()[0]||null : null;
               const proxSalida  = numSalidas===0  ? todasActivas.map(e=>getFechaSalida(e)).filter(f=>f&&f>hoyStr).sort()[0]||null : null;
