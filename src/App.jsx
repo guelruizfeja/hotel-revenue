@@ -4916,6 +4916,15 @@ function GruposView({ datos, onRecargar }) {
 
   // ── Seed datos demo ──────────────────────────────────────────────────────
   const [seedando, setSeedando] = useState(false);
+  const [borrandoDemo, setBorrandoDemo] = useState(false);
+
+  const borrarTodosGrupos = async () => {
+    if (!window.confirm("¿Borrar todos los grupos y eventos?")) return;
+    setBorrandoDemo(true);
+    await supabase.from("grupos_eventos").delete().eq("hotel_id", session.user.id);
+    setBorrandoDemo(false);
+    onRecargar();
+  };
 
   const rnd = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
   const fmt  = (y, m, d)  => `${y}-${String(m).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
@@ -5244,10 +5253,16 @@ function GruposView({ datos, onRecargar }) {
           </div>
         </div>
         <div style={{ display:"flex", gap:8, alignItems:"center" }}>
-          <button onClick={seedDemoData} disabled={seedando}
-            style={{ background:"#E0F0FF", color:"#2B7EC1", border:"1.5px dashed #2B7EC1", borderRadius:8, padding:"7px 14px", fontSize:12, fontWeight:600, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", opacity:seedando?0.6:1 }}>
+          <button onClick={seedDemoData} disabled={seedando || borrandoDemo}
+            style={{ background:"#E0F0FF", color:"#2B7EC1", border:"1.5px dashed #2B7EC1", borderRadius:8, padding:"7px 14px", fontSize:12, fontWeight:600, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", opacity:(seedando||borrandoDemo)?0.6:1 }}>
             {seedando ? "Cargando..." : "Datos demo"}
           </button>
+          {grupos.length > 0 && (
+            <button onClick={borrarTodosGrupos} disabled={seedando || borrandoDemo}
+              style={{ background:"none", color:"rgba(211,47,47,0.7)", border:"1.5px solid rgba(211,47,47,0.3)", borderRadius:8, padding:"7px 14px", fontSize:12, fontWeight:600, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", opacity:(seedando||borrandoDemo)?0.6:1 }}>
+              {borrandoDemo ? "Borrando..." : "Borrar todo"}
+            </button>
+          )}
           <div style={{ position:"relative" }}>
             <button onClick={()=>setMenuNuevo(v=>!v)}
               style={{ background:"#0A2540", color:"#fff", border:"none", borderRadius:8, padding:"7px 16px", fontSize:13, fontWeight:600, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", display:"flex", alignItems:"center", gap:6 }}>
