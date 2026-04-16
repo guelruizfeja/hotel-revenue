@@ -3239,7 +3239,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
     const habDis   = d.reduce((a, r) => a + (r.hab_disponibles || 0), 0);
     const revH     = d.reduce((a, r) => a + (r.revenue_hab || 0), 0);
     const revFnb   = d.reduce((a, r) => a + (r.revenue_fnb || 0), 0);
-    const dLY = produccion.filter(r => { const f = new Date(r.fecha+"T00:00:00"); return f.getMonth()===mIdx && f.getFullYear()===aIdx-1; });
+    const dLY = produccion.filter(r => { const f = new Date(r.fecha+"T00:00:00"); return f.getMonth()===mIdx && f.getFullYear()===anio-1; });
     const habOcuLY = dLY.reduce((a,r)=>a+(r.hab_ocupadas||0),0);
     const habDisLY = dLY.reduce((a,r)=>a+(r.hab_disponibles||0),0);
     const revHLY   = dLY.reduce((a,r)=>a+(r.revenue_hab||0),0);
@@ -3806,7 +3806,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
                   <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
                     {[
                       { key:"occ",   label:"Ocup.",    color:"#004B87", active:showOcc,   set:setShowOcc,   type:"bar" },
-                      { key:"occLY", label:"Ocup. LY", color:"#F87171", active:showOccLY, set:setShowOccLY, type:"dash" },
+                      { key:"occLY", label:"Ocup. LY", color:"#F87171", active:showOccLY, set:setShowOccLY, type:"bar" },
                       { key:"adr",   label:"ADR",      color:"#B8860B", active:showAdr,   set:setShowAdr,   type:"line" },
                       { key:"adrLY", label:"ADR LY",   color:"#8B5CF6", active:showAdrLY, set:setShowAdrLY, type:"dash" },
                     ].map(item => (
@@ -3841,7 +3841,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
                           shape={(p) => <AnimatedBar {...p} onClick={() => { if(p?.mesIdx!=null) setModalDiario({mesIdx:p.mesIdx, anioIdx:p.anioIdx}); }}/>}
                           onClick={(data) => { if(data?.mesIdx!=null) setModalDiario({mesIdx:data.mesIdx, anioIdx:data.anioIdx}); }}
                         />}
-                        {showOccLY && <Line yAxisId="left" dataKey="occLY" name="Ocup. LY" type="monotone" stroke="#F87171" strokeWidth={2} strokeDasharray="5 3" dot={{fill:"#F87171",r:2,strokeWidth:0}} activeDot={{r:4}} connectNulls={false}/>}
+                        {showOccLY && <Bar yAxisId="left" dataKey="occLY" name="Ocup. LY" fill="#F87171" fillOpacity={0.55} radius={[4,4,0,0]} activeBar={false}/>}
                         {showAdr   && <Line yAxisId="right" dataKey="adr"   name="ADR"    type="monotone" stroke="#B8860B" strokeWidth={2} dot={{fill:"#B8860B",r:3,strokeWidth:0}} activeDot={{r:4}} connectNulls/>}
                         {showAdrLY && <Line yAxisId="right" dataKey="adrLY" name="ADR LY" type="monotone" stroke="#8B5CF6" strokeWidth={2} strokeDasharray="5 3" dot={{fill:"#8B5CF6",r:2,strokeWidth:0}} activeDot={{r:4}} connectNulls/>}
                       </ComposedChart>
