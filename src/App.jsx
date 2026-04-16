@@ -452,8 +452,8 @@ function WeatherBar({ ciudad, datos, lang }) {
 
     // Movimiento del día (ayer) + ocupación de hoy (OTB)
     const ayerDia = produccion.find(d => d.fecha === ayerStr);
-    const resHoy  = pickupEntries.filter(e => String(e.fecha_llegada||"").slice(0,10) === hoyStr && (e.estado||"confirmada") !== "cancelada").reduce((a,e) => a+(e.num_reservas||1), 0);
-    const occHoy  = hab > 0 ? Math.round(resHoy / hab * 100) : null;
+    const resHoy  = pickupEntries.filter(e => String(e.fecha_llegada||"").slice(0,10) === hoyStr).reduce((a,e) => a + (e.num_reservas||1) * ((e.estado||"confirmada") === "cancelada" ? -1 : 1), 0);
+    const occHoy  = hab > 0 ? Math.min(Math.round(Math.max(0, resHoy) / hab * 100), 100) : null;
     if (ayerDia || occHoy) {
       const occ = ayerDia?.hab_disponibles > 0 ? (ayerDia.hab_ocupadas / ayerDia.hab_disponibles * 100).toFixed(1) : null;
       const adr = ayerDia?.adr ? Math.round(ayerDia.adr) : null;
@@ -3122,7 +3122,7 @@ function DesgloseMovimientoView({ datos, tipo, onBack }) {
   );
 }
 
-function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMovimiento, kpiModal, setKpiModal, kpiModalExterno, onKpiModalExternoHandled }) {
+function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMovimiento, kpiModal, setKpiModal, kpiModalExterno, onKpiModalExternoHandled, onNavigarGrupos }) {
   const t = useT();
   const { produccion } = datos;
   const pickupEntries = datos.pickupEntries || [];
@@ -3164,6 +3164,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
   const [hmIsDragging, setHmIsDragging] = useState(false);
   const [hmEventForm,  setHmEventForm]  = useState(null); // {fromISO, toISO}
   const [hmEventEdit,  setHmEventEdit]  = useState({ title:"", color:"#3B82F6", notes:"" });
+  const [hmSelRango,   setHmSelRango]   = useState(null); // {fromISO, toISO}
   const [hmEvents, setHmEvents] = useState(() => { try { return JSON.parse(localStorage.getItem("fr_hm_events")||"[]"); } catch { return []; } });
   const guardarHmEvent = (ev) => { const a=[...hmEvents,ev]; setHmEvents(a); localStorage.setItem("fr_hm_events",JSON.stringify(a)); };
   const borrarHmEvent  = (idx) => { const a=hmEvents.filter((_,i)=>i!==idx); setHmEvents(a); localStorage.setItem("fr_hm_events",JSON.stringify(a)); };
@@ -3179,13 +3180,14 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
   useEffect(() => {
     const handler = (e) => {
       if (e.key !== "Escape") return;
+      if (hmSelRango)   { setHmSelRango(null);   return; }
       if (hmEventForm) { setHmEventForm(null); return; }
       if (modalDiario) { setModalDiario(null); return; }
       if (hmMesSel !== null) { setHmMesSel(null); return; }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [modalDiario, hmMesSel, hmEventForm]);
+  }, [modalDiario, hmMesSel, hmEventForm, hmSelRango]);
 
   if (!produccion || produccion.length === 0) return <EmptyState />;
 
@@ -3304,10 +3306,13 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
         <PeriodSelectorInline mes={mes} anio={anio} onChange={onPeriodo} aniosDisponibles={[...new Set((datos.produccion||[]).map(d=>new Date(d.fecha+"T00:00:00").getFullYear()))].sort()} />
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(clamp(140px,40vw,200px), 1fr))", gap: 10, marginBottom: 20 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(clamp(140px,40vw,200px), 1fr))", gap: 10, marginBottom: 8 }}>
         {kpis.map((k, i) => <KpiCard key={i} {...k} i={i} onClick={()=>setKpiModal(k.kpiKey)} />)}
       </div>
 
+      <p style={{ fontSize: 11, color: C.textLight, marginBottom: 20, marginTop: 0 }}>
+        * Media mensual
+      </p>
 
       {/* ── HEATMAP + GRÁFICAS ── */}
       {(() => {
@@ -3470,8 +3475,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
                               setHmIsDragging(false);
                               const from=Math.min(hmDragStart||dia,dia), to=Math.max(hmDragStart||dia,dia);
                               if(from!==to){
-                                setHmEventEdit({title:"",color:"#3B82F6",notes:""});
-                                setHmEventForm({ fromISO:`${anio}-${_pad2(hmMesSel+1)}-${_pad2(from)}`, toISO:`${anio}-${_pad2(hmMesSel+1)}-${_pad2(to)}` });
+                                setHmSelRango({ fromISO:`${anio}-${_pad2(hmMesSel+1)}-${_pad2(from)}`, toISO:`${anio}-${_pad2(hmMesSel+1)}-${_pad2(to)}` });
                               }
                             }
                           }}>
@@ -3506,7 +3510,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
                     <span style={{ fontSize:9, color:C.textLight, display:"flex", alignItems:"center", gap:3 }}>
                       <span style={{ fontSize:10 }}>⚡</span> Reserva captada
                     </span>
-                    <span style={{ fontSize:9, color:"#3B82F6", fontWeight:600, marginLeft:"auto" }}>Arrastra para crear evento</span>
+                    <span style={{ fontSize:9, color:"#3B82F6", fontWeight:600, marginLeft:"auto" }}>Arrastra para crear grupo o evento</span>
                   </div>
 
                   {/* Eventos del mes */}
@@ -3536,53 +3540,45 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
             )}
 
             {/* ── FORM EVENTO HEATMAP ── */}
-            {hmEventForm && (
-              <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.65)", zIndex:1100, display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}
-                onClick={()=>setHmEventForm(null)}>
-                <div style={{ background:C.bgCard, borderRadius:14, width:"100%", maxWidth:380, padding:"24px", boxShadow:"0 20px 60px rgba(0,0,0,0.3)" }}
+            {hmSelRango && (
+              <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.55)", zIndex:1100, display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}
+                onClick={()=>setHmSelRango(null)}>
+                <div style={{ background:C.bgCard, borderRadius:14, width:"100%", maxWidth:340, padding:"24px", boxShadow:"0 20px 60px rgba(0,0,0,0.3)" }}
                   onClick={e=>e.stopPropagation()}>
-                  <h3 style={{ fontSize:16, fontWeight:700, color:C.text, marginBottom:16 }}>Nuevo evento</h3>
-                  <div style={{ display:"flex", gap:8, marginBottom:14, padding:"8px 12px", background:C.bg, borderRadius:8, border:`1px solid ${C.border}` }}>
-                    <span style={{ fontSize:12, color:C.textLight }}>📅</span>
-                    <span style={{ fontSize:13, fontWeight:600, color:C.accent }}>
-                      {hmEventForm.fromISO.split("-").reverse().join("/")} — {hmEventForm.toISO.split("-").reverse().join("/")}
+                  <p style={{ fontSize:10, color:C.textLight, textTransform:"uppercase", letterSpacing:"1.5px", fontWeight:600, marginBottom:8 }}>Período seleccionado</p>
+                  <div style={{ display:"flex", gap:8, marginBottom:20, padding:"8px 12px", background:C.bg, borderRadius:8, border:`1px solid ${C.border}` }}>
+                    <span style={{ fontSize:13, color:C.textLight }}>📅</span>
+                    <span style={{ fontSize:13, fontWeight:700, color:C.accent }}>
+                      {hmSelRango.fromISO.split("-").reverse().join("/")} — {hmSelRango.toISO.split("-").reverse().join("/")}
                     </span>
                   </div>
-                  <input
-                    placeholder="Nombre del evento (feria, congreso...)"
-                    value={hmEventEdit.title}
-                    onChange={e=>setHmEventEdit(p=>({...p,title:e.target.value}))}
-                    style={{ width:"100%", padding:"8px 12px", borderRadius:8, border:`1px solid ${C.border}`, background:C.bg, color:C.text, fontSize:13, fontFamily:"inherit", outline:"none", marginBottom:12, boxSizing:"border-box" }}
-                    autoFocus
-                  />
-                  <div style={{ marginBottom:14 }}>
-                    <p style={{ fontSize:10, color:C.textLight, textTransform:"uppercase", letterSpacing:1, fontWeight:600, marginBottom:6 }}>Color</p>
-                    <div style={{ display:"flex", gap:8 }}>
-                      {["#3B82F6","#10B981","#F59E0B","#EF4444","#8B5CF6","#EC4899"].map(col=>(
-                        <button key={col} onClick={()=>setHmEventEdit(p=>({...p,color:col}))}
-                          style={{ width:24, height:24, borderRadius:6, background:col, border:hmEventEdit.color===col?"3px solid #fff":"2px solid transparent", cursor:"pointer", padding:0, outline:hmEventEdit.color===col?`2px solid ${col}`:"none" }}/>
-                      ))}
-                    </div>
-                  </div>
-                  <textarea
-                    placeholder="Notas (opcional)"
-                    value={hmEventEdit.notes}
-                    onChange={e=>setHmEventEdit(p=>({...p,notes:e.target.value}))}
-                    rows={2}
-                    style={{ width:"100%", padding:"8px 12px", borderRadius:8, border:`1px solid ${C.border}`, background:C.bg, color:C.text, fontSize:12, fontFamily:"inherit", outline:"none", resize:"none", marginBottom:16, boxSizing:"border-box" }}
-                  />
-                  <div style={{ display:"flex", gap:8, justifyContent:"flex-end" }}>
-                    <button onClick={()=>setHmEventForm(null)}
-                      style={{ padding:"7px 16px", borderRadius:8, border:`1px solid ${C.border}`, background:"transparent", color:C.textLight, fontSize:12, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>
-                      Cancelar
+                  <p style={{ fontSize:13, color:C.textMid, marginBottom:14 }}>¿Qué quieres crear para este período?</p>
+                  <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+                    <button onClick={()=>{ setHmSelRango(null); onNavigarGrupos && onNavigarGrupos("grupos", hmSelRango.fromISO, hmSelRango.toISO); }}
+                      style={{ padding:"12px 16px", borderRadius:10, border:`1.5px solid ${C.border}`, background:C.bg, color:C.text, fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"inherit", textAlign:"left", display:"flex", alignItems:"center", gap:10, transition:"background 0.12s" }}
+                      onMouseEnter={e=>e.currentTarget.style.background=C.accentLight}
+                      onMouseLeave={e=>e.currentTarget.style.background=C.bg}>
+                      <span style={{ fontSize:18 }}>🏨</span>
+                      <div>
+                        <p style={{ fontSize:13, fontWeight:700, color:C.text, margin:0 }}>Nuevo grupo</p>
+                        <p style={{ fontSize:11, color:C.textLight, margin:0, fontWeight:400 }}>Grupo de habitaciones con cotización</p>
+                      </div>
                     </button>
-                    <button onClick={()=>{
-                      guardarHmEvent({ from:hmEventForm.fromISO, to:hmEventForm.toISO, title:hmEventEdit.title, color:hmEventEdit.color, notes:hmEventEdit.notes });
-                      setHmEventForm(null);
-                    }} style={{ padding:"7px 16px", borderRadius:8, border:"none", background:"#3B82F6", color:"#fff", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
-                      Guardar
+                    <button onClick={()=>{ setHmSelRango(null); onNavigarGrupos && onNavigarGrupos("eventos", hmSelRango.fromISO, hmSelRango.toISO); }}
+                      style={{ padding:"12px 16px", borderRadius:10, border:`1.5px solid ${C.border}`, background:C.bg, color:C.text, fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"inherit", textAlign:"left", display:"flex", alignItems:"center", gap:10, transition:"background 0.12s" }}
+                      onMouseEnter={e=>e.currentTarget.style.background=C.accentLight}
+                      onMouseLeave={e=>e.currentTarget.style.background=C.bg}>
+                      <span style={{ fontSize:18 }}>📌</span>
+                      <div>
+                        <p style={{ fontSize:13, fontWeight:700, color:C.text, margin:0 }}>Nuevo evento</p>
+                        <p style={{ fontSize:11, color:C.textLight, margin:0, fontWeight:400 }}>Feria, congreso u otro evento externo</p>
+                      </div>
                     </button>
                   </div>
+                  <button onClick={()=>setHmSelRango(null)}
+                    style={{ marginTop:14, width:"100%", padding:"7px", borderRadius:8, border:`1px solid ${C.border}`, background:"transparent", color:C.textLight, fontSize:12, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>
+                    Cancelar
+                  </button>
                 </div>
               </div>
             )}
@@ -3631,7 +3627,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
                 })}
               </div>
               <p style={{ fontSize:10, color:C.textLight, marginTop:8, display:"flex", alignItems:"center", gap:4 }}>
-                <span style={{ fontSize:12 }}>⚡</span> Meses con mayor captación en el último día importado &nbsp;·&nbsp; <span style={{ fontSize:10, color:"#7A9CC8", fontWeight:700 }}>OTB</span> Dato estimado por reservas en cartera
+                <span style={{ fontSize:12 }}>⚡</span> Meses con mayor captación en el último día &nbsp;·&nbsp; <span style={{ fontSize:10, color:"#7A9CC8", fontWeight:700 }}>OTB</span> Dato estimado por reservas en cartera
               </p>
             </div>
 
@@ -5294,10 +5290,21 @@ function GruposView({ datos, onRecargar }) {
     return meta + (form.notas ? "\n" + form.notas : "");
   };
 
-  const abrirNuevo = (fecha = "", tipo = "grupo") => {
-    setForm({ ...FORM_VACIO, fecha_inicio: fecha, fecha_fin: fecha, tipo, categoria: tipo === "evento" ? "evento" : "corporativo" });
+  const abrirNuevo = (fecha = "", tipo = "grupo", fechaFin = "") => {
+    setForm({ ...FORM_VACIO, fecha_inicio: fecha, fecha_fin: fechaFin || fecha, tipo, categoria: tipo === "evento" ? "evento" : "corporativo" });
     setModalGrupo({});
   };
+
+  useEffect(() => {
+    const raw = sessionStorage.getItem("fr_pending_nuevo");
+    if (!raw) return;
+    sessionStorage.removeItem("fr_pending_nuevo");
+    try {
+      const { tipo, fecha_inicio, fecha_fin } = JSON.parse(raw);
+      cambiarSubVista(tipo === "evento" ? "eventos" : "grupos");
+      abrirNuevo(fecha_inicio, tipo, fecha_fin);
+    } catch {}
+  }, []);
 
   const abrirEditar = (g) => {
     const esEvento = g.categoria === "evento";
@@ -6834,7 +6841,7 @@ export default function App() {
   const handleOnboardingSkip = () => { localStorage.setItem("fr_onboarding_v1", "1"); setOnboardingStep(null); };
 
   const views = {
-    dashboard: (props) => <DashboardView {...props} onMesDetalle={(m, a) => setMesDetalle({ mes: m, anio: a })} onDesgloseMovimiento={tipo => setDesgloseMovimiento(tipo)} kpiModal={kpiModal} setKpiModal={setKpiModal} kpiModalExterno={kpiModalApp} onKpiModalExternoHandled={() => setKpiModalApp(null)} />,
+    dashboard: (props) => <DashboardView {...props} onMesDetalle={(m, a) => setMesDetalle({ mes: m, anio: a })} onDesgloseMovimiento={tipo => setDesgloseMovimiento(tipo)} kpiModal={kpiModal} setKpiModal={setKpiModal} kpiModalExterno={kpiModalApp} onKpiModalExternoHandled={() => setKpiModalApp(null)} onNavigarGrupos={(subvista, fechaInicio, fechaFin) => { localStorage.setItem("fr_grupos_subvista", subvista); sessionStorage.setItem("fr_pending_nuevo", JSON.stringify({ tipo: subvista === "eventos" ? "evento" : "grupo", fecha_inicio: fechaInicio, fecha_fin: fechaFin })); setView("grupos"); localStorage.setItem("fr_view", "grupos"); }} />,
     pickup:    (props) => <PickupView    {...props} />,
     budget:    (props) => <BudgetView    {...props} />,
     grupos:    (props) => <GruposView    {...props} onRecargar={() => cargarDatos(true)} />,
