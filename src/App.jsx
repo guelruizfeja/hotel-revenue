@@ -3173,10 +3173,6 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
     .slice(0,2)
     .map(([mes]) => mes);
   const [metricaSel, setMetricaSel] = useState("adr_occ");
-  const [showOcc,    setShowOcc]    = useState(true);
-  const [showAdr,    setShowAdr]    = useState(true);
-  const [showOccLY,  setShowOccLY]  = useState(false);
-  const [showAdrLY,  setShowAdrLY]  = useState(false);
   const [notasMes, setNotasMes] = useState(() => { try { return JSON.parse(localStorage.getItem("fr_notas_mes")||"{}"); } catch { return {}; } });
   const [editingNota, setEditingNota] = useState(null);
   const guardarNota = (key, txt) => { const n={...notasMes,[key]:txt}; setNotasMes(n); localStorage.setItem("fr_notas_mes",JSON.stringify(n)); };
@@ -3803,29 +3799,23 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
                   <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:18, color:C.text }}>
                     {metricas.find(m=>m.key===metricaSel)?.label}
                   </p>
-                  <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+                  <div style={{ display:"flex", gap:14 }}>
                     {[
-                      { key:"occ",   label:"Ocup.",    color:"#004B87", active:showOcc,   set:setShowOcc,   type:"bar" },
-                      { key:"occLY", label:"Ocup. LY", color:"#F87171", active:showOccLY, set:setShowOccLY, type:"bar" },
-                      { key:"adr",   label:"ADR",      color:"#B8860B", active:showAdr,   set:setShowAdr,   type:"line" },
-                      { key:"adrLY", label:"ADR LY",   color:"#8B5CF6", active:showAdrLY, set:setShowAdrLY, type:"dash" },
-                    ].map(item => (
-                      <button key={item.key} onClick={()=>item.set(v=>!v)}
-                        style={{ display:"flex", alignItems:"center", gap:5, padding:"4px 10px", borderRadius:6, border:`1.5px solid ${item.active ? item.color : C.border}`, background: item.active ? `${item.color}18` : "transparent", cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", transition:"all 0.15s" }}>
-                        {item.type==="bar"
-                          ? <span style={{ width:8, height:8, borderRadius:2, background:item.active?item.color:C.border, display:"inline-block", flexShrink:0 }}/>
-                          : item.type==="line"
-                          ? <span style={{ width:14, height:2, borderRadius:1, background:item.active?item.color:C.border, display:"inline-block", flexShrink:0 }}/>
-                          : <span style={{ width:14, height:2, background:`repeating-linear-gradient(90deg,${item.active?item.color:C.border} 0,${item.active?item.color:C.border} 4px,transparent 4px,transparent 7px)`, display:"inline-block", flexShrink:0 }}/>}
-                        <span style={{ fontSize:11, fontWeight:600, color:item.active?item.color:C.textLight }}>{item.label}</span>
-                      </button>
+                      { color:"#004B87", opacity:0.75, label:"Ocupación", type:"bar" },
+                      { color:"#B8860B", opacity:1,    label:"ADR",       type:"line" },
+                    ].map((item,i) => (
+                      <div key={i} style={{ display:"flex", alignItems:"center", gap:5 }}>
+                        {item.type==="bar" && <div style={{ width:10, height:10, borderRadius:2, background:item.color, opacity:item.opacity }}/>}
+                        {item.type==="line" && <div style={{ width:16, height:2, background:item.color, borderRadius:1 }}/>}
+                        <span style={{ fontSize:10, color:C.textLight, fontWeight:500, letterSpacing:"0.3px" }}>{item.label}</span>
+                      </div>
                     ))}
                   </div>
                 </div>
                 <div style={{ height:300 }} onMouseDown={e => e.preventDefault()}>
                   <ResponsiveContainer width="100%" height={300}>
                     {metricaSel === "adr_occ" ? (
-                      <ComposedChart data={porMes} barSize={showOcc&&showOccLY?10:14} barCategoryGap="32%">
+                      <ComposedChart data={porMes} barSize={14} barCategoryGap="32%">
                         <defs>
                           <linearGradient id="gradOcc" x1="0" y1="0" x2="0" y2="1">
                             <stop offset="0%" stopColor="#004B87" stopOpacity={0.9}/>
@@ -3837,13 +3827,12 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
                         <YAxis yAxisId="left"  tick={{ fill: C.textLight, fontSize: 11 }} axisLine={false} tickLine={false} unit="%" domain={[0,100]}/>
                         <YAxis yAxisId="right" orientation="right" tick={{ fill: C.textLight, fontSize: 11 }} axisLine={false} tickLine={false} unit="€"/>
                         <Tooltip content={<CustomTooltip/>} cursor={false}/>
-                        {showOcc && <Bar yAxisId="left" dataKey="occ" name="Ocupación" fill="url(#gradOcc)" radius={[4,4,0,0]} cursor="pointer" activeBar={false}
+                        <Bar yAxisId="left" dataKey="occ" name="Ocupación" fill="url(#gradOcc)" radius={[4,4,0,0]}
+                          cursor="pointer" activeBar={false}
                           shape={(p) => <AnimatedBar {...p} onClick={() => { if(p?.mesIdx!=null) setModalDiario({mesIdx:p.mesIdx, anioIdx:p.anioIdx}); }}/>}
                           onClick={(data) => { if(data?.mesIdx!=null) setModalDiario({mesIdx:data.mesIdx, anioIdx:data.anioIdx}); }}
-                        />}
-                        {showOccLY && <Bar yAxisId="left" dataKey="occLY" name="Ocup. LY" fill="#F87171" fillOpacity={0.55} radius={[4,4,0,0]} activeBar={false}/>}
-                        {showAdr   && <Line yAxisId="right" dataKey="adr"   name="ADR"    type="monotone" stroke="#B8860B" strokeWidth={2} dot={{fill:"#B8860B",r:3,strokeWidth:0}} activeDot={{r:4}} connectNulls/>}
-                        {showAdrLY && <Line yAxisId="right" dataKey="adrLY" name="ADR LY" type="monotone" stroke="#8B5CF6" strokeWidth={2} strokeDasharray="5 3" dot={{fill:"#8B5CF6",r:2,strokeWidth:0}} activeDot={{r:4}} connectNulls/>}
+                        />
+                        <Line yAxisId="right" dataKey="adr" name="ADR" type="monotone" stroke="#B8860B" strokeWidth={2} dot={{fill:"#B8860B", r:3, strokeWidth:0}} activeDot={{r:4}}/>
                       </ComposedChart>
                     ) : (
                       <AreaChart data={porMes}>
