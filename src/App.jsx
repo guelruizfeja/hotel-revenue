@@ -3806,15 +3806,17 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
                   <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
                     {[
                       { key:"occ",   label:"Ocup.",    color:"#004B87", active:showOcc,   set:setShowOcc,   type:"bar" },
-                      { key:"occLY", label:"Ocup. LY", color:"#F87171", active:showOccLY, set:setShowOccLY, type:"bar" },
+                      { key:"occLY", label:"Ocup. LY", color:"#F87171", active:showOccLY, set:setShowOccLY, type:"dash" },
                       { key:"adr",   label:"ADR",      color:"#B8860B", active:showAdr,   set:setShowAdr,   type:"line" },
-                      { key:"adrLY", label:"ADR LY",   color:"#8B5CF6", active:showAdrLY, set:setShowAdrLY, type:"line" },
+                      { key:"adrLY", label:"ADR LY",   color:"#8B5CF6", active:showAdrLY, set:setShowAdrLY, type:"dash" },
                     ].map(item => (
                       <button key={item.key} onClick={()=>item.set(v=>!v)}
                         style={{ display:"flex", alignItems:"center", gap:5, padding:"4px 10px", borderRadius:6, border:`1.5px solid ${item.active ? item.color : C.border}`, background: item.active ? `${item.color}18` : "transparent", cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", transition:"all 0.15s" }}>
                         {item.type==="bar"
                           ? <span style={{ width:8, height:8, borderRadius:2, background:item.active?item.color:C.border, display:"inline-block", flexShrink:0 }}/>
-                          : <span style={{ width:14, height:2, borderRadius:1, background:item.active?item.color:C.border, display:"inline-block", flexShrink:0 }}/>}
+                          : item.type==="line"
+                          ? <span style={{ width:14, height:2, borderRadius:1, background:item.active?item.color:C.border, display:"inline-block", flexShrink:0 }}/>
+                          : <span style={{ width:14, height:2, background:`repeating-linear-gradient(90deg,${item.active?item.color:C.border} 0,${item.active?item.color:C.border} 4px,transparent 4px,transparent 7px)`, display:"inline-block", flexShrink:0 }}/>}
                         <span style={{ fontSize:11, fontWeight:600, color:item.active?item.color:C.textLight }}>{item.label}</span>
                       </button>
                     ))}
@@ -3829,10 +3831,6 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
                             <stop offset="0%" stopColor="#004B87" stopOpacity={0.9}/>
                             <stop offset="100%" stopColor="#004B87" stopOpacity={0.55}/>
                           </linearGradient>
-                          <linearGradient id="gradOccLY" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor="#F87171" stopOpacity={0.8}/>
-                            <stop offset="100%" stopColor="#F87171" stopOpacity={0.35}/>
-                          </linearGradient>
                         </defs>
                         <CartesianGrid strokeDasharray="3 3" stroke={C.border} vertical={false}/>
                         <XAxis dataKey="mes" axisLine={false} tickLine={false} height={18} interval={0} tick={{ fill: C.textLight, fontSize: 11 }}/>
@@ -3843,7 +3841,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
                           shape={(p) => <AnimatedBar {...p} onClick={() => { if(p?.mesIdx!=null) setModalDiario({mesIdx:p.mesIdx, anioIdx:p.anioIdx}); }}/>}
                           onClick={(data) => { if(data?.mesIdx!=null) setModalDiario({mesIdx:data.mesIdx, anioIdx:data.anioIdx}); }}
                         />}
-                        {showOccLY && <Bar yAxisId="left" dataKey="occLY" name="Ocup. LY" fill="url(#gradOccLY)" radius={[4,4,0,0]} activeBar={false}/>}
+                        {showOccLY && <Line yAxisId="left" dataKey="occLY" name="Ocup. LY" type="monotone" stroke="#F87171" strokeWidth={2} strokeDasharray="5 3" dot={{fill:"#F87171",r:2,strokeWidth:0}} activeDot={{r:4}} connectNulls={false}/>}
                         {showAdr   && <Line yAxisId="right" dataKey="adr"   name="ADR"    type="monotone" stroke="#B8860B" strokeWidth={2} dot={{fill:"#B8860B",r:3,strokeWidth:0}} activeDot={{r:4}} connectNulls/>}
                         {showAdrLY && <Line yAxisId="right" dataKey="adrLY" name="ADR LY" type="monotone" stroke="#8B5CF6" strokeWidth={2} strokeDasharray="5 3" dot={{fill:"#8B5CF6",r:2,strokeWidth:0}} activeDot={{r:4}} connectNulls/>}
                       </ComposedChart>
