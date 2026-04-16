@@ -380,22 +380,35 @@ const SimpleBar = ({ x, y, width, height, fill, fillOpacity }) => {
   return <rect x={x} y={y} width={width} height={height} rx={4} ry={4} fill={fill} fillOpacity={fillOpacity}/>;
 };
 
+const TOOLTIP_COLORS = {
+  "Ocupación":"#004B87","occ":"#004B87","OCC":"#004B87","Occupancy":"#004B87",
+  "ADR":"#B8860B","adr":"#B8860B",
+  "RevPAR":"#004B87","revpar":"#004B87",
+  "TRevPAR":"#10B981","trevpar":"#10B981",
+  "Hab.":"#1A7A3C","Habitaciones":"#1A7A3C","revHab":"#1A7A3C",
+  "F&B":"#E85D04","revFnb":"#E85D04",
+  "Grupos/Eventos":"#B8860B","revME":"#B8860B",
+  "Año anterior":"#B8860B","ly":"#B8860B",
+};
 const CustomTooltip = ({ active, payload, label, unit }) => {
   if (!active || !payload?.length) return null;
-  const OCC_NAMES = ["Ocupación","occ","OCC"];
-  const displayLabel = payload[0]?.payload?.mesNombre || payload[0]?.payload?.fecha || label;
+  const OCC_NAMES = ["Ocupación","occ","OCC","Occupancy"];
+  const raw = payload[0]?.payload || {};
+  let displayLabel = raw.fecha || raw.mesNombre || label;
+  if (raw.mesNombre && raw.anioIdx) displayLabel = `${raw.mesNombre} ${raw.anioIdx}`;
   return (
-    <div style={{ background: "#111111", borderRadius: 10, padding: "12px 16px", boxShadow: "0 8px 24px rgba(0,0,0,0.35)" }}>
-      <p style={{ color: "#fff", fontSize: 10, fontWeight: 700, marginBottom: 6, textTransform: "uppercase", letterSpacing: "1px" }}>{displayLabel}</p>
+    <div style={{ background:"#111111", borderRadius:10, padding:"12px 16px", boxShadow:"0 8px 24px rgba(0,0,0,0.35)", minWidth:148 }}>
+      <p style={{ color:"#fff", fontSize:10, fontWeight:700, marginBottom:8, textTransform:"uppercase", letterSpacing:"1px" }}>{displayLabel}</p>
       {payload.map((p, i) => {
         const isOcc = unit === "%" || OCC_NAMES.includes(p.name);
         const val = typeof p.value === 'number'
           ? isOcc ? `${Math.round(p.value)}%` : `${Math.round(p.value).toLocaleString("es-ES")}€`
           : p.value;
+        const color = (typeof p.color === "string" && !p.color.startsWith("url(")) ? p.color : (TOOLTIP_COLORS[p.name] || TOOLTIP_COLORS[p.dataKey] || "#7A9CC8");
         return (
-          <div key={i} style={{ display:"flex", alignItems:"center", gap:7, margin:"2px 0" }}>
-            <span style={{ width:8, height:8, borderRadius:"50%", background:p.color||"#7A9CC8", flexShrink:0, display:"inline-block" }}/>
-            <span style={{ color:"rgba(255,255,255,0.9)", fontSize:12 }}>{p.name}: {val}</span>
+          <div key={i} style={{ display:"flex", alignItems:"center", gap:7, margin:"3px 0" }}>
+            <span style={{ width:8, height:8, borderRadius:2, background:color, flexShrink:0, display:"inline-block" }}/>
+            <span style={{ color:"rgba(255,255,255,0.75)", fontSize:12 }}>{p.name}: <span style={{ color:"#fff", fontWeight:700 }}>{val}</span></span>
           </div>
         );
       })}
@@ -766,7 +779,7 @@ function KpiModal({ kpi, datos, mes, anio, onClose }) {
 
         <div style={{ marginBottom:16 }}>
           {kpi==="Revenue Mensual" ? (() => {
-            const dailyData = diasMesCompleto.map(d=>({ dia:d.dia, revHab:d.revHab, revFnb:d.revFnb }));
+            const dailyData = diasMesCompleto.map(d=>({ dia:d.dia, mesNombre:`${d.dia} ${MESES_FULL[mes]} ${anio}`, revHab:d.revHab, revFnb:d.revFnb }));
             return (
               <ResponsiveContainer width="100%" height={220}>
                 <BarChart data={dailyData} barSize={10} barCategoryGap="20%">
@@ -798,6 +811,8 @@ function KpiModal({ kpi, datos, mes, anio, onClose }) {
               const dias = todasProd.filter(d=>{ const f=new Date(d.fecha+"T00:00:00"); return f.getMonth()===mIdx && f.getFullYear()===aIdx; });
               return {
                 mes: MESES_SHORT[mIdx],
+                mesNombre: MESES_FULL[mIdx],
+                anioIdx: aIdx,
                 revHab:   Math.round(dias.reduce((a,d)=>a+(d.revenue_hab||0),0)),
                 revFnb:   Math.round(dias.reduce((a,d)=>a+(d.revenue_fnb||0),0)),
               };
@@ -4526,11 +4541,21 @@ function PickupView({ datos }) {
                   <XAxis dataKey="canal" tick={{ fill:C.textMid, fontSize:11, fontWeight:600 }} axisLine={false} tickLine={false}/>
                   <YAxis domain={[0, yMax]} tickFormatter={vista.fmt} tick={{ fill:C.textLight, fontSize:10 }} axisLine={false} tickLine={false} width={52}/>
                   <Tooltip
-                    formatter={(v) => [vista.fmt(v), vista.label]}
-                    contentStyle={{ background:"#111111", border:"1px solid #333", borderRadius:8, fontSize:12 }}
-                    labelStyle={{ color:"#ffffff", fontWeight:700 }}
-                    itemStyle={{ color:"#ffffff" }}
                     cursor={false}
+                    content={({ active, payload, label }) => {
+                      if (!active || !payload?.length) return null;
+                      const d = payload[0];
+                      const color = (typeof d.payload?.color === "string" && !d.payload.color.startsWith("url(")) ? d.payload.color : "#7A9CC8";
+                      return (
+                        <div style={{ background:"#111111", borderRadius:10, padding:"10px 14px", boxShadow:"0 8px 24px rgba(0,0,0,0.35)", minWidth:130 }}>
+                          <p style={{ color:"#fff", fontSize:10, fontWeight:700, marginBottom:6, textTransform:"uppercase", letterSpacing:"1px" }}>{label}</p>
+                          <div style={{ display:"flex", alignItems:"center", gap:7 }}>
+                            <span style={{ width:8, height:8, borderRadius:2, background:color, flexShrink:0, display:"inline-block" }}/>
+                            <span style={{ color:"rgba(255,255,255,0.75)", fontSize:12 }}>{vista.label}: <span style={{ color:"#fff", fontWeight:700 }}>{vista.fmt(d.value)}</span></span>
+                          </div>
+                        </div>
+                      );
+                    }}
                   />
                   <Bar dataKey="valor" radius={[4,4,0,0]} maxBarSize={56} shape={(p) => <SimpleBar {...p}/>}>
                     {chartData.map((d,i) => (
@@ -4861,6 +4886,7 @@ function BudgetView({ datos, anio: anioProp }) {
   const chartUnificado = filas.map(f => ({
     mes: f.mes,
     mesFull: t("meses_full")[f.mesIdx],
+    anioIdx: anio,
     Ppto: kpiChart==="revenue" ? (f.rev_total_ppto ? Math.round(f.rev_total_ppto/1000) : null)
          : kpiChart==="adr"     ? f.adr_ppto : f.revpar_ppto,
     Real: kpiChart==="revenue" ? (f.rev_total_real ? Math.round(f.rev_total_real/1000) : null)
@@ -4961,15 +4987,17 @@ function BudgetView({ datos, anio: anioProp }) {
               content={({ active, payload }) => {
                 if (!active || !payload?.length) return null;
                 const colorMap = { Ppto:"#64748B", Real:"#1A7A3C", Forecast:"#B8860B" };
-                const mesNombre = payload[0]?.payload?.mesFull || payload[0]?.payload?.mes || "";
+                const raw = payload[0]?.payload || {};
+                const mesNombre = raw.mesFull || raw.mes || "";
+                const anioLabel = raw.anioIdx ? ` ${raw.anioIdx}` : "";
                 return (
-                  <div style={{ background:"#0A2540", borderRadius:10, padding:"12px 16px", boxShadow:"0 8px 24px rgba(0,0,0,0.22)", minWidth:164 }}>
-                    <p style={{ margin:"0 0 10px", fontSize:10, fontWeight:700, color:"#FFFFFF", textTransform:"uppercase", letterSpacing:"1.5px" }}>{mesNombre}</p>
+                  <div style={{ background:"#111111", borderRadius:10, padding:"12px 16px", boxShadow:"0 8px 24px rgba(0,0,0,0.35)", minWidth:164 }}>
+                    <p style={{ margin:"0 0 8px", fontSize:10, fontWeight:700, color:"#FFFFFF", textTransform:"uppercase", letterSpacing:"1.5px" }}>{mesNombre}{anioLabel}</p>
                     {payload.map((p, i) => p.value != null && (
                       <div key={i} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", gap:20, marginBottom:4 }}>
                         <span style={{ display:"flex", alignItems:"center", gap:6 }}>
                           <span style={{ display:"inline-block", width:8, height:8, borderRadius:2, background:colorMap[p.dataKey] || "#888" }} />
-                          <span style={{ fontSize:11, color:"rgba(255,255,255,0.6)" }}>{p.name}</span>
+                          <span style={{ fontSize:11, color:"rgba(255,255,255,0.75)" }}>{p.name}</span>
                         </span>
                         <span style={{ fontSize:12, fontWeight:700, color:"#FFFFFF" }}>
                           €{(kpiChart==="revenue" ? Math.round(p.value*1000) : Math.round(p.value)).toLocaleString("es-ES")}
@@ -5385,7 +5413,7 @@ function GruposView({ datos, onRecargar }) {
       .filter(g => g.estado === "confirmado" && g.fecha_inicio?.slice(0,7) === mStr)
       .reduce((a, g) => a + calcRevTotal(g), 0);
     const tieneDatos = diasMes.length > 0;
-    return { mes: MESES[mi], revHab: tieneDatos ? Math.round(revHab) : null, revME: revME > 0 ? Math.round(revME) : null };
+    return { mes: MESES[mi], mesNombre: `${t("meses_full")[mi]} ${anio}`, revHab: tieneDatos ? Math.round(revHab) : null, revME: revME > 0 ? Math.round(revME) : null };
   });
 
   const inp = { width:"100%", padding:"9px 12px", borderRadius:7, border:`1.5px solid ${C.border}`, fontSize:13, fontFamily:"'Plus Jakarta Sans',sans-serif", color:C.text, background:C.bg, outline:"none", boxSizing:"border-box" };
