@@ -21,7 +21,7 @@ const useT = () => { const lang = useContext(LangContext); return (k) => (TRANSL
 const TRANSLATIONS = {
   es: {
     // Nav & topbar
-    nav_dashboard:"Dashboard", nav_pickup:"Pickup", nav_budget:"Presupuesto", nav_grupos:"Grupos/Eventos", nav_salas:"Salas", nav_gestion:"Gestión de datos",
+    nav_dashboard:"Dashboard", nav_pickup:"Reservas", nav_budget:"Presupuesto", nav_grupos:"Grupos/Eventos", nav_salas:"Salas", nav_gestion:"Gestión de datos",
     importar:"Importar", mi_perfil:"Mi perfil", cerrar_sesion:"Cerrar sesión",
     suscripcion:"Suscripción", extranets:"Extranets", informe_mensual:"Informe mensual",
     conectado_como:"Conectado como", cargando:"Cargando...",
@@ -138,7 +138,7 @@ const TRANSLATIONS = {
     si:"Sí", no:"No", todos:"Todos",
   },
   en: {
-    nav_dashboard:"Dashboard", nav_pickup:"Pickup", nav_budget:"Budget", nav_grupos:"Grupos/Eventos", nav_salas:"Rooms", nav_gestion:"Data management",
+    nav_dashboard:"Dashboard", nav_pickup:"Reservas", nav_budget:"Budget", nav_grupos:"Grupos/Eventos", nav_salas:"Rooms", nav_gestion:"Data management",
     importar:"Import", mi_perfil:"My profile", cerrar_sesion:"Log out",
     suscripcion:"Subscription", extranets:"Extranets", informe_mensual:"Monthly report",
     conectado_como:"Signed in as", cargando:"Loading...",
@@ -243,7 +243,7 @@ const TRANSLATIONS = {
     si:"Yes", no:"No", todos:"All",
   },
   fr: {
-    nav_dashboard:"Dashboard", nav_pickup:"Pickup", nav_budget:"Budget", nav_grupos:"Grupos/Eventos", nav_salas:"Salles", nav_gestion:"Gestion des données",
+    nav_dashboard:"Dashboard", nav_pickup:"Reservas", nav_budget:"Budget", nav_grupos:"Grupos/Eventos", nav_salas:"Salles", nav_gestion:"Gestion des données",
     importar:"Importer", mi_perfil:"Mon profil", cerrar_sesion:"Déconnexion",
     suscripcion:"Abonnement", extranets:"Extranets", informe_mensual:"Rapport mensuel",
     conectado_como:"Connecté en tant que", cargando:"Chargement...",
