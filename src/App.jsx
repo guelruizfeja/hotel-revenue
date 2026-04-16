@@ -3724,12 +3724,12 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
               const Rc=20, SWc=3.5, circC=2*Math.PI*Rc, sizeC=Rc*2+SWc*2;
 
               return (
-                <div style={{ flex:"0 0 380px", padding:"20px 24px", display:"flex", flexDirection:"column", justifyContent:"center", gap:10 }}>
+                <div style={{ flex:"0 0 420px", padding:"28px 32px", display:"flex", flexDirection:"column", justifyContent:"center", gap:14 }}>
                   <div>
                     <p style={{ fontSize:11, fontWeight:700, color:C.text, textTransform:"uppercase", letterSpacing:"1.5px" }}>Movimiento Operativo Diario</p>
                     <p style={{ fontSize:10, color:C.textLight, marginTop:2 }}>{hoyStr}</p>
                   </div>
-                  <div style={{ display:"grid", gridTemplateColumns:"22px 1fr auto auto", alignItems:"center", rowGap:10, columnGap:8 }}>
+                  <div style={{ display:"grid", gridTemplateColumns:"22px 1fr auto auto", alignItems:"center", rowGap:14, columnGap:8 }}>
 
                     {/* Entradas */}
                     <FilaMovimiento tipo="entradas"
