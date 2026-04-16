@@ -32,7 +32,8 @@
       "Bash(python3.exe --version)",
       "Bash(python.exe --version)",
       "Bash(py --version)",
-      "Bash(ls \"/c/Users/guelr/Downloads/\"*Dise*)"
+      "Bash(ls \"/c/Users/guelr/Downloads/\"*Dise*)",
+      "Bash(curl -s http://localhost:5173)"
     ]
   }
 }

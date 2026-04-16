@@ -441,8 +441,8 @@ function WeatherBar({ ciudad, datos, lang }) {
 
     const hoy = new Date();
     const ayer = new Date(hoy); ayer.setDate(hoy.getDate() - 1);
-    const ayerStr = ayer.toISOString().slice(0, 10);
-    const hoyStr  = hoy.toISOString().slice(0, 10);
+    const ayerStr = `${ayer.getFullYear()}-${String(ayer.getMonth()+1).padStart(2,"0")}-${String(ayer.getDate()).padStart(2,"0")}`;
+    const hoyStr  = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,"0")}-${String(hoy.getDate()).padStart(2,"0")}`;
     const diaHoy = hoy.getDate();
     const mesActual = hoy.getMonth() + 1;
     const anioActual = hoy.getFullYear();
@@ -1473,7 +1473,7 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
     setGenerandoProdMock(true);
     try {
       const ayer = new Date(); ayer.setDate(ayer.getDate() - 1);
-      const ayerStr = ayer.toISOString().slice(0, 10);
+      const ayerStr = `${ayer.getFullYear()}-${String(ayer.getMonth()+1).padStart(2,"0")}-${String(ayer.getDate()).padStart(2,"0")}`;
 
       // Leer histórico para calcular patrones reales
       const { data: historico } = await supabase.from("produccion_diaria")
@@ -1738,10 +1738,11 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
   const [generandoMock, setGenerandoMock] = useState(false);
   const [okMock, setOkMock] = useState(false);
   const generarPickupMock = async () => {
+    if (!session?.user?.id) { setErrorPickup("Sesión no disponible, recarga la página."); return; }
     setGenerandoMock(true);
     try {
       const ayer = new Date(); ayer.setDate(ayer.getDate() - 1);
-      const ayerStr = ayer.toISOString().slice(0, 10);
+      const ayerStr = `${ayer.getFullYear()}-${String(ayer.getMonth()+1).padStart(2,"0")}-${String(ayer.getDate()).padStart(2,"0")}`;
 
       // Limpiar entradas de ayer y todas las entradas de Grupos/Eventos de cualquier fecha
       await Promise.all([
@@ -1799,23 +1800,28 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
         mediaADR = 120;
       }
 
-      // 7 reservas individuales con canales variados y llegadas distribuidas en el año
-      const plantilla = [
-        { canal:"Booking.com",           mesesDesde:1,  mesesHasta:3,  nochesDef:2, factorADR:0.97 },
-        { canal:"Directo / Web",          mesesDesde:2,  mesesHasta:5,  nochesDef:3, factorADR:1.05 },
-        { canal:"Expedia",                mesesDesde:3,  mesesHasta:6,  nochesDef:2, factorADR:0.95 },
-        { canal:"Empresa / Corporativo",  mesesDesde:1,  mesesHasta:2,  nochesDef:1, factorADR:1.10 },
-        { canal:"Booking.com",           mesesDesde:5,  mesesHasta:8,  nochesDef:3, factorADR:0.98 },
-        { canal:"Agencia",               mesesDesde:7,  mesesHasta:10, nochesDef:4, factorADR:0.90 },
-        { canal:"Directo / Web",          mesesDesde:9,  mesesHasta:12, nochesDef:2, factorADR:1.05 },
+      // 3-4 reservas confirmadas + 1-2 cancelaciones
+      const plantillaConf = [
+        { canal:"Booking.com",          mesesDesde:1, mesesHasta:4,  nochesDef:2, factorADR:0.97 },
+        { canal:"Directo / Web",         mesesDesde:2, mesesHasta:6,  nochesDef:3, factorADR:1.05 },
+        { canal:"Expedia",               mesesDesde:4, mesesHasta:8,  nochesDef:2, factorADR:0.95 },
+        { canal:"Empresa / Corporativo", mesesDesde:1, mesesHasta:3,  nochesDef:1, factorADR:1.10 },
       ];
+      const plantillaCancel = [
+        { canal:"Booking.com",  mesesDesde:2, mesesHasta:5, nochesDef:2, factorADR:0.97 },
+        { canal:"Directo / Web", mesesDesde:3, mesesHasta:7, nochesDef:2, factorADR:1.02 },
+      ];
+      // Tomar aleatoriamente 3 ó 4 confirmadas y 1 ó 2 canceladas
+      const numConf   = Math.random() < 0.5 ? 3 : 4;
+      const numCancel = Math.random() < 0.5 ? 1 : 2;
+      const shuffled = (arr) => [...arr].sort(() => Math.random() - 0.5);
+      const selConf   = shuffled(plantillaConf).slice(0, numConf);
+      const selCancel = shuffled(plantillaCancel).slice(0, numCancel);
 
-      const filas = plantilla.map(({ canal, mesesDesde, mesesHasta, nochesDef, factorADR }) => {
-        const diasOffset = Math.round(
-          (mesesDesde * 30) + Math.random() * ((mesesHasta - mesesDesde) * 30)
-        );
+      const mkFila = ({ canal, mesesDesde, mesesHasta, nochesDef, factorADR }, estado) => {
+        const diasOffset = Math.round((mesesDesde * 30) + Math.random() * ((mesesHasta - mesesDesde) * 30));
         const llegada = new Date(ayer); llegada.setDate(llegada.getDate() + diasOffset);
-        const noches = Math.max(1, Math.round(nochesDef + (Math.random()-0.5)));
+        const noches = Math.max(1, Math.round(nochesDef + (Math.random() - 0.5)));
         const adr = Math.round(mediaADR * factorADR * (0.93 + Math.random() * 0.14));
         const salida = new Date(llegada); salida.setDate(salida.getDate() + noches);
         return {
@@ -1827,16 +1833,25 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
           num_reservas:  1,
           noches,
           precio_total:  Math.round(adr * noches * 100) / 100,
-          estado:        "confirmada",
+          estado,
         };
-      });
+      };
+
+      const filas = [
+        ...selConf.map(p => mkFila(p, "confirmada")),
+        ...selCancel.map(p => mkFila(p, "cancelada")),
+      ];
 
       const { error } = await supabase.from("pickup_entries").insert(filas);
       if (error) throw new Error(error.message);
       setOkMock(true);
-      setTimeout(() => setOkMock(false), 4000);
-      if (onImportado) onImportado();
-    } catch(e) { setErrorPickup("Error generando datos: " + e.message); }
+      setGenerandoMock(false);
+      setTimeout(() => {
+        setOkMock(false);
+        if (onImportado) onImportado();
+      }, 2000);
+      return;
+    } catch(e) { setErrorPickup("Error generando datos: " + (e.message || String(e))); }
     setGenerandoMock(false);
   };
 
@@ -3277,7 +3292,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
       <div className="dash-header" style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16, paddingBottom:14, borderBottom:`1px solid ${C.border}` }}>
         <div>
           <p style={{ fontSize:22, fontWeight:800, color:C.text, fontFamily:"'Plus Jakarta Sans',sans-serif", letterSpacing:-0.5, marginBottom:2 }}>
-            {t("bienvenido")}, <span style={{ color:C.accent }}>{datos.hotel?.nombre || "Mi Hotel"}</span>
+            {t("bienvenido")}, <span style={{ color:C.text }}>{datos.hotel?.nombre || "Mi Hotel"}</span>
           </p>
           <div style={{ display:"flex", alignItems:"baseline", gap:10 }}>
             <h2 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:28, fontWeight:700, color:C.text, margin:0, letterSpacing:-0.5 }}>
@@ -3674,20 +3689,18 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
 
               const Delta = ({ hoy, ayer }) => {
                 const d = hoy - ayer;
-                const col  = d > 0 ? "#10B981" : d < 0 ? "#EF4444" : C.textLight;
-                const bg   = d > 0 ? "#10B98115" : d < 0 ? "#EF444415" : `${C.border}40`;
+                if (d === 0) return <span style={{ fontSize:18, color:C.border, fontWeight:400, lineHeight:1 }}>—</span>;
+                const col  = d > 0 ? "#10B981" : "#EF4444";
+                const bg   = d > 0 ? "#10B98115" : "#EF444415";
                 const arrow = d > 0
                   ? <svg width="10" height="10" viewBox="0 0 10 10" fill={col}><polygon points="5,1 9,9 1,9"/></svg>
-                  : d < 0
-                  ? <svg width="10" height="10" viewBox="0 0 10 10" fill={col}><polygon points="5,9 9,1 1,1"/></svg>
-                  : null;
-                const label = d === 0 ? "sin cambio" : `${d>0?"+":""}${d}`;
+                  : <svg width="10" height="10" viewBox="0 0 10 10" fill={col}><polygon points="5,9 9,1 1,1"/></svg>;
                 return (
                   <div style={{ display:"inline-flex", flexDirection:"column", alignItems:"flex-end", gap:2 }}>
                     <span style={{ fontSize:8, color:C.textLight, fontWeight:500, letterSpacing:"0.5px", textTransform:"uppercase" }}>vs ayer</span>
                     <span style={{ display:"inline-flex", alignItems:"center", gap:4, padding:"3px 7px", borderRadius:20, background:bg }}>
                       {arrow}
-                      <span style={{ fontSize:12, fontWeight:700, color:col, lineHeight:1 }}>{label}</span>
+                      <span style={{ fontSize:12, fontWeight:700, color:col, lineHeight:1 }}>{d>0?"+":""}{d}</span>
                     </span>
                   </div>
                 );
@@ -3946,7 +3959,9 @@ function PickupView({ datos }) {
   const [trimSel, setTrimSel] = useState(null);
   const [trimTip, setTrimTip] = useState(null); // { x, y, d }
   const [canalMetric, setCanalMetric]     = useState("adr"); // "adr" | "noches"
-  const [ayerVista, setAyerVista]         = useState("count"); // "count"|"adr"|"noches"|"antelacion"
+  const [ayerVista, setAyerVista]         = useState(null); // null | "count"|"adr"|"noches"|"antelacion"
+  const [reservasVentana, setReservasVentana] = useState("30d"); // "30d" | "year"
+  const [reservasVista, setReservasVista]     = useState("count"); // "count"|"adr"|"noches"|"antelacion"
 
   const hoy     = new Date();
   const padL    = n => String(n).padStart(2,"0");
@@ -4048,6 +4063,7 @@ function PickupView({ datos }) {
   const esGrupoEvento = e => { const c = (e.canal||"").toLowerCase(); return c.includes("grupo") || c.includes("evento"); };
   const ultDia = [...pickupEntries].filter(e => !esGrupoEvento(e)).map(e=>String(e.fecha_pickup||"").slice(0,10)).filter(f=>f.length===10).sort().pop() || "";
   const reservasUltDia = pickupEntries.filter(e => !esGrupoEvento(e) && String(e.fecha_pickup||"").slice(0,10) === ultDia && (e.estado||"confirmada") !== "cancelada").sort((a,b)=>(a.fecha_llegada||"").localeCompare(b.fecha_llegada||""));
+  const ultDiaTotal = reservasUltDia.reduce((a,e) => a + (e.num_reservas||1), 0);
   const fmtDatePU = d => { if (!d) return "—"; const p=d.split("-"); return p.length===3?`${p[2]}/${p[1]}/${p[0]}`:d; };
 
   const reservasAyer = pickupEntries.filter(e => String(e.fecha_pickup||"").slice(0,10) === ayerStr);
@@ -4102,22 +4118,35 @@ function PickupView({ datos }) {
     .map(([canal, d]) => ({ canal, media: (d.total/d.count).toFixed(1) }))
     .sort((a,b) => b.media - a.media);
 
-  // ── Precio medio por reserva ──
-  const conPrecio = pickupEntries.filter(e => e.precio_total && e.precio_total > 0 && (e.estado||"confirmada") !== "cancelada" && normCanal(e.canal) !== "Grupos/Eventos");
-  const precioMed = conPrecio.length > 0
-    ? Math.round(conPrecio.reduce((a,e)=>a+(e.precio_total||0),0) / conPrecio.length)
-    : null;
-  // Por canal
-  const precioPorCanal = {};
-  conPrecio.forEach(e => {
-    const c = normCanal(e.canal);
-    if (!precioPorCanal[c]) precioPorCanal[c] = { total:0, count:0 };
-    precioPorCanal[c].total += e.precio_total||0;
-    precioPorCanal[c].count += 1;
+  // ── Reservas por ventana temporal (30d / año) ──
+  const hoyTs = new Date();
+  const ventanaMs = reservasVentana === "30d" ? 30 * 86400000 : 365 * 86400000;
+  const ventanaDesde = new Date(hoyTs - ventanaMs).toISOString().slice(0,10);
+  const reservasVentanaEntries = pickupEntries.filter(e => {
+    const fp = String(e.fecha_pickup||"").slice(0,10);
+    return fp >= ventanaDesde && (e.estado||"confirmada") !== "cancelada" && normCanal(e.canal) !== "Grupos/Eventos";
   });
-  const precioCanalData = Object.entries(precioPorCanal)
-    .map(([canal, d]) => ({ canal, media: Math.round(d.total/d.count), color: CANAL_COLORS[canal]||C.accent }))
-    .sort((a,b) => b.media - a.media);
+  const ventanaCanalStats = {};
+  reservasVentanaEntries.forEach(e => {
+    const c = normCanal(e.canal);
+    if (!ventanaCanalStats[c]) ventanaCanalStats[c] = { count:0, precioTotal:0, nochesTotal:0, antTotal:0, antCount:0 };
+    const nr = e.num_reservas || 1;
+    ventanaCanalStats[c].count       += nr;
+    ventanaCanalStats[c].precioTotal += (e.precio_total || 0);
+    ventanaCanalStats[c].nochesTotal += (e.noches || 0) * nr;
+    if (e.fecha_llegada && e.fecha_pickup) {
+      const dias = Math.round((new Date(e.fecha_llegada) - new Date(e.fecha_pickup)) / 86400000);
+      if (dias >= 0) { ventanaCanalStats[c].antTotal += dias * nr; ventanaCanalStats[c].antCount += nr; }
+    }
+  });
+  const ventanaCanalData = Object.entries(ventanaCanalStats).map(([canal, d]) => ({
+    canal, color: CANAL_COLORS[canal] || C.accent,
+    count: d.count,
+    adr:   d.nochesTotal > 0 ? Math.round(d.precioTotal / d.nochesTotal) : (d.count > 0 ? Math.round(d.precioTotal / d.count) : null),
+    noches: d.count > 0 ? parseFloat((d.nochesTotal / d.count).toFixed(1)) : null,
+    antelacion: d.antCount > 0 ? Math.round(d.antTotal / d.antCount) : null,
+  })).sort((a,b) => b.count - a.count);
+  const ventanaTotal = ventanaCanalData.reduce((a,d) => a + d.count, 0);
 
   return (
     <div style={{ display:"flex", flexDirection:"column", gap:20 }}>
@@ -4127,19 +4156,15 @@ function PickupView({ datos }) {
         {/* Header */}
         <div style={{ display:"flex", alignItems:"flex-start", gap:16, marginBottom:20 }}>
           <div style={{ background:"#111", borderRadius:10, padding:"10px 18px", textAlign:"center", flexShrink:0 }}>
-            <p style={{ fontSize:30, fontWeight:800, color:"#fff", fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1 }}>{ayerTotal}</p>
+            <p style={{ fontSize:30, fontWeight:800, color:"#fff", fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1 }}>{ultDiaTotal}</p>
             <p style={{ fontSize:9, color:"#ffffff", fontWeight:700, textTransform:"uppercase", letterSpacing:1, marginTop:4 }}>Nuevas reservas</p>
           </div>
           <div>
-            <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:18, color:C.text }}>{t("reservas_ayer")}</p>
-            <p style={{ fontSize:12, color:C.textLight, marginTop:2 }}>
-              {ayerD.toLocaleDateString("es-ES",{weekday:"long",day:"numeric",month:"long"}).replace(/^\w/,c=>c.toUpperCase())}
-            </p>
-            {ultDia && <p style={{ fontSize:11, color:C.textLight, marginTop:2 }}>Captadas el {fmtDatePU(ultDia)}</p>}
+            <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:18, color:C.text }}>Reservas captadas ayer</p>
           </div>
         </div>
 
-        {ayerTotal === 0 ? (
+        {ultDiaTotal === 0 ? (
           <p style={{ color:C.textLight, fontSize:13, textAlign:"center", padding:"20px 0" }}>{t("no_reservas_ayer")}</p>
         ) : (() => {
           const canalStats = {};
@@ -4158,63 +4183,92 @@ function PickupView({ datos }) {
           const canalData = Object.entries(canalStats).map(([canal, d]) => ({
             canal, color: CANAL_COLORS[canal] || C.accent,
             count: d.count,
-            adr:   d.nochesTotal > 0 ? Math.round(d.precioTotal / (d.nochesTotal / (d.count||1))) : null,
+            adr:   d.nochesTotal > 0 ? Math.round(d.precioTotal / d.nochesTotal) : (d.count > 0 ? Math.round(d.precioTotal / d.count) : null),
             noches: d.count > 0 ? parseFloat((d.nochesTotal / d.count).toFixed(1)) : null,
             antelacion: d.antCount > 0 ? Math.round(d.antTotal / d.antCount) : null,
           })).sort((a,b) => b.count - a.count);
 
-          const VISTAS = [
-            { key:"count",      label:"Por canal",      valFn: d=>d.count,      fmt: v=>`${v} res.` },
-            { key:"adr",        label:"Precio medio",   valFn: d=>d.adr,        fmt: v=>`€${v}` },
-            { key:"noches",     label:"Duración",       valFn: d=>d.noches,     fmt: v=>`${v} noches` },
-            { key:"antelacion", label:"Antelación",     valFn: d=>d.antelacion, fmt: v=>`${v} días` },
-          ];
-          const vista = VISTAS.find(v=>v.key===ayerVista) || VISTAS[0];
-          const rows  = [...canalData].sort((a,b) => (vista.valFn(b)||0) - (vista.valFn(a)||0));
-          const max   = Math.max(...rows.map(d => vista.valFn(d)||0));
+          // Totales globales
+          const totRaw = Object.values(canalStats).reduce((acc, d) => ({
+            count: acc.count + d.count, precioTotal: acc.precioTotal + d.precioTotal,
+            nochesTotal: acc.nochesTotal + d.nochesTotal, antTotal: acc.antTotal + d.antTotal, antCount: acc.antCount + d.antCount,
+          }), { count:0, precioTotal:0, nochesTotal:0, antTotal:0, antCount:0 });
+          const globalAdr        = totRaw.nochesTotal > 0 ? Math.round(totRaw.precioTotal / totRaw.nochesTotal) : (totRaw.count > 0 ? Math.round(totRaw.precioTotal / totRaw.count) : null);
+          const globalNoches     = totRaw.count > 0 ? parseFloat((totRaw.nochesTotal / totRaw.count).toFixed(1)) : null;
+          const globalAntelacion = totRaw.antCount > 0 ? Math.round(totRaw.antTotal / totRaw.antCount) : null;
 
-          const ayerChartData = rows.map(d => ({ canal: d.canal, valor: vista.valFn(d) ?? 0, color: d.color }));
-          const ayerYMax = max > 0 ? Math.ceil(max * 1.2) : 10;
+          const pieData = canalData.map(d => ({ name: d.canal, value: d.count, color: d.color }));
+
           return (
-            <div>
-              {/* Tabs */}
-              <div style={{ display:"flex", gap:6, marginBottom:20, flexWrap:"wrap" }}>
-                {VISTAS.map(v => (
-                  <button key={v.key} onClick={()=>setAyerVista(v.key)}
-                    style={{ padding:"5px 14px", borderRadius:20, border:`1.5px solid ${ayerVista===v.key?"#111":C.border}`, background:ayerVista===v.key?"#111":"transparent", color:ayerVista===v.key?"#fff":C.textMid, fontSize:12, fontWeight:ayerVista===v.key?700:400, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", transition:"all 0.15s" }}>
-                    {v.label}
-                  </button>
-                ))}
+            <div style={{ display:"grid", gridTemplateColumns:"2fr 1fr 1fr 1fr", gap:10 }}>
+
+              {/* Tarjeta canal — queso */}
+              <div style={{ borderRadius:10, padding:"16px", border:`1.5px solid ${C.border}`, background:C.bg }}>
+                <p style={{ fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:1, color:C.textLight, marginBottom:10 }}>Por canal</p>
+                <div style={{ display:"flex", alignItems:"center", gap:16 }}>
+                  <PieChart width={90} height={90}>
+                    <Pie data={pieData} cx={40} cy={40} innerRadius={26} outerRadius={42} dataKey="value" strokeWidth={0} isAnimationActive={false}>
+                      {pieData.map((d,i) => <Cell key={i} fill={d.color}/>)}
+                    </Pie>
+                  </PieChart>
+                  <div style={{ display:"flex", flexDirection:"column", gap:5, flex:1 }}>
+                    {canalData.map(d => (
+                      <div key={d.canal} style={{ display:"flex", alignItems:"center", gap:6 }}>
+                        <div style={{ width:8, height:8, borderRadius:"50%", background:d.color, flexShrink:0 }}/>
+                        <span style={{ fontSize:11, color:C.textMid, flex:1 }}>{d.canal}</span>
+                        <span style={{ fontSize:11, fontWeight:700, color:C.text }}>{d.count}</span>
+                        <span style={{ fontSize:10, color:C.textLight }}>{Math.round(d.count/ultDiaTotal*100)}%</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
-              <div onMouseDown={e=>e.preventDefault()}>
-              <ResponsiveContainer width="100%" height={280}>
-              <BarChart data={ayerChartData} margin={{ top:16, right:16, left:8, bottom:8 }}>
-                <defs>
-                  {ayerChartData.map((d,i) => (
-                    <linearGradient key={i} id={`ag_${i}`} x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor={d.color} stopOpacity={1}/>
-                      <stop offset="100%" stopColor={d.color} stopOpacity={0.55}/>
-                    </linearGradient>
+
+              {/* ADR */}
+              <div style={{ borderRadius:10, padding:"16px", border:`1.5px solid ${C.border}`, background:C.bg }}>
+                <p style={{ fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:1, color:C.textLight, marginBottom:10 }}>Precio medio</p>
+                <p style={{ fontSize:28, fontWeight:800, color:C.text, fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1, marginBottom:6 }}>{globalAdr != null ? `€${globalAdr}` : "—"}</p>
+                <p style={{ fontSize:10, color:C.textMid, marginBottom:10 }}>ADR medio</p>
+                <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
+                  {canalData.map(d => d.adr != null && (
+                    <div key={d.canal} style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                      <span style={{ fontSize:10, color:C.textMid }}>{d.canal}</span>
+                      <span style={{ fontSize:11, fontWeight:700, color:d.color }}>€{d.adr}</span>
+                    </div>
                   ))}
-                </defs>
-                <CartesianGrid vertical={false} stroke={C.border} strokeDasharray="4 4"/>
-                <XAxis dataKey="canal" tick={{ fill:C.textMid, fontSize:11, fontWeight:600 }} axisLine={false} tickLine={false}/>
-                <YAxis domain={[0, ayerYMax]} tickFormatter={vista.fmt} tick={{ fill:C.textLight, fontSize:10 }} axisLine={false} tickLine={false} width={52}/>
-                <Tooltip
-                  formatter={(v) => [vista.fmt(v), vista.label]}
-                  contentStyle={{ background:"#111111", border:"1px solid #333", borderRadius:8, fontSize:12 }}
-                  labelStyle={{ color:"#ffffff", fontWeight:700 }}
-                  itemStyle={{ color:"#ffffff" }}
-                  cursor={false}
-                />
-                <Bar dataKey="valor" radius={[4,4,0,0]} maxBarSize={56} shape={(p) => <SimpleBar {...p}/>}>
-                  {ayerChartData.map((d,i) => (
-                    <Cell key={i} fill={`url(#ag_${i})`}/>
-                  ))}
-                </Bar>
-              </BarChart>
-              </ResponsiveContainer>
+                </div>
               </div>
+
+              {/* Duración */}
+              <div style={{ borderRadius:10, padding:"16px", border:`1.5px solid ${C.border}`, background:C.bg }}>
+                <p style={{ fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:1, color:C.textLight, marginBottom:10 }}>Duración media</p>
+                <p style={{ fontSize:28, fontWeight:800, color:C.text, fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1, marginBottom:6 }}>{globalNoches != null ? globalNoches : "—"}</p>
+                <p style={{ fontSize:10, color:C.textMid, marginBottom:10 }}>noches / reserva</p>
+                <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
+                  {canalData.map(d => d.noches != null && (
+                    <div key={d.canal} style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                      <span style={{ fontSize:10, color:C.textMid }}>{d.canal}</span>
+                      <span style={{ fontSize:11, fontWeight:700, color:d.color }}>{d.noches}n</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Antelación */}
+              <div style={{ borderRadius:10, padding:"16px", border:`1.5px solid ${C.border}`, background:C.bg }}>
+                <p style={{ fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:1, color:C.textLight, marginBottom:10 }}>Antelación</p>
+                <p style={{ fontSize:28, fontWeight:800, color:C.text, fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1, marginBottom:6 }}>{globalAntelacion != null ? globalAntelacion : "—"}</p>
+                <p style={{ fontSize:10, color:C.textMid, marginBottom:10 }}>días de antelación</p>
+                <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
+                  {canalData.map(d => d.antelacion != null && (
+                    <div key={d.canal} style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                      <span style={{ fontSize:10, color:C.textMid }}>{d.canal}</span>
+                      <span style={{ fontSize:11, fontWeight:700, color:d.color }}>{d.antelacion}d</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
             </div>
           );
         })()}
@@ -4416,72 +4470,84 @@ function PickupView({ datos }) {
           })()}
         </Card>
 
-        {/* Col derecha: ADR / DURACIÓN MEDIA POR CANAL */}
-        <div style={{ background:C.bgCard, border:`1px solid ${C.border}`, borderRadius:12, padding:"24px 28px" }}>
-          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:18 }}>
-            <div>
-              <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:16, color:C.text }}>
-                {canalMetric === "adr" ? t("precio_medio_reserva") : t("duracion_media")}
-              </p>
-              <p style={{ fontSize:11, color:C.textLight, marginTop:2 }}>
-                {canalMetric === "adr" ? t("revenue_medio") : t("noches_reserva")}
-              </p>
+        {/* Col derecha: Reservas por ventana */}
+        <Card>
+          {/* Header */}
+          <div style={{ display:"flex", alignItems:"flex-start", gap:16, marginBottom:20 }}>
+            <div style={{ background:"#111", borderRadius:10, padding:"10px 18px", textAlign:"center", flexShrink:0 }}>
+              <p style={{ fontSize:30, fontWeight:800, color:"#fff", fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1 }}>{ventanaTotal}</p>
+              <p style={{ fontSize:9, color:"#ffffff", fontWeight:700, textTransform:"uppercase", letterSpacing:1, marginTop:4 }}>reservas</p>
             </div>
-            <div style={{ display:"flex", borderRadius:8, overflow:"hidden", border:`1px solid ${C.border}` }}>
-                {[["adr","ADR"], ["noches","Noches"]].map(([key, label]) => (
-                  <button key={key} onClick={() => setCanalMetric(key)}
-                    style={{ padding:"6px 14px", fontSize:11, fontWeight:700, cursor:"pointer", border:"none", background: canalMetric===key ? C.accent : "transparent", color: canalMetric===key ? "#fff" : C.textMid, transition:"background 0.2s" }}>
+            <div style={{ flex:1 }}>
+              <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:18, color:C.text, marginBottom:8 }}>Reservas obtenidas</p>
+              {/* Toggle ventana */}
+              <div style={{ display:"flex", borderRadius:8, overflow:"hidden", border:`1px solid ${C.border}`, width:"fit-content" }}>
+                {[["30d","Últimos 30 días"], ["year","Último año"]].map(([key, label]) => (
+                  <button key={key} onClick={()=>setReservasVentana(key)}
+                    style={{ padding:"5px 14px", fontSize:11, fontWeight:700, cursor:"pointer", border:"none", background: reservasVentana===key ? "#111" : "transparent", color: reservasVentana===key ? "#fff" : C.textMid, transition:"background 0.2s", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
                     {label}
                   </button>
                 ))}
+              </div>
             </div>
           </div>
-          {(() => {
-            const rawData = canalMetric === "adr" ? precioCanalData : nochesCanalData.map(d => ({ ...d, color: CANAL_COLORS[d.canal]||C.accent }));
-            if (rawData.length === 0) return <p style={{ fontSize:12, color:C.textLight, textAlign:"center", padding:"30px 0" }}>{t("sin_datos")}</p>;
-            const chartData = rawData.slice(0,7).map(d => ({
-              canal: d.canal,
-              valor: canalMetric === "adr" ? d.media : parseFloat(d.media),
-              color: d.color || CANAL_COLORS[d.canal] || C.accent
-            }));
-            const maxVal = Math.max(...chartData.map(d=>d.valor));
-            const yMax   = canalMetric === "adr"
-              ? Math.ceil(maxVal * 1.15 / 50) * 50
-              : Math.ceil(maxVal * 1.3);
-            const fmt = v => canalMetric === "adr" ? `€${v.toLocaleString("es-ES")}` : `${v}n`;
+          {ventanaCanalData.length === 0 ? (
+            <p style={{ color:C.textLight, fontSize:13, textAlign:"center", padding:"20px 0" }}>{t("sin_datos")}</p>
+          ) : (() => {
+            const VISTAS = [
+              { key:"count",      label:"Por canal",    valFn: d=>d.count,      fmt: v=>`${v} res.` },
+              { key:"adr",        label:"Precio medio", valFn: d=>d.adr,        fmt: v=>`€${v}` },
+              { key:"noches",     label:"Duración",     valFn: d=>d.noches,     fmt: v=>`${v} noches` },
+              { key:"antelacion", label:"Antelación",   valFn: d=>d.antelacion, fmt: v=>`${v} días` },
+            ];
+            const vista = VISTAS.find(v=>v.key===reservasVista) || VISTAS[0];
+            const rows  = [...ventanaCanalData].sort((a,b) => (vista.valFn(b)||0) - (vista.valFn(a)||0));
+            const max   = Math.max(...rows.map(d => vista.valFn(d)||0));
+            const chartData = rows.map(d => ({ canal: d.canal, valor: vista.valFn(d) ?? 0, color: d.color }));
+            const yMax  = max > 0 ? Math.ceil(max * 1.2) : 10;
             return (
-              <div onMouseDown={e=>e.preventDefault()}>
-              <ResponsiveContainer width="100%" height={280}>
-              <BarChart data={chartData} margin={{ top:16, right:16, left:8, bottom:8 }}>
-                <defs>
-                  {chartData.map((d,i) => (
-                    <linearGradient key={i} id={`cg_${i}`} x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor={d.color} stopOpacity={1}/>
-                      <stop offset="100%" stopColor={d.color} stopOpacity={0.55}/>
-                    </linearGradient>
+              <div>
+                <div style={{ display:"flex", gap:6, marginBottom:20, flexWrap:"wrap" }}>
+                  {VISTAS.map(v => (
+                    <button key={v.key} onClick={()=>setReservasVista(v.key)}
+                      style={{ padding:"5px 14px", borderRadius:20, border:`1.5px solid ${reservasVista===v.key?"#111":C.border}`, background:reservasVista===v.key?"#111":"transparent", color:reservasVista===v.key?"#fff":C.textMid, fontSize:12, fontWeight:reservasVista===v.key?700:400, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", transition:"all 0.15s" }}>
+                      {v.label}
+                    </button>
                   ))}
-                </defs>
-                <CartesianGrid vertical={false} stroke={C.border} strokeDasharray="4 4" opacity={1}/>
-                <XAxis dataKey="canal" tick={{ fill:C.textMid, fontSize:11, fontWeight:600 }} axisLine={false} tickLine={false}/>
-                <YAxis domain={[0, yMax]} tickFormatter={fmt} tick={{ fill:C.textLight, fontSize:10 }} axisLine={false} tickLine={false} width={44}/>
-                <Tooltip
-                  formatter={(v) => [fmt(v), canalMetric==="adr"?"ADR":"Noches"]}
-                  contentStyle={{ background:"#111111", border:"1px solid #333", borderRadius:8, fontSize:12 }}
-                  labelStyle={{ color:"#ffffff", fontWeight:700 }}
-                  itemStyle={{ color:"#ffffff" }}
-                  cursor={false}
-                />
-                <Bar dataKey="valor" radius={[4,4,0,0]} maxBarSize={56} shape={(p) => <SimpleBar {...p}/>}>
-                  {chartData.map((d,i) => (
-                    <Cell key={i} fill={`url(#cg_${i})`}/>
-                  ))}
-                </Bar>
-              </BarChart>
-              </ResponsiveContainer>
+                </div>
+                <div onMouseDown={e=>e.preventDefault()}>
+                <ResponsiveContainer width="100%" height={280}>
+                <BarChart data={chartData} margin={{ top:16, right:16, left:8, bottom:8 }}>
+                  <defs>
+                    {chartData.map((d,i) => (
+                      <linearGradient key={i} id={`vg_${i}`} x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor={d.color} stopOpacity={1}/>
+                        <stop offset="100%" stopColor={d.color} stopOpacity={0.55}/>
+                      </linearGradient>
+                    ))}
+                  </defs>
+                  <CartesianGrid vertical={false} stroke={C.border} strokeDasharray="4 4"/>
+                  <XAxis dataKey="canal" tick={{ fill:C.textMid, fontSize:11, fontWeight:600 }} axisLine={false} tickLine={false}/>
+                  <YAxis domain={[0, yMax]} tickFormatter={vista.fmt} tick={{ fill:C.textLight, fontSize:10 }} axisLine={false} tickLine={false} width={52}/>
+                  <Tooltip
+                    formatter={(v) => [vista.fmt(v), vista.label]}
+                    contentStyle={{ background:"#111111", border:"1px solid #333", borderRadius:8, fontSize:12 }}
+                    labelStyle={{ color:"#ffffff", fontWeight:700 }}
+                    itemStyle={{ color:"#ffffff" }}
+                    cursor={false}
+                  />
+                  <Bar dataKey="valor" radius={[4,4,0,0]} maxBarSize={56} shape={(p) => <SimpleBar {...p}/>}>
+                    {chartData.map((d,i) => (
+                      <Cell key={i} fill={`url(#vg_${i})`}/>
+                    ))}
+                  </Bar>
+                </BarChart>
+                </ResponsiveContainer>
+                </div>
               </div>
             );
           })()}
-        </div>{/* fin col derecha */}
+        </Card>{/* fin col derecha */}
       </div>{/* fin grid 2 cols */}
 
       {/* ── PACE ── */}
@@ -5195,6 +5261,8 @@ function GruposView({ datos, onRecargar }) {
   const [menuNuevo, setMenuNuevo] = useState(false);
   const [subVista, setSubVista] = useState(() => localStorage.getItem("fr_grupos_subvista") || "grupos");
   const cambiarSubVista = (v) => { setSubVista(v); localStorage.setItem("fr_grupos_subvista", v); };
+  const [salaDetalle, setSalaDetalle] = useState(() => localStorage.getItem("fr_sala_detalle") || null);
+  const cambiarSalaDetalle = (v) => { setSalaDetalle(v); if (v) localStorage.setItem("fr_sala_detalle", v); else localStorage.removeItem("fr_sala_detalle"); };
   useEffect(() => {
     const handler = (e) => {
       if (e.key !== "Escape") return;
@@ -5318,26 +5386,22 @@ function GruposView({ datos, onRecargar }) {
   return (
     <div style={{ display:"flex", flexDirection:"column", gap:20 }}>
 
-      {/* ── Header: título + selector de periodo + botones ── */}
-      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:16, flexWrap:"wrap" }}>
-        <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
-          <h2 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:24, fontWeight:700, color:C.text, margin:0, letterSpacing:-0.5 }}>
-            Grupos / Eventos
-          </h2>
-          <div style={{ display:"flex", gap:6 }}>
-            <select value={mes} onChange={e=>setMes(Number(e.target.value))}
-              style={{ padding:"6px 10px", borderRadius:7, border:`1.5px solid ${C.border}`, fontSize:13, fontWeight:600, color:C.text, background:C.bg, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", outline:"none" }}>
-              {MESES_FULL.map((m, i) => {
-                const mStr = String(anio) + "-" + String(i+1).padStart(2,"0");
-                const conf = grupos.filter(g => g.estado === "confirmado" && (g.fecha_inicio?.slice(0,7) === mStr || g.fecha_fin?.slice(0,7) === mStr)).length;
-                return <option key={i} value={i}>{m}{conf > 0 ? ` (${conf})` : ""}</option>;
-              })}
-            </select>
-            <select value={anio} onChange={e=>setAnio(Number(e.target.value))}
-              style={{ padding:"6px 10px", borderRadius:7, border:`1.5px solid ${C.border}`, fontSize:13, fontWeight:600, color:C.text, background:C.bg, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", outline:"none" }}>
-              {[...new Set([anio - 1, anio, anio + 1, ...grupos.map(g => parseInt(g.fecha_inicio?.slice(0,4))).filter(Boolean)])].sort().map(a => <option key={a} value={a}>{a}</option>)}
-            </select>
-          </div>
+      {/* ── Sub-navegación + botones ── */}
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", gap:8, flexWrap:"wrap" }}>
+        <div style={{ display:"flex", gap:6 }}>
+          {[
+            { key:"grupos",  label:"Grupos" },
+            { key:"eventos", label:"Eventos" },
+            { key:"salas",   label:"Gestión de salas" },
+          ].map(({ key, label }) => {
+            const activo = subVista === key;
+            return (
+              <button key={key} onClick={()=>cambiarSubVista(key)}
+                style={{ padding:"7px 18px", fontSize:13, fontWeight:activo?700:500, cursor:"pointer", border:`1.5px solid ${activo ? C.text : C.border}`, borderRadius:8, background: activo ? C.text : "transparent", color: activo ? C.bgCard : C.textMid, fontFamily:"'Plus Jakarta Sans',sans-serif", transition:"all 0.15s" }}>
+                {label}
+              </button>
+            );
+          })}
         </div>
         <div style={{ display:"flex", gap:8, alignItems:"center" }}>
           <button onClick={seedDemoData} disabled={seedando || borrandoDemo}
@@ -5380,32 +5444,33 @@ function GruposView({ datos, onRecargar }) {
         </div>
       </div>
 
-      {/* ── Sub-navegación ── */}
-      <div style={{ display:"flex", gap:6 }}>
-        {[
-          { key:"grupos",  label:"Grupos" },
-          { key:"eventos", label:"Eventos" },
-          { key:"salas",   label:"Gestión de salas" },
-        ].map(({ key, label }) => {
-          const activo = subVista === key;
-          return (
-            <button key={key} onClick={()=>cambiarSubVista(key)}
-              style={{ padding:"7px 18px", fontSize:13, fontWeight:activo?700:500, cursor:"pointer", border:`1.5px solid ${activo ? C.text : C.border}`, borderRadius:8, background: activo ? C.text : "transparent", color: activo ? C.bgCard : C.textMid, fontFamily:"'Plus Jakarta Sans',sans-serif", transition:"all 0.15s" }}>
-              {label}
-            </button>
-          );
-        })}
-      </div>
-
       {/* ── Salas ── */}
-      {subVista === "salas" && <SalasView datos={datos} onRecargar={onRecargar} onVolver={()=>cambiarSubVista("grupos")} />}
+      {subVista === "salas" && <SalasView datos={datos} onRecargar={onRecargar} onVolver={()=>cambiarSubVista("grupos")}
+        salaDetalle={salaDetalle} setSalaDetalle={cambiarSalaDetalle}
+        onVerEventos={(m, a) => { setMes(m); setAnio(a); cambiarSubVista("eventos"); }} />}
 
       {/* ── Grupos del mes ── */}
       {subVista === "grupos" && (() => {
         const lista = gruposMes.filter(g => g.categoria !== "evento").sort((a,b)=>a.fecha_inicio?.localeCompare(b.fecha_inicio));
         return (
           <Card>
-            <p style={{ fontSize:11, fontWeight:700, color:"#2B7EC1", textTransform:"uppercase", letterSpacing:1.5, marginBottom:12 }}>Grupos</p>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
+              <p style={{ fontSize:11, fontWeight:700, color:"#2B7EC1", textTransform:"uppercase", letterSpacing:1.5, margin:0 }}>Grupos</p>
+              <div style={{ display:"flex", gap:6 }}>
+                <select value={mes} onChange={e=>setMes(Number(e.target.value))}
+                  style={{ padding:"5px 10px", borderRadius:7, border:`1.5px solid ${C.border}`, fontSize:13, fontWeight:600, color:C.text, background:C.bg, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", outline:"none" }}>
+                  {MESES_FULL.map((m, i) => {
+                    const mStr = String(anio) + "-" + String(i+1).padStart(2,"0");
+                    const conf = grupos.filter(g => g.estado === "confirmado" && (g.fecha_inicio?.slice(0,7) === mStr || g.fecha_fin?.slice(0,7) === mStr)).length;
+                    return <option key={i} value={i}>{m}{conf > 0 ? ` (${conf})` : ""}</option>;
+                  })}
+                </select>
+                <select value={anio} onChange={e=>setAnio(Number(e.target.value))}
+                  style={{ padding:"5px 10px", borderRadius:7, border:`1.5px solid ${C.border}`, fontSize:13, fontWeight:600, color:C.text, background:C.bg, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", outline:"none" }}>
+                  {[...new Set([anio - 1, anio, anio + 1, ...grupos.map(g => parseInt(g.fecha_inicio?.slice(0,4))).filter(Boolean)])].sort().map(a => <option key={a} value={a}>{a}</option>)}
+                </select>
+              </div>
+            </div>
             <div style={{ overflowX:"auto" }}>
               <table style={{ width:"100%", borderCollapse:"collapse", fontSize:14 }}>
                 <thead>
@@ -5453,7 +5518,23 @@ function GruposView({ datos, onRecargar }) {
         const lista = gruposMes.filter(g => g.categoria === "evento").sort((a,b)=>a.fecha_inicio?.localeCompare(b.fecha_inicio));
         return (
           <Card>
-            <p style={{ fontSize:11, fontWeight:700, color:"#7C3AED", textTransform:"uppercase", letterSpacing:1.5, marginBottom:12 }}>Eventos</p>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
+              <p style={{ fontSize:11, fontWeight:700, color:"#7C3AED", textTransform:"uppercase", letterSpacing:1.5, margin:0 }}>Eventos</p>
+              <div style={{ display:"flex", gap:6 }}>
+                <select value={mes} onChange={e=>setMes(Number(e.target.value))}
+                  style={{ padding:"5px 10px", borderRadius:7, border:`1.5px solid ${C.border}`, fontSize:13, fontWeight:600, color:C.text, background:C.bg, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", outline:"none" }}>
+                  {MESES_FULL.map((m, i) => {
+                    const mStr = String(anio) + "-" + String(i+1).padStart(2,"0");
+                    const conf = grupos.filter(g => g.estado === "confirmado" && (g.fecha_inicio?.slice(0,7) === mStr || g.fecha_fin?.slice(0,7) === mStr)).length;
+                    return <option key={i} value={i}>{m}{conf > 0 ? ` (${conf})` : ""}</option>;
+                  })}
+                </select>
+                <select value={anio} onChange={e=>setAnio(Number(e.target.value))}
+                  style={{ padding:"5px 10px", borderRadius:7, border:`1.5px solid ${C.border}`, fontSize:13, fontWeight:600, color:C.text, background:C.bg, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", outline:"none" }}>
+                  {[...new Set([anio - 1, anio, anio + 1, ...grupos.map(g => parseInt(g.fecha_inicio?.slice(0,4))).filter(Boolean)])].sort().map(a => <option key={a} value={a}>{a}</option>)}
+                </select>
+              </div>
+            </div>
             <div style={{ overflowX:"auto" }}>
               <table style={{ width:"100%", borderCollapse:"collapse", fontSize:14 }}>
                 <thead>
@@ -6007,7 +6088,7 @@ function AuthScreen() {
 }
 
 // ─── SALAS VIEW ──────────────────────────────────────────────────────────────
-function SalasView({ datos, onRecargar, onVolver }) {
+function SalasView({ datos, onRecargar, onVolver, onVerEventos, salaDetalle, setSalaDetalle }) {
   const t  = useT();
   const MESES_FULL = t("meses_full");
   const grupos = datos.grupos || [];
@@ -6030,10 +6111,20 @@ function SalasView({ datos, onRecargar, onVolver }) {
 
   const [modalSala, setModalSala] = useState(null); // null | "nueva" | {nombre,...}
   const [formSala, setFormSala] = useState({ nombre:"", capacidad:"", tipo:"", precio_hora:"", descripcion:"" });
-  const [salaDetalle, setSalaDetalle] = useState(null);
   const [planningAnio, setPlanningAnio] = useState(new Date().getFullYear());
   const [planningMes, setPlanningMes] = useState(new Date().getMonth());
-  const [planningDia, setPlanningDia] = useState(null);
+  const [planningDia, setPlanningDia] = useState(() => localStorage.getItem("fr_sala_planning_dia") || null);
+  const cambiarPlanningDia = (v) => { setPlanningDia(v); if (v) localStorage.setItem("fr_sala_planning_dia", v); else localStorage.removeItem("fr_sala_planning_dia"); };
+
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.key !== "Escape") return;
+      if (planningDia) { cambiarPlanningDia(null); return; }
+      if (salaDetalle)  { setSalaDetalle(null); return; }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [planningDia, salaDetalle]);
 
   // Salas: las de los eventos + las guardadas manualmente
   const todasSalas = SALAS_FIJAS;
@@ -6044,13 +6135,13 @@ function SalasView({ datos, onRecargar, onVolver }) {
   // Stats por sala
   const statsSala = (nombre) => {
     const eventos = grupos.filter(g => g.categoria === "evento" && parseEv(g.notas).sala_nombre === nombre);
-    const eventosAnio = eventos.filter(g => g.fecha_inicio?.startsWith(String(anioActual)));
-    const eventosConf = eventosAnio.filter(g => g.estado === "confirmado");
-    const revTotal = eventosConf.reduce((a,g) => a + (g.revenue_fnb||0) + (g.revenue_sala||0), 0);
+    const mesStr = `${planningAnio}-${String(planningMes+1).padStart(2,"0")}`;
+    const eventosMes = eventos.filter(g => g.fecha_inicio?.slice(0,7) === mesStr && g.estado !== "cancelado");
     const proximoEv = eventos.filter(g => g.fecha_inicio >= hoy && g.estado !== "cancelado")
       .sort((a,b) => a.fecha_inicio.localeCompare(b.fecha_inicio))[0];
     const ocupadaHoy = eventos.some(g => g.fecha_inicio === hoy && g.estado !== "cancelado");
-    return { total: eventosAnio.length, confirmados: eventosConf.length, revTotal, proximoEv, ocupadaHoy };
+    const disponibleMes = eventosMes.length === 0;
+    return { eventosMes, disponibleMes, proximoEv, ocupadaHoy };
   };
 
   const TIPOS = ["Banquetes","Reuniones","Conferencias","Bodas","Polivalente","Exterior","Otro"];
@@ -6111,7 +6202,7 @@ function SalasView({ datos, onRecargar, onVolver }) {
         <div style={{ display:"flex", flexDirection:"column", gap:20 }}>
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
             <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-              <button onClick={()=>setPlanningDia(null)} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, padding:"5px 10px", cursor:"pointer", fontSize:12, color:C.textMid }}>← Volver</button>
+              <button onClick={()=>cambiarPlanningDia(null)} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, padding:"5px 10px", cursor:"pointer", fontSize:12, color:C.textMid }}>← Volver</button>
               <div>
                 <h2 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:22, fontWeight:700, color:C.text, margin:0 }}>{salaDetalle}</h2>
                 <p style={{ fontSize:13, color:C.textMid, margin:0 }}>{DS_FULL[fechaObj.getDay()]}, {fechaObj.getDate()} {MESES_FULL[fechaObj.getMonth()]} {fechaObj.getFullYear()}</p>
@@ -6156,8 +6247,11 @@ function SalasView({ datos, onRecargar, onVolver }) {
                         ? <span style={{ fontSize:11, color:C.border }}>Disponible</span>
                         : (() => {
                             const ev = parseEv(evInicio.notas);
+                            const evMes = evInicio.fecha_inicio ? parseInt(evInicio.fecha_inicio.slice(5,7)) - 1 : planningMes;
+                            const evAnio = evInicio.fecha_inicio ? parseInt(evInicio.fecha_inicio.slice(0,4)) : planningAnio;
                             return (
-                              <div style={{ background:estadoBg[evInicio.estado], border:`1px solid ${estadoColor[evInicio.estado]}`, borderRadius:8, padding:"10px 14px", fontSize:12, display:"flex", alignItems:"center", gap:10, height:"calc(100% - 12px)", boxSizing:"border-box" }}>
+                              <div onClick={()=>{ onVerEventos && onVerEventos(evMes, evAnio); }}
+                                style={{ background:estadoBg[evInicio.estado], border:`1px solid ${estadoColor[evInicio.estado]}`, borderRadius:8, padding:"10px 14px", fontSize:12, display:"flex", alignItems:"center", gap:10, height:"calc(100% - 12px)", boxSizing:"border-box", cursor:"pointer" }}>
                                 <span style={{ fontWeight:700, color:estadoColor[evInicio.estado], fontSize:13 }}>{evInicio.nombre}</span>
                                 <span style={{ color:C.textMid }}>{ev.hora_inicio} – {ev.hora_fin}</span>
                                 <span style={{ fontSize:10, fontWeight:700, padding:"2px 8px", borderRadius:8, background:"white", color:estadoColor[evInicio.estado], border:`1px solid ${estadoColor[evInicio.estado]}` }}>{evInicio.estado}</span>
@@ -6226,7 +6320,7 @@ function SalasView({ datos, onRecargar, onVolver }) {
                   const revDia   = evsDia.reduce((a,g)=>a+(g.revenue_fnb||0)+(g.revenue_sala||0),0);
                   const bgBase   = esHoy ? "#FFFBEB" : esFds ? C.bg : C.bgCard;
                   return (
-                    <tr key={dia} onClick={()=>setPlanningDia(fechaDia)}
+                    <tr key={dia} onClick={()=>cambiarPlanningDia(fechaDia)}
                       style={{ borderBottom:`1px solid ${C.border}`, background:bgBase, cursor:"pointer" }}
                       onMouseEnter={e=>e.currentTarget.style.background=C.accentLight}
                       onMouseLeave={e=>e.currentTarget.style.background=bgBase}>
@@ -6236,7 +6330,8 @@ function SalasView({ datos, onRecargar, onVolver }) {
                         {evsDia.length === 0
                           ? <span style={{ color:C.border }}>—</span>
                           : evsDia.map(g => (
-                              <span key={g.id} style={{ display:"inline-block", fontSize:11, fontWeight:600, padding:"2px 8px", borderRadius:5, background:estadoBg[g.estado], color:estadoColor[g.estado], marginRight:4 }}>{g.nombre}</span>
+                              <span key={g.id} onClick={e=>{ e.stopPropagation(); onVerEventos && onVerEventos(planningMes, planningAnio); }}
+                                style={{ display:"inline-block", fontSize:11, fontWeight:600, padding:"2px 8px", borderRadius:5, background:estadoBg[g.estado], color:estadoColor[g.estado], marginRight:4, cursor:"pointer", textDecoration:"underline" }}>{g.nombre}</span>
                             ))
                         }
                       </td>
@@ -6266,12 +6361,20 @@ function SalasView({ datos, onRecargar, onVolver }) {
     <div style={{ display:"flex", flexDirection:"column", gap:20 }}>
 
       {/* Header */}
-      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-        <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-          {onVolver && <button onClick={onVolver} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, padding:"5px 10px", cursor:"pointer", fontSize:12, color:C.textMid }}>← Volver</button>}
-          <h2 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:24, fontWeight:700, color:C.text, margin:0 }}>Salas</h2>
-        </div>
-        <span/>
+      <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+        {onVolver && <button onClick={onVolver} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, padding:"5px 10px", cursor:"pointer", fontSize:12, color:C.textMid }}>← Volver</button>}
+        <h2 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:24, fontWeight:700, color:C.text, margin:0 }}>Salas</h2>
+      </div>
+
+      <div style={{ display:"flex", gap:6 }}>
+        <select value={planningMes} onChange={e=>setPlanningMes(Number(e.target.value))}
+          style={{ padding:"5px 10px", borderRadius:7, border:`1.5px solid ${C.border}`, fontSize:13, fontWeight:600, color:C.text, background:C.bg, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", outline:"none" }}>
+          {MESES_FULL.map((m,i) => <option key={i} value={i}>{m}</option>)}
+        </select>
+        <select value={planningAnio} onChange={e=>setPlanningAnio(Number(e.target.value))}
+          style={{ padding:"5px 10px", borderRadius:7, border:`1.5px solid ${C.border}`, fontSize:13, fontWeight:600, color:C.text, background:C.bg, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", outline:"none" }}>
+          {[planningAnio-1, planningAnio, planningAnio+1].map(a => <option key={a} value={a}>{a}</option>)}
+        </select>
       </div>
 
       <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))", gap:14 }}>
@@ -6280,7 +6383,7 @@ function SalasView({ datos, onRecargar, onVolver }) {
           const stats = statsSala(nombre);
           return (
             <Card key={nombre} style={{ cursor:"pointer", transition:"box-shadow 0.15s" }}
-              onClick={()=>{ setSalaDetalle(nombre); setPlanningDia(null); }}>
+              onClick={()=>{ setSalaDetalle(nombre); cambiarPlanningDia(null); }}>
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:12 }}>
                 <div>
                   <p style={{ fontSize:15, fontWeight:700, color:C.text, marginBottom:3 }}>{nombre}</p>
@@ -6288,20 +6391,22 @@ function SalasView({ datos, onRecargar, onVolver }) {
                 </div>
                 <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:4 }}>
                   <span style={{ fontSize:10, fontWeight:700, padding:"2px 8px", borderRadius:8, background: stats.ocupadaHoy ? "#FFF8E7" : "#E6F7EE", color: stats.ocupadaHoy ? "#B8860B" : "#1A7A3C" }}>
-                    {stats.ocupadaHoy ? "Ocupada hoy" : "Disponible"}
+                    {stats.ocupadaHoy ? "Ocupada hoy" : "Sin eventos hoy"}
                   </span>
                 </div>
               </div>
 
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:12 }}>
-                <div style={{ background:C.bg, borderRadius:7, padding:"8px 10px" }}>
-                  <p style={{ fontSize:10, color:C.textLight, marginBottom:2 }}>Eventos este año</p>
-                  <p style={{ fontSize:16, fontWeight:700, color:C.text }}>{stats.total}</p>
-                </div>
-                <div style={{ background:C.bg, borderRadius:7, padding:"8px 10px" }}>
-                  <p style={{ fontSize:10, color:C.textLight, marginBottom:2 }}>Revenue confirmado</p>
-                  <p style={{ fontSize:15, fontWeight:700, color:"#1A7A3C" }}>€{Math.round(stats.revTotal/1000)}k</p>
-                </div>
+              <div style={{ background: stats.disponibleMes ? "#E6F7EE" : "#FFF8E7", borderRadius:8, padding:"10px 12px", marginBottom:12 }}>
+                {stats.disponibleMes
+                  ? <p style={{ fontSize:12, fontWeight:700, color:"#1A7A3C", margin:0 }}>Sin eventos — {MESES_FULL[planningMes]}</p>
+                  : <>
+                      <p style={{ fontSize:11, color:"#92600A", fontWeight:600, margin:"0 0 4px" }}>{MESES_FULL[planningMes]}: {stats.eventosMes.length} evento{stats.eventosMes.length !== 1 ? "s" : ""}</p>
+                      {stats.eventosMes.slice(0,2).map(g => (
+                        <p key={g.id} style={{ fontSize:11, color:"#92600A", margin:"2px 0 0" }}>· {g.nombre} ({g.fecha_inicio})</p>
+                      ))}
+                      {stats.eventosMes.length > 2 && <p style={{ fontSize:11, color:"#92600A", margin:"2px 0 0" }}>· +{stats.eventosMes.length - 2} más</p>}
+                    </>
+                }
               </div>
 
               {stats.proximoEv && (
