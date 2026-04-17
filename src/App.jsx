@@ -6023,78 +6023,117 @@ function GruposView({ datos, onRecargar }) {
       })()}
 
       {/* ── Revenue ── */}
-      {subVista === "revenue" && <Card>
-        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:16 }}>
-          <div>
-            <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:18, color:C.text }}>Revenue del mes</p>
-            <p style={{ fontSize:11, color:C.textLight, marginTop:3, letterSpacing:"0.3px" }}>Grupos · Eventos · Salas — {t("meses_full")[mes]} {anio}</p>
-          </div>
-          <div style={{ display:"flex", gap:16 }}>
-            {[
-              { color:"#2B7EC1", label:"Grupos" },
-              { color:"#E85D04", label:"Eventos" },
-              { color:"#7C3AED", label:"Salas" },
-            ].map((item,i) => (
-              <div key={i} style={{ display:"flex", alignItems:"center", gap:5 }}>
-                <div style={{ width:10, height:10, borderRadius:2, background:item.color }}/>
-                <span style={{ fontSize:10, color:C.textLight, fontWeight:500, letterSpacing:"0.5px", textTransform:"uppercase" }}>{item.label}</span>
+      {subVista === "revenue" && (() => {
+        const datosMesRev = produccion.filter(d => d.fecha.startsWith(mesStr));
+        const totalRevProd = datosMesRev.reduce((a,d) => a+(d.revenue_total||0), 0);
+
+        const confGrupos  = confirmados.filter(g => g.categoria !== "evento");
+        const confEventos = confirmados.filter(g => g.categoria === "evento");
+        const revGrupos   = confGrupos.reduce((a,g)  => a+calcRevTotal(g), 0);
+        const revEventos  = confEventos.reduce((a,g) => a+calcRevTotal(g), 0);
+        const revSalas    = confGrupos.reduce((a,g)  => a+(g.revenue_sala||0), 0)
+                          + confEventos.reduce((a,g) => a+(g.revenue_sala||0), 0);
+        const revSeccion  = revGrupos + revEventos;
+        const pct = totalRevProd > 0 ? (revSeccion / totalRevProd * 100) : null;
+
+        const filas = [
+          { label:"Grupos",  color:"#2B7EC1", bg:"#EBF4FC", rev:revGrupos,  count:confGrupos.length  },
+          { label:"Eventos", color:"#E85D04", bg:"#FEF0E7", rev:revEventos, count:confEventos.length },
+          { label:"Salas",   color:"#7C3AED", bg:"#F3EFFE", rev:revSalas,   count:null               },
+        ];
+
+        return (
+          <Card>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20 }}>
+              <div>
+                <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:18, color:C.text }}>Revenue confirmado</p>
+                <p style={{ fontSize:11, color:C.textLight, marginTop:3 }}>Grupos · Eventos · Salas — {t("meses_full")[mes]} {anio}</p>
               </div>
-            ))}
-          </div>
-        </div>
-        {chartRevMensual.length === 0 ? (
-          <div style={{ textAlign:"center", padding:"40px 0", color:C.textLight, fontSize:13 }}>Sin datos para este mes</div>
-        ) : (
-        <ResponsiveContainer width="100%" height={220}>
-          <BarChart data={chartRevMensual} barSize={14} barCategoryGap="20%" margin={{ top:4, right:8, left:0, bottom:0 }}>
-            <defs>
-              <linearGradient id="gradGruposM" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#2B7EC1" stopOpacity={1}/>
-                <stop offset="100%" stopColor="#2B7EC1" stopOpacity={0.65}/>
-              </linearGradient>
-              <linearGradient id="gradEventosM" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#E85D04" stopOpacity={0.9}/>
-                <stop offset="100%" stopColor="#E85D04" stopOpacity={0.55}/>
-              </linearGradient>
-              <linearGradient id="gradSalasM" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#7C3AED" stopOpacity={0.9}/>
-                <stop offset="100%" stopColor="#7C3AED" stopOpacity={0.55}/>
-              </linearGradient>
-            </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke={C.border} vertical={false}/>
-            <XAxis dataKey="dia" tick={{ fontSize:11, fill:C.textLight }} axisLine={false} tickLine={false}/>
-            <YAxis tick={{ fontSize:11, fill:C.textLight }} axisLine={false} tickLine={false} tickFormatter={v => v>=1000?`${(v/1000).toFixed(0)}k€`:`€${v}`} width={48}/>
-            <Tooltip content={({ active, payload }) => {
-              if (!active || !payload?.length) return null;
-              const raw = payload[0]?.payload || {};
-              const colorMap = { Grupos:"#2B7EC1", Eventos:"#E85D04", Salas:"#7C3AED" };
-              const total = (raw.Grupos||0)+(raw.Eventos||0)+(raw.Salas||0);
-              return (
-                <div style={{ background:"#111111", borderRadius:10, padding:"10px 14px", boxShadow:"0 8px 24px rgba(0,0,0,0.35)", minWidth:150 }}>
-                  <p style={{ color:"#fff", fontSize:10, fontWeight:700, marginBottom:6, textTransform:"uppercase", letterSpacing:"1px" }}>{raw.mesNombre}</p>
-                  {payload.map((p,i) => p.value != null && (
-                    <div key={i} style={{ display:"flex", justifyContent:"space-between", gap:16, marginBottom:3 }}>
-                      <span style={{ display:"flex", alignItems:"center", gap:5 }}>
-                        <span style={{ width:7, height:7, borderRadius:2, background:colorMap[p.dataKey]||"#888", display:"inline-block" }}/>
-                        <span style={{ fontSize:11, color:"rgba(255,255,255,0.75)" }}>{p.name}</span>
-                      </span>
-                      <span style={{ fontSize:11, fontWeight:700, color:"#fff" }}>€{Math.round(p.value).toLocaleString("es-ES")}</span>
-                    </div>
+              <div style={{ display:"flex", gap:6 }}>
+                <select value={mes} onChange={e=>setMes(Number(e.target.value))}
+                  style={{ padding:"5px 10px", borderRadius:7, border:`1.5px solid ${C.border}`, fontSize:13, fontWeight:600, color:C.text, background:C.bg, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", outline:"none" }}>
+                  {MESES_FULL.map((m,i) => <option key={i} value={i}>{m}</option>)}
+                </select>
+                <select value={anio} onChange={e=>setAnio(Number(e.target.value))}
+                  style={{ padding:"5px 10px", borderRadius:7, border:`1.5px solid ${C.border}`, fontSize:13, fontWeight:600, color:C.text, background:C.bg, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", outline:"none" }}>
+                  {[...new Set([anio-1,anio,anio+1,...grupos.map(g=>parseInt(g.fecha_inicio?.slice(0,4))).filter(Boolean)])].sort().map(a=><option key={a} value={a}>{a}</option>)}
+                </select>
+              </div>
+            </div>
+
+            {/* KPI destacado */}
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:12, marginBottom:24 }}>
+              <div style={{ background:C.bg, borderRadius:10, padding:"16px 18px", border:`1px solid ${C.border}` }}>
+                <p style={{ fontSize:10, color:C.textLight, fontWeight:600, textTransform:"uppercase", letterSpacing:"1px", marginBottom:6 }}>Rev. confirmado sección</p>
+                <p style={{ fontSize:22, fontWeight:800, color:C.text, fontFamily:"'Plus Jakarta Sans',sans-serif" }}>€{Math.round(revSeccion).toLocaleString("es-ES")}</p>
+              </div>
+              <div style={{ background:C.bg, borderRadius:10, padding:"16px 18px", border:`1px solid ${C.border}` }}>
+                <p style={{ fontSize:10, color:C.textLight, fontWeight:600, textTransform:"uppercase", letterSpacing:"1px", marginBottom:6 }}>Revenue total mes</p>
+                <p style={{ fontSize:22, fontWeight:800, color:C.text, fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+                  {totalRevProd > 0 ? `€${Math.round(totalRevProd).toLocaleString("es-ES")}` : <span style={{ color:C.textLight, fontSize:14 }}>Sin datos</span>}
+                </p>
+              </div>
+              <div style={{ background: pct != null ? "#E6F7EE" : C.bg, borderRadius:10, padding:"16px 18px", border:`1px solid ${pct!=null?"#1A7A3C40":C.border}` }}>
+                <p style={{ fontSize:10, color:C.textLight, fontWeight:600, textTransform:"uppercase", letterSpacing:"1px", marginBottom:6 }}>% sobre total mes</p>
+                <p style={{ fontSize:22, fontWeight:800, color: pct!=null ? "#1A7A3C" : C.textLight, fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+                  {pct != null ? `${pct.toFixed(1)}%` : "—"}
+                </p>
+              </div>
+            </div>
+
+            {/* Tabla desglose */}
+            <table style={{ width:"100%", borderCollapse:"collapse", fontSize:14 }}>
+              <thead>
+                <tr>
+                  {["Categoría","Confirmados","Revenue confirmado","% del total mes","Barra"].map(h => (
+                    <th key={h} style={{ padding:"7px 14px", textAlign: h==="Revenue confirmado"||h==="% del total mes" ? "right" : "left", fontSize:10, fontWeight:600, color:C.textLight, textTransform:"uppercase", letterSpacing:"1px", borderBottom:`2px solid ${C.border}`, whiteSpace:"nowrap" }}>{h}</th>
                   ))}
-                  {total>0 && <div style={{ borderTop:"1px solid rgba(255,255,255,0.15)", marginTop:5, paddingTop:5, display:"flex", justifyContent:"space-between" }}>
-                    <span style={{ fontSize:10, color:"rgba(255,255,255,0.5)" }}>Total</span>
-                    <span style={{ fontSize:11, fontWeight:700, color:"#fff" }}>€{Math.round(total).toLocaleString("es-ES")}</span>
-                  </div>}
-                </div>
-              );
-            }} cursor={false}/>
-            <Bar dataKey="Grupos"  stackId="s" fill="url(#gradGruposM)"  radius={[0,0,0,0]} name="Grupos"  activeBar={false}/>
-            <Bar dataKey="Eventos" stackId="s" fill="url(#gradEventosM)" radius={[0,0,0,0]} name="Eventos" activeBar={false}/>
-            <Bar dataKey="Salas"   stackId="s" fill="url(#gradSalasM)"   radius={[4,4,0,0]} name="Salas"   activeBar={false}/>
-          </BarChart>
-        </ResponsiveContainer>
-        )}
-      </Card>}
+                </tr>
+              </thead>
+              <tbody>
+                {filas.map(f => {
+                  const pctFila = totalRevProd > 0 ? f.rev / totalRevProd * 100 : 0;
+                  return (
+                    <tr key={f.label} style={{ borderBottom:`1px solid ${C.border}` }}>
+                      <td style={{ padding:"12px 14px" }}>
+                        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                          <div style={{ width:10, height:10, borderRadius:2, background:f.color, flexShrink:0 }}/>
+                          <span style={{ fontWeight:600, color:C.text }}>{f.label}</span>
+                        </div>
+                      </td>
+                      <td style={{ padding:"12px 14px", color:C.textMid }}>
+                        {f.count != null ? f.count : "—"}
+                      </td>
+                      <td style={{ padding:"12px 14px", fontWeight:700, color:C.text, textAlign:"right" }}>
+                        €{Math.round(f.rev).toLocaleString("es-ES")}
+                      </td>
+                      <td style={{ padding:"12px 14px", textAlign:"right", fontWeight:700, color: pctFila>0 ? f.color : C.textLight }}>
+                        {totalRevProd > 0 ? `${pctFila.toFixed(1)}%` : "—"}
+                      </td>
+                      <td style={{ padding:"12px 14px", width:160 }}>
+                        <div style={{ background:C.border, borderRadius:4, height:8, overflow:"hidden" }}>
+                          <div style={{ width:`${Math.min(100,pctFila)}%`, height:"100%", background:f.color, borderRadius:4, transition:"width 0.4s ease" }}/>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+                {/* Total row */}
+                <tr style={{ background:C.bg }}>
+                  <td style={{ padding:"12px 14px", fontWeight:700, color:C.text }} colSpan={2}>Total sección</td>
+                  <td style={{ padding:"12px 14px", fontWeight:800, color:"#1A7A3C", textAlign:"right", fontSize:15 }}>€{Math.round(revSeccion).toLocaleString("es-ES")}</td>
+                  <td style={{ padding:"12px 14px", fontWeight:800, color:"#1A7A3C", textAlign:"right" }}>{pct!=null?`${pct.toFixed(1)}%`:"—"}</td>
+                  <td style={{ padding:"12px 14px", width:160 }}>
+                    <div style={{ background:C.border, borderRadius:4, height:8, overflow:"hidden" }}>
+                      <div style={{ width:`${Math.min(100,pct||0)}%`, height:"100%", background:"#1A7A3C", borderRadius:4 }}/>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </Card>
+        );
+      })()}
 
       {/* ── PANEL DETALLE EVENTO (desde calendario) ── */}
       {detalleGrupo !== null && (
