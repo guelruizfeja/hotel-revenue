@@ -5345,11 +5345,8 @@ function GruposView({ datos, onRecargar }) {
 
   const [anio, setAnio] = useState(new Date().getFullYear());
   const [mes, setMes] = useState(new Date().getMonth());
-  const [semanaBase, setSemanaBase] = useState(() => {
-    const hoy = new Date(); hoy.setHours(0,0,0,0);
-    const lunes = new Date(hoy); lunes.setDate(hoy.getDate() - ((hoy.getDay()+6)%7));
-    return lunes.toISOString().slice(0,10);
-  });
+  const [mesCal, setMesCal] = useState(new Date().getMonth());
+  const [anioCal, setAnioCal] = useState(new Date().getFullYear());
   const [modalGrupo, setModalGrupo] = useState(null);
   const [detalleGrupo, setDetalleGrupo] = useState(null);
   const [guardando, setGuardando] = useState(false);
@@ -5511,7 +5508,7 @@ function GruposView({ datos, onRecargar }) {
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", gap:8, flexWrap:"wrap" }}>
         <div style={{ display:"flex", gap:6 }}>
           {[
-            { key:"semana",   label:"Semana" },
+            { key:"semana",   label:"Resumen" },
             { key:"pipeline", label:"Pipeline" },
             { key:"grupos",   label:"Grupos" },
             { key:"eventos",  label:"Eventos" },
@@ -5567,52 +5564,61 @@ function GruposView({ datos, onRecargar }) {
         </div>
       </div>
 
-      {/* ── Vista semanal ── */}
+      {/* ── Vista mensual (Resumen) ── */}
       {subVista === "semana" && (() => {
-        const pad = n => String(n).padStart(2,"0");
-        const fmtDia = iso => { const d=new Date(iso+"T00:00:00"); return `${pad(d.getDate())}/${pad(d.getMonth()+1)}`; };
-        const addDays = (iso, n) => { const d=new Date(iso+"T00:00:00"); d.setDate(d.getDate()+n); return d.toISOString().slice(0,10); };
         const DIAS_ES = ["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"];
-        const dias = Array.from({length:7},(_,i) => addDays(semanaBase,i));
+        const MESES_ES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
         const hoyStr = new Date().toISOString().slice(0,10);
+        const pad = n => String(n).padStart(2,"0");
+        const toISO = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
 
-        const prevSemana = () => setSemanaBase(s => addDays(s,-7));
-        const nextSemana = () => setSemanaBase(s => addDays(s,7));
-        const irHoy = () => {
-          const hoy = new Date(); hoy.setHours(0,0,0,0);
-          const lunes = new Date(hoy); lunes.setDate(hoy.getDate()-((hoy.getDay()+6)%7));
-          setSemanaBase(lunes.toISOString().slice(0,10));
-        };
+        const prevMes = () => setMesCal(m => { if(m===0){setAnioCal(a=>a-1);return 11;} return m-1; });
+        const nextMes = () => setMesCal(m => { if(m===11){setAnioCal(a=>a+1);return 0;} return m+1; });
+        const irHoy = () => { const h=new Date(); setMesCal(h.getMonth()); setAnioCal(h.getFullYear()); };
 
-        // Grupos activos en algún día de la semana
-        const gruposSemana = grupos.filter(g =>
+        // Build calendar grid: find first Monday on or before day 1
+        const primerDia = new Date(anioCal, mesCal, 1);
+        const dow0 = (primerDia.getDay()+6)%7; // 0=Mon
+        const gridStart = new Date(primerDia); gridStart.setDate(1-dow0);
+        const ultimoDia = new Date(anioCal, mesCal+1, 0);
+        const dow1 = (ultimoDia.getDay()+6)%7;
+        const gridEnd = new Date(ultimoDia); gridEnd.setDate(ultimoDia.getDate()+(6-dow1));
+        const totalDias = Math.round((gridEnd-gridStart)/86400000)+1;
+        const diasGrid = Array.from({length:totalDias},(_,i)=>{ const d=new Date(gridStart); d.setDate(gridStart.getDate()+i); return toISO(d); });
+        const semanas = [];
+        for(let i=0;i<diasGrid.length;i+=7) semanas.push(diasGrid.slice(i,i+7));
+
+        const mesStr = `${anioCal}-${pad(mesCal+1)}`;
+        const gruposMes = grupos.filter(g =>
           g.fecha_inicio && g.fecha_fin &&
-          g.fecha_inicio <= dias[6] && g.fecha_fin >= dias[0]
-        ).sort((a,b) => a.fecha_inicio.localeCompare(b.fecha_inicio));
+          g.fecha_inicio <= `${mesStr}-31` && g.fecha_fin >= `${mesStr}-01`
+        ).sort((a,b)=>a.fecha_inicio.localeCompare(b.fecha_inicio));
 
-        // Asignar fila (carril) por solapamiento
-        const carriles = [];
-        const filaDeGrupo = {};
-        gruposSemana.forEach(g => {
-          let fila = carriles.findIndex(finCarril => finCarril < g.fecha_inicio);
-          if (fila === -1) { fila = carriles.length; carriles.push(g.fecha_fin); }
-          else carriles[fila] = g.fecha_fin;
-          filaDeGrupo[g.id] = fila;
-        });
-        const numFilas = Math.max(carriles.length, 1);
+        // Lane assignment per week
+        const getLanesForWeek = (weekDays) => {
+          const gs = gruposMes.filter(g => g.fecha_inicio <= weekDays[6] && g.fecha_fin >= weekDays[0]);
+          const carriles = []; const filaDeGrupo = {};
+          gs.forEach(g => {
+            let fila = carriles.findIndex(fin => fin < g.fecha_inicio);
+            if(fila===-1){fila=carriles.length; carriles.push(g.fecha_fin);}
+            else carriles[fila]=g.fecha_fin;
+            filaDeGrupo[g.id]=fila;
+          });
+          return { gs, filaDeGrupo, numFilas:Math.max(carriles.length,1) };
+        };
 
         const colEstado = { confirmado:"#1A7A3C", cotizado:"#B8860B", cancelado:"#999" };
         const bgEstado  = { confirmado:"#E6F7EE", cotizado:"#FFF8E7", cancelado:"#F5F5F5" };
 
         return (
           <Card style={{ overflow:"hidden" }}>
-            {/* Header navegación */}
-            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:20 }}>
+            {/* Header */}
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16 }}>
               <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                <button onClick={prevSemana} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, width:28, height:28, cursor:"pointer", fontSize:15, color:C.textMid, display:"flex", alignItems:"center", justifyContent:"center" }}>‹</button>
-                <button onClick={nextSemana} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, width:28, height:28, cursor:"pointer", fontSize:15, color:C.textMid, display:"flex", alignItems:"center", justifyContent:"center" }}>›</button>
+                <button onClick={prevMes} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, width:28, height:28, cursor:"pointer", fontSize:15, color:C.textMid, display:"flex", alignItems:"center", justifyContent:"center" }}>‹</button>
+                <button onClick={nextMes} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, width:28, height:28, cursor:"pointer", fontSize:15, color:C.textMid, display:"flex", alignItems:"center", justifyContent:"center" }}>›</button>
                 <span style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontWeight:700, fontSize:15, color:C.text }}>
-                  {fmtDia(dias[0])} — {fmtDia(dias[6])}
+                  {MESES_ES[mesCal]} {anioCal}
                 </span>
                 <button onClick={irHoy} style={{ padding:"3px 10px", borderRadius:6, border:`1px solid ${C.border}`, background:"none", fontSize:11, color:C.textMid, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>Hoy</button>
               </div>
@@ -5626,72 +5632,70 @@ function GruposView({ datos, onRecargar }) {
               </div>
             </div>
 
-            {/* Cuadrícula */}
-            <div style={{ display:"grid", gridTemplateColumns:`80px repeat(7,1fr)`, borderTop:`1px solid ${C.border}`, borderLeft:`1px solid ${C.border}` }}>
-              {/* Cabecera días */}
-              <div style={{ borderRight:`1px solid ${C.border}`, borderBottom:`1px solid ${C.border}`, padding:"8px 6px", background:C.bg }}/>
-              {dias.map((d,i) => {
-                const esHoy = d === hoyStr;
-                return (
-                  <div key={d} style={{ borderRight:`1px solid ${C.border}`, borderBottom:`1px solid ${C.border}`, padding:"8px 4px", textAlign:"center", background: esHoy ? `${C.accent}12` : C.bg }}>
-                    <p style={{ fontSize:10, color:C.textLight, fontWeight:600, textTransform:"uppercase", letterSpacing:"0.5px" }}>{DIAS_ES[i]}</p>
-                    <p style={{ fontSize:14, fontWeight:esHoy?800:600, color:esHoy?C.accent:C.text, fontFamily:"'Plus Jakarta Sans',sans-serif" }}>{fmtDia(d)}</p>
-                  </div>
-                );
-              })}
+            {/* Cabecera días */}
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", borderTop:`1px solid ${C.border}`, borderLeft:`1px solid ${C.border}` }}>
+              {DIAS_ES.map(d => (
+                <div key={d} style={{ borderRight:`1px solid ${C.border}`, borderBottom:`1px solid ${C.border}`, padding:"6px 4px", textAlign:"center", background:C.bg }}>
+                  <span style={{ fontSize:10, color:C.textLight, fontWeight:600, textTransform:"uppercase", letterSpacing:"0.5px" }}>{d}</span>
+                </div>
+              ))}
+            </div>
 
-              {/* Filas de carriles */}
-              {Array.from({length:numFilas},(_,fi) => {
-                const gsEnFila = gruposSemana.filter(g => filaDeGrupo[g.id]===fi);
-                return (
-                  <React.Fragment key={fi}>
-                    {/* Etiqueta fila */}
-                    <div style={{ borderRight:`1px solid ${C.border}`, borderBottom:`1px solid ${C.border}`, minHeight:52, background:C.bgCard }}/>
-                    {/* Celdas de la semana */}
-                    {dias.map(d => {
-                      const g = gsEnFila.find(g => g.fecha_inicio <= d && g.fecha_fin >= d);
-                      const esInicio = g && g.fecha_inicio === d;
-                      const esFin    = g && g.fecha_fin === d;
-                      const col = g ? colEstado[g.estado] || "#888" : null;
-                      const bg  = g ? bgEstado[g.estado]  || "#eee" : null;
+            {/* Semanas */}
+            {semanas.map((semDias, si) => {
+              const { gs, filaDeGrupo, numFilas } = getLanesForWeek(semDias);
+              return (
+                <div key={si} style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gridTemplateRows:`28px repeat(${numFilas},26px)`, borderLeft:`1px solid ${C.border}` }}>
+                  {/* Números de día */}
+                  {semDias.map(d => {
+                    const esMes = d.slice(0,7)===mesStr;
+                    const esHoy = d===hoyStr;
+                    return (
+                      <div key={d} style={{ borderRight:`1px solid ${C.border}`, borderBottom:`1px solid ${C.border}`, padding:"4px 6px", background: esHoy?`${C.accent}12`: esMes?C.bgCard:C.bg, gridRow:1 }}>
+                        <span style={{ fontSize:12, fontWeight:esHoy?800:500, color:esHoy?C.accent:esMes?C.text:C.textLight, fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+                          {parseInt(d.slice(8))}
+                        </span>
+                      </div>
+                    );
+                  })}
+                  {/* Carriles de grupos */}
+                  {Array.from({length:numFilas},(_,fi) => {
+                    const gsEnFila = gs.filter(g=>filaDeGrupo[g.id]===fi);
+                    return semDias.map((d,ci) => {
+                      const g = gsEnFila.find(g=>g.fecha_inicio<=d && g.fecha_fin>=d);
+                      const esInicio = g && (g.fecha_inicio===d || ci===0);
+                      const esFin    = g && (g.fecha_fin===d   || ci===6);
+                      const col = g ? colEstado[g.estado]||"#888" : null;
+                      const bg  = g ? bgEstado[g.estado] ||"#eee" : null;
                       return (
-                        <div key={d} style={{ borderRight:`1px solid ${C.border}`, borderBottom:`1px solid ${C.border}`, minHeight:52, padding:"3px 2px", position:"relative", background: d===hoyStr?`${C.accent}08`:"transparent" }}>
+                        <div key={d} style={{ borderRight:`1px solid ${C.border}`, borderBottom:`1px solid ${C.border}`, padding:"2px 1px", gridRow:fi+2 }}>
                           {g && (
-                            <div onClick={() => setDetalleGrupo(g)}
+                            <div onClick={()=>setDetalleGrupo(g)}
                               style={{
-                                height:"100%", minHeight:46, borderRadius: esInicio&&esFin?"6px": esInicio?"6px 0 0 6px": esFin?"0 6px 6px 0":"0",
-                                background:bg, borderLeft: esInicio?`3px solid ${col}`:"none",
+                                height:"100%", borderRadius: esInicio&&esFin?"4px": esInicio?"4px 0 0 4px": esFin?"0 4px 4px 0":"0",
+                                background:bg, borderLeft:esInicio?`3px solid ${col}`:"none",
                                 borderTop:`1px solid ${col}40`, borderBottom:`1px solid ${col}40`,
-                                borderRight: esFin?`1px solid ${col}40`:"none",
-                                padding:"4px 6px", cursor:"pointer", overflow:"hidden",
+                                borderRight:esFin?`1px solid ${col}40`:"none",
+                                padding:"2px 5px", cursor:"pointer", overflow:"hidden",
+                                display:"flex", alignItems:"center",
                               }}>
-                              {esInicio && <>
-                                <p style={{ fontSize:11, fontWeight:700, color:col, lineHeight:1.2, marginBottom:2, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{g.nombre}</p>
-                                <p style={{ fontSize:9, color:col, opacity:0.75, lineHeight:1 }}>
-                                  {g.habitaciones ? `${g.habitaciones} hab` : ""}
-                                  {g.habitaciones && g.pax ? " · " : ""}
-                                  {g.pax ? `${g.pax} pax` : ""}
-                                </p>
-                              </>}
+                              {esInicio && (
+                                <span style={{ fontSize:10, fontWeight:700, color:col, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>
+                                  {g.nombre}
+                                </span>
+                              )}
                             </div>
                           )}
                         </div>
                       );
-                    })}
-                  </React.Fragment>
-                );
-              })}
+                    });
+                  })}
+                </div>
+              );
+            })}
 
-              {/* Fila vacía si no hay grupos */}
-              {gruposSemana.length === 0 && (
-                <>
-                  <div style={{ borderRight:`1px solid ${C.border}`, minHeight:80 }}/>
-                  {dias.map(d => <div key={d} style={{ borderRight:`1px solid ${C.border}`, minHeight:80, background: d===hoyStr?`${C.accent}08`:"transparent" }}/>)}
-                </>
-              )}
-            </div>
-            {gruposSemana.length === 0 && (
-              <p style={{ textAlign:"center", color:C.textLight, fontSize:13, padding:"16px 0 8px" }}>Sin grupos ni eventos esta semana</p>
+            {gruposMes.length === 0 && (
+              <p style={{ textAlign:"center", color:C.textLight, fontSize:13, padding:"16px 0 8px" }}>Sin grupos ni eventos este mes</p>
             )}
           </Card>
         );
