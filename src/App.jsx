@@ -4170,7 +4170,7 @@ function PickupView({ datos }) {
   })).sort((a,b) => b.count - a.count);
   const ventanaTotal = ventanaCanalData.reduce((a,d) => a + d.count, 0);
 
-  const NO_OTA = new Set(["Directo", "Agencia"]);
+  const NO_OTA = new Set(["Directo", "Agencia", "Corporativo"]);
   const isOTA  = canal => !NO_OTA.has(canal);
 
   // Datos agrupando OTAs (para vista principal)
