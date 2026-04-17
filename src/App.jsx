@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo, createContext, useContext } from "react";
+import React, { useState, useEffect, useRef, useMemo, createContext, useContext } from "react";
 import { supabase } from "./supabase";
 import {
   AreaChart, Area, BarChart, Bar, LineChart, Line, ComposedChart,
