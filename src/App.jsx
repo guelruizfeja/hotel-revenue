@@ -3983,6 +3983,7 @@ function PickupView({ datos }) {
   const [ayerVista, setAyerVista]         = useState(null); // null | "count"|"adr"|"noches"|"antelacion"
   const [reservasVentana, setReservasVentana] = useState("30d"); // "30d" | "year"
   const [reservasVista, setReservasVista]     = useState("count"); // "count"|"adr"|"noches"|"antelacion"
+  const [otaDetalle, setOtaDetalle]           = useState(false);
 
   const hoy     = new Date();
   const padL    = n => String(n).padStart(2,"0");
@@ -4168,6 +4169,30 @@ function PickupView({ datos }) {
     antelacion: d.antCount > 0 ? Math.round(d.antTotal / d.antCount) : null,
   })).sort((a,b) => b.count - a.count);
   const ventanaTotal = ventanaCanalData.reduce((a,d) => a + d.count, 0);
+
+  const NO_OTA = new Set(["Directo", "Agencia"]);
+  const isOTA  = canal => !NO_OTA.has(canal);
+
+  // Datos agrupando OTAs (para vista principal)
+  const ventanaCanalDataAgrupado = (() => {
+    const noOta = ventanaCanalData.filter(d => !isOTA(d.canal));
+    const otaRows = ventanaCanalData.filter(d => isOTA(d.canal));
+    if (otaRows.length === 0) return noOta;
+    const otaCount     = otaRows.reduce((a,d) => a + d.count, 0);
+    const otaPrecioTot = reservasVentanaEntries.filter(e => isOTA(normCanal(e.canal))).reduce((a,e) => a + (e.precio_total||0), 0);
+    const otaNochesTot = reservasVentanaEntries.filter(e => isOTA(normCanal(e.canal))).reduce((a,e) => a + (e.noches||0)*(e.num_reservas||1), 0);
+    const otaAntRows   = reservasVentanaEntries.filter(e => isOTA(normCanal(e.canal)) && e.fecha_llegada && e.fecha_pickup);
+    const otaAntTot    = otaAntRows.reduce((a,e) => { const d=Math.round((new Date(e.fecha_llegada)-new Date(e.fecha_pickup))/86400000); return d>=0?a+d*(e.num_reservas||1):a; }, 0);
+    const otaAntCnt    = otaAntRows.reduce((a,e) => a+(e.num_reservas||1), 0);
+    const otaEntry = {
+      canal: "OTAs", color: "#0052CC", isOtaGroup: true,
+      count: otaCount,
+      adr:   otaNochesTot > 0 ? Math.round(otaPrecioTot/otaNochesTot) : (otaCount > 0 ? Math.round(otaPrecioTot/otaCount) : null),
+      noches: otaCount > 0 ? parseFloat((otaNochesTot/otaCount).toFixed(1)) : null,
+      antelacion: otaAntCnt > 0 ? Math.round(otaAntTot/otaAntCnt) : null,
+    };
+    return [...noOta, otaEntry].sort((a,b) => b.count - a.count);
+  })();
 
   return (
     <div style={{ display:"flex", flexDirection:"column", gap:20 }}>
@@ -4522,13 +4547,24 @@ function PickupView({ datos }) {
               { key:"antelacion", label:"Antelación",   valFn: d=>d.antelacion, fmt: v=>`${v} días` },
             ];
             const vista = VISTAS.find(v=>v.key===reservasVista) || VISTAS[0];
-            const rows  = [...ventanaCanalData].sort((a,b) => (vista.valFn(b)||0) - (vista.valFn(a)||0));
+            const sourceData = otaDetalle ? ventanaCanalData.filter(d => isOTA(d.canal)) : ventanaCanalDataAgrupado;
+            const rows  = [...sourceData].sort((a,b) => (vista.valFn(b)||0) - (vista.valFn(a)||0));
             const max   = Math.max(...rows.map(d => vista.valFn(d)||0));
-            const chartData = rows.map(d => ({ canal: d.canal, valor: vista.valFn(d) ?? 0, color: d.color }));
+            const chartData = rows.map(d => ({ canal: d.canal, valor: vista.valFn(d) ?? 0, color: d.color, isOtaGroup: d.isOtaGroup }));
             const yMax  = max > 0 ? Math.ceil(max * 1.2) : 10;
             return (
               <div>
-                <div style={{ display:"flex", gap:6, marginBottom:20, flexWrap:"wrap" }}>
+                <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12, flexWrap:"wrap", gap:8 }}>
+                  {otaDetalle && (
+                    <button onClick={() => setOtaDetalle(false)}
+                      style={{ display:"flex", alignItems:"center", gap:6, background:"none", border:`1px solid ${C.border}`, borderRadius:6, padding:"4px 12px", cursor:"pointer", fontSize:11, color:C.textMid, fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+                      ← Volver
+                    </button>
+                  )}
+                  {!otaDetalle && <div/>}
+                  {otaDetalle && <span style={{ fontSize:12, fontWeight:700, color:C.text }}>Desglose OTAs</span>}
+                </div>
+                <div style={{ display:"flex", gap:6, marginBottom:16, flexWrap:"wrap" }}>
                   {VISTAS.map(v => (
                     <button key={v.key} onClick={()=>setReservasVista(v.key)}
                       style={{ padding:"5px 14px", borderRadius:20, border:`1.5px solid ${reservasVista===v.key?"#111":C.border}`, background:reservasVista===v.key?"#111":"transparent", color:reservasVista===v.key?"#fff":C.textMid, fontSize:12, fontWeight:reservasVista===v.key?700:400, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", transition:"all 0.15s" }}>
@@ -4563,13 +4599,16 @@ function PickupView({ datos }) {
                             <span style={{ width:8, height:8, borderRadius:2, background:color, flexShrink:0, display:"inline-block" }}/>
                             <span style={{ color:"rgba(255,255,255,0.75)", fontSize:12 }}>{vista.label}: <span style={{ color:"#fff", fontWeight:700 }}>{vista.fmt(d.value)}</span></span>
                           </div>
+                          {d.payload?.isOtaGroup && <p style={{ color:"rgba(255,255,255,0.45)", fontSize:10, marginTop:6 }}>Pulsa para ver desglose</p>}
                         </div>
                       );
                     }}
                   />
-                  <Bar dataKey="valor" radius={[4,4,0,0]} maxBarSize={56} shape={(p) => <SimpleBar {...p}/>}>
+                  <Bar dataKey="valor" radius={[4,4,0,0]} maxBarSize={56} shape={(p) => <SimpleBar {...p}/>}
+                    onClick={(data) => { if (data?.isOtaGroup) setOtaDetalle(true); }}
+                    cursor="pointer">
                     {chartData.map((d,i) => (
-                      <Cell key={i} fill={`url(#vg_${i})`}/>
+                      <Cell key={i} fill={`url(#vg_${i})`} cursor={d.isOtaGroup ? "pointer" : "default"}/>
                     ))}
                   </Bar>
                 </BarChart>
