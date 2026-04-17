@@ -465,67 +465,78 @@ function WeatherBar({ ciudad, datos, lang }) {
     const mesPrefijo = `${anioActual}-${mesPad}`;
     const hab = datos?.hotel?.habitaciones || 30;
 
-    // Movimiento del día (ayer) + ocupación de hoy (OTB)
-    const ayerDia = produccion.find(d => d.fecha === ayerStr);
-    const resHoy  = pickupEntries.filter(e => String(e.fecha_llegada||"").slice(0,10) === hoyStr).reduce((a,e) => a + (e.num_reservas||1) * ((e.estado||"confirmada") === "cancelada" ? -1 : 1), 0);
-    const occHoy  = hab > 0 ? Math.min(Math.round(Math.max(0, resHoy) / hab * 100), 100) : null;
-    if (ayerDia || occHoy) {
-      const occ = ayerDia?.hab_disponibles > 0 ? (ayerDia.hab_ocupadas / ayerDia.hab_disponibles * 100).toFixed(1) : null;
-      const adr = ayerDia?.adr ? Math.round(ayerDia.adr) : null;
-      const resAyer = pickupEntries.filter(e => String(e.fecha_pickup||"").slice(0,10) === ayerStr && (e.estado||"confirmada") !== "cancelada").reduce((a,e) => a+(e.num_reservas||1), 0);
-      let msg = "Movimiento del día";
-      if (occHoy != null) msg += `  ·  Ocupación hoy ${occHoy}%`;
-      if (occ)            msg += `  ·  Occ ayer ${occ}%`;
-      if (adr)            msg += `  ·  ADR €${adr.toLocaleString("es-ES")}`;
-      if (resAyer > 0)    msg += `  ·  ${resAyer} reserva${resAyer!==1?"s":""} captada${resAyer!==1?"s":""}`;
-      msgs.push(msg);
+    const fmtFecha = iso => { const [y,m,d]=iso.split("-"); return `${d}/${m}/${y.slice(2)}`; };
+    const getFechaSalida = e => {
+      if (e.fecha_salida) return String(e.fecha_salida).slice(0,10);
+      if (e.noches && e.fecha_llegada) { const d=new Date(e.fecha_llegada); d.setDate(d.getDate()+Number(e.noches)); return d.toISOString().slice(0,10); }
+      return null;
+    };
+    const activas = pickupEntries.filter(e => (e.estado||"confirmada") !== "cancelada" && !((e.canal||"").toLowerCase().includes("grupo")||(e.canal||"").toLowerCase().includes("evento")));
+
+    // ── 1. MOVIMIENTO DE HOY + comparación ayer ──
+    const entradasHoy  = activas.filter(e => String(e.fecha_llegada||"").slice(0,10) === hoyStr).reduce((a,e)=>a+(e.num_reservas||1),0);
+    const salidasHoy   = activas.filter(e => getFechaSalida(e) === hoyStr).reduce((a,e)=>a+(e.num_reservas||1),0);
+    const entradasAyer = activas.filter(e => String(e.fecha_llegada||"").slice(0,10) === ayerStr).reduce((a,e)=>a+(e.num_reservas||1),0);
+    const salidasAyer  = activas.filter(e => getFechaSalida(e) === ayerStr).reduce((a,e)=>a+(e.num_reservas||1),0);
+    const ayerProd     = produccion.find(d => d.fecha === ayerStr);
+    const occAyerProd  = ayerProd?.hab_disponibles > 0 ? Math.round(ayerProd.hab_ocupadas/ayerProd.hab_disponibles*100) : null;
+    const netoHoy      = pickupEntries.reduce((a,e) => { if(String(e.fecha_llegada||"").slice(0,10)!==hoyStr)return a; return a+(e.num_reservas||1)*((e.estado||"confirmada")==="cancelada"?-1:1); },0);
+    const occHoy       = hab>0 ? Math.min(Math.round(Math.max(0,netoHoy)/hab*100),100) : null;
+    const netoAyer     = pickupEntries.reduce((a,e) => { if(String(e.fecha_llegada||"").slice(0,10)!==ayerStr)return a; return a+(e.num_reservas||1)*((e.estado||"confirmada")==="cancelada"?-1:1); },0);
+    const occAyerOTB   = hab>0 ? Math.min(Math.round(Math.max(0,netoAyer)/hab*100),100) : null;
+    const occAyer      = occAyerProd ?? occAyerOTB;
+    const fmtDelta     = (hoy,ayer) => { if(ayer==null)return ""; const d=hoy-ayer; return ` (${d>=0?"+":""}${d}%)`; };
+    {
+      const parts = [];
+      if (occHoy != null) parts.push(`Ocupación ${occHoy}%${fmtDelta(occHoy,occAyer)}`);
+      parts.push(`Entradas ${entradasHoy}${entradasAyer>0?` (ayer ${entradasAyer})`:""}`);
+      parts.push(`Salidas ${salidasHoy}${salidasAyer>0?` (ayer ${salidasAyer})`:""}`);
+      msgs.push(`Movimiento hoy  ·  ${parts.join("  ·  ")}`);
     }
 
-    // Revenue mes actual vs mes anterior y vs año anterior
-    const datosMes = produccion.filter(d => d.fecha.startsWith(mesPrefijo));
-    const revMes = datosMes.reduce((a,d) => a+(d.revenue_total||d.revenue_hab||0), 0);
-    if (revMes > 0) {
-      const mesPrevNum = mesActual === 1 ? 12 : mesActual - 1;
-      const anioPrev   = mesActual === 1 ? anioActual - 1 : anioActual;
-      const mesPrevPfx = `${anioPrev}-${String(mesPrevNum).padStart(2,"0")}`;
-      const lyPfx      = `${anioActual-1}-${mesPad}`;
-
-      const datosPrev = produccion.filter(d => d.fecha.startsWith(mesPrevPfx)).slice(0, diaHoy);
-      const revPrev   = datosPrev.reduce((a,d) => a+(d.revenue_total||d.revenue_hab||0), 0);
-      const datosLY   = produccion.filter(d => d.fecha.startsWith(lyPfx)).slice(0, diaHoy);
-      const revLY     = datosLY.reduce((a,d) => a+(d.revenue_total||d.revenue_hab||0), 0);
-
-      let msg = `Revenue del mes: €${Math.round(revMes).toLocaleString("es-ES")}`;
-      if (revPrev > 0) {
-        const pct = ((revMes-revPrev)/revPrev*100);
-        msg += `  ·  vs mes anterior ${pct>=0?"+":""}${pct.toFixed(1)}%`;
-      }
-      if (revLY > 0) {
-        const pct = ((revMes-revLY)/revLY*100);
-        msg += `  ·  vs mismo período año anterior ${pct>=0?"+":""}${pct.toFixed(1)}%`;
-      }
-      msgs.push(msg);
-    }
-
-    // Próximos eventos (grupos confirmados/tentativos con fecha_inicio >= hoy)
+    // ── 2. GRUPOS / EVENTOS HOY → si no hay, próximo evento ──
     const grupos = datos?.grupos || [];
-    const proximos = grupos
-      .filter(g => g.fecha_inicio >= hoyStr && g.estado === "confirmado")
-      .sort((a, b) => a.fecha_inicio.localeCompare(b.fecha_inicio))
-      .slice(0, 5);
-    if (proximos.length > 0) {
-      const fmtFecha = iso => {
-        const [y, m, d] = iso.split("-");
-        return `${d}/${m}/${y.slice(2)}`;
-      };
-      const partes = proximos.map(g => {
+    const gruposHoy = grupos.filter(g => g.fecha_inicio <= hoyStr && (g.fecha_fin||g.fecha_inicio) >= hoyStr && (g.estado==="confirmado"||g.estado==="tentativo"));
+    if (gruposHoy.length > 0) {
+      const partes = gruposHoy.map(g => {
         let txt = g.nombre;
-        if (g.fecha_inicio) txt += `  ${fmtFecha(g.fecha_inicio)}`;
-        if (g.fecha_fin && g.fecha_fin !== g.fecha_inicio) txt += `→${fmtFecha(g.fecha_fin)}`;
         if (g.habitaciones) txt += `  ·  ${g.habitaciones} hab.`;
+        if (g.pax) txt += `  ·  ${g.pax} pax`;
         return txt;
       });
-      msgs.push(`Próximos eventos  ·  ${partes.join("   |   ")}`);
+      msgs.push(`Grupos/Eventos hoy  ·  ${partes.join("   |   ")}`);
+    } else {
+      const proximo = grupos.filter(g => g.fecha_inicio > hoyStr && g.estado==="confirmado").sort((a,b)=>a.fecha_inicio.localeCompare(b.fecha_inicio))[0];
+      if (proximo) {
+        let txt = `Próximo evento  ·  ${proximo.nombre}  ${fmtFecha(proximo.fecha_inicio)}`;
+        if (proximo.fecha_fin && proximo.fecha_fin !== proximo.fecha_inicio) txt += `→${fmtFecha(proximo.fecha_fin)}`;
+        if (proximo.habitaciones) txt += `  ·  ${proximo.habitaciones} hab.`;
+        msgs.push(txt);
+      }
+    }
+
+    // ── 3. KPIs MENSUALES ──
+    const datosMes = produccion.filter(d => d.fecha.startsWith(mesPrefijo));
+    if (datosMes.length > 0) {
+      const habOcuMes  = datosMes.reduce((a,d)=>a+(d.hab_ocupadas||0),0);
+      const habDisMes  = datosMes.reduce((a,d)=>a+(d.hab_disponibles||0),0);
+      const revHabMes  = datosMes.reduce((a,d)=>a+(d.revenue_hab||0),0);
+      const revTotMes  = datosMes.reduce((a,d)=>a+(d.revenue_total||d.revenue_hab||0),0);
+      const occMes     = habDisMes>0 ? (habOcuMes/habDisMes*100).toFixed(1) : null;
+      const adrMes     = habOcuMes>0 ? Math.round(revHabMes/habOcuMes) : null;
+      const revparMes  = habDisMes>0 ? Math.round(revHabMes/habDisMes) : null;
+      const lyPfx      = `${anioActual-1}-${mesPad}`;
+      const datosLY    = produccion.filter(d=>d.fecha.startsWith(lyPfx)).slice(0,diaHoy);
+      const habOcuLY   = datosLY.reduce((a,d)=>a+(d.hab_ocupadas||0),0);
+      const habDisLY   = datosLY.reduce((a,d)=>a+(d.hab_disponibles||0),0);
+      const occLY      = habDisLY>0 ? (habOcuLY/habDisLY*100).toFixed(1) : null;
+      const revTotLY   = datosLY.reduce((a,d)=>a+(d.revenue_total||d.revenue_hab||0),0);
+      const parts = [`Revenue €${Math.round(revTotMes).toLocaleString("es-ES")}`];
+      if (revTotLY>0) { const p=((revTotMes-revTotLY)/revTotLY*100); parts[0]+=` (${p>=0?"+":""}${p.toFixed(1)}% vs LY)`; }
+      if (occMes)  { let s=`OCC ${occMes}%`; if(occLY) { const d=(parseFloat(occMes)-parseFloat(occLY)); s+=` (${d>=0?"+":""}${d.toFixed(1)}pp vs LY)`; } parts.push(s); }
+      if (adrMes)  parts.push(`ADR €${adrMes}`);
+      if (revparMes) parts.push(`RevPAR €${revparMes}`);
+      msgs.push(`KPIs del mes  ·  ${parts.join("  ·  ")}`);
     }
 
     if (msgs.length === 0) return "";
