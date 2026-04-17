@@ -4946,15 +4946,28 @@ function BudgetView({ datos, anio: anioProp }) {
     );
   };
 
-  const chartSegmentos = filas.map(f => ({
+  const kpiOpts = [
+    { key: "revenue", label: t("rev_total_label") },
+    { key: "adr",     label: "ADR" },
+  ];
+
+  const chartUnificado = filas.map(f => ({
     mes: f.mes,
     mesFull: t("meses_full")[f.mesIdx],
     anioIdx: anio,
-    Habitaciones:    f.rev_hab_real   != null ? Math.round(f.rev_hab_real/1000*10)/10   : null,
-    "Grupos/Eventos": f.rev_fnb_real  != null ? Math.round(f.rev_fnb_real/1000*10)/10  : null,
-    Salas:           f.rev_salas_real != null ? Math.round(f.rev_salas_real/1000*10)/10 : null,
+    Ppto: kpiChart==="revenue" ? (f.rev_total_ppto ? Math.round(f.rev_total_ppto/1000) : null)
+         : kpiChart==="adr"     ? f.adr_ppto : f.revpar_ppto,
+    Real: kpiChart==="revenue" ? (f.rev_total_real ? Math.round(f.rev_total_real/1000) : null)
+         : kpiChart==="adr"     ? f.adr_real : f.revpar_real,
+    Forecast: f.mesCerrado ? null
+            : kpiChart==="revenue" && f.forecast_rev ? Math.round(f.forecast_rev / 1000)
+            : kpiChart==="adr"    ? (f.forecast_adr ?? null)
+            : null,
   }));
-  const haySegmentos = chartSegmentos.some(f => f.Habitaciones != null);
+
+  const chartUnit  = kpiChart==="revenue" ? "k€" : "€";
+  const chartTitle = kpiChart==="revenue" ? t("chart_rev")
+                   : kpiChart==="adr"     ? t("chart_adr") : t("chart_revpar");
 
   return (
     <div style={{ display:"flex", flexDirection:"column", gap:20 }}>
@@ -4991,83 +5004,84 @@ function BudgetView({ datos, anio: anioProp }) {
         </div>
       )}
 
-      {/* Gráfica desglose mensual por segmento */}
+      {/* Gráfica */}
       <Card>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:20 }}>
           <div>
-            <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:18, color:C.text }}>Revenue por segmento</p>
-            <p style={{ fontSize:11, color:C.textLight, marginTop:3, letterSpacing:"0.3px" }}>Habitaciones · Grupos/Eventos · Salas &mdash; {anio}</p>
+            <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:18, color:C.text }}>{chartTitle}</p>
+            <p style={{ fontSize:11, color:C.textLight, marginTop:3, letterSpacing:"0.3px" }}>Presupuesto · Real · Forecast &mdash; {anio}</p>
           </div>
-          <div style={{ display:"flex", gap:16, alignItems:"center" }}>
-            {[
-              { color:"#1A7A3C", label:"Habitaciones" },
-              { color:"#E85D04", label:"Grupos/Eventos" },
-              { color:"#7C3AED", label:"Salas" },
-            ].map((item,i) => (
-              <div key={i} style={{ display:"flex", alignItems:"center", gap:5 }}>
-                <div style={{ width:10, height:10, borderRadius:2, background:item.color }}/>
-                <span style={{ fontSize:10, color:C.textLight, fontWeight:500, letterSpacing:"0.5px" }}>{item.label}</span>
-              </div>
-            ))}
+          <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:10 }}>
+            <div style={{ display:"flex", gap:6 }}>
+              {kpiOpts.map(o => (
+                <button key={o.key} onClick={()=>setKpiChart(o.key)}
+                  style={{ padding:"5px 14px", borderRadius:7, border:`1.5px solid ${kpiChart===o.key?"#1A7A3C":C.border}`, background:kpiChart===o.key?"#1A7A3C18":"transparent", color:kpiChart===o.key?"#1A7A3C":C.textLight, fontSize:12, fontWeight:kpiChart===o.key?700:400, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", transition:"all 0.15s" }}>
+                  {o.label}
+                </button>
+              ))}
+            </div>
+            <div style={{ display:"flex", gap:16 }}>
+              {[
+                { color:"#64748B", opacity:0.55, label:t("ppto_abrev") },
+                { color:"#1A7A3C", opacity:1,    label:t("real_label") },
+                { color:"#B8860B", opacity:0.85,  label:"Forecast" },
+              ].map((item, i) => (
+                <div key={i} style={{ display:"flex", alignItems:"center", gap:5 }}>
+                  <div style={{ width:10, height:10, borderRadius:2, background:item.color, opacity:item.opacity }} />
+                  <span style={{ fontSize:10, color:C.textLight, fontWeight:500, letterSpacing:"0.5px", textTransform:"uppercase" }}>{item.label}</span>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
-        {!haySegmentos ? (
-          <div style={{ textAlign:"center", padding:"60px 0", color:C.textLight, fontSize:13 }}>{t("sin_datos")}</div>
-        ) : (
         <div onMouseDown={e=>e.preventDefault()}>
         <ResponsiveContainer width="100%" height={310}>
-          <BarChart data={chartSegmentos} barSize={22} barCategoryGap="32%">
+          <BarChart data={chartUnificado} barSize={16} barGap={3} barCategoryGap="32%">
             <defs>
-              <linearGradient id="gradHab2" x1="0" y1="0" x2="0" y2="1">
+              <linearGradient id="gradReal" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor="#1A7A3C" stopOpacity={1}/>
                 <stop offset="100%" stopColor="#1A7A3C" stopOpacity={0.75}/>
               </linearGradient>
-              <linearGradient id="gradGrupos" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#E85D04" stopOpacity={0.9}/>
-                <stop offset="100%" stopColor="#E85D04" stopOpacity={0.6}/>
-              </linearGradient>
-              <linearGradient id="gradSalas" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#7C3AED" stopOpacity={0.9}/>
-                <stop offset="100%" stopColor="#7C3AED" stopOpacity={0.6}/>
+              <linearGradient id="gradForecast" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#B8860B" stopOpacity={0.9}/>
+                <stop offset="100%" stopColor="#B8860B" stopOpacity={0.55}/>
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke={C.border} vertical={false}/>
-            <XAxis dataKey="mes" tick={{ fill:C.textLight, fontSize:11 }} axisLine={false} tickLine={false}/>
-            <YAxis tick={{ fill:C.textLight, fontSize:11 }} axisLine={false} tickLine={false} tickFormatter={v=>`${v}k€`} width={52}/>
+            <XAxis dataKey="mes" tick={{ fill: C.textLight, fontSize: 11 }} axisLine={false} tickLine={false}/>
+            <YAxis tick={{ fill: C.textLight, fontSize: 11 }} axisLine={false} tickLine={false} unit={chartUnit} width={54}/>
             <Tooltip
               cursor={false}
               content={({ active, payload }) => {
                 if (!active || !payload?.length) return null;
+                const colorMap = { Ppto:"#64748B", Real:"#1A7A3C", Forecast:"#B8860B" };
                 const raw = payload[0]?.payload || {};
-                const colorMap = { "Habitaciones":"#1A7A3C", "Grupos/Eventos":"#E85D04", "Salas":"#7C3AED" };
-                const total = (raw.Habitaciones||0) + (raw["Grupos/Eventos"]||0) + (raw.Salas||0);
+                const mesNombre = raw.mesFull || raw.mes || "";
+                const anioLabel = raw.anioIdx ? ` ${raw.anioIdx}` : "";
                 return (
-                  <div style={{ background:"#111111", borderRadius:10, padding:"12px 16px", boxShadow:"0 8px 24px rgba(0,0,0,0.35)", minWidth:170 }}>
-                    <p style={{ margin:"0 0 8px", fontSize:10, fontWeight:700, color:"#FFFFFF", textTransform:"uppercase", letterSpacing:"1.5px" }}>{raw.mesFull} {raw.anioIdx}</p>
-                    {payload.map((p,i) => p.value != null && (
+                  <div style={{ background:"#111111", borderRadius:10, padding:"12px 16px", boxShadow:"0 8px 24px rgba(0,0,0,0.35)", minWidth:164 }}>
+                    <p style={{ margin:"0 0 8px", fontSize:10, fontWeight:700, color:"#FFFFFF", textTransform:"uppercase", letterSpacing:"1.5px" }}>{mesNombre}{anioLabel}</p>
+                    {payload.map((p, i) => p.value != null && (
                       <div key={i} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", gap:20, marginBottom:4 }}>
                         <span style={{ display:"flex", alignItems:"center", gap:6 }}>
-                          <span style={{ display:"inline-block", width:8, height:8, borderRadius:2, background:colorMap[p.dataKey]||"#888" }}/>
+                          <span style={{ display:"inline-block", width:8, height:8, borderRadius:2, background:colorMap[p.dataKey] || "#888" }} />
                           <span style={{ fontSize:11, color:"rgba(255,255,255,0.75)" }}>{p.name}</span>
                         </span>
-                        <span style={{ fontSize:12, fontWeight:700, color:"#FFFFFF" }}>€{Math.round(p.value*1000).toLocaleString("es-ES")}</span>
+                        <span style={{ fontSize:12, fontWeight:700, color:"#FFFFFF" }}>
+                          €{(kpiChart==="revenue" ? Math.round(p.value*1000) : Math.round(p.value)).toLocaleString("es-ES")}
+                        </span>
                       </div>
                     ))}
-                    {total > 0 && <div style={{ borderTop:"1px solid rgba(255,255,255,0.15)", marginTop:6, paddingTop:6, display:"flex", justifyContent:"space-between" }}>
-                      <span style={{ fontSize:11, color:"rgba(255,255,255,0.5)" }}>Total</span>
-                      <span style={{ fontSize:12, fontWeight:700, color:"#fff" }}>€{Math.round(total*1000).toLocaleString("es-ES")}</span>
-                    </div>}
                   </div>
                 );
               }}
             />
-            <Bar dataKey="Habitaciones"  name="Habitaciones"  stackId="seg" fill="url(#gradHab2)"   radius={[0,0,0,0]} shape={(p) => <SimpleBar {...p}/>}/>
-            <Bar dataKey="Grupos/Eventos" name="Grupos/Eventos" stackId="seg" fill="url(#gradGrupos)" radius={[0,0,0,0]} shape={(p) => <SimpleBar {...p}/>}/>
-            <Bar dataKey="Salas"         name="Salas"         stackId="seg" fill="url(#gradSalas)"  radius={[4,4,0,0]} shape={(p) => <SimpleBar {...p}/>}/>
+            <Bar dataKey="Ppto"     name={t("ppto_abrev")} fill="#64748B" fillOpacity={0.45} radius={[4,4,0,0]} shape={(p) => <SimpleBar {...p}/>}/>
+            <Bar dataKey="Real"     name={t("real_label")} fill="url(#gradReal)"     radius={[4,4,0,0]} shape={(p) => <SimpleBar {...p}/>}/>
+            <Bar dataKey="Forecast" name="Forecast"         fill="url(#gradForecast)" radius={[4,4,0,0]} shape={(p) => <SimpleBar {...p}/>}/>
           </BarChart>
         </ResponsiveContainer>
         </div>
-        )}
       </Card>
 
       {/* Tabla detalle */}
