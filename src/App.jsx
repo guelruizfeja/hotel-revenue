@@ -5511,10 +5511,11 @@ function GruposView({ datos, onRecargar }) {
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", gap:8, flexWrap:"wrap" }}>
         <div style={{ display:"flex", gap:6 }}>
           {[
-            { key:"semana",  label:"Semana" },
-            { key:"grupos",  label:"Grupos" },
-            { key:"eventos", label:"Eventos" },
-            { key:"salas",   label:"Gestión de salas" },
+            { key:"semana",   label:"Semana" },
+            { key:"pipeline", label:"Pipeline" },
+            { key:"grupos",   label:"Grupos" },
+            { key:"eventos",  label:"Eventos" },
+            { key:"salas",    label:"Gestión de salas" },
           ].map(({ key, label }) => {
             const activo = subVista === key;
             return (
@@ -5693,6 +5694,166 @@ function GruposView({ datos, onRecargar }) {
               <p style={{ textAlign:"center", color:C.textLight, fontSize:13, padding:"16px 0 8px" }}>Sin grupos ni eventos esta semana</p>
             )}
           </Card>
+        );
+      })()}
+
+      {/* ── Pipeline de conversión ── */}
+      {subVista === "pipeline" && (() => {
+        const hoy = new Date().toISOString().slice(0,10);
+        const anioStr = String(anio);
+
+        const enAnio = grupos.filter(g =>
+          (g.fecha_inicio?.slice(0,4) === anioStr || g.fecha_fin?.slice(0,4) === anioStr)
+          && g.categoria !== "evento"
+        );
+
+        const cotizados   = enAnio.filter(g => g.estado === "cotizado");
+        const confirmados = enAnio.filter(g => g.estado === "confirmado");
+        const cancelados  = enAnio.filter(g => g.estado === "cancelado");
+        const total = cotizados.length + confirmados.length + cancelados.length;
+        const cerrados = confirmados.length + cancelados.length;
+        const tasaConv = cerrados > 0 ? Math.round(confirmados.length / cerrados * 100) : null;
+
+        const revCotizado   = cotizados.reduce((a,g)=>a+calcRevTotal(g),0);
+        const revConfirmado = confirmados.reduce((a,g)=>a+calcRevTotal(g),0);
+
+        // Tiempo medio de cierre (fecha_confirmacion - fecha_inicio como proxy)
+        const tiemposCierre = confirmados
+          .filter(g => g.fecha_confirmacion && g.fecha_inicio)
+          .map(g => Math.round((new Date(g.fecha_confirmacion)-new Date(g.fecha_inicio))/86400000))
+          .filter(d => d >= 0);
+        const tiempoMedio = tiemposCierre.length > 0 ? Math.round(tiemposCierre.reduce((a,b)=>a+b,0)/tiemposCierre.length) : null;
+
+        // Motivos de cancelación
+        const motivoCount = {};
+        cancelados.forEach(g => {
+          const m = g.motivo_perdida || "Sin especificar";
+          motivoCount[m] = (motivoCount[m]||0)+1;
+        });
+        const motivos = Object.entries(motivoCount).sort((a,b)=>b[1]-a[1]);
+
+        // Cotizaciones pendientes (cotizado + fecha_inicio >= hoy)
+        const pendientes = cotizados
+          .filter(g => g.fecha_inicio >= hoy)
+          .sort((a,b)=>a.fecha_inicio.localeCompare(b.fecha_inicio));
+
+        const fmtFecha = iso => { if(!iso)return"—"; const [y,m,d]=iso.split("-"); return `${d}/${m}/${y.slice(2)}`; };
+        const fmtEur = n => `€${Math.round(n).toLocaleString("es-ES")}`;
+
+        const FUNNEL = [
+          { label:"Total recibidos", n:total,              color:"#004B87", bg:"#E8F0FB" },
+          { label:"Confirmados",     n:confirmados.length, color:"#1A7A3C", bg:"#E6F7EE" },
+          { label:"En cotización",   n:cotizados.length,   color:"#B8860B", bg:"#FFF8E7" },
+          { label:"Cancelados",      n:cancelados.length,  color:"#999",    bg:"#F5F5F5" },
+        ];
+        const maxN = Math.max(...FUNNEL.map(f=>f.n), 1);
+
+        return (
+          <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
+
+            {/* Selector año */}
+            <div style={{ display:"flex", justifyContent:"flex-end" }}>
+              <select value={anio} onChange={e=>setAnio(Number(e.target.value))}
+                style={{ padding:"5px 10px", borderRadius:7, border:`1.5px solid ${C.border}`, fontSize:13, fontWeight:600, color:C.text, background:C.bg, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", outline:"none" }}>
+                {[...new Set([anio-1, anio, anio+1, ...grupos.map(g=>parseInt(g.fecha_inicio?.slice(0,4))).filter(Boolean)])].sort().map(a=><option key={a} value={a}>{a}</option>)}
+              </select>
+            </div>
+
+            {/* KPIs resumen */}
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(160px,1fr))", gap:12 }}>
+              {[
+                { label:"Tasa de conversión", value: tasaConv!=null?`${tasaConv}%`:"—", color:"#1A7A3C", sub:"confirmados / cerrados" },
+                { label:"Revenue confirmado",  value: fmtEur(revConfirmado), color:"#1A7A3C", sub:`${confirmados.length} grupos` },
+                { label:"Revenue en pipeline", value: fmtEur(revCotizado),   color:"#B8860B", sub:`${cotizados.length} cotizaciones` },
+                { label:"Tiempo medio cierre", value: tiempoMedio!=null?`${tiempoMedio}d`:"—", color:C.accent, sub:"días hasta confirmar" },
+              ].map((k,i)=>(
+                <div key={i} style={{ background:C.bgCard, border:`1px solid ${C.border}`, borderRadius:10, padding:"14px 18px", borderLeft:`3px solid ${k.color}` }}>
+                  <p style={{ fontSize:10, color:C.textLight, textTransform:"uppercase", letterSpacing:1.2, marginBottom:6, fontWeight:600 }}>{k.label}</p>
+                  <p style={{ fontSize:22, fontWeight:700, color:k.color, fontFamily:"'Plus Jakarta Sans',sans-serif", margin:0 }}>{k.value}</p>
+                  <p style={{ fontSize:10, color:C.textLight, marginTop:3 }}>{k.sub}</p>
+                </div>
+              ))}
+            </div>
+
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16 }}>
+
+              {/* Funnel visual */}
+              <Card>
+                <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:16, color:C.text, marginBottom:16 }}>Embudo {anio}</p>
+                <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                  {FUNNEL.map((f,i)=>(
+                    <div key={i}>
+                      <div style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
+                        <span style={{ fontSize:12, color:C.textMid, fontWeight:500 }}>{f.label}</span>
+                        <span style={{ fontSize:13, fontWeight:700, color:f.color }}>{f.n}</span>
+                      </div>
+                      <div style={{ height:10, borderRadius:6, background:C.border, overflow:"hidden" }}>
+                        <div style={{ height:"100%", width:`${(f.n/maxN)*100}%`, background:f.color, borderRadius:6, transition:"width 0.4s" }}/>
+                      </div>
+                    </div>
+                  ))}
+                  {tasaConv!=null && (
+                    <div style={{ marginTop:8, padding:"8px 12px", borderRadius:8, background:"#E6F7EE", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                      <span style={{ fontSize:12, color:"#1A7A3C", fontWeight:600 }}>Tasa de conversión</span>
+                      <span style={{ fontSize:18, fontWeight:800, color:"#1A7A3C", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>{tasaConv}%</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Motivos cancelación */}
+                {motivos.length > 0 && (
+                  <div style={{ marginTop:20 }}>
+                    <p style={{ fontSize:10, color:C.textLight, textTransform:"uppercase", letterSpacing:1, fontWeight:600, marginBottom:10 }}>Motivos cancelación</p>
+                    <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+                      {motivos.map(([m,n],i)=>(
+                        <div key={i} style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                          <span style={{ fontSize:12, color:C.textMid }}>{m}</span>
+                          <span style={{ fontSize:12, fontWeight:700, padding:"2px 8px", borderRadius:10, background:"#F5F5F5", color:"#999" }}>{n}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </Card>
+
+              {/* Cotizaciones pendientes */}
+              <Card>
+                <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:16, color:C.text, marginBottom:16 }}>Cotizaciones pendientes</p>
+                {pendientes.length === 0 ? (
+                  <p style={{ color:C.textLight, fontSize:13, textAlign:"center", padding:"24px 0" }}>Sin cotizaciones abiertas</p>
+                ) : (
+                  <div style={{ display:"flex", flexDirection:"column", gap:1 }}>
+                    {pendientes.map((g,i)=>{
+                      const noches = g.fecha_inicio&&g.fecha_fin ? Math.max(1,Math.round((new Date(g.fecha_fin)-new Date(g.fecha_inicio))/86400000)) : 1;
+                      const rev = calcRevTotal(g);
+                      const diasRestantes = Math.round((new Date(g.fecha_inicio)-new Date())/86400000);
+                      return (
+                        <div key={g.id} onClick={()=>setDetalleGrupo(g)}
+                          style={{ display:"grid", gridTemplateColumns:"1fr auto", alignItems:"center", gap:8, padding:"10px 12px", borderRadius:8, cursor:"pointer", background: i%2===0?C.bg:C.bgCard }}
+                          onMouseEnter={e=>e.currentTarget.style.background=C.accentLight}
+                          onMouseLeave={e=>e.currentTarget.style.background=i%2===0?C.bg:C.bgCard}>
+                          <div>
+                            <p style={{ fontSize:13, fontWeight:600, color:C.text, marginBottom:2 }}>{g.nombre}</p>
+                            <p style={{ fontSize:10, color:C.textLight }}>
+                              {fmtFecha(g.fecha_inicio)}{g.fecha_fin&&g.fecha_fin!==g.fecha_inicio?` → ${fmtFecha(g.fecha_fin)}`:""} · {noches} noche{noches!==1?"s":""}
+                              {g.habitaciones ? ` · ${g.habitaciones} hab.` : ""}
+                              <span style={{ marginLeft:6, padding:"1px 6px", borderRadius:8, background:"#FFF8E7", color:"#B8860B", fontWeight:700 }}>{diasRestantes}d</span>
+                            </p>
+                          </div>
+                          <p style={{ fontSize:13, fontWeight:700, color:"#B8860B", textAlign:"right", whiteSpace:"nowrap" }}>{fmtEur(rev)}</p>
+                        </div>
+                      );
+                    })}
+                    <div style={{ borderTop:`1px solid ${C.border}`, marginTop:8, paddingTop:10, display:"flex", justifyContent:"space-between", padding:"10px 12px 0" }}>
+                      <span style={{ fontSize:11, color:C.textLight }}>Revenue total en pipeline</span>
+                      <span style={{ fontSize:13, fontWeight:700, color:"#B8860B" }}>{fmtEur(revCotizado)}</span>
+                    </div>
+                  </div>
+                )}
+              </Card>
+
+            </div>
+          </div>
         );
       })()}
 
