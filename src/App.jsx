@@ -5868,128 +5868,156 @@ function GruposView({ datos, onRecargar }) {
 
       {/* ── Grupos del mes ── */}
       {subVista === "grupos" && (() => {
-        const lista = gruposMes.filter(g => g.categoria !== "evento").sort((a,b)=>a.fecha_inicio?.localeCompare(b.fecha_inicio));
+        const pad2 = n => String(n).padStart(2,"0");
+        const anioStr = String(anio);
+        const listaAnio = grupos
+          .filter(g => g.categoria !== "evento" && g.fecha_inicio?.slice(0,4) === anioStr)
+          .sort((a,b)=>a.fecha_inicio?.localeCompare(b.fecha_inicio));
+        const porMes = Array.from({length:12},(_,mi) => {
+          const mStr = `${anioStr}-${pad2(mi+1)}`;
+          return listaAnio.filter(g => g.fecha_inicio?.slice(0,7) === mStr);
+        });
         return (
-          <Card>
+          <div style={{ display:"flex", flexDirection:"column", gap:0 }}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
-              <p style={{ fontSize:11, fontWeight:700, color:"#2B7EC1", textTransform:"uppercase", letterSpacing:1.5, margin:0 }}>Grupos</p>
-              <div style={{ display:"flex", gap:6 }}>
-                <select value={mes} onChange={e=>setMes(Number(e.target.value))}
-                  style={{ padding:"5px 10px", borderRadius:7, border:`1.5px solid ${C.border}`, fontSize:13, fontWeight:600, color:C.text, background:C.bg, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", outline:"none" }}>
-                  {MESES_FULL.map((m, i) => {
-                    const mStr = String(anio) + "-" + String(i+1).padStart(2,"0");
-                    const conf = grupos.filter(g => g.estado === "confirmado" && (g.fecha_inicio?.slice(0,7) === mStr || g.fecha_fin?.slice(0,7) === mStr)).length;
-                    return <option key={i} value={i}>{m}{conf > 0 ? ` (${conf})` : ""}</option>;
-                  })}
-                </select>
-                <select value={anio} onChange={e=>setAnio(Number(e.target.value))}
-                  style={{ padding:"5px 10px", borderRadius:7, border:`1.5px solid ${C.border}`, fontSize:13, fontWeight:600, color:C.text, background:C.bg, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", outline:"none" }}>
-                  {[...new Set([anio - 1, anio, anio + 1, ...grupos.map(g => parseInt(g.fecha_inicio?.slice(0,4))).filter(Boolean)])].sort().map(a => <option key={a} value={a}>{a}</option>)}
-                </select>
-              </div>
+              <p style={{ fontSize:11, fontWeight:700, color:"#2B7EC1", textTransform:"uppercase", letterSpacing:1.5, margin:0 }}>Grupos {anio}</p>
+              <select value={anio} onChange={e=>setAnio(Number(e.target.value))}
+                style={{ padding:"5px 10px", borderRadius:7, border:`1.5px solid ${C.border}`, fontSize:13, fontWeight:600, color:C.text, background:C.bg, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", outline:"none" }}>
+                {[...new Set([anio-1,anio,anio+1,...grupos.map(g=>parseInt(g.fecha_inicio?.slice(0,4))).filter(Boolean)])].sort().map(a=><option key={a} value={a}>{a}</option>)}
+              </select>
             </div>
-            <div style={{ overflowX:"auto" }}>
-              <table style={{ width:"100%", borderCollapse:"collapse", fontSize:14 }}>
-                <thead>
-                  <tr>
-                    {["Nombre","Estado","Entrada","Salida","Noches","Habs","ADR","F&B","Sala","Revenue total","Notas"].map(h => (
-                      <th key={h} style={{ padding:"8px 14px", textAlign:"left", fontSize:10, fontWeight:600, color:C.textLight, textTransform:"uppercase", letterSpacing:"1px", borderBottom:`2px solid ${C.border}`, whiteSpace:"nowrap" }}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {lista.length === 0
-                    ? <tr><td colSpan={11} style={{ padding:24, textAlign:"center", color:C.textLight, fontSize:13 }}>Sin grupos este mes</td></tr>
-                    : lista.map((g, i) => {
-                        const noches = g.fecha_inicio && g.fecha_fin ? Math.max(1, Math.round((new Date(g.fecha_fin) - new Date(g.fecha_inicio)) / 86400000)) : 1;
-                        return (
-                          <tr key={g.id} onClick={()=>setDetalleGrupo(g)} style={{ borderBottom:`1px solid ${C.border}`, background: i%2===0?C.bg:C.bgCard, cursor:"pointer" }}
-                            onMouseEnter={e=>e.currentTarget.style.background=C.accentLight}
-                            onMouseLeave={e=>e.currentTarget.style.background=i%2===0?C.bg:C.bgCard}>
-                            <td style={{ padding:"9px 14px", fontWeight:600, color:C.text, whiteSpace:"nowrap" }}>{g.nombre}</td>
-                            <td style={{ padding:"9px 14px" }}>
-                              <span style={{ fontSize:10, fontWeight:700, padding:"2px 8px", borderRadius:10, background:ESTADOS[g.estado]?.bg, color:ESTADOS[g.estado]?.color, whiteSpace:"nowrap" }}>{ESTADOS[g.estado]?.label}</span>
-                            </td>
-                            <td style={{ padding:"9px 14px", color:C.textMid, whiteSpace:"nowrap" }}>{g.fecha_inicio||"—"}</td>
-                            <td style={{ padding:"9px 14px", color:C.textMid, whiteSpace:"nowrap" }}>{g.fecha_fin||"—"}</td>
-                            <td style={{ padding:"9px 14px", color:C.textMid, textAlign:"center" }}>{noches}</td>
-                            <td style={{ padding:"9px 14px", color:C.textMid, textAlign:"center" }}>{g.habitaciones||0}</td>
-                            <td style={{ padding:"9px 14px", color:C.textMid, textAlign:"right" }}>€{(g.adr_grupo||0).toLocaleString("es-ES")}</td>
-                            <td style={{ padding:"9px 14px", color:C.textMid, textAlign:"right" }}>€{(g.revenue_fnb||0).toLocaleString("es-ES")}</td>
-                            <td style={{ padding:"9px 14px", color:C.textMid, textAlign:"right" }}>€{(g.revenue_sala||0).toLocaleString("es-ES")}</td>
-                            <td style={{ padding:"9px 14px", fontWeight:700, color:"#1A7A3C", textAlign:"right", whiteSpace:"nowrap" }}>€{Math.round(calcRevTotal(g)).toLocaleString("es-ES")}</td>
-                            <td style={{ padding:"9px 14px", color:C.textLight, maxWidth:160, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{g.notas||"—"}</td>
-                          </tr>
-                        );
-                      })
-                  }
-                </tbody>
-              </table>
-            </div>
-          </Card>
+            {MESES_FULL.map((nombreMes, mi) => {
+              const lista = porMes[mi];
+              const revTotal = lista.reduce((a,g)=>a+calcRevTotal(g),0);
+              const confirmados = lista.filter(g=>g.estado==="confirmado").length;
+              if(lista.length===0) return null;
+              return (
+                <Card key={mi} style={{ marginBottom:10, padding:0, overflow:"hidden" }}>
+                  <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"10px 16px", background:C.bg, borderBottom:`1px solid ${C.border}` }}>
+                    <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                      <span style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontWeight:700, fontSize:14, color:C.text }}>{nombreMes}</span>
+                      <span style={{ fontSize:11, color:C.textMid }}>{lista.length} grupo{lista.length!==1?"s":""}</span>
+                      {confirmados > 0 && <span style={{ fontSize:10, fontWeight:700, padding:"2px 7px", borderRadius:8, background:"#E6F7EE", color:"#1A7A3C" }}>{confirmados} confirmado{confirmados!==1?"s":""}</span>}
+                    </div>
+                    <span style={{ fontWeight:700, color:"#1A7A3C", fontSize:13 }}>€{Math.round(revTotal).toLocaleString("es-ES")}</span>
+                  </div>
+                  <div style={{ overflowX:"auto" }}>
+                    <table style={{ width:"100%", borderCollapse:"collapse", fontSize:13 }}>
+                      <thead>
+                        <tr>
+                          {["Nombre","Estado","Entrada","Salida","Noches","Habs","ADR","F&B","Sala","Revenue total","Notas"].map(h=>(
+                            <th key={h} style={{ padding:"6px 12px", textAlign:"left", fontSize:10, fontWeight:600, color:C.textLight, textTransform:"uppercase", letterSpacing:"1px", borderBottom:`1px solid ${C.border}`, whiteSpace:"nowrap" }}>{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {lista.map((g,i)=>{
+                          const noches = g.fecha_inicio && g.fecha_fin ? Math.max(1,Math.round((new Date(g.fecha_fin)-new Date(g.fecha_inicio))/86400000)) : 1;
+                          return (
+                            <tr key={g.id} onClick={()=>setDetalleGrupo(g)} style={{ borderBottom:`1px solid ${C.border}`, background:i%2===0?C.bg:C.bgCard, cursor:"pointer" }}
+                              onMouseEnter={e=>e.currentTarget.style.background=C.accentLight}
+                              onMouseLeave={e=>e.currentTarget.style.background=i%2===0?C.bg:C.bgCard}>
+                              <td style={{ padding:"8px 12px", fontWeight:600, color:C.text, whiteSpace:"nowrap" }}>{g.nombre}</td>
+                              <td style={{ padding:"8px 12px" }}><span style={{ fontSize:10, fontWeight:700, padding:"2px 8px", borderRadius:10, background:ESTADOS[g.estado]?.bg, color:ESTADOS[g.estado]?.color, whiteSpace:"nowrap" }}>{ESTADOS[g.estado]?.label}</span></td>
+                              <td style={{ padding:"8px 12px", color:C.textMid, whiteSpace:"nowrap" }}>{g.fecha_inicio||"—"}</td>
+                              <td style={{ padding:"8px 12px", color:C.textMid, whiteSpace:"nowrap" }}>{g.fecha_fin||"—"}</td>
+                              <td style={{ padding:"8px 12px", color:C.textMid, textAlign:"center" }}>{noches}</td>
+                              <td style={{ padding:"8px 12px", color:C.textMid, textAlign:"center" }}>{g.habitaciones||0}</td>
+                              <td style={{ padding:"8px 12px", color:C.textMid, textAlign:"right" }}>€{(g.adr_grupo||0).toLocaleString("es-ES")}</td>
+                              <td style={{ padding:"8px 12px", color:C.textMid, textAlign:"right" }}>€{(g.revenue_fnb||0).toLocaleString("es-ES")}</td>
+                              <td style={{ padding:"8px 12px", color:C.textMid, textAlign:"right" }}>€{(g.revenue_sala||0).toLocaleString("es-ES")}</td>
+                              <td style={{ padding:"8px 12px", fontWeight:700, color:"#1A7A3C", textAlign:"right", whiteSpace:"nowrap" }}>€{Math.round(calcRevTotal(g)).toLocaleString("es-ES")}</td>
+                              <td style={{ padding:"8px 12px", color:C.textLight, maxWidth:160, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{g.notas||"—"}</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </Card>
+              );
+            })}
+            {listaAnio.length === 0 && (
+              <Card><p style={{ textAlign:"center", color:C.textLight, fontSize:13, padding:"24px 0" }}>Sin grupos en {anio}</p></Card>
+            )}
+          </div>
         );
       })()}
 
-      {/* ── Eventos del mes ── */}
+      {/* ── Eventos ── */}
       {subVista === "eventos" && (() => {
-        const lista = gruposMes.filter(g => g.categoria === "evento").sort((a,b)=>a.fecha_inicio?.localeCompare(b.fecha_inicio));
+        const pad2 = n => String(n).padStart(2,"0");
+        const anioStr = String(anio);
+        const listaAnio = grupos
+          .filter(g => g.categoria === "evento" && g.fecha_inicio?.slice(0,4) === anioStr)
+          .sort((a,b)=>a.fecha_inicio?.localeCompare(b.fecha_inicio));
+        const porMes = Array.from({length:12},(_,mi) => {
+          const mStr = `${anioStr}-${pad2(mi+1)}`;
+          return listaAnio.filter(g => g.fecha_inicio?.slice(0,7) === mStr);
+        });
         return (
-          <Card>
+          <div style={{ display:"flex", flexDirection:"column", gap:0 }}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
-              <p style={{ fontSize:11, fontWeight:700, color:"#7C3AED", textTransform:"uppercase", letterSpacing:1.5, margin:0 }}>Eventos</p>
-              <div style={{ display:"flex", gap:6 }}>
-                <select value={mes} onChange={e=>setMes(Number(e.target.value))}
-                  style={{ padding:"5px 10px", borderRadius:7, border:`1.5px solid ${C.border}`, fontSize:13, fontWeight:600, color:C.text, background:C.bg, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", outline:"none" }}>
-                  {MESES_FULL.map((m, i) => {
-                    const mStr = String(anio) + "-" + String(i+1).padStart(2,"0");
-                    const conf = grupos.filter(g => g.estado === "confirmado" && (g.fecha_inicio?.slice(0,7) === mStr || g.fecha_fin?.slice(0,7) === mStr)).length;
-                    return <option key={i} value={i}>{m}{conf > 0 ? ` (${conf})` : ""}</option>;
-                  })}
-                </select>
-                <select value={anio} onChange={e=>setAnio(Number(e.target.value))}
-                  style={{ padding:"5px 10px", borderRadius:7, border:`1.5px solid ${C.border}`, fontSize:13, fontWeight:600, color:C.text, background:C.bg, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", outline:"none" }}>
-                  {[...new Set([anio - 1, anio, anio + 1, ...grupos.map(g => parseInt(g.fecha_inicio?.slice(0,4))).filter(Boolean)])].sort().map(a => <option key={a} value={a}>{a}</option>)}
-                </select>
-              </div>
+              <p style={{ fontSize:11, fontWeight:700, color:"#7C3AED", textTransform:"uppercase", letterSpacing:1.5, margin:0 }}>Eventos {anio}</p>
+              <select value={anio} onChange={e=>setAnio(Number(e.target.value))}
+                style={{ padding:"5px 10px", borderRadius:7, border:`1.5px solid ${C.border}`, fontSize:13, fontWeight:600, color:C.text, background:C.bg, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", outline:"none" }}>
+                {[...new Set([anio-1,anio,anio+1,...grupos.map(g=>parseInt(g.fecha_inicio?.slice(0,4))).filter(Boolean)])].sort().map(a=><option key={a} value={a}>{a}</option>)}
+              </select>
             </div>
-            <div style={{ overflowX:"auto" }}>
-              <table style={{ width:"100%", borderCollapse:"collapse", fontSize:14 }}>
-                <thead>
-                  <tr>
-                    {["Nombre","Estado","Fecha","Hora","Sala","F&B","Sala Rev.","Revenue total","Notas"].map(h => (
-                      <th key={h} style={{ padding:"8px 14px", textAlign:"left", fontSize:10, fontWeight:600, color:C.textLight, textTransform:"uppercase", letterSpacing:"1px", borderBottom:`2px solid ${C.border}`, whiteSpace:"nowrap" }}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {lista.length === 0
-                    ? <tr><td colSpan={9} style={{ padding:24, textAlign:"center", color:C.textLight, fontSize:13 }}>Sin eventos este mes</td></tr>
-                    : lista.map((g, i) => {
-                        const ev = parseNotasEvento(g.notas);
-                        const hora = ev.hora_inicio && ev.hora_fin ? `${ev.hora_inicio} – ${ev.hora_fin}` : (ev.hora_inicio || "—");
-                        return (
-                          <tr key={g.id} onClick={()=>setDetalleGrupo(g)} style={{ borderBottom:`1px solid ${C.border}`, background: i%2===0?C.bg:C.bgCard, cursor:"pointer" }}
-                            onMouseEnter={e=>e.currentTarget.style.background=C.accentLight}
-                            onMouseLeave={e=>e.currentTarget.style.background=i%2===0?C.bg:C.bgCard}>
-                            <td style={{ padding:"9px 14px", fontWeight:600, color:C.text, whiteSpace:"nowrap" }}>{g.nombre}</td>
-                            <td style={{ padding:"9px 14px" }}>
-                              <span style={{ fontSize:10, fontWeight:700, padding:"2px 8px", borderRadius:10, background:ESTADOS[g.estado]?.bg, color:ESTADOS[g.estado]?.color, whiteSpace:"nowrap" }}>{ESTADOS[g.estado]?.label}</span>
-                            </td>
-                            <td style={{ padding:"9px 14px", color:C.textMid, whiteSpace:"nowrap" }}>{g.fecha_inicio||"—"}</td>
-                            <td style={{ padding:"9px 14px", color:C.textMid, whiteSpace:"nowrap" }}>{hora}</td>
-                            <td style={{ padding:"9px 14px", color:C.textMid, whiteSpace:"nowrap" }}>{ev.sala_nombre||"—"}</td>
-                            <td style={{ padding:"9px 14px", color:C.textMid, textAlign:"right" }}>€{(g.revenue_fnb||0).toLocaleString("es-ES")}</td>
-                            <td style={{ padding:"9px 14px", color:C.textMid, textAlign:"right" }}>€{(g.revenue_sala||0).toLocaleString("es-ES")}</td>
-                            <td style={{ padding:"9px 14px", fontWeight:700, color:"#1A7A3C", textAlign:"right", whiteSpace:"nowrap" }}>€{Math.round(calcRevTotal(g)).toLocaleString("es-ES")}</td>
-                            <td style={{ padding:"9px 14px", color:C.textLight, maxWidth:160, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{ev.notasUser||"—"}</td>
-                          </tr>
-                        );
-                      })
-                  }
-                </tbody>
-              </table>
-            </div>
-          </Card>
+            {MESES_FULL.map((nombreMes, mi) => {
+              const lista = porMes[mi];
+              const revTotal = lista.reduce((a,g)=>a+calcRevTotal(g),0);
+              const confirmados = lista.filter(g=>g.estado==="confirmado").length;
+              if(lista.length===0) return null;
+              return (
+                <Card key={mi} style={{ marginBottom:10, padding:0, overflow:"hidden" }}>
+                  <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"10px 16px", background:C.bg, borderBottom:`1px solid ${C.border}` }}>
+                    <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                      <span style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontWeight:700, fontSize:14, color:C.text }}>{nombreMes}</span>
+                      <span style={{ fontSize:11, color:C.textMid }}>{lista.length} evento{lista.length!==1?"s":""}</span>
+                      {confirmados > 0 && <span style={{ fontSize:10, fontWeight:700, padding:"2px 7px", borderRadius:8, background:"#E6F7EE", color:"#1A7A3C" }}>{confirmados} confirmado{confirmados!==1?"s":""}</span>}
+                    </div>
+                    <span style={{ fontWeight:700, color:"#1A7A3C", fontSize:13 }}>€{Math.round(revTotal).toLocaleString("es-ES")}</span>
+                  </div>
+                  <div style={{ overflowX:"auto" }}>
+                    <table style={{ width:"100%", borderCollapse:"collapse", fontSize:13 }}>
+                      <thead>
+                        <tr>
+                          {["Nombre","Estado","Fecha","Hora","Sala","F&B","Sala Rev.","Revenue total","Notas"].map(h=>(
+                            <th key={h} style={{ padding:"6px 12px", textAlign:"left", fontSize:10, fontWeight:600, color:C.textLight, textTransform:"uppercase", letterSpacing:"1px", borderBottom:`1px solid ${C.border}`, whiteSpace:"nowrap" }}>{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {lista.map((g,i)=>{
+                          const ev = parseNotasEvento(g.notas);
+                          const hora = ev.hora_inicio && ev.hora_fin ? `${ev.hora_inicio} – ${ev.hora_fin}` : (ev.hora_inicio||"—");
+                          return (
+                            <tr key={g.id} onClick={()=>setDetalleGrupo(g)} style={{ borderBottom:`1px solid ${C.border}`, background:i%2===0?C.bg:C.bgCard, cursor:"pointer" }}
+                              onMouseEnter={e=>e.currentTarget.style.background=C.accentLight}
+                              onMouseLeave={e=>e.currentTarget.style.background=i%2===0?C.bg:C.bgCard}>
+                              <td style={{ padding:"8px 12px", fontWeight:600, color:C.text, whiteSpace:"nowrap" }}>{g.nombre}</td>
+                              <td style={{ padding:"8px 12px" }}><span style={{ fontSize:10, fontWeight:700, padding:"2px 8px", borderRadius:10, background:ESTADOS[g.estado]?.bg, color:ESTADOS[g.estado]?.color, whiteSpace:"nowrap" }}>{ESTADOS[g.estado]?.label}</span></td>
+                              <td style={{ padding:"8px 12px", color:C.textMid, whiteSpace:"nowrap" }}>{g.fecha_inicio||"—"}</td>
+                              <td style={{ padding:"8px 12px", color:C.textMid, whiteSpace:"nowrap" }}>{hora}</td>
+                              <td style={{ padding:"8px 12px", color:C.textMid, whiteSpace:"nowrap" }}>{ev.sala_nombre||"—"}</td>
+                              <td style={{ padding:"8px 12px", color:C.textMid, textAlign:"right" }}>€{(g.revenue_fnb||0).toLocaleString("es-ES")}</td>
+                              <td style={{ padding:"8px 12px", color:C.textMid, textAlign:"right" }}>€{(g.revenue_sala||0).toLocaleString("es-ES")}</td>
+                              <td style={{ padding:"8px 12px", fontWeight:700, color:"#1A7A3C", textAlign:"right", whiteSpace:"nowrap" }}>€{Math.round(calcRevTotal(g)).toLocaleString("es-ES")}</td>
+                              <td style={{ padding:"8px 12px", color:C.textLight, maxWidth:160, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{ev.notasUser||"—"}</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </Card>
+              );
+            })}
+            {listaAnio.length === 0 && (
+              <Card><p style={{ textAlign:"center", color:C.textLight, fontSize:13, padding:"24px 0" }}>Sin eventos en {anio}</p></Card>
+            )}
+          </div>
         );
       })()}
 
