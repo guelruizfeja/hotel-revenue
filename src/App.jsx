@@ -5783,7 +5783,7 @@ function GruposView({ datos, onRecargar }) {
 
               {/* Funnel visual */}
               <Card>
-                <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:16, color:C.text, marginBottom:16 }}>Embudo {anio}</p>
+                <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:16, color:C.text, marginBottom:16 }}>Datos {anio}</p>
                 <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
                   {FUNNEL.map((f,i)=>(
                     <div key={i}>
