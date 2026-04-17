@@ -5508,10 +5508,11 @@ function GruposView({ datos, onRecargar }) {
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", gap:8, flexWrap:"wrap" }}>
         <div style={{ display:"flex", gap:6 }}>
           {[
-            { key:"semana",   label:"Resumen" },
+            { key:"semana",   label:"Calendario" },
             { key:"pipeline", label:"Pipeline" },
             { key:"grupos",   label:"Grupos" },
             { key:"eventos",  label:"Eventos" },
+            { key:"revenue",  label:"Revenue" },
             { key:"salas",    label:"Gestión de salas" },
           ].map(({ key, label }) => {
             const activo = subVista === key;
@@ -5564,7 +5565,7 @@ function GruposView({ datos, onRecargar }) {
         </div>
       </div>
 
-      {/* ── Vista mensual (Resumen) ── */}
+      {/* ── Vista mensual (Calendario) ── */}
       {subVista === "semana" && (() => {
         const DIAS_ES = ["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"];
         const MESES_ES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
@@ -6021,8 +6022,8 @@ function GruposView({ datos, onRecargar }) {
         );
       })()}
 
-      {/* ── GRÁFICO MENSUAL DESGLOSADO ── */}
-      {subVista !== "salas" && <Card>
+      {/* ── Revenue ── */}
+      {subVista === "revenue" && <Card>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:16 }}>
           <div>
             <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:18, color:C.text }}>Revenue del mes</p>
