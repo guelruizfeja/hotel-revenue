@@ -5457,18 +5457,33 @@ function GruposView({ datos, onRecargar }) {
 
   const revConfirmado = confirmados.reduce((a,g) => a + calcRevTotal(g), 0);
 
-  // ── Datos para gráfico de evolución anual ──
+  // ── Datos para gráfico mensual desglosado por día ──
   const produccion = datos.produccion || [];
-  const chartRevMensual = MESES.map((_, mi) => {
-    const mStr = String(anio) + "-" + String(mi + 1).padStart(2, "0");
-    const diasMes = produccion.filter(d => d.fecha?.slice(0,7) === mStr);
-    const revHab = diasMes.reduce((a, d) => a + (d.revenue_hab || 0), 0);
-    const revME  = grupos
-      .filter(g => g.estado === "confirmado" && g.fecha_inicio?.slice(0,7) === mStr)
-      .reduce((a, g) => a + calcRevTotal(g), 0);
-    const tieneDatos = diasMes.length > 0;
-    return { mes: MESES[mi], mesNombre: `${t("meses_full")[mi]} ${anio}`, revHab: tieneDatos ? Math.round(revHab) : null, revME: revME > 0 ? Math.round(revME) : null };
-  });
+  const pad2 = n => String(n).padStart(2,"0");
+  const diasEnMes = new Date(anio, mes + 1, 0).getDate();
+  const chartRevMensual = Array.from({ length: diasEnMes }, (_, di) => {
+    const dayStr = `${anio}-${pad2(mes+1)}-${pad2(di+1)}`;
+    const prod = produccion.find(d => d.fecha === dayStr);
+    const revSalas = prod?.revenue_salas || 0;
+    const gruposActivos = grupos.filter(g =>
+      g.estado === "confirmado" && g.fecha_inicio && g.fecha_fin &&
+      g.fecha_inicio <= dayStr && g.fecha_fin >= dayStr
+    );
+    const calcRevDia = g => {
+      const noches = Math.max(1, Math.round((new Date(g.fecha_fin) - new Date(g.fecha_inicio)) / 86400000));
+      return calcRevTotal(g) / noches;
+    };
+    const revGrupos = gruposActivos.filter(g => g.categoria !== "evento").reduce((a,g) => a + calcRevDia(g), 0);
+    const revEventos = gruposActivos.filter(g => g.categoria === "evento").reduce((a,g) => a + calcRevDia(g), 0);
+    const tieneDatos = prod || revGrupos > 0 || revEventos > 0 || revSalas > 0;
+    return {
+      dia: di + 1,
+      mesNombre: `${di+1} ${t("meses_full")[mes]}`,
+      Grupos:   revGrupos  > 0 ? Math.round(revGrupos)  : null,
+      Eventos:  revEventos > 0 ? Math.round(revEventos) : null,
+      Salas:    revSalas   > 0 ? Math.round(revSalas)   : null,
+    };
+  }).filter(d => d.Grupos || d.Eventos || d.Salas);
 
   const inp = { width:"100%", padding:"9px 12px", borderRadius:7, border:`1.5px solid ${C.border}`, fontSize:13, fontFamily:"'Plus Jakarta Sans',sans-serif", color:C.text, background:C.bg, outline:"none", boxSizing:"border-box" };
 
@@ -5665,17 +5680,18 @@ function GruposView({ datos, onRecargar }) {
         );
       })()}
 
-      {/* ── GRÁFICO EVOLUCIÓN REVENUE ANUAL ── */}
+      {/* ── GRÁFICO MENSUAL DESGLOSADO ── */}
       {subVista !== "salas" && <Card>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:16 }}>
           <div>
-            <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:18, color:C.text }}>Evolución Revenue</p>
-            <p style={{ fontSize:11, color:C.textLight, marginTop:3, letterSpacing:"0.3px" }}>Habitaciones · Grupos/Eventos — {anio}</p>
+            <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:18, color:C.text }}>Revenue del mes</p>
+            <p style={{ fontSize:11, color:C.textLight, marginTop:3, letterSpacing:"0.3px" }}>Grupos · Eventos · Salas — {t("meses_full")[mes]} {anio}</p>
           </div>
           <div style={{ display:"flex", gap:16 }}>
             {[
-              { color:"#1A7A3C", label:"Habitaciones" },
-              { color:"#B8860B", label:"Grupos/Eventos" },
+              { color:"#2B7EC1", label:"Grupos" },
+              { color:"#E85D04", label:"Eventos" },
+              { color:"#7C3AED", label:"Salas" },
             ].map((item,i) => (
               <div key={i} style={{ display:"flex", alignItems:"center", gap:5 }}>
                 <div style={{ width:10, height:10, borderRadius:2, background:item.color }}/>
@@ -5684,26 +5700,58 @@ function GruposView({ datos, onRecargar }) {
             ))}
           </div>
         </div>
+        {chartRevMensual.length === 0 ? (
+          <div style={{ textAlign:"center", padding:"40px 0", color:C.textLight, fontSize:13 }}>Sin datos para este mes</div>
+        ) : (
         <ResponsiveContainer width="100%" height={220}>
-          <BarChart data={chartRevMensual} barSize={20} barCategoryGap="32%" margin={{ top:4, right:8, left:0, bottom:0 }}>
+          <BarChart data={chartRevMensual} barSize={14} barCategoryGap="20%" margin={{ top:4, right:8, left:0, bottom:0 }}>
             <defs>
-              <linearGradient id="gradHabGrupos" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#1A7A3C" stopOpacity={1}/>
-                <stop offset="100%" stopColor="#1A7A3C" stopOpacity={0.7}/>
+              <linearGradient id="gradGruposM" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#2B7EC1" stopOpacity={1}/>
+                <stop offset="100%" stopColor="#2B7EC1" stopOpacity={0.65}/>
               </linearGradient>
-              <linearGradient id="gradME" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#B8860B" stopOpacity={0.9}/>
-                <stop offset="100%" stopColor="#B8860B" stopOpacity={0.55}/>
+              <linearGradient id="gradEventosM" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#E85D04" stopOpacity={0.9}/>
+                <stop offset="100%" stopColor="#E85D04" stopOpacity={0.55}/>
+              </linearGradient>
+              <linearGradient id="gradSalasM" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#7C3AED" stopOpacity={0.9}/>
+                <stop offset="100%" stopColor="#7C3AED" stopOpacity={0.55}/>
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke={C.border} vertical={false} />
-            <XAxis dataKey="mes" tick={{ fontSize: 11, fill: C.textLight }} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fontSize: 11, fill: C.textLight }} axisLine={false} tickLine={false} tickFormatter={v => v >= 1000 ? `${(v/1000).toFixed(0)}k€` : `€${v}`} width={48} />
-            <Tooltip content={<CustomTooltip />} cursor={false} />
-            <Bar dataKey="revHab" stackId="a" fill="url(#gradHabGrupos)" radius={[0,0,0,0]} name="Habitaciones" activeBar={false}/>
-            <Bar dataKey="revME"  stackId="a" fill="url(#gradME)"        radius={[4,4,0,0]} name="Grupos/Eventos" activeBar={false}/>
+            <CartesianGrid strokeDasharray="3 3" stroke={C.border} vertical={false}/>
+            <XAxis dataKey="dia" tick={{ fontSize:11, fill:C.textLight }} axisLine={false} tickLine={false}/>
+            <YAxis tick={{ fontSize:11, fill:C.textLight }} axisLine={false} tickLine={false} tickFormatter={v => v>=1000?`${(v/1000).toFixed(0)}k€`:`€${v}`} width={48}/>
+            <Tooltip content={({ active, payload }) => {
+              if (!active || !payload?.length) return null;
+              const raw = payload[0]?.payload || {};
+              const colorMap = { Grupos:"#2B7EC1", Eventos:"#E85D04", Salas:"#7C3AED" };
+              const total = (raw.Grupos||0)+(raw.Eventos||0)+(raw.Salas||0);
+              return (
+                <div style={{ background:"#111111", borderRadius:10, padding:"10px 14px", boxShadow:"0 8px 24px rgba(0,0,0,0.35)", minWidth:150 }}>
+                  <p style={{ color:"#fff", fontSize:10, fontWeight:700, marginBottom:6, textTransform:"uppercase", letterSpacing:"1px" }}>{raw.mesNombre}</p>
+                  {payload.map((p,i) => p.value != null && (
+                    <div key={i} style={{ display:"flex", justifyContent:"space-between", gap:16, marginBottom:3 }}>
+                      <span style={{ display:"flex", alignItems:"center", gap:5 }}>
+                        <span style={{ width:7, height:7, borderRadius:2, background:colorMap[p.dataKey]||"#888", display:"inline-block" }}/>
+                        <span style={{ fontSize:11, color:"rgba(255,255,255,0.75)" }}>{p.name}</span>
+                      </span>
+                      <span style={{ fontSize:11, fontWeight:700, color:"#fff" }}>€{Math.round(p.value).toLocaleString("es-ES")}</span>
+                    </div>
+                  ))}
+                  {total>0 && <div style={{ borderTop:"1px solid rgba(255,255,255,0.15)", marginTop:5, paddingTop:5, display:"flex", justifyContent:"space-between" }}>
+                    <span style={{ fontSize:10, color:"rgba(255,255,255,0.5)" }}>Total</span>
+                    <span style={{ fontSize:11, fontWeight:700, color:"#fff" }}>€{Math.round(total).toLocaleString("es-ES")}</span>
+                  </div>}
+                </div>
+              );
+            }} cursor={false}/>
+            <Bar dataKey="Grupos"  stackId="s" fill="url(#gradGruposM)"  radius={[0,0,0,0]} name="Grupos"  activeBar={false}/>
+            <Bar dataKey="Eventos" stackId="s" fill="url(#gradEventosM)" radius={[0,0,0,0]} name="Eventos" activeBar={false}/>
+            <Bar dataKey="Salas"   stackId="s" fill="url(#gradSalasM)"   radius={[4,4,0,0]} name="Salas"   activeBar={false}/>
           </BarChart>
         </ResponsiveContainer>
+        )}
       </Card>}
 
       {/* ── PANEL DETALLE EVENTO (desde calendario) ── */}
