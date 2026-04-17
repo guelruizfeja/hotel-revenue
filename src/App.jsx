@@ -3704,7 +3704,12 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
               const occHoy   = habH ? Math.min(Math.round(Math.max(0,netoHoy)/habH*100),100) : null;
               const occColor = occHoy>=85?"#E53935":occHoy>=70?"#C49A0A":occHoy>=50?C.accent:C.textLight;
               const ayerProd = produccion.find(d => d.fecha === ayerStr);
-              const occAyer  = ayerProd?.hab_disponibles > 0 ? Math.round(ayerProd.hab_ocupadas / ayerProd.hab_disponibles * 100) : null;
+              const netoAyer = habH ? (pickupEntries||[]).reduce((a,e) => {
+                if (String(e.fecha_llegada||"").slice(0,10) !== ayerStr) return a;
+                return a + (e.num_reservas||1) * ((e.estado||"confirmada")==="cancelada" ? -1 : 1);
+              }, 0) : 0;
+              const occAyerOTB = habH ? Math.min(Math.round(Math.max(0,netoAyer)/habH*100),100) : null;
+              const occAyer  = ayerProd?.hab_disponibles > 0 ? Math.round(ayerProd.hab_ocupadas / ayerProd.hab_disponibles * 100) : occAyerOTB;
 
               const Delta = ({ hoy, ayer }) => {
                 const d = hoy - ayer;
