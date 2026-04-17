@@ -3724,7 +3724,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
                     <span style={{ fontSize:8, color:C.textLight, fontWeight:500, letterSpacing:"0.5px", textTransform:"uppercase" }}>vs ayer</span>
                     <span style={{ display:"inline-flex", alignItems:"center", gap:4, padding:"3px 7px", borderRadius:20, background:bg }}>
                       {arrow}
-                      <span style={{ fontSize:12, fontWeight:700, color:col, lineHeight:1 }}>{d>0?"+":""}{d}</span>
+                      <span style={{ fontSize:12, fontWeight:700, color:col, lineHeight:1 }}>{d>0?"+":""}{d}%</span>
                     </span>
                   </div>
                 );
