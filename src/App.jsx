@@ -3977,7 +3977,8 @@ function PickupView({ datos }) {
     return saved ? parseInt(saved) : new Date().getFullYear();
   });
   const [trimSel, setTrimSel] = useState(null);
-  const [trimTip, setTrimTip] = useState(null); // { x, y, d }
+  const [trimTip, setTrimTip] = useState(null); // data only (no x/y)
+  const trimTipRef = useRef(null);
   const [canalMetric, setCanalMetric]     = useState("adr"); // "adr" | "noches"
   const [ayerVista, setAyerVista]         = useState(null); // null | "count"|"adr"|"noches"|"antelacion"
   const [reservasVentana, setReservasVentana] = useState("30d"); // "30d" | "year"
@@ -4311,14 +4312,14 @@ function PickupView({ datos }) {
 
       {/* PICKUP TRIMESTRAL — ancho completo */}
       <Card style={{ position:"relative" }}>
-        {trimTip && (
-          <div style={{ position:"fixed", top: trimTip.y - 10, left: trimTip.x + 14, background:"#0A2540", borderRadius:10, padding:"10px 14px", boxShadow:"0 8px 24px rgba(0,0,0,0.25)", pointerEvents:"none", zIndex:9999, minWidth:120 }}>
-            <p style={{ color:"#fff", fontSize:10, fontWeight:700, marginBottom:6, textTransform:"uppercase", letterSpacing:"1px" }}>{trimTip.d.mes}</p>
-            {trimTip.d.otb  != null && <div style={{ display:"flex", alignItems:"center", gap:7, margin:"2px 0" }}><span style={{ width:8, height:8, borderRadius:"50%", background:COL_OTB, flexShrink:0, display:"inline-block" }}/><span style={{ color:"rgba(255,255,255,0.9)", fontSize:12 }}>{t("otb_actual")}: {trimTip.d.otb}</span></div>}
-            {trimTip.d.ppto != null && <div style={{ display:"flex", alignItems:"center", gap:7, margin:"2px 0" }}><span style={{ width:8, height:8, borderRadius:"50%", background:COL_PPTO, flexShrink:0, display:"inline-block" }}/><span style={{ color:"rgba(255,255,255,0.9)", fontSize:12 }}>{t("nav_budget")}: {trimTip.d.ppto}</span></div>}
-            {trimTip.d.ly   != null && <div style={{ display:"flex", alignItems:"center", gap:7, margin:"2px 0" }}><span style={{ width:8, height:8, borderRadius:"50%", background:COL_LY,  flexShrink:0, display:"inline-block" }}/><span style={{ color:"rgba(255,255,255,0.9)", fontSize:12 }}>{t("anio_anterior")}: {trimTip.d.ly}</span></div>}
-          </div>
-        )}
+        <div ref={trimTipRef} style={{ position:"fixed", display: trimTip ? "block" : "none", background:"#0A2540", borderRadius:10, padding:"10px 14px", boxShadow:"0 8px 24px rgba(0,0,0,0.25)", pointerEvents:"none", zIndex:9999, minWidth:120 }}>
+          {trimTip && <>
+            <p style={{ color:"#fff", fontSize:10, fontWeight:700, marginBottom:6, textTransform:"uppercase", letterSpacing:"1px" }}>{trimTip.mes}</p>
+            {trimTip.otb  != null && <div style={{ display:"flex", alignItems:"center", gap:7, margin:"2px 0" }}><span style={{ width:8, height:8, borderRadius:"50%", background:COL_OTB, flexShrink:0, display:"inline-block" }}/><span style={{ color:"rgba(255,255,255,0.9)", fontSize:12 }}>{t("otb_actual")}: {trimTip.otb}</span></div>}
+            {trimTip.ppto != null && <div style={{ display:"flex", alignItems:"center", gap:7, margin:"2px 0" }}><span style={{ width:8, height:8, borderRadius:"50%", background:COL_PPTO, flexShrink:0, display:"inline-block" }}/><span style={{ color:"rgba(255,255,255,0.9)", fontSize:12 }}>{t("nav_budget")}: {trimTip.ppto}</span></div>}
+            {trimTip.ly   != null && <div style={{ display:"flex", alignItems:"center", gap:7, margin:"2px 0" }}><span style={{ width:8, height:8, borderRadius:"50%", background:COL_LY,  flexShrink:0, display:"inline-block" }}/><span style={{ color:"rgba(255,255,255,0.9)", fontSize:12 }}>{t("anio_anterior")}: {trimTip.ly}</span></div>}
+          </>}
+        </div>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:24, flexWrap:"wrap", gap:8 }}>
           <div style={{ display:"flex", gap:20, flexWrap:"wrap" }}>
             {[[t("otb_actual"), COL_OTB], [t("nav_budget"), COL_PPTO], [t("anio_anterior"), COL_LY]].map(([label, color]) => (
@@ -4355,8 +4356,8 @@ function PickupView({ datos }) {
               {vista.map((d, i) => (
                 <div key={i}
                   onClick={() => trimSel === null && setTrimSel(i)}
-                  onMouseEnter={(e) => setTrimTip({ x: e.clientX, y: e.clientY, d })}
-                  onMouseMove={(e)  => setTrimTip(t => t ? { ...t, x: e.clientX, y: e.clientY } : null)}
+                  onMouseEnter={(e) => { setTrimTip(d); if (trimTipRef.current) { trimTipRef.current.style.top=`${e.clientY-10}px`; trimTipRef.current.style.left=`${e.clientX+14}px`; } }}
+                  onMouseMove={(e)  => { if (trimTipRef.current) { trimTipRef.current.style.top=`${e.clientY-10}px`; trimTipRef.current.style.left=`${e.clientX+14}px`; } }}
                   onMouseLeave={() => setTrimTip(null)}
                   style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", height:"100%", justifyContent:"flex-end", gap:2, cursor: trimSel === null ? "pointer" : "default" }}>
                   <div style={{ display:"flex", alignItems:"flex-end", gap:3, width:"100%", height:"calc(100% - 22px)", justifyContent:"center" }}>
