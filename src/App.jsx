@@ -382,13 +382,13 @@ const SimpleBar = ({ x, y, width, height, fill, fillOpacity }) => {
 
 const TOOLTIP_COLORS = {
   "Ocupación":"#004B87","occ":"#004B87","OCC":"#004B87","Occupancy":"#004B87",
-  "ADR":"#B8860B","adr":"#B8860B",
+  "ADR":"#004B87","adr":"#004B87",
   "RevPAR":"#004B87","revpar":"#004B87",
-  "TRevPAR":"#10B981","trevpar":"#10B981",
+  "TRevPAR":"#004B87","trevpar":"#004B87",
   "Hab.":"#1A7A3C","Habitaciones":"#1A7A3C","revHab":"#1A7A3C",
   "F&B":"#E85D04","revFnb":"#E85D04",
   "Grupos/Eventos":"#B8860B","revME":"#B8860B",
-  "Año anterior":"#B8860B","ly":"#B8860B",
+  "Año anterior":"#D32F2F","ly":"#D32F2F",
   "Ocup. LY":"#F87171","occLY":"#F87171",
   "ADR LY":"#8B5CF6","adrLY":"#8B5CF6",
 };
@@ -858,7 +858,7 @@ function KpiModal({ kpi, datos, mes, anio, onClose }) {
                   <span style={{ fontSize:10, color:C.textMid }}>Actual</span>
                 </div>
                 <div style={{ display:"flex", alignItems:"center", gap:5 }}>
-                  <div style={{ width:18, height:2, background:"#B8860B", borderRadius:1 }}/>
+                  <div style={{ width:18, height:2, background:"#D32F2F", borderRadius:1 }}/>
                   <span style={{ fontSize:10, color:C.textMid }}>Año anterior</span>
                 </div>
               </div>
@@ -876,7 +876,7 @@ function KpiModal({ kpi, datos, mes, anio, onClose }) {
                 <YAxis tick={{ fill: C.textLight, fontSize: 11 }} axisLine={false} tickLine={false} unit={unit}/>
                 <Tooltip content={<CustomTooltip unit={unit}/>} cursor={false}/>
                 <Bar dataKey={fieldKey} name={kpi} fill="url(#kpiGradBar)" radius={[4,4,0,0]} barSize={modoVista==="mes"?10:6} activeBar={false}/>
-                <Line type="monotone" dataKey="ly" name="Año anterior" stroke="#B8860B" strokeWidth={2} dot={{fill:"#B8860B", r:3, strokeWidth:0}} activeDot={{r:4}} connectNulls/>
+                <Line type="monotone" dataKey="ly" name="Año anterior" stroke="#D32F2F" strokeWidth={2} dot={{fill:"#D32F2F", r:3, strokeWidth:0}} activeDot={{r:4}} connectNulls/>
               </ComposedChart>
             </ResponsiveContainer>
           </>)}
