@@ -94,8 +94,7 @@ const TRANSLATIONS = {
     pipeline_cotizacion:"Pipeline en cotización", cancelados_perdidos:"Cancelados / Perdidos",
     cat_corporativo:"Corporativo", cat_boda:"Boda / Social", cat_feria:"Feria / Congreso",
     cat_deportivo:"Deportivo", cat_otros:"Otros",
-    estado_confirmado:"Confirmado", estado_tentativo:"Tentativo",
-    estado_cotizacion:"En cotización", estado_cancelado:"Cancelado",
+    estado_confirmado:"Confirmado", estado_cotizacion:"Cotizado", estado_cancelado:"Cancelado",
     form_nombre:"Nombre del evento *", form_categoria:"Categoría", form_estado:"Estado",
     form_fecha_entrada:"Fecha entrada *", form_fecha_salida:"Fecha salida *", form_fecha_confirmacion:"Fecha confirmación",
     form_habitaciones:"Habitaciones", form_adr:"ADR Grupo", form_fnb:"Revenue F&B",
@@ -202,8 +201,7 @@ const TRANSLATIONS = {
     pipeline_cotizacion:"Quotation pipeline", cancelados_perdidos:"Cancelled / Lost",
     cat_corporativo:"Corporate", cat_boda:"Wedding / Social", cat_feria:"Trade Fair / Congress",
     cat_deportivo:"Sports", cat_otros:"Others",
-    estado_confirmado:"Confirmed", estado_tentativo:"Tentative",
-    estado_cotizacion:"In quotation", estado_cancelado:"Cancelled",
+    estado_confirmado:"Confirmed", estado_cotizacion:"Quoted", estado_cancelado:"Cancelled",
     form_nombre:"Event name *", form_categoria:"Category", form_estado:"Status",
     form_fecha_entrada:"Check-in date *", form_fecha_salida:"Check-out date *", form_fecha_confirmacion:"Confirmation date",
     form_habitaciones:"Rooms", form_adr:"Group ADR", form_fnb:"F&B Revenue",
@@ -307,8 +305,7 @@ const TRANSLATIONS = {
     pipeline_cotizacion:"Pipeline en devis", cancelados_perdidos:"Annulés / Perdus",
     cat_corporativo:"Corporatif", cat_boda:"Mariage / Social", cat_feria:"Foire / Congrès",
     cat_deportivo:"Sportif", cat_otros:"Autres",
-    estado_confirmado:"Confirmé", estado_tentativo:"Tentative",
-    estado_cotizacion:"En devis", estado_cancelado:"Annulé",
+    estado_confirmado:"Confirmé", estado_cotizacion:"Devis", estado_cancelado:"Annulé",
     form_nombre:"Nom de l'événement *", form_categoria:"Catégorie", form_estado:"Statut",
     form_fecha_entrada:"Date d'arrivée *", form_fecha_salida:"Date de départ *", form_fecha_confirmacion:"Date de confirmation",
     form_habitaciones:"Chambres", form_adr:"ADR Groupe", form_fnb:"Revenu F&B",
@@ -5338,8 +5335,9 @@ function GruposView({ datos, onRecargar }) {
   };
 
   const ESTADOS = {
-    confirmado:  { label: t("estado_confirmado"), color: "#1A7A3C", bg: "#E6F7EE", peso: 1.0 },
-    cancelado:   { label: t("estado_cancelado"),  color: "#999",    bg: "#F5F5F5", peso: 0 },
+    confirmado: { label: t("estado_confirmado"), color: "#1A7A3C", bg: "#E6F7EE", peso: 1.0 },
+    cotizado:   { label: t("estado_cotizacion"), color: "#B8860B", bg: "#FFF8E7", peso: 0.5 },
+    cancelado:  { label: t("estado_cancelado"),  color: "#999",    bg: "#F5F5F5", peso: 0   },
   };
 
   const MESES = t("meses_corto");
