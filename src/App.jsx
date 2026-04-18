@@ -4021,11 +4021,40 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
 }
 
 // ─── PICKUP VIEW ──────────────────────────────────────────────────
-function PickupView({ datos }) {
+function PickupView({ datos, onGuardado }) {
   const t = useT();
   const { session, presupuesto, produccion } = datos;
   const pickupEntries = datos.pickupEntries || [];
   const cargando = false;
+
+  const hoyISO = new Date().toISOString().slice(0,10);
+  const [modalNR, setModalNR] = useState(false);
+  const [nrForm, setNrForm] = useState({ canal:"", num_reservas:"1", fecha_salida:"", noches:"", precio_total:"", estado:"confirmada" });
+  const [nrGuardando, setNrGuardando] = useState(false);
+  const [nrError, setNrError] = useState("");
+  const [nrOk, setNrOk] = useState(false);
+  const abrirNuevaReserva = () => { setNrForm({ canal:"", num_reservas:"1", fecha_salida:"", noches:"", precio_total:"", estado:"confirmada" }); setNrError(""); setNrOk(false); setModalNR(true); };
+  const guardarNuevaReserva = async () => {
+    setNrGuardando(true); setNrError("");
+    try {
+      const noches = nrForm.noches ? parseInt(nrForm.noches) : null;
+      let fechaSalida = nrForm.fecha_salida || null;
+      if (!fechaSalida && noches) { const d = new Date(hoyISO); d.setDate(d.getDate()+noches); fechaSalida = d.toISOString().slice(0,10); }
+      const row = {
+        hotel_id: session.user.id, fecha_pickup: hoyISO, fecha_llegada: hoyISO,
+        canal: nrForm.canal || null, num_reservas: parseInt(nrForm.num_reservas)||1,
+        fecha_salida: fechaSalida, noches,
+        precio_total: nrForm.precio_total ? parseFloat(nrForm.precio_total) : null,
+        estado: nrForm.estado || "confirmada",
+      };
+      const { error } = await supabase.from("pickup_entries").insert(row);
+      if (error) throw new Error(error.message);
+      setNrOk(true);
+      setTimeout(() => { setModalNR(false); setNrOk(false); onGuardado && onGuardado(); }, 1200);
+    } catch(e) { setNrError(e.message); }
+    finally { setNrGuardando(false); }
+  };
+
   const [anio, setAnio] = useState(() => {
     const saved = localStorage.getItem("fr_pickup_anio");
     return saved ? parseInt(saved) : new Date().getFullYear();
@@ -4261,10 +4290,76 @@ function PickupView({ datos }) {
             <p style={{ fontSize:30, fontWeight:800, color:"#fff", fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1 }}>{ultDiaTotal}</p>
             <p style={{ fontSize:9, color:"#ffffff", fontWeight:700, textTransform:"uppercase", letterSpacing:1, marginTop:4 }}>Nuevas reservas</p>
           </div>
-          <div>
+          <div style={{ flex:1 }}>
             <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:18, color:C.text }}>Reservas captadas ayer</p>
           </div>
+          <button onClick={abrirNuevaReserva}
+            style={{ flexShrink:0, display:"flex", alignItems:"center", gap:7, background:C.text, color:"#fff", border:"none", borderRadius:8, padding:"8px 16px", cursor:"pointer", fontSize:12, fontWeight:700, fontFamily:"'Plus Jakarta Sans',sans-serif", letterSpacing:"0.3px" }}>
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><line x1="6.5" y1="1" x2="6.5" y2="12" stroke="#fff" strokeWidth="2" strokeLinecap="round"/><line x1="1" y1="6.5" x2="12" y2="6.5" stroke="#fff" strokeWidth="2" strokeLinecap="round"/></svg>
+            Nueva reserva
+          </button>
         </div>
+
+        {/* Modal nueva reserva */}
+        {modalNR && (
+          <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.55)", zIndex:2000, display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}
+            onClick={e => { if(e.target===e.currentTarget) setModalNR(false); }}>
+            <div style={{ background:C.bgCard, borderRadius:14, padding:"28px 32px", width:"100%", maxWidth:420, boxShadow:"0 20px 60px rgba(0,0,0,0.25)" }}>
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20 }}>
+                <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:18, color:C.text }}>Nueva reserva</p>
+                <button onClick={()=>setModalNR(false)} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, width:28, height:28, cursor:"pointer", fontSize:14, color:C.textLight }}>✕</button>
+              </div>
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
+                <div style={{ gridColumn:"1/-1" }}>
+                  <p style={{ fontSize:10, color:C.textLight, fontWeight:600, textTransform:"uppercase", letterSpacing:"0.8px", marginBottom:4 }}>Fecha pickup & entrada</p>
+                  <input type="text" readOnly value={hoyISO} style={{ width:"100%", padding:"8px 10px", borderRadius:7, border:`1px solid ${C.border}`, fontSize:13, background:C.bg, color:C.textMid, fontFamily:"inherit", boxSizing:"border-box" }}/>
+                </div>
+                <div>
+                  <p style={{ fontSize:10, color:C.textLight, fontWeight:600, textTransform:"uppercase", letterSpacing:"0.8px", marginBottom:4 }}>Canal</p>
+                  <select value={nrForm.canal} onChange={e=>setNrForm(f=>({...f,canal:e.target.value}))}
+                    style={{ width:"100%", padding:"8px 10px", borderRadius:7, border:`1px solid ${C.border}`, fontSize:13, background:C.bgCard, color:C.text, fontFamily:"inherit", boxSizing:"border-box" }}>
+                    <option value="">Seleccionar</option>
+                    {["Booking.com","Expedia","Directo","Directo Web","Teléfono","Agencia","Corporativo","Grupo","Evento","Otro"].map(c=><option key={c} value={c}>{c}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <p style={{ fontSize:10, color:C.textLight, fontWeight:600, textTransform:"uppercase", letterSpacing:"0.8px", marginBottom:4 }}>Habitaciones</p>
+                  <input type="number" min="1" value={nrForm.num_reservas} onChange={e=>setNrForm(f=>({...f,num_reservas:e.target.value}))}
+                    style={{ width:"100%", padding:"8px 10px", borderRadius:7, border:`1px solid ${C.border}`, fontSize:13, background:C.bgCard, color:C.text, fontFamily:"inherit", boxSizing:"border-box" }}/>
+                </div>
+                <div>
+                  <p style={{ fontSize:10, color:C.textLight, fontWeight:600, textTransform:"uppercase", letterSpacing:"0.8px", marginBottom:4 }}>Noches</p>
+                  <input type="number" min="1" value={nrForm.noches} onChange={e=>{ const v=e.target.value; const d=new Date(hoyISO); if(parseInt(v)>0){d.setDate(d.getDate()+parseInt(v));} setNrForm(f=>({...f,noches:v,fecha_salida:parseInt(v)>0?d.toISOString().slice(0,10):""})); }}
+                    style={{ width:"100%", padding:"8px 10px", borderRadius:7, border:`1px solid ${C.border}`, fontSize:13, background:C.bgCard, color:C.text, fontFamily:"inherit", boxSizing:"border-box" }}/>
+                </div>
+                <div>
+                  <p style={{ fontSize:10, color:C.textLight, fontWeight:600, textTransform:"uppercase", letterSpacing:"0.8px", marginBottom:4 }}>Fecha salida</p>
+                  <input type="date" value={nrForm.fecha_salida} onChange={e=>{ const v=e.target.value; const n=v?Math.round((new Date(v)-new Date(hoyISO))/86400000):0; setNrForm(f=>({...f,fecha_salida:v,noches:n>0?String(n):""})); }}
+                    style={{ width:"100%", padding:"8px 10px", borderRadius:7, border:`1px solid ${C.border}`, fontSize:13, background:C.bgCard, color:C.text, fontFamily:"inherit", boxSizing:"border-box" }}/>
+                </div>
+                <div>
+                  <p style={{ fontSize:10, color:C.textLight, fontWeight:600, textTransform:"uppercase", letterSpacing:"0.8px", marginBottom:4 }}>Precio total €</p>
+                  <input type="number" min="0" step="0.01" value={nrForm.precio_total} onChange={e=>setNrForm(f=>({...f,precio_total:e.target.value}))}
+                    style={{ width:"100%", padding:"8px 10px", borderRadius:7, border:`1px solid ${C.border}`, fontSize:13, background:C.bgCard, color:C.text, fontFamily:"inherit", boxSizing:"border-box" }}/>
+                </div>
+                <div style={{ gridColumn:"1/-1" }}>
+                  <p style={{ fontSize:10, color:C.textLight, fontWeight:600, textTransform:"uppercase", letterSpacing:"0.8px", marginBottom:4 }}>Estado</p>
+                  <select value={nrForm.estado} onChange={e=>setNrForm(f=>({...f,estado:e.target.value}))}
+                    style={{ width:"100%", padding:"8px 10px", borderRadius:7, border:`1px solid ${C.border}`, fontSize:13, background:C.bgCard, color:C.text, fontFamily:"inherit", boxSizing:"border-box" }}>
+                    <option value="confirmada">Confirmada</option>
+                    <option value="cancelada">Cancelada</option>
+                  </select>
+                </div>
+              </div>
+              {nrError && <p style={{ fontSize:12, color:C.red, marginTop:10 }}>{nrError}</p>}
+              {nrOk && <p style={{ fontSize:12, color:C.green, marginTop:10, fontWeight:600 }}>Reserva guardada</p>}
+              <button onClick={guardarNuevaReserva} disabled={nrGuardando}
+                style={{ marginTop:18, width:"100%", padding:"10px 0", borderRadius:8, background:nrGuardando?C.border:C.text, color:"#fff", border:"none", cursor:nrGuardando?"default":"pointer", fontSize:13, fontWeight:700, fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+                {nrGuardando ? "Guardando..." : "Guardar reserva"}
+              </button>
+            </div>
+          </div>
+        )}
 
         {ultDiaTotal === 0 ? (
           <p style={{ color:C.textLight, fontSize:13, textAlign:"center", padding:"20px 0" }}>{t("no_reservas_ayer")}</p>
