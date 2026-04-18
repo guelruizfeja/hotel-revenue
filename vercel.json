@@ -1,4 +1,7 @@
 {
+  "crons": [
+    { "path": "/api/cron-daily-report", "schedule": "30 7 * * *" }
+  ],
   "headers": [
     {
       "source": "/(.*)",

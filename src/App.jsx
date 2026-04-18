@@ -614,10 +614,13 @@ function KpiModal({ kpi, datos, mes, anio, onClose }) {
   const ultimaFechaMes = todasProd
     .filter(d => { const f=new Date(d.fecha+"T00:00:00"); return f.getMonth()===mes && f.getFullYear()===anio; })
     .map(d => d.fecha).slice(-1)[0];
-  const refDate = ultimaFechaMes ? new Date(ultimaFechaMes+"T00:00:00") : new Date();
-  const desde30 = new Date(refDate); desde30.setDate(desde30.getDate()-29);
-  const desde30Str = desde30.toISOString().slice(0,10);
-  const refDateStr  = refDate.toISOString().slice(0,10);
+  const _pad2 = n => String(n).padStart(2,"0");
+  const _hoyLocal = new Date();
+  const _hoyStr = `${_hoyLocal.getFullYear()}-${_pad2(_hoyLocal.getMonth()+1)}-${_pad2(_hoyLocal.getDate())}`;
+  const refDateStr = ultimaFechaMes || _hoyStr;
+  const _ref = new Date(refDateStr+"T00:00:00");
+  const _desde = new Date(_ref); _desde.setDate(_ref.getDate()-29);
+  const desde30Str = `${_desde.getFullYear()}-${_pad2(_desde.getMonth()+1)}-${_pad2(_desde.getDate())}`;
 
   const diasMes = todasProd
     .filter(d => {
@@ -691,7 +694,7 @@ function KpiModal({ kpi, datos, mes, anio, onClose }) {
     .filter(d => { const f=new Date(d.fecha+"T00:00:00"); return f.getMonth()===mesPrevIdx && f.getFullYear()===(mes===0?anio-1:anio); })
     .map(mapProd);
 
-  const srcActual = diasMesCompleto;
+  const srcActual = modoVista === "30dias" ? diasMes : diasMesCompleto;
   const srcComp   = diasMesCompLetoMP;
 
   const mediaActual = srcActual.length>0 ? srcActual.reduce((a,d)=>a+(d[fk]||0),0)/srcActual.length : 0;
@@ -771,7 +774,7 @@ function KpiModal({ kpi, datos, mes, anio, onClose }) {
           const mediaLY = diasLY.length>0 ? diasLY.reduce((a,d)=>a+(d[fk]||0),0)/diasLY.length : 0;
           const varLY = mediaLY>0 ? ((mediaActual-mediaLY)/mediaLY*100).toFixed(1) : null;
           const cards = [
-            { label:"Media del mes", value:`${kpi==="Ocupación"?mediaActual.toFixed(1):Math.round(mediaActual).toLocaleString("es-ES")}${unit}` },
+            { label: modoVista==="30dias" ? "Media 30 días" : "Media del mes", value:`${kpi==="Ocupación"?mediaActual.toFixed(1):Math.round(mediaActual).toLocaleString("es-ES")}${unit}` },
             { label:`Vs ${compLabel}`, value: varComp!==null ? `${parseFloat(varComp)>=0?"+":""}${varComp}%` : "Sin datos", up: varComp!==null?parseFloat(varComp)>=0:true },
             { label:`Vs LY (${anio-1})`, value: varLY!==null ? `${parseFloat(varLY)>=0?"+":""}${varLY}%` : "Sin datos", up: varLY!==null?parseFloat(varLY)>=0:true },
           ];
@@ -1005,7 +1008,7 @@ function EmptyState({ mensaje }) {
 }
 
 // ─── IMPORTAR EXCEL ───────────────────────────────────────────────
-function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombreProp, fullPage = false }) {
+function ImportarExcel({ onClose, session, onImportado, onProduccionDirecta, hotelNombre: hotelNombreProp, fullPage = false }) {
   const t = useT();
   // Pestaña activa (persiste entre navegaciones)
   const [activeBlock, setActiveBlock] = useState(() => localStorage.getItem("fr_gestion_tab") || "presupuesto");
@@ -1554,6 +1557,7 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
       if (error) throw new Error(error.message);
 
       setProdRecientes(prev => [row, ...prev.filter(r => r.fecha !== ayerStr)].slice(0, 8));
+      if (onProduccionDirecta) onProduccionDirecta(row);
       setOkProdMock(true);
       setTimeout(() => setOkProdMock(false), 4000);
       if (onImportado) onImportado();
@@ -1725,6 +1729,7 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
     if (error) { setErrorEdit("Error: " + error.message); }
     else {
       setOkEdit(true);
+      if (onProduccionDirecta) onProduccionDirecta({ hotel_id: session.user.id, fecha: fechaBusqueda, hab_ocupadas, hab_disponibles, revenue_hab, revenue_fnb, revenue_total, adr, revpar, trevpar });
       if (onImportado) onImportado();
       enviarInformeDiario({ fecha: fechaBusqueda, hab_ocupadas, hab_disponibles, revenue_hab, revenue_fnb, revenue_total, adr, revpar, trevpar });
       const d = new Date(fechaBusqueda + 'T00:00:00');
@@ -3887,11 +3892,11 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
                         <YAxis yAxisId="right" orientation="right" tick={{ fill: C.textLight, fontSize: 11 }} axisLine={false} tickLine={false} unit="€"/>
                         <Tooltip content={<CustomTooltip/>} cursor={false}/>
                         <Bar yAxisId="left" dataKey="occ" name="Ocupación" fill="url(#gradOcc)" radius={[4,4,0,0]}
-                          cursor="pointer" activeBar={false}
+                          cursor="pointer" activeBar={false} isAnimationActive={false}
                           shape={(p) => <AnimatedBar {...p} onClick={() => { if(p?.mesIdx!=null) setModalDiario({mesIdx:p.mesIdx, anioIdx:p.anioIdx}); }}/>}
                           onClick={(data) => { if(data?.mesIdx!=null) setModalDiario({mesIdx:data.mesIdx, anioIdx:data.anioIdx}); }}
                         />
-                        <Line yAxisId="right" dataKey="adr" name="ADR" type="monotone" stroke="#B8860B" strokeWidth={2} dot={{fill:"#B8860B", r:3, strokeWidth:0}} activeDot={{r:4}}/>
+                        <Line yAxisId="right" dataKey="adr" name="ADR" type="monotone" stroke="#B8860B" strokeWidth={2} dot={{fill:"#B8860B", r:3, strokeWidth:0}} activeDot={{r:4}} isAnimationActive={false}/>
                       </ComposedChart>
                     ) : (
                       <AreaChart data={porMes}>
@@ -3905,7 +3910,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
                         <XAxis dataKey="mes" axisLine={false} tickLine={false} height={18} interval={0} tick={{ fill: C.textLight, fontSize: 11 }}/>
                         <YAxis tick={{ fill: C.textLight, fontSize: 11 }} axisLine={false} tickLine={false} unit="€"/>
                         <Tooltip content={<CustomTooltip/>} cursor={{ fill: "rgba(10,37,64,0.04)" }}/>
-                        <Area type="monotone" dataKey={metricaSel} name={metricaSel==="revpar"?"RevPAR":"TRevPAR"} stroke={C.accent} strokeWidth={2} fill="url(#gMetrica)" dot={{fill:C.accent,r:2}} activeDot={{r:3}}/>
+                        <Area type="monotone" dataKey={metricaSel} name={metricaSel==="revpar"?"RevPAR":"TRevPAR"} stroke={C.accent} strokeWidth={2} fill="url(#gMetrica)" dot={{fill:C.accent,r:2}} activeDot={{r:3}} isAnimationActive={false}/>
                       </AreaChart>
                     )}
                   </ResponsiveContainer>
@@ -3932,7 +3937,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
               </tr>
             </thead>
             <tbody>
-              {porMes.map((d, i) => (
+              {[...porMes].reverse().map((d, i) => (
                 <tr key={i} onClick={() => onMesDetalle && onMesDetalle(d.mesIdx, d.anioIdx)} style={{ borderBottom: `1px solid ${C.border}`, background: d.mesIdx === mes && d.anioIdx === anio ? C.accentLight : (i % 2 === 0 ? C.bg : C.bgCard), cursor: "pointer" }} onMouseEnter={e => e.currentTarget.style.background = C.accentLight} onMouseLeave={e => e.currentTarget.style.background = MESES_CORTO.indexOf(d.mes) === mes ? C.accentLight : (i % 2 === 0 ? C.bg : C.bgCard)}>
                   <td style={{ padding: "9px 14px", fontWeight: 600, fontSize: 13, color: C.textLight }}>{d.anioIdx}</td>
                   <td style={{ padding: "9px 14px", fontWeight: 700, fontSize: 15, color: C.accent, textDecoration: "underline", cursor: "pointer" }}>{d.mesNombre}</td>
@@ -4351,7 +4356,7 @@ function PickupView({ datos, onGuardado }) {
           </div>
         )}
 
-      {/* ── PICKUP AYER ── */}
+      {/* ── PICKUP HOY / AYER ── */}
       <Card>
         <div style={{ display:"flex", alignItems:"flex-start", gap:16, marginBottom:20 }}>
           <div style={{ background:"#111", borderRadius:10, padding:"10px 18px", textAlign:"center", flexShrink:0 }}>
@@ -7284,6 +7289,8 @@ export default function App() {
   const [cargandoSub, setCargandoSub] = useState(true);
   const [confirmCancelar, setConfirmCancelar] = useState(false);
   const [cancelandoSub, setCancelandoSub] = useState(false);
+  const [enviandoInformePrueba, setEnviandoInformePrueba] = useState(false);
+  const [okInformePrueba, setOkInformePrueba] = useState(false);
   const [datos, setDatos] = useState({ produccion: [], presupuesto: [] });
   const [cargandoDatos, setCargandoDatos] = useState(false);
 
@@ -7499,7 +7506,6 @@ export default function App() {
     pickup:    (props) => <PickupView    {...props} />,
     budget:    (props) => <BudgetView    {...props} />,
     grupos:    (props) => <GruposView    {...props} onRecargar={() => cargarDatos(true)} />,
-    gestion:   ()      => <ImportarExcel fullPage onClose={() => { setView("dashboard"); localStorage.setItem("fr_view","dashboard"); }} session={session} hotelNombre={datos.hotel?.nombre||''} onImportado={() => { sessionStorage.removeItem("fr_datos_cache_v3"); sessionStorage.removeItem("fr_datos_ts_v3"); localStorage.removeItem("fr_scroll"); cargarDatos(true); }} />,
   };
   const View = views[view] || views["dashboard"];
 
@@ -7680,13 +7686,23 @@ export default function App() {
       <main id="main-scroll" onScroll={e => localStorage.setItem("fr_scroll", e.currentTarget.scrollTop)} style={{ padding: "clamp(14px,4vw,28px) clamp(12px,4vw,32px)", width: "100%", boxSizing: "border-box" }}>
 
 
+        {/* Gestión siempre montada para no perder estado al cambiar de pestaña */}
+        <div style={{ display: !cargandoDatos && !mesDetalle && !desgloseMovimiento && view === "gestion" ? "block" : "none", width:"100%" }}>
+          <ImportarExcel fullPage
+            onClose={() => { setView("dashboard"); localStorage.setItem("fr_view","dashboard"); }}
+            session={session} hotelNombre={datos.hotel?.nombre||''}
+            onImportado={() => { sessionStorage.removeItem("fr_datos_cache_v3"); sessionStorage.removeItem("fr_datos_ts_v3"); localStorage.removeItem("fr_scroll"); cargarDatos(true); }}
+            onProduccionDirecta={(row) => setDatos(prev => ({ ...prev, produccion: [...(prev.produccion||[]).filter(r => r.fecha !== row.fecha), row].sort((a,b) => a.fecha.localeCompare(b.fecha)) }))}
+          />
+        </div>
+
         {cargandoDatos ? <LoadingSpinner /> : mesDetalle ? (
           <div style={{ width:"100%" }}><MonthDetailView datos={datos} mes={mesDetalle.mes} anio={mesDetalle.anio} onBack={() => setMesDetalle(null)} /></div>
         ) : desgloseMovimiento ? (
           <div style={{ width:"100%" }}><DesgloseMovimientoView datos={datos} tipo={desgloseMovimiento} onBack={() => setDesgloseMovimiento(null)} /></div>
-        ) : (
+        ) : view !== "gestion" ? (
           <div style={{ width:"100%" }}><View datos={datos} mes={mesSel} anio={anioSel} onGuardado={cargarDatos} onPeriodo={(m,a) => { setMesSel(m); setAnioSel(a); localStorage.setItem("rm_mes", m); localStorage.setItem("rm_anio", a); }} /></div>
-        )}
+        ) : null}
       </main>
 
 
@@ -7758,6 +7774,28 @@ export default function App() {
                 </p>
               </div>
             )}
+
+            {/* Informe de prueba */}
+            <div style={{ borderTop:`1px solid ${C.border}`, paddingTop:16, marginBottom:16 }}>
+              <p style={{ fontSize:12, color:C.textMid, marginBottom:10 }}>Envía el informe diario ahora con los datos del último día registrado.</p>
+              <button
+                disabled={enviandoInformePrueba || okInformePrueba}
+                onClick={async () => {
+                  setEnviandoInformePrueba(true);
+                  try {
+                    const { data: ultimoDia } = await supabase.from("produccion_diaria")
+                      .select("*").eq("hotel_id", session.user.id).order("fecha", { ascending: false }).limit(1).maybeSingle();
+                    if (!ultimoDia) throw new Error("Sin datos");
+                    await enviarInformeDiario(ultimoDia);
+                    setOkInformePrueba(true);
+                    setTimeout(() => setOkInformePrueba(false), 4000);
+                  } catch { /* ignored */ }
+                  setEnviandoInformePrueba(false);
+                }}
+                style={{ width:"100%", padding:"10px", borderRadius:8, border:`1px solid ${C.border}`, background: okInformePrueba ? C.greenLight : "transparent", color: okInformePrueba ? C.green : C.accent, fontSize:13, fontWeight:600, cursor: enviandoInformePrueba || okInformePrueba ? "not-allowed" : "pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", transition:"all .2s" }}>
+                {enviandoInformePrueba ? "Enviando..." : okInformePrueba ? "✓ Informe enviado" : "Enviar informe ahora"}
+              </button>
+            </div>
 
             {/* Confirmación cancelar */}
             {confirmCancelar && suscripcion?.estado !== "cancelando" ? (
