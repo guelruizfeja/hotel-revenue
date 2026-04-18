@@ -1240,21 +1240,32 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
           const nr = typeof nrRaw === "number"
             ? (nrRaw < 40000 ? Math.round(nrRaw) : 1)  // serial < 40000 = número real de reservas
             : (parseInt(nrRaw) || 1);
-          // Nuevos campos: col4=fecha_salida, col5=noches, col6=precio_total, col7=estado
+          // col4=fecha_salida, col5=noches, col6=precio_total, col7=estado, col8+=precio noche 1,2,3...
           const fechaSalida = row[4] && esSerial(row[4]) ? serialToDate(row[4]) : null;
           const noches      = row[5] && typeof row[5] === "number" && row[5] < 100 ? Math.round(row[5]) : null;
           const precioTotal = row[6] && typeof row[6] === "number" ? Math.round(row[6] * 100) / 100 : null;
           const estado      = row[7] && typeof row[7] === "string" ? row[7] : "confirmada";
+          // Precios por noche desde col I (índice 8) en adelante
+          const preciosNoche = [];
+          for (let ci = 8; ci < row.length; ci++) {
+            const v = row[ci];
+            if (typeof v === "number" && v >= 0) preciosNoche.push(Math.round(v * 100) / 100);
+            else break;
+          }
+          const preciosPorNocheVal = preciosNoche.length > 0 ? preciosNoche : null;
+          // Si hay precios por noche y no hay precio_total, calcularlo como suma
+          const precioTotalFinal = precioTotal ?? (preciosPorNocheVal ? Math.round(preciosPorNocheVal.reduce((a,v)=>a+v,0)*100)/100 : null);
           pickupRows.push({
-            hotel_id:      session.user.id,
-            fecha_pickup:  fp,
-            fecha_llegada: fl,
-            canal:         row[2] || null,
-            num_reservas:  nr || 1,
-            fecha_salida:  fechaSalida,
-            noches:        noches,
-            precio_total:  precioTotal,
-            estado:        estado || "confirmada",
+            hotel_id:          session.user.id,
+            fecha_pickup:      fp,
+            fecha_llegada:     fl,
+            canal:             row[2] || null,
+            num_reservas:      nr || 1,
+            fecha_salida:      fechaSalida,
+            noches:            noches,
+            precio_total:      precioTotalFinal,
+            precios_por_noche: preciosPorNocheVal,
+            estado:            estado || "confirmada",
           });
         }
       }
