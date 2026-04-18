@@ -1743,6 +1743,9 @@ function ImportarExcel({ onClose, session, onImportado, hotelNombre: hotelNombre
           }
           return pickupForm.precio_total ? parseFloat(pickupForm.precio_total) : null;
         })(),
+        precios_por_noche: preciosDiferentes && preciosPorNoche.length > 0
+          ? preciosPorNoche.map(v => parseFloat(v) || 0)
+          : null,
         estado:        pickupForm.estado || "confirmada",
       };
       const { error } = await supabase.from("pickup_entries").insert(row);
@@ -3418,6 +3421,37 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
         const hoyStr2 = `${_hoy2.getFullYear()}-${pad2(_hoy2.getMonth()+1)}-${pad2(_hoy2.getDate())}`;
 
 
+        // ADR desde pickup para un día ISO (usa precios_por_noche si disponible, sino precio_total/noches)
+        const calcAdrPickup = (iso) => {
+          const activas = pickupEntries.filter(e => {
+            if ((e.estado||"confirmada") === "cancelada") return false;
+            const fl = String(e.fecha_llegada||"").slice(0,10);
+            const fs = e.fecha_salida
+              ? String(e.fecha_salida).slice(0,10)
+              : e.noches && fl ? (() => { const d=new Date(fl); d.setDate(d.getDate()+Number(e.noches)); return d.toISOString().slice(0,10); })()
+              : null;
+            return fl && fs && fl <= iso && fs > iso;
+          });
+          let sumRev = 0, sumHabs = 0;
+          for (const e of activas) {
+            const fl = String(e.fecha_llegada||"").slice(0,10);
+            const nightIdx = Math.round((new Date(iso) - new Date(fl)) / 86400000);
+            const nr = e.num_reservas || 1;
+            let pn = null;
+            if (e.precios_por_noche && Array.isArray(e.precios_por_noche) && e.precios_por_noche[nightIdx] != null) {
+              pn = e.precios_por_noche[nightIdx];
+            } else if (e.precio_total) {
+              const noches = e.noches || (() => {
+                const fs = e.fecha_salida ? String(e.fecha_salida).slice(0,10) : null;
+                return fs ? Math.round((new Date(fs)-new Date(fl))/86400000) : null;
+              })();
+              if (noches > 0) pn = e.precio_total / noches;
+            }
+            if (pn != null && pn > 0) { sumRev += pn * nr; sumHabs += nr; }
+          }
+          return sumHabs > 0 ? sumRev / sumHabs : null;
+        };
+
         // Neto acumulado por día para meses futuros (confirmadas - canceladas)
         const netoPorDia = {};
         if (hmMesSel != null) {
@@ -3447,6 +3481,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
               adr = prod.hab_ocupadas>0    ? (prod.revenue_hab/prod.hab_ocupadas) : null;
             } else if (iso >= hoyStr2) {
               occ = neto>0 ? Math.min(100, neto/habHotel*100) : null;
+              adr = calcAdrPickup(iso);
             }
             const resUltDia = pickupUltimoDiaPorDia[iso] || 0;
             return { iso, dia:di+1, diaSem:dt.getDay(), occ, adr, esFut, tieneReal:!!prod, resUltDia, neto };
