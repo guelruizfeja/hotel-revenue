@@ -7824,7 +7824,7 @@ export default function App() {
                       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
                       body: JSON.stringify({
                         email: session.user.email,
-                        hotelNombre: hotelNombreProp || null,
+                        hotelNombre: datos.hotel?.nombre || null,
                         kpis: { fecha: ultimoDia.fecha, mesNombre: MESES[mesActual-1], occ, adr, revpar, trevpar, hab_ocupadas: ultimoDia.hab_ocupadas, hab_disponibles: ultimoDia.hab_disponibles, revenue_hab: ultimoDia.revenue_hab, revenue_total: ultimoDia.revenue_total, pickup_neto: nuevas, cancelaciones: cancels, revenue_pickup_ayer: revPickup || null, revenueAcumulado, presupuestoMensual: null, ly_occ: lyOcc, ly_adr: lyAdr, ly_revpar: lyRevpar, ly_trevpar: lyTrevpar },
                       }),
                     });
