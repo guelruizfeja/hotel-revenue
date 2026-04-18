@@ -7291,6 +7291,7 @@ export default function App() {
   const [cancelandoSub, setCancelandoSub] = useState(false);
   const [enviandoInformePrueba, setEnviandoInformePrueba] = useState(false);
   const [okInformePrueba, setOkInformePrueba] = useState(false);
+  const [errorInformePrueba, setErrorInformePrueba] = useState("");
   const [datos, setDatos] = useState({ produccion: [], presupuesto: [] });
   const [cargandoDatos, setCargandoDatos] = useState(false);
 
@@ -7782,19 +7783,62 @@ export default function App() {
                 disabled={enviandoInformePrueba || okInformePrueba}
                 onClick={async () => {
                   setEnviandoInformePrueba(true);
+                  setErrorInformePrueba("");
                   try {
                     const { data: ultimoDia } = await supabase.from("produccion_diaria")
                       .select("*").eq("hotel_id", session.user.id).order("fecha", { ascending: false }).limit(1).maybeSingle();
-                    if (!ultimoDia) throw new Error("Sin datos");
-                    await enviarInformeDiario(ultimoDia);
+                    if (!ultimoDia) throw new Error("Sin datos registrados");
+                    const mesActual  = parseInt(ultimoDia.fecha.split('-')[1]);
+                    const anioActual = parseInt(ultimoDia.fecha.split('-')[0]);
+                    const mesStr     = String(mesActual).padStart(2,'0');
+                    const inicioMes  = `${anioActual}-${mesStr}-01`;
+                    const inicioSig  = mesActual === 12 ? `${anioActual+1}-01-01` : `${anioActual}-${String(mesActual+1).padStart(2,'0')}-01`;
+                    const inicioMesLY  = `${anioActual-1}-${mesStr}-01`;
+                    const inicioSigLY  = mesActual === 12 ? `${anioActual}-01-01` : `${anioActual-1}-${String(mesActual+1).padStart(2,'0')}-01`;
+                    const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+                    const [{ data: datosMes }, { data: datosMesLY }, { data: pickupRows }] = await Promise.all([
+                      supabase.from("produccion_diaria").select("fecha,hab_ocupadas,hab_disponibles,revenue_hab,revenue_total").eq("hotel_id", session.user.id).gte("fecha", inicioMes).lt("fecha", inicioSig).order("fecha", { ascending: true }),
+                      supabase.from("produccion_diaria").select("fecha,hab_ocupadas,hab_disponibles,revenue_hab,revenue_total").eq("hotel_id", session.user.id).gte("fecha", inicioMesLY).lt("fecha", inicioSigLY),
+                      supabase.from("pickup_entries").select("num_reservas,precio_total,estado").eq("hotel_id", session.user.id).eq("fecha_pickup", ultimoDia.fecha),
+                    ]);
+                    let nuevas = 0, cancels = 0, revPickup = 0;
+                    for (const p of (pickupRows || [])) {
+                      const nr = p.num_reservas || 1;
+                      if (p.estado === 'cancelada') cancels += nr;
+                      else { nuevas += nr; revPickup += p.precio_total || nr * (ultimoDia.adr || 0); }
+                    }
+                    let acum = 0;
+                    const revenueAcumulado = (datosMes || []).map(d => { acum += d.revenue_hab || 0; return { dia: parseInt(d.fecha.split('-')[2]), acum: Math.round(acum) }; });
+                    const lyFecha = `${anioActual-1}-${ultimoDia.fecha.slice(5)}`;
+                    const lyDia   = (datosMesLY || []).find(d => d.fecha === lyFecha);
+                    const lyOcc    = lyDia?.hab_disponibles > 0 ? lyDia.hab_ocupadas / lyDia.hab_disponibles * 100 : null;
+                    const lyAdr    = lyDia?.hab_ocupadas > 0 && lyDia?.revenue_hab ? lyDia.revenue_hab / lyDia.hab_ocupadas : null;
+                    const lyRevpar = lyDia?.hab_disponibles > 0 && lyDia?.revenue_hab ? lyDia.revenue_hab / lyDia.hab_disponibles : null;
+                    const lyTrevpar= lyDia?.hab_disponibles > 0 && lyDia?.revenue_total ? lyDia.revenue_total / lyDia.hab_disponibles : null;
+                    const occ    = ultimoDia.hab_disponibles > 0 ? ultimoDia.hab_ocupadas / ultimoDia.hab_disponibles * 100 : null;
+                    const adr    = ultimoDia.adr    ?? (ultimoDia.hab_ocupadas > 0 && ultimoDia.revenue_hab ? ultimoDia.revenue_hab / ultimoDia.hab_ocupadas : null);
+                    const revpar = ultimoDia.revpar ?? (ultimoDia.hab_disponibles > 0 && ultimoDia.revenue_hab ? ultimoDia.revenue_hab / ultimoDia.hab_disponibles : null);
+                    const trevpar= ultimoDia.trevpar?? (ultimoDia.hab_disponibles > 0 && ultimoDia.revenue_total ? ultimoDia.revenue_total / ultimoDia.hab_disponibles : null);
+                    const resp = await fetch('/api/daily-email', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+                      body: JSON.stringify({
+                        email: session.user.email,
+                        hotelNombre: hotelNombreProp || null,
+                        kpis: { fecha: ultimoDia.fecha, mesNombre: MESES[mesActual-1], occ, adr, revpar, trevpar, hab_ocupadas: ultimoDia.hab_ocupadas, hab_disponibles: ultimoDia.hab_disponibles, revenue_hab: ultimoDia.revenue_hab, revenue_total: ultimoDia.revenue_total, pickup_neto: nuevas, cancelaciones: cancels, revenue_pickup_ayer: revPickup || null, revenueAcumulado, presupuestoMensual: null, ly_occ: lyOcc, ly_adr: lyAdr, ly_revpar: lyRevpar, ly_trevpar: lyTrevpar },
+                      }),
+                    });
+                    const json = await resp.json();
+                    if (!resp.ok) throw new Error(json.error || `HTTP ${resp.status}`);
                     setOkInformePrueba(true);
                     setTimeout(() => setOkInformePrueba(false), 4000);
-                  } catch { /* ignored */ }
+                  } catch(e) { setErrorInformePrueba(e.message); }
                   setEnviandoInformePrueba(false);
                 }}
                 style={{ width:"100%", padding:"10px", borderRadius:8, border:`1px solid ${C.border}`, background: okInformePrueba ? C.greenLight : "transparent", color: okInformePrueba ? C.green : C.accent, fontSize:13, fontWeight:600, cursor: enviandoInformePrueba || okInformePrueba ? "not-allowed" : "pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", transition:"all .2s" }}>
                 {enviandoInformePrueba ? "Enviando..." : okInformePrueba ? "✓ Informe enviado" : "Enviar informe ahora"}
               </button>
+              {errorInformePrueba && <p style={{ fontSize:11, color:C.red, marginTop:6 }}>{errorInformePrueba}</p>}
             </div>
 
             {/* Confirmación cancelar */}
