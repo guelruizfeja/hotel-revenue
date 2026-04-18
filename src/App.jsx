@@ -3518,12 +3518,12 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
                               {evDay.map((ev,ei)=><span key={ei} style={{ width:8, height:8, borderRadius:"50%", background:ev.color, display:"inline-block", flexShrink:0 }}/>)}
                             </div>
                           )}
-                          <p style={{ fontSize:8, color:C.textLight, lineHeight:1 }}>{dia}</p>
+                          <p style={{ fontSize:8, color:C.text, lineHeight:1, fontWeight:600 }}>{dia}</p>
                           {occ!=null
-                            ? <p style={{ fontSize:11, fontWeight:800, color:heatColor(occ), lineHeight:1 }}>{occ.toFixed(0)}%</p>
+                            ? <p style={{ fontSize:11, fontWeight:800, color:"#111", lineHeight:1 }}>{occ.toFixed(0)}%</p>
                             : <p style={{ fontSize:8, color:C.border }}>—</p>
                           }
-                          {adr && !esFut && <p style={{ fontSize:7, color:C.textLight, lineHeight:1 }}>€{Math.round(adr)}</p>}
+                          {adr && !esFut && <p style={{ fontSize:7, color:C.textMid, lineHeight:1, fontWeight:600 }}>€{Math.round(adr)}</p>}
                           {resDia!==0 && <p style={{ fontSize:7, color:tieneReserva?"#B8860B":C.red, fontWeight:700, lineHeight:1 }}>{resDia>0?"+":""}{resDia}</p>}
                         </div>
                       );
@@ -3719,7 +3719,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
               const occAyerOTB = habH ? Math.min(Math.round(Math.max(0,netoAyer)/habH*100),100) : null;
               const occAyer  = ayerProd?.hab_disponibles > 0 ? Math.round(ayerProd.hab_ocupadas / ayerProd.hab_disponibles * 100) : occAyerOTB;
 
-              const Delta = ({ hoy, ayer }) => {
+              const Delta = ({ hoy, ayer, unit="" }) => {
                 const d = hoy - ayer;
                 if (d === 0) return <span style={{ fontSize:18, color:C.border, fontWeight:400, lineHeight:1 }}>—</span>;
                 const col  = d > 0 ? "#10B981" : "#EF4444";
@@ -3732,7 +3732,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
                     <span style={{ fontSize:8, color:C.textLight, fontWeight:500, letterSpacing:"0.5px", textTransform:"uppercase" }}>vs ayer</span>
                     <span style={{ display:"inline-flex", alignItems:"center", gap:4, padding:"3px 7px", borderRadius:20, background:bg }}>
                       {arrow}
-                      <span style={{ fontSize:12, fontWeight:700, color:col, lineHeight:1 }}>{d>0?"+":""}{d}%</span>
+                      <span style={{ fontSize:12, fontWeight:700, color:col, lineHeight:1 }}>{d>0?"+":""}{d}{unit}</span>
                     </span>
                   </div>
                 );
@@ -3791,7 +3791,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
                       </svg>
                       <span style={lbl()}>Ocupación hoy</span>
                       <span style={num()}>{occHoy}%</span>
-                      {occAyer !== null ? <Delta hoy={occHoy} ayer={occAyer}/> : <span/>}
+                      {occAyer !== null ? <Delta hoy={occHoy} ayer={occAyer} unit="%"/> : <span/>}
                     </>}
                   </div>
 
