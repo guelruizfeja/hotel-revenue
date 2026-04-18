@@ -4282,26 +4282,17 @@ function PickupView({ datos, onGuardado }) {
   return (
     <div style={{ display:"flex", flexDirection:"column", gap:20 }}>
 
-      {/* ── PICKUP AYER ── */}
-      <Card>
-        {/* Header */}
-        <div style={{ display:"flex", alignItems:"flex-start", gap:16, marginBottom:20 }}>
-          <div style={{ background:"#111", borderRadius:10, padding:"10px 18px", textAlign:"center", flexShrink:0 }}>
-            <p style={{ fontSize:30, fontWeight:800, color:"#fff", fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1 }}>{ultDiaTotal}</p>
-            <p style={{ fontSize:9, color:"#ffffff", fontWeight:700, textTransform:"uppercase", letterSpacing:1, marginTop:4 }}>Nuevas reservas</p>
-          </div>
-          <div style={{ flex:1 }}>
-            <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:18, color:C.text }}>Reservas captadas ayer</p>
-          </div>
-          <button onClick={abrirNuevaReserva}
-            style={{ flexShrink:0, display:"flex", alignItems:"center", gap:7, background:C.text, color:"#fff", border:"none", borderRadius:8, padding:"8px 16px", cursor:"pointer", fontSize:12, fontWeight:700, fontFamily:"'Plus Jakarta Sans',sans-serif", letterSpacing:"0.3px" }}>
-            <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><line x1="6.5" y1="1" x2="6.5" y2="12" stroke="#fff" strokeWidth="2" strokeLinecap="round"/><line x1="1" y1="6.5" x2="12" y2="6.5" stroke="#fff" strokeWidth="2" strokeLinecap="round"/></svg>
-            Nueva reserva
-          </button>
-        </div>
+      {/* Botón Nueva Reserva — independiente, arriba a la izquierda */}
+      <div>
+        <button onClick={abrirNuevaReserva}
+          style={{ display:"inline-flex", alignItems:"center", gap:7, background:C.text, color:"#fff", border:"none", borderRadius:8, padding:"9px 18px", cursor:"pointer", fontSize:12, fontWeight:700, fontFamily:"'Plus Jakarta Sans',sans-serif", letterSpacing:"0.3px" }}>
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><line x1="6.5" y1="1" x2="6.5" y2="12" stroke="#fff" strokeWidth="2" strokeLinecap="round"/><line x1="1" y1="6.5" x2="12" y2="6.5" stroke="#fff" strokeWidth="2" strokeLinecap="round"/></svg>
+          Nueva reserva
+        </button>
+      </div>
 
-        {/* Modal nueva reserva */}
-        {modalNR && (
+      {/* Modal nueva reserva */}
+      {modalNR && (
           <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.55)", zIndex:2000, display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}
             onClick={e => { if(e.target===e.currentTarget) setModalNR(false); }}>
             <div style={{ background:C.bgCard, borderRadius:14, padding:"28px 32px", width:"100%", maxWidth:420, boxShadow:"0 20px 60px rgba(0,0,0,0.25)" }}>
@@ -4360,6 +4351,18 @@ function PickupView({ datos, onGuardado }) {
             </div>
           </div>
         )}
+
+      {/* ── PICKUP AYER ── */}
+      <Card>
+        <div style={{ display:"flex", alignItems:"flex-start", gap:16, marginBottom:20 }}>
+          <div style={{ background:"#111", borderRadius:10, padding:"10px 18px", textAlign:"center", flexShrink:0 }}>
+            <p style={{ fontSize:30, fontWeight:800, color:"#fff", fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1 }}>{ultDiaTotal}</p>
+            <p style={{ fontSize:9, color:"#ffffff", fontWeight:700, textTransform:"uppercase", letterSpacing:1, marginTop:4 }}>Nuevas reservas</p>
+          </div>
+          <div>
+            <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:18, color:C.text }}>Reservas captadas ayer</p>
+          </div>
+        </div>
 
         {ultDiaTotal === 0 ? (
           <p style={{ color:C.textLight, fontSize:13, textAlign:"center", padding:"20px 0" }}>{t("no_reservas_ayer")}</p>
