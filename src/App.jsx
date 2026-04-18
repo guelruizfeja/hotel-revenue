@@ -4028,7 +4028,8 @@ function PickupView({ datos, onGuardado }) {
   const cargando = false;
 
   const hoyISO = new Date().toISOString().slice(0,10);
-  const [modalNR, setModalNR] = useState(false);
+  const [modalNR, setModalNR] = useState(() => { try { return localStorage.getItem("fr_nr_modal") === "1"; } catch { return false; } });
+  const setModalNRPersist = (v) => { setModalNR(v); try { localStorage.setItem("fr_nr_modal", v ? "1" : "0"); } catch {} };
   const [nrForm, setNrForm] = useState(() => {
     try { const s = localStorage.getItem("fr_nr_form"); return s ? JSON.parse(s) : { canal:"", num_reservas:"1", fecha_salida:"", noches:"", precio_total:"" }; } catch { return { canal:"", num_reservas:"1", fecha_salida:"", noches:"", precio_total:"" }; }
   });
@@ -4036,7 +4037,7 @@ function PickupView({ datos, onGuardado }) {
   const [nrGuardando, setNrGuardando] = useState(false);
   const [nrError, setNrError] = useState("");
   const [nrOk, setNrOk] = useState(false);
-  const abrirNuevaReserva = () => { setNrError(""); setNrOk(false); setModalNR(true); };
+  const abrirNuevaReserva = () => { setNrError(""); setNrOk(false); setModalNRPersist(true); };
   const guardarNuevaReserva = async () => {
     setNrGuardando(true); setNrError("");
     try {
@@ -4053,7 +4054,7 @@ function PickupView({ datos, onGuardado }) {
       const { error } = await supabase.from("pickup_entries").insert(row);
       if (error) throw new Error(error.message);
       setNrOk(true);
-      setTimeout(() => { setModalNR(false); setNrOk(false); onGuardado && onGuardado(true); }, 1200);
+      setTimeout(() => { setModalNRPersist(false); setNrOk(false); onGuardado && onGuardado(true); }, 1200);
     } catch(e) { setNrError(e.message); }
     finally { setNrGuardando(false); }
   };
@@ -4170,8 +4171,11 @@ function PickupView({ datos, onGuardado }) {
 
   const esGrupoEvento = e => { const c = (e.canal||"").toLowerCase(); return c.includes("grupo") || c.includes("evento"); };
   const ultDia = [...pickupEntries].filter(e => !esGrupoEvento(e)).map(e=>String(e.fecha_pickup||"").slice(0,10)).filter(f=>f.length===10).sort().pop() || "";
-  const reservasUltDia = pickupEntries.filter(e => !esGrupoEvento(e) && String(e.fecha_pickup||"").slice(0,10) === ultDia && (e.estado||"confirmada") !== "cancelada").sort((a,b)=>(a.fecha_llegada||"").localeCompare(b.fecha_llegada||""));
+  const hayHoy = pickupEntries.some(e => !esGrupoEvento(e) && String(e.fecha_pickup||"").slice(0,10) === hoyISO);
+  const refDia = hayHoy ? hoyISO : ultDia;
+  const reservasUltDia = pickupEntries.filter(e => !esGrupoEvento(e) && String(e.fecha_pickup||"").slice(0,10) === refDia && (e.estado||"confirmada") !== "cancelada").sort((a,b)=>(a.fecha_llegada||"").localeCompare(b.fecha_llegada||""));
   const ultDiaTotal = reservasUltDia.reduce((a,e) => a + (e.num_reservas||1), 0);
+  const tituloBloque = refDia === hoyISO ? "Reservas captadas hoy" : "Reservas captadas ayer";
   const fmtDatePU = d => { if (!d) return "—"; const p=d.split("-"); return p.length===3?`${p[2]}/${p[1]}/${p[0]}`:d; };
 
   const reservasAyer = pickupEntries.filter(e => String(e.fecha_pickup||"").slice(0,10) === ayerStr);
@@ -4297,11 +4301,11 @@ function PickupView({ datos, onGuardado }) {
       {/* Modal nueva reserva */}
       {modalNR && (
           <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.55)", zIndex:2000, display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}
-            onClick={e => { if(e.target===e.currentTarget) setModalNR(false); }}>
+            onClick={e => { if(e.target===e.currentTarget) setModalNRPersist(false); }}>
             <div style={{ background:C.bgCard, borderRadius:14, padding:"28px 32px", width:"100%", maxWidth:420, boxShadow:"0 20px 60px rgba(0,0,0,0.25)" }}>
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20 }}>
                 <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:18, color:C.text }}>Nueva reserva</p>
-                <button onClick={()=>setModalNR(false)} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, width:28, height:28, cursor:"pointer", fontSize:14, color:C.textLight }}>✕</button>
+                <button onClick={()=>setModalNRPersist(false)} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, width:28, height:28, cursor:"pointer", fontSize:14, color:C.textLight }}>✕</button>
               </div>
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
                 <div style={{ gridColumn:"1/-1" }}>
@@ -4355,7 +4359,7 @@ function PickupView({ datos, onGuardado }) {
             <p style={{ fontSize:9, color:"#ffffff", fontWeight:700, textTransform:"uppercase", letterSpacing:1, marginTop:4 }}>Nuevas reservas</p>
           </div>
           <div>
-            <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:18, color:C.text }}>Reservas captadas ayer</p>
+            <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:18, color:C.text }}>{tituloBloque}</p>
           </div>
         </div>
 
