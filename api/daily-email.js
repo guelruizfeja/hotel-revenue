@@ -43,17 +43,15 @@ function badge(val, { isPP = false, isAbs = false, prefix = '' } = {}) {
 function buildDonutChart(segments, size = 110) {
   const total = segments.reduce((s, x) => s + x.value, 0);
   if (!total) return '';
-  const r = 35, cx = size / 2, cy = size / 2;
-  const C = 2 * Math.PI * r;
-  let acc = 0;
-  const circles = segments.map(seg => {
-    const pct = seg.value / total;
-    const dash = pct * C;
-    const off  = C / 4 - acc * C;
-    acc += pct;
-    return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${seg.color}" stroke-width="20" stroke-dasharray="${dash.toFixed(2)} ${(C - dash).toFixed(2)}" stroke-dashoffset="${off.toFixed(2)}"/>`;
-  });
-  return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" style="display:block;"><g>${circles.join('')}</g><circle cx="${cx}" cy="${cy}" r="22" fill="white"/></svg>`;
+  const config = {
+    type: 'doughnut',
+    data: {
+      datasets: [{ data: segments.map(s => s.value), backgroundColor: segments.map(s => s.color), borderWidth: 2, borderColor: '#ffffff' }],
+    },
+    options: { plugins: { legend: { display: false } }, cutout: '60%' },
+  };
+  const url = `https://quickchart.io/chart?c=${encodeURIComponent(JSON.stringify(config))}&w=${size}&h=${size}&bkg=white`;
+  return `<img src="${url}" width="${size}" height="${size}" alt="" style="display:block;" />`;
 }
 
 function buildRevenueCharts(revHabMes, revFnbMes, canalesRevenue) {
