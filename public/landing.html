@@ -633,11 +633,12 @@
 <!-- HERO -->
 <section class="hero">
   <div class="hero-content">
-    <div class="hero-badge">Un único espacio para tu hotel</div>
-    <h1>Todos los datos<br>de tu hotel, <em>juntos<br>y en tiempo real</em></h1>
-    <p class="hero-sub">Ocupación, ADR, RevPAR, pickup, presupuesto y grupos — todo centralizado en un espacio interactivo y visual.</p>
+    <div class="hero-badge">Revenue Management para hoteles independientes</div>
+    <h1>Tu hotel, en pleno<br><em>control.</em></h1>
+    <p class="hero-sub">Dashboard de KPIs, heatmap mensual interactivo, gestión de grupos y eventos, pickup diario e informes automáticos por email — todo en un único espacio.</p>
     <div class="hero-actions">
-      <a href="#consulta" class="btn-gold">Agenda tu primera consulta →</a>
+      <a href="https://fastrevenue.app/home" class="btn-gold">Acceder al dashboard →</a>
+      <a href="#consulta" class="btn-ghost">Consulta gratuita</a>
     </div>
   </div>
   <div class="hero-visual">
@@ -649,7 +650,7 @@
       <div class="hero-float-badge-dot"></div>
       <div>
         <div class="hero-float-badge-text">Todo en un único espacio</div>
-        <div class="hero-float-badge-sub">Dashboard · Pickup · Presupuesto · M&amp;E</div>
+        <div class="hero-float-badge-sub">Dashboard · Heatmap · Pickup · Presupuesto · Grupos · Salas</div>
       </div>
     </div>
   </div>
@@ -659,16 +660,16 @@
 <div class="stats-bar">
   <div class="stats-inner reveal">
     <div class="stat-item">
-      <div class="stat-num">5+</div>
+      <div class="stat-num">7+</div>
       <div class="stat-label">Módulos en un solo espacio</div>
     </div>
     <div class="stat-item">
-      <div class="stat-num">5 min</div>
-      <div class="stat-label">Para tener todos tus KPIs activos</div>
+      <div class="stat-num">1 min</div>
+      <div class="stat-label">Para ver tus primeros KPIs activos</div>
     </div>
     <div class="stat-item">
-      <div class="stat-num">100%</div>
-      <div class="stat-label">Visual, interactivo y sin código</div>
+      <div class="stat-num">0€</div>
+      <div class="stat-label">Coste adicional de APIs externas</div>
     </div>
   </div>
 </div>
@@ -788,15 +789,17 @@
 <!-- FEATURES -->
 <section class="features-section reveal" id="funciones">
   <div class="section-eyebrow">Gestión inteligente de tu hotel</div>
-  <h2 class="section-title"><em>Gestión inteligente</em><br>de tu hotel</h2>
-  <p class="section-sub">Cinco módulos interactivos que centralizan toda la información de tu hotel. Sin dispersión, sin hojas sueltas, sin perder el hilo.</p>
+  <h2 class="section-title">Todo lo que necesita<br>un <em>Revenue Manager moderno</em></h2>
+  <p class="section-sub">Siete módulos interactivos que centralizan toda la información de tu hotel. Sin dispersión, sin hojas sueltas, sin perder el hilo.</p>
 
   <div class="module-tabs">
     <button class="module-tab active" data-tab="dashboard">Dashboard</button>
+    <button class="module-tab" data-tab="heatmap">Heatmap</button>
     <button class="module-tab" data-tab="pickup">Pickup</button>
     <button class="module-tab" data-tab="presupuesto">Presupuesto</button>
-    <button class="module-tab" data-tab="mye">M&amp;E</button>
-    <button class="module-tab" data-tab="pdf">Informes PDF</button>
+    <button class="module-tab" data-tab="mye">Grupos &amp; Eventos</button>
+    <button class="module-tab" data-tab="salas">Salas</button>
+    <button class="module-tab" data-tab="pdf">Informes</button>
   </div>
 
   <!-- DASHBOARD -->
@@ -835,6 +838,70 @@
       <div class="module-card-body">
         <div class="module-card-title">Drill-down diario</div>
         <p class="module-card-desc">Haz clic en cualquier mes para ver la evolución diaria de ADR y ocupación. Del año completo al día concreto en un solo clic.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- HEATMAP -->
+  <div class="module-panel" id="tab-heatmap">
+    <div class="module-card">
+      <div class="module-card-visual" style="padding:12px;">
+        <!-- Mini monthly calendar -->
+        <div style="width:100%;">
+          <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:4px;">
+            <div style="font-size:7px;color:rgba(255,255,255,0.3);text-align:center">L</div><div style="font-size:7px;color:rgba(255,255,255,0.3);text-align:center">M</div><div style="font-size:7px;color:rgba(255,255,255,0.3);text-align:center">X</div><div style="font-size:7px;color:rgba(255,255,255,0.3);text-align:center">J</div><div style="font-size:7px;color:rgba(255,255,255,0.3);text-align:center">V</div><div style="font-size:7px;color:rgba(255,255,255,0.3);text-align:center">S</div><div style="font-size:7px;color:rgba(255,255,255,0.3);text-align:center">D</div>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;">
+            <div style="aspect-ratio:1;border-radius:3px;background:rgba(0,75,135,0.15);font-size:7px;color:rgba(255,255,255,0.4);display:flex;align-items:center;justify-content:center;">1</div>
+            <div style="aspect-ratio:1;border-radius:3px;background:rgba(0,75,135,0.2);font-size:7px;color:rgba(255,255,255,0.5);display:flex;align-items:center;justify-content:center;">2</div>
+            <div style="aspect-ratio:1;border-radius:3px;background:rgba(0,75,135,0.3);font-size:7px;color:rgba(255,255,255,0.6);display:flex;align-items:center;justify-content:center;">3</div>
+            <div style="aspect-ratio:1;border-radius:3px;background:rgba(0,75,135,0.45);font-size:7px;color:rgba(255,255,255,0.7);display:flex;align-items:center;justify-content:center;">4</div>
+            <div style="aspect-ratio:1;border-radius:3px;background:rgba(0,75,135,0.6);font-size:7px;color:white;display:flex;align-items:center;justify-content:center;">5</div>
+            <div style="aspect-ratio:1;border-radius:3px;background:rgba(0,75,135,0.8);font-size:7px;color:white;display:flex;align-items:center;justify-content:center;">6</div>
+            <div style="aspect-ratio:1;border-radius:3px;background:rgba(0,75,135,0.9);font-size:7px;color:white;display:flex;align-items:center;justify-content:center;">7</div>
+            <div style="aspect-ratio:1;border-radius:3px;background:rgba(0,75,135,0.95);font-size:7px;color:white;display:flex;align-items:center;justify-content:center;">8</div>
+            <div style="aspect-ratio:1;border-radius:3px;background:rgba(0,75,135,1);font-size:7px;color:white;display:flex;align-items:center;justify-content:center;">9</div>
+            <div style="aspect-ratio:1;border-radius:3px;background:rgba(183,28,28,0.85);font-size:7px;color:white;display:flex;align-items:center;justify-content:center;">10</div>
+            <div style="aspect-ratio:1;border-radius:3px;background:rgba(0,75,135,0.7);font-size:7px;color:white;display:flex;align-items:center;justify-content:center;">11</div>
+            <div style="aspect-ratio:1;border-radius:3px;background:rgba(0,75,135,0.5);font-size:7px;color:rgba(255,255,255,0.8);display:flex;align-items:center;justify-content:center;">12</div>
+            <div style="aspect-ratio:1;border-radius:3px;background:rgba(0,75,135,0.35);font-size:7px;color:rgba(255,255,255,0.6);display:flex;align-items:center;justify-content:center;">13</div>
+            <div style="aspect-ratio:1;border-radius:3px;background:rgba(0,75,135,0.25);font-size:7px;color:rgba(255,255,255,0.5);display:flex;align-items:center;justify-content:center;">14</div>
+          </div>
+          <!-- Event bars -->
+          <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-top:4px;">
+            <div style="grid-column:1/5;height:8px;border-radius:2px;background:#059669;display:flex;align-items:center;padding:0 4px;"><span style="font-size:6px;color:white;font-weight:700;overflow:hidden;white-space:nowrap;">Congreso Tech</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="module-card-body">
+        <div class="module-card-title">Heatmap mensual</div>
+        <p class="module-card-desc">Vista de pantalla completa con el calendario del mes. Cada día muestra ocupación en color — de azul claro a rojo oscuro para overbooking.</p>
+      </div>
+    </div>
+    <div class="module-card">
+      <div class="module-card-visual">
+        <div class="mv-badges">
+          <div class="mv-badge"><div class="mv-badge-dot" style="background:#059669"></div><span class="mv-badge-label">Grupos (verde)</span><span class="mv-badge-val">3 activos</span></div>
+          <div class="mv-badge"><div class="mv-badge-dot" style="background:#2563EB"></div><span class="mv-badge-label">Eventos (azul)</span><span class="mv-badge-val">2 activos</span></div>
+          <div class="mv-badge"><div class="mv-badge-dot" style="background:#7B0000"></div><span class="mv-badge-label">Overbooking</span><span class="mv-badge-val">día 10</span></div>
+        </div>
+      </div>
+      <div class="module-card-body">
+        <div class="module-card-title">Barras de grupos y eventos</div>
+        <p class="module-card-desc">Los grupos aparecen en verde y los eventos en azul directamente sobre el calendario. Un clic navega al expediente correspondiente.</p>
+      </div>
+    </div>
+    <div class="module-card">
+      <div class="module-card-visual">
+        <div class="mv-stat-row">
+          <div class="mv-stat"><span class="mv-stat-l">OCC día 10</span><span class="mv-stat-v">108%</span><span class="mv-stat-delta mv-delta-down">Overbooking</span></div>
+          <div class="mv-stat"><span class="mv-stat-l">ADR día 10</span><span class="mv-stat-v">€136</span><span class="mv-stat-delta mv-delta-up">+12 vs LY</span></div>
+          <div class="mv-stat"><span class="mv-stat-l">Grupos</span><span class="mv-stat-v">45 hab.</span></div>
+        </div>
+      </div>
+      <div class="module-card-body">
+        <div class="module-card-title">Click en el día → detalle</div>
+        <p class="module-card-desc">Pulsa cualquier celda para ver OCC real combinando individuales y grupos, ADR ponderado y desglose por canal de distribución.</p>
       </div>
     </div>
   </div>
@@ -967,6 +1034,60 @@
     </div>
   </div>
 
+  <!-- SALAS -->
+  <div class="module-panel" id="tab-salas">
+    <div class="module-card">
+      <div class="module-card-visual" style="padding:12px;">
+        <!-- Timeline mock -->
+        <div style="width:100%;">
+          <div style="display:flex;flex-direction:column;gap:0;">
+            <div style="display:flex;border-bottom:1px solid rgba(255,255,255,0.07);height:36px;">
+              <div style="width:48px;font-size:8px;color:rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:flex-end;padding-right:8px;border-right:1px solid rgba(255,255,255,0.07);">09:00</div>
+              <div style="flex:1;background:rgba(255,255,255,0.02);display:flex;align-items:center;padding:0 8px;"><span style="font-size:8px;color:rgba(255,255,255,0.25)">Disponible</span></div>
+            </div>
+            <div style="display:flex;border-bottom:1px solid rgba(255,255,255,0.07);height:72px;">
+              <div style="width:48px;font-size:8px;color:rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:flex-end;padding-right:8px;border-right:1px solid rgba(255,255,255,0.07);">10:00</div>
+              <div style="flex:1;background:rgba(5,150,105,0.15);border:1px solid rgba(5,150,105,0.4);border-radius:4px;margin:4px;display:flex;align-items:center;padding:0 10px;"><div><div style="font-size:9px;color:#34D399;font-weight:700;">Congreso RR.HH.</div><div style="font-size:8px;color:rgba(255,255,255,0.45);">10:00 – 12:00 · €1.800</div></div></div>
+            </div>
+            <div style="display:flex;border-bottom:1px solid rgba(255,255,255,0.07);height:36px;">
+              <div style="width:48px;font-size:8px;color:rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:flex-end;padding-right:8px;border-right:1px solid rgba(255,255,255,0.07);">12:00</div>
+              <div style="flex:1;background:rgba(255,255,255,0.02);display:flex;align-items:center;padding:0 8px;"><span style="font-size:8px;color:rgba(255,255,255,0.25)">Disponible</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="module-card-body">
+        <div class="module-card-title">Planning diario por sala</div>
+        <p class="module-card-desc">Vista de timeline hora a hora para cada sala. Bloques de eventos con nombre, horario y revenue de F&amp;B y sala de un vistazo.</p>
+      </div>
+    </div>
+    <div class="module-card">
+      <div class="module-card-visual">
+        <div class="mv-heatmap">
+          <div class="mv-hm" style="background:rgba(5,150,105,0.7)"></div><div class="mv-hm" style="background:rgba(5,150,105,0.4)"></div><div class="mv-hm" style="background:rgba(255,255,255,0.06)"></div><div class="mv-hm" style="background:rgba(5,150,105,0.9)"></div><div class="mv-hm" style="background:rgba(255,255,255,0.06)"></div><div class="mv-hm" style="background:rgba(5,150,105,0.5)"></div>
+          <div class="mv-hm" style="background:rgba(255,255,255,0.06)"></div><div class="mv-hm" style="background:rgba(5,150,105,0.6)"></div><div class="mv-hm" style="background:rgba(5,150,105,0.3)"></div><div class="mv-hm" style="background:rgba(255,255,255,0.06)"></div><div class="mv-hm" style="background:rgba(5,150,105,0.8)"></div><div class="mv-hm" style="background:rgba(255,255,255,0.06)"></div>
+        </div>
+      </div>
+      <div class="module-card-body">
+        <div class="module-card-title">Disponibilidad mensual</div>
+        <p class="module-card-desc">Calendario de ocupación de cada sala por mes. Detecta huecos de disponibilidad y planifica eventos con antelación.</p>
+      </div>
+    </div>
+    <div class="module-card">
+      <div class="module-card-visual">
+        <div class="mv-stat-row">
+          <div class="mv-stat"><span class="mv-stat-l">Rev. Sala mes</span><span class="mv-stat-v">€6.200</span><span class="mv-stat-delta mv-delta-up">+18% vs LY</span></div>
+          <div class="mv-stat"><span class="mv-stat-l">Rev. F&amp;B mes</span><span class="mv-stat-v">€18.500</span><span class="mv-stat-delta mv-delta-up">+8%</span></div>
+          <div class="mv-stat"><span class="mv-stat-l">Eventos activos</span><span class="mv-stat-v">12</span></div>
+        </div>
+      </div>
+      <div class="module-card-body">
+        <div class="module-card-title">Revenue de M&amp;E</div>
+        <p class="module-card-desc">Seguimiento de ingresos por sala y F&amp;B integrado con el módulo de grupos. El TRevPAR siempre completo.</p>
+      </div>
+    </div>
+  </div>
+
   <!-- PDF -->
   <div class="module-panel" id="tab-pdf">
     <div class="module-card">
@@ -1007,16 +1128,16 @@
       </div>
     </div>
     <div class="module-card">
-      <div class="module-card-visual" style="align-items:center;justify-content:center;">
-        <div style="text-align:center;">
-          <div style="font-size:36px;margin-bottom:8px;">📄</div>
-          <div style="font-size:10px;color:rgba(255,255,255,0.4);letter-spacing:1px;text-transform:uppercase;">Un clic</div>
-          <div style="font-size:13px;color:white;font-weight:600;margin-top:4px;">Exportar PDF</div>
+      <div class="module-card-visual">
+        <div class="mv-stat-row">
+          <div class="mv-stat"><span class="mv-stat-l">Ocupación ayer</span><span class="mv-stat-v">82%</span><span class="mv-stat-delta mv-delta-up">+6pp vs LY</span></div>
+          <div class="mv-stat"><span class="mv-stat-l">ADR ayer</span><span class="mv-stat-v">€124</span><span class="mv-stat-delta mv-delta-up">+€11</span></div>
+          <div class="mv-stat"><span class="mv-stat-l">Reservas captadas</span><span class="mv-stat-v">14</span></div>
         </div>
       </div>
       <div class="module-card-body">
-        <div class="module-card-title">Sin trabajo extra</div>
-        <p class="module-card-desc">No tienes que formatear nada. El informe se genera automáticamente con los datos que ya tienes en FastRevenue.</p>
+        <div class="module-card-title">Email diario automático</div>
+        <p class="module-card-desc">Cada mañana recibes en tu email un resumen del día anterior: OCC, ADR, RevPAR, pickup y gráficos — sin abrir la app.</p>
       </div>
     </div>
   </div>
@@ -1028,7 +1149,8 @@ document.querySelectorAll('.module-tab').forEach(tab => {
     document.querySelectorAll('.module-tab').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.module-panel').forEach(p => p.classList.remove('active'));
     tab.classList.add('active');
-    document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+    const panel = document.getElementById('tab-' + tab.dataset.tab);
+    if (panel) panel.classList.add('active');
   });
 });
 </script>
@@ -1083,9 +1205,10 @@ document.getElementById('contactForm').addEventListener('submit', async function
 <section class="cta-section">
   <div class="cta-bg-text">FastRevenue</div>
   <div class="cta-content">
-    <h2>Tu hotel merece<br><em>un único espacio</em></h2>
-    <p class="cta-sub">Centraliza todos tus KPIs y datos en una plataforma interactiva. Empieza hoy, sin integraciones.</p>
-    <a href="#consulta" class="btn-gold" style="font-size:15px; padding:15px 42px;">Agenda tu primera consulta →</a>
+    <h2>Tu hotel merece<br><em>datos reales,</em> no intuiciones</h2>
+    <p class="cta-sub">Heatmap, pickup, grupos, salas e informes automáticos — todo en un espacio visual sin integraciones complejas.</p>
+    <a href="https://fastrevenue.app/home" class="btn-gold" style="font-size:15px; padding:15px 42px;">Entrar al dashboard →</a>
+    <div style="margin-top:16px;"><a href="#consulta" class="btn-ghost" style="font-size:13px;">Solicitar consulta gratuita</a></div>
   </div>
 </section>
 
@@ -1098,7 +1221,7 @@ document.getElementById('contactForm').addEventListener('submit', async function
     <a href="/terminos.html">Términos</a>
     <a href="/cookies.html">Cookies</a>
   </div>
-  <p style="margin-top:12px;">© 2025 FastRevenue · Miguel Ruiz</p>
+  <p style="margin-top:12px;">© 2026 FastRevenue · Miguel Ruiz</p>
 </footer>
 
 <script>
