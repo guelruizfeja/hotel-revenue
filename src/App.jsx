@@ -3484,11 +3484,12 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
           const diasEnMes = new Date(anio, hmMesSel+1, 0).getDate();
           const mesInicio  = `${mesStr}-01`;
           const mesFin     = `${mesStr}-${padM(diasEnMes)}`;
-          const mesFinPlus1 = new Date(anio, hmMesSel+1, 1).toISOString().slice(0,10);
+          const mesFinPlus1 = hmMesSel === 11 ? `${anio+1}-01-01` : `${anio}-${padM(hmMesSel+2)}-01`;
 
+          const isoLocal = d => `${d.getFullYear()}-${padM(d.getMonth()+1)}-${padM(d.getDate())}`;
           const getFsSt = e => {
             if (e.fecha_salida) return String(e.fecha_salida).slice(0,10);
-            if (e.noches && e.fecha_llegada) { const d=new Date(String(e.fecha_llegada).slice(0,10)); d.setDate(d.getDate()+Number(e.noches)); return d.toISOString().slice(0,10); }
+            if (e.noches && e.fecha_llegada) { const d=new Date(String(e.fecha_llegada).slice(0,10)+"T00:00:00"); d.setDate(d.getDate()+Number(e.noches)); return isoLocal(d); }
             return null;
           };
           // Dedup
@@ -3517,7 +3518,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
               let cur = new Date(start+"T00:00:00");
               const endD = new Date(end+"T00:00:00");
               while (cur < endD) {
-                const iso = cur.toISOString().slice(0,10);
+                const iso = isoLocal(cur);
                 habPorDia[iso] = (habPorDia[iso]||0) + nr;
                 cur.setDate(cur.getDate()+1);
               }
