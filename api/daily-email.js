@@ -40,6 +40,105 @@ function badge(val, { isPP = false, isAbs = false, prefix = '' } = {}) {
   return `<p style="margin:4px 0 0;font-size:12px;color:${color};font-weight:700;line-height:1;">${label}</p>`;
 }
 
+function buildDonutChart(segments, size = 110) {
+  const total = segments.reduce((s, x) => s + x.value, 0);
+  if (!total) return '';
+  const r = 35, cx = size / 2, cy = size / 2;
+  const C = 2 * Math.PI * r;
+  let acc = 0;
+  const circles = segments.map(seg => {
+    const pct = seg.value / total;
+    const dash = pct * C;
+    const off  = C / 4 - acc * C;
+    acc += pct;
+    return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${seg.color}" stroke-width="20" stroke-dasharray="${dash.toFixed(2)} ${(C - dash).toFixed(2)}" stroke-dashoffset="${off.toFixed(2)}"/>`;
+  });
+  return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" style="display:block;"><g>${circles.join('')}</g><circle cx="${cx}" cy="${cy}" r="22" fill="white"/></svg>`;
+}
+
+function buildRevenueCharts(revHabMes, revFnbMes, canalesRevenue) {
+  const CANAL_COLORS = {
+    'Directo / Web': '#0A2540', 'Directo': '#0A2540',
+    'OTAs': '#D4A017',
+    'Empresa / Corporativo': '#059669', 'Empresa': '#059669',
+    'Teléfono / Email': '#2563EB', 'Teléfono': '#2563EB',
+    'Grupos / MICE': '#7C3AED', 'Grupos': '#7C3AED',
+  };
+  const totalHabFnb = (revHabMes || 0) + (revFnbMes || 0);
+  const habPct = totalHabFnb > 0 ? Math.round((revHabMes || 0) / totalHabFnb * 100) : 0;
+  const fnbPct = 100 - habPct;
+
+  const habSvg = totalHabFnb > 0 ? buildDonutChart([
+    { value: revHabMes || 0, color: '#0A2540' },
+    { value: revFnbMes || 0, color: '#D4A017' },
+  ]) : '';
+
+  const dot = (color) => `<td style="width:8px;height:8px;background:${color};border-radius:2px;font-size:0;" bgcolor="${color}">&nbsp;</td><td style="width:6px;"></td>`;
+  const habLegend = `
+    <tr><td style="padding:4px 0;"><table cellpadding="0" cellspacing="0"><tr>
+      ${dot('#0A2540')}
+      <td style="font-family:Arial,sans-serif;font-size:11px;color:#374151;">Habitaciones</td>
+      <td style="width:6px;"></td>
+      <td style="font-family:Arial,sans-serif;font-size:11px;font-weight:700;color:#0A2540;">${habPct}%</td>
+    </tr></table></td></tr>
+    <tr><td style="padding:4px 0;"><table cellpadding="0" cellspacing="0"><tr>
+      ${dot('#D4A017')}
+      <td style="font-family:Arial,sans-serif;font-size:11px;color:#374151;">F&amp;B</td>
+      <td style="width:6px;"></td>
+      <td style="font-family:Arial,sans-serif;font-size:11px;font-weight:700;color:#0A2540;">${fnbPct}%</td>
+    </tr></table></td></tr>`;
+
+  const canales = canalesRevenue || [];
+  const totalCanal = canales.reduce((s, c) => s + c.revenue, 0);
+  const canalSegs = canales.map(c => ({ value: c.revenue, color: CANAL_COLORS[c.canal] || '#94A3B8', label: c.canal }));
+  const canalSvg = canalSegs.length ? buildDonutChart(canalSegs) : '';
+  const canalLegend = canalSegs.map(c => {
+    const p = totalCanal > 0 ? Math.round(c.value / totalCanal * 100) : 0;
+    return `<tr><td style="padding:3px 0;"><table cellpadding="0" cellspacing="0"><tr>
+      ${dot(c.color)}
+      <td style="font-family:Arial,sans-serif;font-size:10px;color:#374151;white-space:nowrap;">${escapeHtmlStr(c.label)}</td>
+      <td style="width:6px;"></td>
+      <td style="font-family:Arial,sans-serif;font-size:10px;font-weight:700;color:#0A2540;">${p}%</td>
+    </tr></table></td></tr>`;
+  }).join('');
+
+  if (!totalHabFnb && !canalSegs.length) return '';
+
+  return `
+  <!-- gap -->
+  <tr><td style="height:8px;background:#EEF2F7;"></td></tr>
+
+  <!-- GRÁFICOS REVENUE -->
+  <tr><td style="background:#FFFFFF;border:1px solid #E2E8F0;padding:0;">
+    <table width="100%" cellpadding="0" cellspacing="0">
+      <tr><td colspan="3" style="padding:12px 16px 8px;border-bottom:1px solid #F1F5F9;">
+        <p style="margin:0;font-size:12px;font-weight:700;color:#0A2540;text-transform:uppercase;letter-spacing:0.8px;">Mix de Revenue — Mes Actual</p>
+      </td></tr>
+      <tr>
+        <td width="46%" style="padding:14px 12px 14px 16px;vertical-align:top;">
+          <p style="margin:0 0 10px;font-size:9px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:1px;">Hab. vs F&amp;B</p>
+          ${habSvg ? `<table cellpadding="0" cellspacing="0"><tr>
+            <td style="padding-right:10px;vertical-align:middle;">${habSvg}</td>
+            <td style="vertical-align:middle;"><table cellpadding="0" cellspacing="0">${habLegend}</table></td>
+          </tr></table>` : '<p style="margin:0;font-size:12px;color:#94A3B8;">Sin datos</p>'}
+        </td>
+        <td style="width:1px;background:#E2E8F0;padding:0;"></td>
+        <td width="46%" style="padding:14px 16px 14px 12px;vertical-align:top;">
+          <p style="margin:0 0 10px;font-size:9px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:1px;">Procedencia</p>
+          ${canalSvg ? `<table cellpadding="0" cellspacing="0"><tr>
+            <td style="padding-right:10px;vertical-align:middle;">${canalSvg}</td>
+            <td style="vertical-align:middle;"><table cellpadding="0" cellspacing="0">${canalLegend}</table></td>
+          </tr></table>` : '<p style="margin:0;font-size:12px;color:#94A3B8;">Sin datos de canal</p>'}
+        </td>
+      </tr>
+    </table>
+  </td></tr>`;
+}
+
+function escapeHtmlStr(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
 function buildProgressBar(revenueAcumulado, presupuestoMensual) {
   if (!revenueAcumulado?.length) return '';
   const acum    = revenueAcumulado[revenueAcumulado.length - 1]?.acum || 0;
@@ -116,6 +215,7 @@ export default async function handler(req, res) {
     pickup_neto, cancelaciones, revenue_pickup_ayer,
     revenueAcumulado, presupuestoMensual,
     avg_occ, avg_adr, avg_revpar, avg_trevpar,
+    revHabMes, revFnbMes, canalesRevenue,
   } = kpis;
 
   const safeFecha     = cleanString(fecha, 10) ?? '';
@@ -123,6 +223,8 @@ export default async function handler(req, res) {
 
   let progressBar = '';
   try { progressBar = buildProgressBar(revenueAcumulado, presupuestoMensual); } catch { /* ignored */ }
+  let revenueCharts = '';
+  try { revenueCharts = buildRevenueCharts(revHabMes, revFnbMes, canalesRevenue); } catch { /* ignored */ }
 
   const alerts     = buildAlerts(kpis);
   const pickupRev  = revenue_pickup_ayer ? `+€${Math.round(revenue_pickup_ayer).toLocaleString('es-ES')}` : '';
@@ -192,6 +294,8 @@ export default async function handler(req, res) {
       </tr>
     </table>
   </td></tr>
+
+  ${revenueCharts}
 
   <!-- gap -->
   <tr><td style="height:8px;background:#EEF2F7;"></td></tr>
