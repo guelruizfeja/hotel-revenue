@@ -3482,8 +3482,9 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
           const padM = n => String(n).padStart(2,"0");
           const mesStr = `${anio}-${padM(hmMesSel+1)}`;
           const diasEnMes = new Date(anio, hmMesSel+1, 0).getDate();
-          const mesInicio = `${mesStr}-01`;
-          const mesFin    = `${mesStr}-${padM(diasEnMes)}`;
+          const mesInicio  = `${mesStr}-01`;
+          const mesFin     = `${mesStr}-${padM(diasEnMes)}`;
+          const mesFinPlus1 = new Date(anio, hmMesSel+1, 1).toISOString().slice(0,10);
 
           const getFsSt = e => {
             if (e.fecha_salida) return String(e.fecha_salida).slice(0,10);
@@ -3510,9 +3511,9 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
               // entrada sintética ya representa exactamente una noche
               if (fl >= mesInicio && fl <= mesFin) habPorDia[fl] = (habPorDia[fl]||0) + nr;
             } else {
-              // iterar noches que cubre dentro del mes
-              const start = fl < mesInicio ? mesInicio : fl;
-              const end   = fs > mesFin    ? mesFin    : fs;
+              // iterar noches que cubre dentro del mes (end exclusivo → usar mesFinPlus1 como tope)
+              const start = fl < mesInicio   ? mesInicio   : fl;
+              const end   = fs > mesFinPlus1 ? mesFinPlus1 : fs;
               let cur = new Date(start+"T00:00:00");
               const endD = new Date(end+"T00:00:00");
               while (cur < endD) {
@@ -3799,7 +3800,10 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
                         <div>
                           <p style={{ fontSize:11, fontWeight:700, color:C.textMid, textTransform:"uppercase", letterSpacing:"1.5px", marginBottom:12 }}>Grupos / Eventos</p>
                           {gruposDia.map((g,i) => (
-                            <div key={i} style={{ display:"flex", alignItems:"center", gap:10, marginBottom:8, padding:"10px 14px", background:C.bg, borderRadius:10, border:`1px solid ${C.border}` }}>
+                            <div key={i} onClick={()=>{ setHmDayModal(null); setHmMesSel(null); onNavigarGrupos && onNavigarGrupos(g.tipo==="evento"?"eventos":"grupos", g.fecha_inicio, g.fecha_fin||g.fecha_inicio); }}
+                              style={{ display:"flex", alignItems:"center", gap:10, marginBottom:8, padding:"10px 14px", background:C.bg, borderRadius:10, border:`1px solid ${C.border}`, cursor:"pointer", transition:"background 0.12s" }}
+                              onMouseEnter={e=>e.currentTarget.style.background=C.accentLight}
+                              onMouseLeave={e=>e.currentTarget.style.background=C.bg}>
                               <span style={{ fontSize:18 }}>{g.tipo==="evento"?"📌":"🏨"}</span>
                               <div style={{ flex:1, minWidth:0 }}>
                                 <p style={{ fontSize:13, fontWeight:700, color:C.text, margin:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{g.nombre}</p>
