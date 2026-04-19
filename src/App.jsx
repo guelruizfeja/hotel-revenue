@@ -3489,7 +3489,8 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
           if (occ<55)  return "#FFC107";
           if (occ<70)  return "#FF7043";
           if (occ<85)  return "#E53935";
-          return "#B71C1C";
+          if (occ<100) return "#B71C1C";
+          return "#7B0000"; // sobrebook
         };
         const heatBg = (occ) => occ!=null
           ? `linear-gradient(to bottom, ${heatColor(occ)}88, ${heatColor(occ)}33)`
@@ -3610,7 +3611,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
               occ = prod.hab_disponibles>0 ? Math.min(100,prod.hab_ocupadas/prod.hab_disponibles*100) : null;
               adr = prod.hab_ocupadas>0    ? (prod.revenue_hab/prod.hab_ocupadas) : null;
             } else if (iso >= hoyStr2) {
-              occ = neto>0 ? Math.min(100, neto/habHotel*100) : null;
+              occ = neto>0 ? Math.round(neto/habHotel*100) : null;
               adr = calcAdrPickup(iso);
             }
             const resUltDia = pickupUltimoDiaPorDia[iso] || 0;
@@ -3908,7 +3909,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
 
               // OCC: para pasado usa producción; para futuro usa habPorDia (incluye grupos + individuales)
               const habHotelModal = datos.hotel?.habitaciones || habHotel;
-              const occ = dayData?.occ ?? (habHotelModal > 0 ? Math.min(100, totalRes / habHotelModal * 100) : null);
+              const occ = dayData?.occ ?? (habHotelModal > 0 ? Math.round(totalRes / habHotelModal * 100) : null);
 
               const gruposDia = (datos.grupos||[]).filter(g =>
                 g.fecha_inicio <= iso && (g.fecha_fin||g.fecha_inicio) >= iso &&
