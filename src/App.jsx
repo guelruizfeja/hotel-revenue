@@ -3639,10 +3639,11 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
                 <div style={{ flex:1, display:"flex", overflow:"hidden" }}>
 
                   {/* Left: day grid */}
-                  <div style={{ flex:1, padding:"20px 24px", overflowY:"auto", minWidth:0 }}>
+                  <div style={{ flex:1, padding:"16px 24px", overflowY:"auto", minWidth:0, display:"flex", flexDirection:"column", alignItems:"center" }}>
+                  <div style={{ width:"100%", maxWidth:480 }}>
 
                     {/* Días semana */}
-                    <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:4, marginBottom:4 }}>
+                    <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:3, marginBottom:3 }}>
                       {t("dias_semana").map(d=>(
                         <p key={d} style={{ fontSize:10, color:C.textLight, textAlign:"center", fontWeight:600 }}>{d}</p>
                       ))}
@@ -3663,8 +3664,8 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
                         return ini<=mesPrefix && fin>=mesPrefix;
                       });
                       const allEvs = [
-                        ...gruposDelMes.map(g=>({ from:g.fecha_inicio||"", to:g.fecha_fin||g.fecha_inicio||"", title:g.nombre||"(sin nombre)", color:CATCOLORS[g.categoria||"otros"]||CATCOLORS.otros })),
-                        ...hmEvents.map(ev=>({ from:ev.from, to:ev.to, title:ev.title||"(sin título)", color:ev.color }))
+                        ...gruposDelMes.map(g=>({ from:g.fecha_inicio||"", to:g.fecha_fin||g.fecha_inicio||"", title:g.nombre||"(sin nombre)", color:CATCOLORS[g.categoria||"otros"]||CATCOLORS.otros, id:g.id, categoria:g.categoria, tipo:"db" })),
+                        ...hmEvents.map(ev=>({ from:ev.from, to:ev.to, title:ev.title||"(sin título)", color:ev.color, tipo:"manual" }))
                       ];
                       return (
                         <div onMouseLeave={()=>{ if(hmIsDragging) setHmIsDragging(false); }}>
@@ -3675,7 +3676,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
                             const eventsThisWeek = allEvs.filter(ev=>ev.from<=weekEnd&&ev.to>=weekStart);
                             return (
                               <React.Fragment key={wi}>
-                                <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:4, marginBottom:eventsThisWeek.length>0?2:4 }}>
+                                <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:3, marginBottom:eventsThisWeek.length>0?2:3 }}>
                                   {weekCells.map((cell,ci)=>{
                                     if(!cell) return <div key={"e"+ci} style={{ aspectRatio:"1" }}/>;
                                     const {dia,occ,adr,esFut,resUltDia}=cell;
@@ -3708,7 +3709,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
                                   })}
                                 </div>
                                 {eventsThisWeek.length>0&&(
-                                  <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:4, marginBottom:4, gridAutoRows:"15px" }}>
+                                  <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:3, marginBottom:3, gridAutoRows:"14px" }}>
                                     {eventsThisWeek.map((ev,ei)=>{
                                       const evFrom=ev.from>weekStart?ev.from:weekStart;
                                       const evTo=ev.to<weekEnd?ev.to:weekEnd;
@@ -3717,7 +3718,9 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
                                       let c2=weekISOs.lastIndexOf(evTo);
                                       if(c2<0) c2=weekISOs.map((iso,i)=>iso!==null?i:-1).filter(i=>i>=0).slice(-1)[0]||6;
                                       return (
-                                        <div key={ei} style={{ gridColumn:`${c1+1}/${c2+2}`, height:14, borderRadius:3, background:ev.color, display:"flex", alignItems:"center", paddingLeft:5, overflow:"hidden" }}>
+                                        <div key={ei}
+                                          onClick={()=>{ if(ev.tipo==="db"&&ev.id){ setHmMesSel(null); onNavigarGrupos&&onNavigarGrupos(ev.categoria==="evento"?"eventos":"grupos",ev.from,ev.to||ev.from,ev.id); } }}
+                                          style={{ gridColumn:`${c1+1}/${c2+2}`, height:14, borderRadius:3, background:ev.color, display:"flex", alignItems:"center", paddingLeft:5, overflow:"hidden", cursor:ev.tipo==="db"?"pointer":"default" }}>
                                           <span style={{ fontSize:9, color:"#fff", fontWeight:700, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{ev.title}</span>
                                         </div>
                                       );
@@ -3732,7 +3735,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
                     })()}
 
                     {/* Leyenda */}
-                    <div style={{ marginTop:12, display:"flex", flexWrap:"wrap", gap:8, alignItems:"center" }}>
+                    <div style={{ marginTop:10, display:"flex", flexWrap:"wrap", gap:6, alignItems:"center" }}>
                       {[["#81C784","<25%"],["#4CAF50","25-40%"],["#FFC107","40-55%"],["#FF7043","55-70%"],["#E53935","70-85%"],["#B71C1C",">85%"]].map(([col,lbl])=>(
                         <span key={lbl} style={{ display:"flex", alignItems:"center", gap:3, fontSize:9, color:C.textLight }}>
                           <span style={{ width:10, height:10, borderRadius:2, background:col, display:"inline-block" }}/>
@@ -3747,6 +3750,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
                         : <span style={{ fontSize:9, color:C.textLight, marginLeft:"auto" }}>Pulsa un día para ver KPIs</span>
                       }
                     </div>
+                  </div>
                   </div>
 
                   {/* Separator */}
@@ -3796,7 +3800,11 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
                           const rev = ((g.habitaciones||0)*(g.adr_grupo||0)*noches+(g.revenue_fnb||0)+(g.revenue_sala||0))*peso;
                           const estadoBadge = { confirmado:"#059669", cotizado:"#D97706", perdido:C.red, cancelado:C.red }[g.estado]||C.textLight;
                           return (
-                            <div key={g.id||i} style={{ background:C.bgCard, borderRadius:9, padding:"10px 12px", marginBottom:8, borderLeft:`3px solid ${color}` }}>
+                            <div key={g.id||i}
+                              onClick={()=>{ if(g.id){ setHmMesSel(null); onNavigarGrupos&&onNavigarGrupos(g.categoria==="evento"?"eventos":"grupos",g.fecha_inicio,g.fecha_fin||g.fecha_inicio,g.id); } }}
+                              style={{ background:C.bgCard, borderRadius:9, padding:"10px 12px", marginBottom:8, borderLeft:`3px solid ${color}`, cursor:g.id?"pointer":"default", transition:"opacity 0.12s" }}
+                              onMouseEnter={e=>{ if(g.id) e.currentTarget.style.opacity="0.75"; }}
+                              onMouseLeave={e=>e.currentTarget.style.opacity="1"}>
                               <div style={{ display:"flex", alignItems:"flex-start", gap:8 }}>
                                 <div style={{ flex:1, minWidth:0 }}>
                                   <p style={{ fontSize:12, fontWeight:700, color:C.text, marginBottom:2, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{g.nombre||"(sin nombre)"}</p>
