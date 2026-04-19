@@ -3671,6 +3671,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
                 if (!dedupMap[key] || fp > dedupMap[key]._fp) dedupMap[key] = { ...e, _fp: fp };
               });
               const activasIso = Object.values(dedupMap).filter(e => {
+                if (e._grupo) return String(e.fecha_llegada||"").slice(0,10) === iso;
                 const fl = String(e.fecha_llegada||"").slice(0,10);
                 const fs = getFechaSalidaD(e);
                 return fl && fs && fl <= iso && fs > iso;
