@@ -1590,7 +1590,7 @@ function ImportarExcel({ onClose, session, onImportado, onProduccionDirecta, hot
         return canal || 'Directo / Web';
       };
 
-      const [{ data: datosMes }, { data: pickupRows }, { data: pptoData }, { data: pickupMes }] = await Promise.all([
+      const [{ data: datosMes }, { data: pickupRows }, { data: pptoData }, { data: pickupMes }, { data: gruposMes }] = await Promise.all([
         supabase.from("produccion_diaria")
           .select("fecha,hab_ocupadas,hab_disponibles,revenue_hab,revenue_fnb,revenue_total")
           .eq("hotel_id", session.user.id).gte("fecha", inicioMes).lt("fecha", inicioSig)
@@ -1606,6 +1606,10 @@ function ImportarExcel({ onClose, session, onImportado, onProduccionDirecta, hot
           .select("canal,precio_total,num_reservas,estado")
           .eq("hotel_id", session.user.id).gte("fecha_pickup", inicioMes).lt("fecha_pickup", inicioSig)
           .neq("estado", "cancelada"),
+        supabase.from("grupos_eventos")
+          .select("habitaciones,adr_grupo,revenue_fnb,revenue_sala,fecha_inicio,fecha_fin,estado")
+          .eq("hotel_id", session.user.id).neq("estado", "cancelado")
+          .gte("fecha_fin", inicioMes).lt("fecha_inicio", inicioSig),
       ]);
 
       let nuevasAyer = 0, cancelAyer = 0, revPickupAyer = 0;
@@ -1637,14 +1641,22 @@ function ImportarExcel({ onClose, session, onImportado, onProduccionDirecta, hot
       const avgTrevpar= totHabDisp > 0 ? totRevTotal / totHabDisp : null;
 
       const canalMap = {};
-      let revGrupos = 0, revIndividual = 0;
       for (const p of (pickupMes || [])) {
         const peso = p.precio_total || (p.num_reservas || 1);
         const key = isOTA(p.canal) ? 'OTAs' : normCanal(p.canal);
         canalMap[key] = (canalMap[key] || 0) + peso;
-        if (isGrupo(p.canal)) revGrupos += peso; else revIndividual += peso;
       }
       const canalesRevenue = Object.entries(canalMap).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]).map(([canal,revenue])=>({canal,revenue}));
+
+      let revGrupos = 0;
+      for (const g of (gruposMes || [])) {
+        const ini = new Date(g.fecha_inicio + 'T00:00:00');
+        const fin = new Date(g.fecha_fin + 'T00:00:00');
+        const noches = Math.max(1, (fin - ini) / 86400000);
+        const peso = g.estado === 'cotizado' ? 0.5 : 1.0;
+        revGrupos += ((g.habitaciones || 0) * (g.adr_grupo || 0) * noches + (g.revenue_fnb || 0) + (g.revenue_sala || 0)) * peso;
+      }
+      const revIndividual = Math.max(0, totRevHab - revGrupos);
 
       const occ    = diaRow.hab_disponibles > 0 ? diaRow.hab_ocupadas / diaRow.hab_disponibles * 100 : null;
       const adr    = diaRow.adr    ?? (diaRow.hab_ocupadas > 0 && diaRow.revenue_hab ? diaRow.revenue_hab / diaRow.hab_ocupadas : null);
@@ -8063,13 +8075,13 @@ export default function App() {
                     const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
                     const NO_OTA_KEYS2 = ['directo', 'teléfono', 'telefono', 'email', 'empresa', 'corporativo', 'grupos', 'mice'];
                     const isOTA2 = (canal) => { const c = (canal || '').toLowerCase(); return !NO_OTA_KEYS2.some(k => c.includes(k)); };
-                    const isGrupo2 = (canal) => { const c = (canal || '').toLowerCase(); return c.includes('grupo') || c.includes('mice'); };
                     const normCanal2 = (canal) => { const c = (canal || '').toLowerCase().trim(); if (c.includes('directo') || c.includes('web')) return 'Directo / Web'; if (c.includes('teléfono') || c.includes('telefono') || c.includes('email')) return 'Teléfono / Email'; if (c.includes('empresa') || c.includes('corporativo')) return 'Empresa / Corp.'; if (c.includes('grupo') || c.includes('mice')) return 'Grupos / MICE'; return canal || 'Directo / Web'; };
-                    const [{ data: datosMes }, { data: pickupRows }, { data: pptoData }, { data: pickupMes2 }] = await Promise.all([
+                    const [{ data: datosMes }, { data: pickupRows }, { data: pptoData }, { data: pickupMes2 }, { data: gruposMes2 }] = await Promise.all([
                       supabase.from("produccion_diaria").select("fecha,hab_ocupadas,hab_disponibles,revenue_hab,revenue_fnb,revenue_total").eq("hotel_id", session.user.id).gte("fecha", inicioMes).lt("fecha", inicioSig).order("fecha", { ascending: true }),
                       supabase.from("pickup_entries").select("num_reservas,precio_total,estado").eq("hotel_id", session.user.id).eq("fecha_pickup", ultimoDia.fecha),
                       supabase.from("presupuesto").select("rev_total_ppto").eq("hotel_id", session.user.id).eq("mes", mesActual).eq("anio", anioActual).maybeSingle(),
                       supabase.from("pickup_entries").select("canal,precio_total,num_reservas,estado").eq("hotel_id", session.user.id).gte("fecha_pickup", inicioMes).lt("fecha_pickup", inicioSig).neq("estado", "cancelada"),
+                      supabase.from("grupos_eventos").select("habitaciones,adr_grupo,revenue_fnb,revenue_sala,fecha_inicio,fecha_fin,estado").eq("hotel_id", session.user.id).neq("estado", "cancelado").gte("fecha_fin", inicioMes).lt("fecha_inicio", inicioSig),
                     ]);
                     let nuevas = 0, cancels = 0, revPickup = 0;
                     for (const p of (pickupRows || [])) {
@@ -8088,9 +8100,11 @@ export default function App() {
                     const avgRevpar2 = totHabDisp2 > 0 ? totRevHab2 / totHabDisp2 : null;
                     const avgTrevpar2= totHabDisp2 > 0 ? totRevTotal2 / totHabDisp2 : null;
                     const canalMap2 = {};
-                    let revGrupos2 = 0, revIndividual2 = 0;
-                    for (const p of (pickupMes2 || [])) { const peso = p.precio_total || (p.num_reservas || 1); const key = isOTA2(p.canal) ? 'OTAs' : normCanal2(p.canal); canalMap2[key] = (canalMap2[key] || 0) + peso; if (isGrupo2(p.canal)) revGrupos2 += peso; else revIndividual2 += peso; }
+                    for (const p of (pickupMes2 || [])) { const peso = p.precio_total || (p.num_reservas || 1); const key = isOTA2(p.canal) ? 'OTAs' : normCanal2(p.canal); canalMap2[key] = (canalMap2[key] || 0) + peso; }
                     const canalesRevenue2 = Object.entries(canalMap2).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]).map(([canal,revenue])=>({canal,revenue}));
+                    let revGrupos2 = 0;
+                    for (const g of (gruposMes2 || [])) { const noches = Math.max(1, (new Date(g.fecha_fin+'T00:00:00') - new Date(g.fecha_inicio+'T00:00:00')) / 86400000); const peso = g.estado === 'cotizado' ? 0.5 : 1.0; revGrupos2 += ((g.habitaciones||0)*(g.adr_grupo||0)*noches+(g.revenue_fnb||0)+(g.revenue_sala||0))*peso; }
+                    const revIndividual2 = Math.max(0, totRevHab2 - revGrupos2);
                     const occ    = ultimoDia.hab_disponibles > 0 ? ultimoDia.hab_ocupadas / ultimoDia.hab_disponibles * 100 : null;
                     const adr    = ultimoDia.adr    ?? (ultimoDia.hab_ocupadas > 0 && ultimoDia.revenue_hab ? ultimoDia.revenue_hab / ultimoDia.hab_ocupadas : null);
                     const revpar = ultimoDia.revpar ?? (ultimoDia.hab_disponibles > 0 && ultimoDia.revenue_hab ? ultimoDia.revenue_hab / ultimoDia.hab_disponibles : null);
