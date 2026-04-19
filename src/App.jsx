@@ -3475,21 +3475,56 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
           return sumHabs > 0 ? sumRev / sumHabs : null;
         };
 
-        // Neto acumulado por día para meses futuros (solo confirmadas, sin tentativos ni canceladas)
-        const netoPorDia = {};
+        // Habitaciones pernoctando por día (confirmadas, sin tentativos ni canceladas)
+        // Deduplicar por (fecha_llegada|canal|fecha_salida) conservando pickup más reciente
+        const habPorDia = {};
         if (hmMesSel != null) {
           const padM = n => String(n).padStart(2,"0");
           const mesStr = `${anio}-${padM(hmMesSel+1)}`;
+          const diasEnMes = new Date(anio, hmMesSel+1, 0).getDate();
+          const mesInicio = `${mesStr}-01`;
+          const mesFin    = `${mesStr}-${padM(diasEnMes)}`;
+
+          const getFsSt = e => {
+            if (e.fecha_salida) return String(e.fecha_salida).slice(0,10);
+            if (e.noches && e.fecha_llegada) { const d=new Date(String(e.fecha_llegada).slice(0,10)); d.setDate(d.getDate()+Number(e.noches)); return d.toISOString().slice(0,10); }
+            return null;
+          };
+          // Dedup
+          const dd = {};
           pickupEntries.forEach(e => {
             const est = e.estado||"confirmada";
-            if (est === "tentativo") return;
+            if (est === "cancelada" || est === "tentativo") return;
             const fl = String(e.fecha_llegada||"").slice(0,10);
-            if (!fl.startsWith(mesStr)) return;
-            const cancelada = est === "cancelada";
-            const nr = (e.num_reservas||1) * (cancelada ? -1 : 1);
-            netoPorDia[fl] = (netoPorDia[fl]||0) + nr;
+            const fs = getFsSt(e) || "";
+            const key = e._grupo ? `_g|${fl}|${e.canal||""}` : `${fl}|${e.canal||""}|${fs}`;
+            const fp = String(e.fecha_pickup||"").slice(0,10);
+            if (!dd[key] || fp > dd[key]._fp) dd[key] = { ...e, _fp: fp, _fs: fs };
+          });
+          Object.values(dd).forEach(e => {
+            const fl = String(e.fecha_llegada||"").slice(0,10);
+            const fs = e._grupo ? fl : (e._fs || "");  // grupos: una entrada = una noche
+            if (!fl || (!e._grupo && !fs)) return;
+            const nr = e.num_reservas || 1;
+            if (e._grupo) {
+              // entrada sintética ya representa exactamente una noche
+              if (fl >= mesInicio && fl <= mesFin) habPorDia[fl] = (habPorDia[fl]||0) + nr;
+            } else {
+              // iterar noches que cubre dentro del mes
+              const start = fl < mesInicio ? mesInicio : fl;
+              const end   = fs > mesFin    ? mesFin    : fs;
+              let cur = new Date(start+"T00:00:00");
+              const endD = new Date(end+"T00:00:00");
+              while (cur < endD) {
+                const iso = cur.toISOString().slice(0,10);
+                habPorDia[iso] = (habPorDia[iso]||0) + nr;
+                cur.setDate(cur.getDate()+1);
+              }
+            }
           });
         }
+        // Alias para compatibilidad con código que leía netoPorDia
+        const netoPorDia = habPorDia;
 
         const diasDelMes = hmMesSel!=null ? (() => {
           const diasEnMes = new Date(anio, hmMesSel+1, 0).getDate();
