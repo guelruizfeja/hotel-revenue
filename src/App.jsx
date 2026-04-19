@@ -3537,8 +3537,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
           return sumHabs > 0 ? sumRev / sumHabs : null;
         };
 
-        // Habitaciones pernoctando por día (confirmadas, sin tentativos ni canceladas)
-        // Deduplicar por (fecha_llegada|canal|fecha_salida) conservando pickup más reciente
+        // Habitaciones pernoctando por día — grupos directamente desde datos.grupos + individuales desde pickup
         const habPorDia = {};
         if (hmMesSel != null) {
           const padM = n => String(n).padStart(2,"0");
@@ -3547,43 +3546,50 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
           const mesInicio  = `${mesStr}-01`;
           const mesFin     = `${mesStr}-${padM(diasEnMes)}`;
           const mesFinPlus1 = hmMesSel === 11 ? `${anio+1}-01-01` : `${anio}-${padM(hmMesSel+2)}-01`;
-
           const isoLocal = d => `${d.getFullYear()}-${padM(d.getMonth()+1)}-${padM(d.getDate())}`;
+
+          // 1) Grupos confirmados directamente desde datos.grupos (sin depender de entradas sintéticas)
+          (datos.grupos||[]).filter(g => g.estado==="confirmado" && g.habitaciones>0 && g.fecha_inicio && g.fecha_fin).forEach(g => {
+            let d = new Date(g.fecha_inicio+"T00:00:00");
+            const fin = new Date(g.fecha_fin+"T00:00:00");
+            while (d < fin) {
+              const iso = isoLocal(d);
+              if (iso >= mesInicio && iso <= mesFin) habPorDia[iso] = (habPorDia[iso]||0) + g.habitaciones;
+              d.setDate(d.getDate()+1);
+            }
+          });
+
+          // 2) Reservas individuales desde pickup (excluir entradas _grupo para evitar doble cuenta)
           const getFsSt = e => {
             if (e.fecha_salida) return String(e.fecha_salida).slice(0,10);
             if (e.noches && e.fecha_llegada) { const d=new Date(String(e.fecha_llegada).slice(0,10)+"T00:00:00"); d.setDate(d.getDate()+Number(e.noches)); return isoLocal(d); }
             return null;
           };
-          // Dedup
           const dd = {};
           pickupEntries.forEach(e => {
+            if (e._grupo) return; // grupos ya contados arriba
             const est = e.estado||"confirmada";
             if (est === "cancelada" || est === "tentativo") return;
             const fl = String(e.fecha_llegada||"").slice(0,10);
             const fs = getFsSt(e) || "";
-            const key = e._grupo ? `_g|${fl}|${e._grupoId||e.canal||""}` : `${fl}|${e.canal||""}|${fs}`;
+            if (!fl || !fs) return;
+            const key = `${fl}|${e.canal||""}|${fs}`;
             const fp = String(e.fecha_pickup||"").slice(0,10);
             if (!dd[key] || fp > dd[key]._fp) dd[key] = { ...e, _fp: fp, _fs: fs };
           });
           Object.values(dd).forEach(e => {
-            const fl = String(e.fecha_llegada||"").slice(0,10);
-            const fs = e._grupo ? fl : (e._fs || "");  // grupos: una entrada = una noche
-            if (!fl || (!e._grupo && !fs)) return;
+            const fl = e.fecha_llegada ? String(e.fecha_llegada).slice(0,10) : "";
+            const fs = e._fs || "";
+            if (!fl || !fs) return;
             const nr = e.num_reservas || 1;
-            if (e._grupo) {
-              // entrada sintética ya representa exactamente una noche
-              if (fl >= mesInicio && fl <= mesFin) habPorDia[fl] = (habPorDia[fl]||0) + nr;
-            } else {
-              // iterar noches que cubre dentro del mes (end exclusivo → usar mesFinPlus1 como tope)
-              const start = fl < mesInicio   ? mesInicio   : fl;
-              const end   = fs > mesFinPlus1 ? mesFinPlus1 : fs;
-              let cur = new Date(start+"T00:00:00");
-              const endD = new Date(end+"T00:00:00");
-              while (cur < endD) {
-                const iso = isoLocal(cur);
-                habPorDia[iso] = (habPorDia[iso]||0) + nr;
-                cur.setDate(cur.getDate()+1);
-              }
+            const start = fl < mesInicio ? mesInicio : fl;
+            const end   = fs > mesFinPlus1 ? mesFinPlus1 : fs;
+            let cur = new Date(start+"T00:00:00");
+            const endD = new Date(end+"T00:00:00");
+            while (cur < endD) {
+              const iso = isoLocal(cur);
+              habPorDia[iso] = (habPorDia[iso]||0) + nr;
+              cur.setDate(cur.getDate()+1);
             }
           });
         }
