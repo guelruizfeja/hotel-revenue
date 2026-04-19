@@ -3613,127 +3613,200 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
           <>
           {/* ── MODALES (fixed, fuera de la card combinada) ── */}
 
-            {/* ── MODAL HEATMAP DIARIO ── */}
+            {/* ── VISTA COMPLETA HEATMAP MENSUAL ── */}
             {hmMesSel!=null && (
-              <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", zIndex:1000, display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}
-                onClick={()=>setHmMesSel(null)}>
-                <div style={{ background:C.bgCard, borderRadius:14, width:"100%", maxWidth:560, padding:"20px 24px", boxShadow:"0 20px 60px rgba(0,0,0,0.25)" }}
-                  onClick={e=>e.stopPropagation()}>
+              <div style={{ position:"fixed", inset:0, background:C.bg, zIndex:1000, display:"flex", flexDirection:"column", overflow:"hidden" }}>
 
-                  {/* Cabecera compacta */}
-                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
-                    <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                      <button onClick={()=>setHmMesSel(m=>m>0?m-1:11)} style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:6, width:26, height:26, cursor:"pointer", fontSize:12, color:C.textMid }}>‹</button>
-                      <h3 style={{ fontSize:15, fontWeight:700, color:C.text }}>{MESES_H[hmMesSel]} {anio}</h3>
-                      <button onClick={()=>setHmMesSel(m=>m<11?m+1:0)} style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:6, width:26, height:26, cursor:"pointer", fontSize:12, color:C.textMid, display:"flex", alignItems:"center", justifyContent:"center", padding:0 }}>›</button>
-                    </div>
-                    <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-                      <button onClick={()=>{ setHmModoCrear(v=>!v); setHmDayModal(null); }}
-                        style={{ padding:"4px 10px", borderRadius:6, border:`1.5px solid ${hmModoCrear?"#3B82F6":C.border}`, background:hmModoCrear?"#3B82F618":C.bg, color:hmModoCrear?"#3B82F6":C.textMid, fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:5, transition:"all 0.15s" }}>
-                        <span style={{ fontSize:13 }}>+</span> Nuevo evento/grupo
-                      </button>
-                      <button onClick={()=>setHmMesSel(null)} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, width:26, height:26, cursor:"pointer", fontSize:15, color:C.textMid, display:"flex", alignItems:"center", justifyContent:"center", padding:0 }}>×</button>
-                    </div>
+                {/* Top bar */}
+                <div style={{ padding:"10px 20px", borderBottom:`1px solid ${C.border}`, display:"flex", alignItems:"center", gap:10, flexShrink:0, background:C.bgCard }}>
+                  <button onClick={()=>setHmMesSel(null)}
+                    style={{ padding:"5px 12px", borderRadius:7, border:`1px solid ${C.border}`, background:C.bg, color:C.textMid, fontSize:12, fontWeight:600, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:5 }}>
+                    ← Volver
+                  </button>
+                  <button onClick={()=>setHmMesSel(m=>m>0?m-1:11)} style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:6, width:28, height:28, cursor:"pointer", fontSize:14, color:C.textMid, display:"flex", alignItems:"center", justifyContent:"center", padding:0 }}>‹</button>
+                  <h3 style={{ fontSize:16, fontWeight:700, color:C.text, minWidth:140, textAlign:"center" }}>{MESES_H[hmMesSel]} {anio}</h3>
+                  <button onClick={()=>setHmMesSel(m=>m<11?m+1:0)} style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:6, width:28, height:28, cursor:"pointer", fontSize:14, color:C.textMid, display:"flex", alignItems:"center", justifyContent:"center", padding:0 }}>›</button>
+                  <div style={{ marginLeft:"auto" }}>
+                    <button onClick={()=>{ setHmModoCrear(v=>!v); setHmDayModal(null); }}
+                      style={{ padding:"5px 12px", borderRadius:7, border:`1.5px solid ${hmModoCrear?"#3B82F6":C.border}`, background:hmModoCrear?"#3B82F618":C.bg, color:hmModoCrear?"#3B82F6":C.textMid, fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:5, transition:"all 0.15s" }}>
+                      <span style={{ fontSize:14 }}>+</span> Nuevo evento/grupo
+                    </button>
                   </div>
+                </div>
 
-                  {/* Días semana */}
-                  <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:3, marginBottom:3 }}>
-                    {t("dias_semana").map(d=>(
-                      <p key={d} style={{ fontSize:9, color:C.textLight, textAlign:"center", fontWeight:600 }}>{d}</p>
-                    ))}
-                  </div>
+                {/* Content row */}
+                <div style={{ flex:1, display:"flex", overflow:"hidden" }}>
 
-                  {/* Grid días — todos con aspectRatio 1 */}
-                  <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:3 }} onMouseLeave={()=>{ if(hmIsDragging){ setHmIsDragging(false); } }}>
-                    {Array.from({length:(diasDelMes[0]?.diaSem===0?6:diasDelMes[0]?.diaSem-1)||0},(_,i)=>(
-                      <div key={"e"+i} style={{ aspectRatio:"1" }}/>
-                    ))}
-                    {diasDelMes.map(({dia,occ,adr,esFut,resUltDia})=>{
-                      const resDia = resUltDia || 0;
-                      const tieneReserva = resDia > 0;
-                      const _pad2 = n=>String(n).padStart(2,"0");
-                      const isoDay = hmMesSel!=null ? `${anio}-${_pad2(hmMesSel+1)}-${_pad2(dia)}` : "";
-                      const inSel = hmModoCrear && hmIsDragging && hmDragStart!=null && hmDragEnd!=null &&
-                        dia >= Math.min(hmDragStart,hmDragEnd) && dia <= Math.max(hmDragStart,hmDragEnd);
-                      const isDaySelected = hmDayModal === isoDay;
-                      const evDay = hmEvents.filter(ev => ev.from <= isoDay && ev.to >= isoDay);
-                      const borderColor = isDaySelected ? C.accent : inSel ? "#3B82F6" : tieneReserva ? "#B8860B" : occ!=null ? heatColor(occ)+"CC" : C.border;
-                      const bg = isDaySelected ? C.accentLight : inSel ? "#3B82F618" : occ!=null ? heatBg(occ) : C.bg;
-                      return (
-                        <div key={dia}
-                          style={{ aspectRatio:"1", borderRadius:5, background: bg, border:`${inSel||isDaySelected?"2px":"1.5px"} solid ${borderColor}`, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:1, position:"relative", cursor: hmModoCrear ? "crosshair" : "pointer", userSelect:"none" }}
-                          onClick={()=>{ if (!hmModoCrear) { setHmDayModal(isoDay === hmDayModal ? null : isoDay); } }}
-                          onMouseDown={(e)=>{ if (!hmModoCrear) return; e.preventDefault(); setHmDragStart(dia); setHmDragEnd(dia); setHmIsDragging(true); }}
-                          onMouseEnter={()=>{ if(hmModoCrear && hmIsDragging) setHmDragEnd(dia); }}
-                          onMouseUp={()=>{
-                            if(hmModoCrear && hmIsDragging){
-                              setHmIsDragging(false);
-                              const from=Math.min(hmDragStart||dia,dia), to=Math.max(hmDragStart||dia,dia);
-                              if(from!==to){
-                                setHmSelRango({ fromISO:`${anio}-${_pad2(hmMesSel+1)}-${_pad2(from)}`, toISO:`${anio}-${_pad2(hmMesSel+1)}-${_pad2(to)}` });
+                  {/* Left: day grid */}
+                  <div style={{ flex:1, padding:"20px 24px", overflowY:"auto", minWidth:0 }}>
+
+                    {/* Días semana */}
+                    <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:4, marginBottom:4, maxWidth:560 }}>
+                      {t("dias_semana").map(d=>(
+                        <p key={d} style={{ fontSize:10, color:C.textLight, textAlign:"center", fontWeight:600 }}>{d}</p>
+                      ))}
+                    </div>
+
+                    {/* Grid días */}
+                    <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:4, maxWidth:560 }} onMouseLeave={()=>{ if(hmIsDragging){ setHmIsDragging(false); } }}>
+                      {Array.from({length:(diasDelMes[0]?.diaSem===0?6:diasDelMes[0]?.diaSem-1)||0},(_,i)=>(
+                        <div key={"e"+i} style={{ aspectRatio:"1" }}/>
+                      ))}
+                      {diasDelMes.map(({dia,occ,adr,esFut,resUltDia})=>{
+                        const resDia = resUltDia || 0;
+                        const tieneReserva = resDia > 0;
+                        const _pad2 = n=>String(n).padStart(2,"0");
+                        const isoDay = hmMesSel!=null ? `${anio}-${_pad2(hmMesSel+1)}-${_pad2(dia)}` : "";
+                        const inSel = hmModoCrear && hmIsDragging && hmDragStart!=null && hmDragEnd!=null &&
+                          dia >= Math.min(hmDragStart,hmDragEnd) && dia <= Math.max(hmDragStart,hmDragEnd);
+                        const isDaySelected = hmDayModal === isoDay;
+                        const evDay = hmEvents.filter(ev => ev.from <= isoDay && ev.to >= isoDay);
+                        const borderColor = isDaySelected ? C.accent : inSel ? "#3B82F6" : tieneReserva ? "#B8860B" : occ!=null ? heatColor(occ)+"CC" : C.border;
+                        const bg = isDaySelected ? C.accentLight : inSel ? "#3B82F618" : occ!=null ? heatBg(occ) : C.bg;
+                        return (
+                          <div key={dia}
+                            style={{ aspectRatio:"1", borderRadius:5, background: bg, border:`${inSel||isDaySelected?"2px":"1.5px"} solid ${borderColor}`, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:1, position:"relative", cursor: hmModoCrear ? "crosshair" : "pointer", userSelect:"none" }}
+                            onClick={()=>{ if (!hmModoCrear) { setHmDayModal(isoDay === hmDayModal ? null : isoDay); } }}
+                            onMouseDown={(e)=>{ if (!hmModoCrear) return; e.preventDefault(); setHmDragStart(dia); setHmDragEnd(dia); setHmIsDragging(true); }}
+                            onMouseEnter={()=>{ if(hmModoCrear && hmIsDragging) setHmDragEnd(dia); }}
+                            onMouseUp={()=>{
+                              if(hmModoCrear && hmIsDragging){
+                                setHmIsDragging(false);
+                                const from=Math.min(hmDragStart||dia,dia), to=Math.max(hmDragStart||dia,dia);
+                                if(from!==to){
+                                  setHmSelRango({ fromISO:`${anio}-${_pad2(hmMesSel+1)}-${_pad2(from)}`, toISO:`${anio}-${_pad2(hmMesSel+1)}-${_pad2(to)}` });
+                                }
                               }
+                            }}>
+                            {tieneReserva && (
+                              <span style={{ position:"absolute", top:2, right:2, fontSize:8, lineHeight:1, animation:"pulse-rayo 1.5s ease-in-out infinite" }}>⚡</span>
+                            )}
+                            {evDay.length>0 && (
+                              <div style={{ position:"absolute", bottom:2, left:2, right:2, display:"flex", gap:1, justifyContent:"center" }}>
+                                {evDay.map((ev,ei)=><span key={ei} style={{ width:8, height:8, borderRadius:"50%", background:ev.color, display:"inline-block", flexShrink:0 }}/>)}
+                              </div>
+                            )}
+                            <p style={{ fontSize:8, color:C.text, lineHeight:1, fontWeight:600 }}>{dia}</p>
+                            {occ!=null
+                              ? <p style={{ fontSize:11, fontWeight:800, color:"#111", lineHeight:1 }}>{occ.toFixed(0)}%</p>
+                              : <p style={{ fontSize:8, color:C.border }}>—</p>
                             }
-                          }}>
-                          {tieneReserva && (
-                            <span style={{ position:"absolute", top:2, right:2, fontSize:8, lineHeight:1, animation:"pulse-rayo 1.5s ease-in-out infinite" }}>⚡</span>
-                          )}
-                          {evDay.length>0 && (
-                            <div style={{ position:"absolute", bottom:2, left:2, right:2, display:"flex", gap:1, justifyContent:"center" }}>
-                              {evDay.map((ev,ei)=><span key={ei} style={{ width:8, height:8, borderRadius:"50%", background:ev.color, display:"inline-block", flexShrink:0 }}/>)}
-                            </div>
-                          )}
-                          <p style={{ fontSize:8, color:C.text, lineHeight:1, fontWeight:600 }}>{dia}</p>
-                          {occ!=null
-                            ? <p style={{ fontSize:11, fontWeight:800, color:"#111", lineHeight:1 }}>{occ.toFixed(0)}%</p>
-                            : <p style={{ fontSize:8, color:C.border }}>—</p>
-                          }
-                          {adr && !esFut && <p style={{ fontSize:7, color:C.textMid, lineHeight:1, fontWeight:600 }}>€{Math.round(adr)}</p>}
-                          {resDia!==0 && <p style={{ fontSize:7, color:tieneReserva?"#B8860B":C.red, fontWeight:700, lineHeight:1 }}>{resDia>0?"+":""}{resDia}</p>}
-                        </div>
-                      );
-                    })}
-                  </div>
+                            {adr && !esFut && <p style={{ fontSize:7, color:C.textMid, lineHeight:1, fontWeight:600 }}>€{Math.round(adr)}</p>}
+                            {resDia!==0 && <p style={{ fontSize:7, color:tieneReserva?"#B8860B":C.red, fontWeight:700, lineHeight:1 }}>{resDia>0?"+":""}{resDia}</p>}
+                          </div>
+                        );
+                      })}
+                    </div>
 
-                  {/* Leyenda */}
-                  <div style={{ marginTop:10, display:"flex", flexWrap:"wrap", gap:8, alignItems:"center" }}>
-                    {[["#81C784","<25%"],["#4CAF50","25-40%"],["#FFC107","40-55%"],["#FF7043","55-70%"],["#E53935","70-85%"],["#B71C1C",">85%"]].map(([col,lbl])=>(
-                      <span key={lbl} style={{ display:"flex", alignItems:"center", gap:3, fontSize:9, color:C.textLight }}>
-                        <span style={{ width:10, height:10, borderRadius:2, background:col, display:"inline-block" }}/>
-                        {lbl}
+                    {/* Leyenda */}
+                    <div style={{ marginTop:12, display:"flex", flexWrap:"wrap", gap:8, alignItems:"center", maxWidth:560 }}>
+                      {[["#81C784","<25%"],["#4CAF50","25-40%"],["#FFC107","40-55%"],["#FF7043","55-70%"],["#E53935","70-85%"],["#B71C1C",">85%"]].map(([col,lbl])=>(
+                        <span key={lbl} style={{ display:"flex", alignItems:"center", gap:3, fontSize:9, color:C.textLight }}>
+                          <span style={{ width:10, height:10, borderRadius:2, background:col, display:"inline-block" }}/>
+                          {lbl}
+                        </span>
+                      ))}
+                      <span style={{ fontSize:9, color:C.textLight, display:"flex", alignItems:"center", gap:3 }}>
+                        <span style={{ fontSize:10 }}>⚡</span> Reserva captada
                       </span>
-                    ))}
-                    <span style={{ fontSize:9, color:C.textLight, display:"flex", alignItems:"center", gap:3 }}>
-                      <span style={{ fontSize:10 }}>⚡</span> Reserva captada
-                    </span>
-                    {hmModoCrear
-                      ? <span style={{ fontSize:9, color:"#3B82F6", fontWeight:600, marginLeft:"auto" }}>Arrastra para seleccionar rango · ESC para cancelar</span>
-                      : <span style={{ fontSize:9, color:C.textLight, marginLeft:"auto" }}>Pulsa un día para ver KPIs</span>
-                    }
+                      {hmModoCrear
+                        ? <span style={{ fontSize:9, color:"#3B82F6", fontWeight:600, marginLeft:"auto" }}>Arrastra para seleccionar rango · ESC para cancelar</span>
+                        : <span style={{ fontSize:9, color:C.textLight, marginLeft:"auto" }}>Pulsa un día para ver KPIs</span>
+                      }
+                    </div>
                   </div>
 
-                  {/* Eventos del mes */}
-                  {hmMesSel!=null && (() => {
+                  {/* Separator */}
+                  <div style={{ width:1, background:C.border, flexShrink:0 }} />
+
+                  {/* Right: grupos y eventos del mes */}
+                  {(() => {
                     const _pad2 = n=>String(n).padStart(2,"0");
                     const mesPrefix = `${anio}-${_pad2(hmMesSel+1)}`;
+                    const CATCOLORS = { corporativo:"#2B7EC1", boda:"#D4547A", feria:"#E85D04", deportivo:"#059669", otros:"#7C3AED", evento:"#0A7C6A" };
+                    const gruposMes = (datos.grupos||[]).filter(g => {
+                      const ini = (g.fecha_inicio||"").slice(0,7);
+                      const fin = (g.fecha_fin||g.fecha_inicio||"").slice(0,7);
+                      return ini <= mesPrefix && fin >= mesPrefix;
+                    }).sort((a,b)=>a.fecha_inicio>b.fecha_inicio?1:-1);
                     const evMes = hmEvents.map((ev,idx)=>({...ev,idx})).filter(ev => ev.from.slice(0,7)===mesPrefix || ev.to.slice(0,7)===mesPrefix);
-                    if (evMes.length===0) return null;
+                    const totalRevGrupos = gruposMes.reduce((sum,g)=>{
+                      const ini = new Date((g.fecha_inicio||mesPrefix+"-01")+"T00:00:00");
+                      const fin = new Date((g.fecha_fin||g.fecha_inicio||mesPrefix+"-01")+"T00:00:00");
+                      const noches = Math.max(1,(fin-ini)/86400000);
+                      const peso = g.estado==="cotizado"?0.5:1.0;
+                      return sum + ((g.habitaciones||0)*(g.adr_grupo||0)*noches+(g.revenue_fnb||0)+(g.revenue_sala||0))*peso;
+                    },0);
                     return (
-                      <div style={{ marginTop:12, borderTop:`1px solid ${C.border}`, paddingTop:10 }}>
-                        {evMes.map(ev=>(
-                          <div key={ev.idx} style={{ display:"flex", alignItems:"center", gap:8, marginBottom:6 }}>
-                            <span style={{ width:8, height:8, borderRadius:2, background:ev.color, display:"inline-block", flexShrink:0 }}/>
-                            <span style={{ fontSize:12, fontWeight:600, color:C.text, flex:1 }}>{ev.title||"(sin título)"}</span>
-                            <span style={{ fontSize:10, color:C.textLight }}>
-                              {ev.from.slice(8,10)}/{ev.from.slice(5,7)} – {ev.to.slice(8,10)}/{ev.to.slice(5,7)}
+                      <div style={{ width:340, padding:"20px 20px", overflowY:"auto", flexShrink:0 }}>
+                        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
+                          <p style={{ fontSize:13, fontWeight:700, color:C.text }}>Grupos y eventos</p>
+                          {totalRevGrupos>0 && (
+                            <span style={{ fontSize:11, fontWeight:700, color:C.accent }}>
+                              €{Math.round(totalRevGrupos).toLocaleString("es-ES")}
                             </span>
-                            <button onClick={()=>borrarHmEvent(ev.idx)} style={{ background:"none", border:"none", cursor:"pointer", color:C.red, fontSize:13, padding:"0 2px", lineHeight:1 }}>×</button>
-                          </div>
-                        ))}
+                          )}
+                        </div>
+
+                        {gruposMes.length===0 && evMes.length===0 && (
+                          <p style={{ fontSize:12, color:C.textLight, textAlign:"center", marginTop:40 }}>Sin grupos ni eventos este mes</p>
+                        )}
+
+                        {gruposMes.map((g,i)=>{
+                          const cat = g.categoria||"otros";
+                          const color = CATCOLORS[cat]||CATCOLORS.otros;
+                          const esEvento = cat==="evento";
+                          const ini = new Date((g.fecha_inicio||"")+"T00:00:00");
+                          const fin = new Date((g.fecha_fin||g.fecha_inicio||"")+"T00:00:00");
+                          const noches = Math.max(1,(fin-ini)/86400000);
+                          const peso = g.estado==="cotizado"?0.5:1.0;
+                          const rev = ((g.habitaciones||0)*(g.adr_grupo||0)*noches+(g.revenue_fnb||0)+(g.revenue_sala||0))*peso;
+                          const estadoBadge = { confirmado:"#059669", cotizado:"#D97706", perdido:C.red, cancelado:C.red }[g.estado]||C.textLight;
+                          return (
+                            <div key={g.id||i} style={{ background:C.bgCard, borderRadius:9, padding:"10px 12px", marginBottom:8, borderLeft:`3px solid ${color}` }}>
+                              <div style={{ display:"flex", alignItems:"flex-start", gap:8 }}>
+                                <div style={{ flex:1, minWidth:0 }}>
+                                  <p style={{ fontSize:12, fontWeight:700, color:C.text, marginBottom:2, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{g.nombre||"(sin nombre)"}</p>
+                                  <div style={{ display:"flex", gap:6, flexWrap:"wrap", alignItems:"center" }}>
+                                    <span style={{ fontSize:10, color:C.textLight }}>
+                                      {(g.fecha_inicio||"").slice(8,10)}/{(g.fecha_inicio||"").slice(5,7)}
+                                      {!esEvento && g.fecha_fin && g.fecha_fin!==g.fecha_inicio && ` – ${g.fecha_fin.slice(8,10)}/${g.fecha_fin.slice(5,7)}`}
+                                    </span>
+                                    {!esEvento && g.habitaciones>0 && (
+                                      <span style={{ fontSize:10, color:C.textLight }}>{g.habitaciones} hab · {noches} noche{noches!==1?"s":""}</span>
+                                    )}
+                                    <span style={{ fontSize:9, fontWeight:700, color:estadoBadge, textTransform:"capitalize" }}>{g.estado||""}</span>
+                                  </div>
+                                </div>
+                                {rev>0 && (
+                                  <span style={{ fontSize:12, fontWeight:700, color:C.text, flexShrink:0 }}>
+                                    €{Math.round(rev).toLocaleString("es-ES")}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+
+                        {evMes.length>0 && (
+                          <>
+                            {gruposMes.length>0 && <div style={{ height:1, background:C.border, margin:"10px 0" }}/>}
+                            <p style={{ fontSize:11, fontWeight:600, color:C.textLight, marginBottom:8 }}>Eventos manuales</p>
+                            {evMes.map(ev=>(
+                              <div key={ev.idx} style={{ display:"flex", alignItems:"center", gap:8, marginBottom:6, background:C.bgCard, borderRadius:7, padding:"7px 10px" }}>
+                                <span style={{ width:8, height:8, borderRadius:2, background:ev.color, display:"inline-block", flexShrink:0 }}/>
+                                <span style={{ fontSize:12, fontWeight:600, color:C.text, flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{ev.title||"(sin título)"}</span>
+                                <span style={{ fontSize:10, color:C.textLight, flexShrink:0 }}>
+                                  {ev.from.slice(8,10)}/{ev.from.slice(5,7)} – {ev.to.slice(8,10)}/{ev.to.slice(5,7)}
+                                </span>
+                                <button onClick={()=>borrarHmEvent(ev.idx)} style={{ background:"none", border:"none", cursor:"pointer", color:C.red, fontSize:13, padding:"0 2px", lineHeight:1, flexShrink:0 }}>×</button>
+                              </div>
+                            ))}
+                          </>
+                        )}
                       </div>
                     );
                   })()}
-
-
                 </div>
               </div>
             )}
