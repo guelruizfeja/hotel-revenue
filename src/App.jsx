@@ -5694,7 +5694,7 @@ function BudgetView({ datos, anio: anioProp }) {
 
 
 // ─── GRUPOS & EVENTOS VIEW ────────────────────────────────────────
-function GruposView({ datos, onRecargar }) {
+function GruposView({ datos, onRecargar, onVolverHeatmap }) {
   const t = useT();
   const grupos = datos.grupos || [];
   const session = datos.session;
@@ -5935,11 +5935,22 @@ function GruposView({ datos, onRecargar }) {
   };
 
   const [highlightId, setHighlightId] = useState(null);
+  const [fromHeatmap, setFromHeatmap] = useState(false);
   useEffect(() => {
-    if (highlightId) { const t = setTimeout(()=>setHighlightId(null), 2500); return ()=>clearTimeout(t); }
+    if (highlightId) {
+      const t = setTimeout(()=>setHighlightId(null), 3000);
+      // scroll to highlighted row
+      const el = document.getElementById(`grupo-row-${highlightId}`);
+      if (el) el.scrollIntoView({ behavior:"smooth", block:"center" });
+      return ()=>clearTimeout(t);
+    }
   }, [highlightId]);
 
   useEffect(() => {
+    if (sessionStorage.getItem("fr_from_heatmap")) {
+      setFromHeatmap(true);
+      sessionStorage.removeItem("fr_from_heatmap");
+    }
     const raw = sessionStorage.getItem("fr_pending_nuevo");
     if (!raw) return;
     sessionStorage.removeItem("fr_pending_nuevo");
@@ -6056,7 +6067,13 @@ function GruposView({ datos, onRecargar }) {
 
       {/* ── Sub-navegación + botones ── */}
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", gap:8, flexWrap:"wrap" }}>
-        <div style={{ display:"flex", gap:6 }}>
+        <div style={{ display:"flex", gap:6, alignItems:"center" }}>
+          {fromHeatmap && (
+            <button onClick={()=>{ setFromHeatmap(false); onVolverHeatmap&&onVolverHeatmap(); }}
+              style={{ padding:"7px 14px", fontSize:13, fontWeight:600, cursor:"pointer", border:`1.5px solid ${C.border}`, borderRadius:8, background:C.bg, color:C.textMid, fontFamily:"'Plus Jakarta Sans',sans-serif", display:"flex", alignItems:"center", gap:5, marginRight:4 }}>
+              ← Heatmap
+            </button>
+          )}
           {[
             { key:"semana",   label:"Calendario" },
             { key:"pipeline", label:"Pipeline" },
@@ -6466,7 +6483,7 @@ function GruposView({ datos, onRecargar }) {
                           const noches = g.fecha_inicio && g.fecha_fin ? Math.max(1,Math.round((new Date(g.fecha_fin)-new Date(g.fecha_inicio))/86400000)) : 1;
                           const isHL = highlightId === g.id;
                           return (
-                            <tr key={g.id} onClick={()=>setDetalleGrupo(g)} style={{ borderBottom:`1px solid ${C.border}`, background: isHL ? "#EBF5FF" : i%2===0?C.bg:C.bgCard, cursor:"pointer", outline: isHL ? "2px solid #3B82F6" : "none", outlineOffset:"-2px", transition:"background 0.3s" }}
+                            <tr key={g.id} id={`grupo-row-${g.id}`} onClick={()=>setDetalleGrupo(g)} style={{ borderBottom:`1px solid ${C.border}`, background: isHL ? "#EBF5FF" : i%2===0?C.bg:C.bgCard, cursor:"pointer", outline: isHL ? "2px solid #3B82F6" : "none", outlineOffset:"-2px", transition:"background 0.3s" }}
                               onMouseEnter={e=>{ if(!isHL) e.currentTarget.style.background=C.accentLight; }}
                               onMouseLeave={e=>{ e.currentTarget.style.background= isHL?"#EBF5FF":i%2===0?C.bg:C.bgCard; }}>
                               <td style={{ padding:"8px 12px", fontWeight:600, color:C.text, whiteSpace:"nowrap" }}>{g.nombre}</td>
@@ -6546,7 +6563,7 @@ function GruposView({ datos, onRecargar }) {
                           const hora = ev.hora_inicio && ev.hora_fin ? `${ev.hora_inicio} – ${ev.hora_fin}` : (ev.hora_inicio||"—");
                           const isHL = highlightId === g.id;
                           return (
-                            <tr key={g.id} onClick={()=>setDetalleGrupo(g)} style={{ borderBottom:`1px solid ${C.border}`, background: isHL?"#EBF5FF":i%2===0?C.bg:C.bgCard, cursor:"pointer", outline: isHL?"2px solid #3B82F6":"none", outlineOffset:"-2px", transition:"background 0.3s" }}
+                            <tr key={g.id} id={`grupo-row-${g.id}`} onClick={()=>setDetalleGrupo(g)} style={{ borderBottom:`1px solid ${C.border}`, background: isHL?"#EBF5FF":i%2===0?C.bg:C.bgCard, cursor:"pointer", outline: isHL?"2px solid #3B82F6":"none", outlineOffset:"-2px", transition:"background 0.3s" }}
                               onMouseEnter={e=>{ if(!isHL) e.currentTarget.style.background=C.accentLight; }}
                               onMouseLeave={e=>{ e.currentTarget.style.background= isHL?"#EBF5FF":i%2===0?C.bg:C.bgCard; }}>
                               <td style={{ padding:"8px 12px", fontWeight:600, color:C.text, whiteSpace:"nowrap" }}>{g.nombre}</td>
@@ -7907,10 +7924,10 @@ export default function App() {
   const handleOnboardingSkip = () => { localStorage.setItem("fr_onboarding_v1", "1"); setOnboardingStep(null); };
 
   const views = {
-    dashboard: (props) => <DashboardView {...props} onMesDetalle={(m, a) => setMesDetalle({ mes: m, anio: a })} onDesgloseMovimiento={tipo => setDesgloseMovimiento(tipo)} kpiModal={kpiModal} setKpiModal={setKpiModal} kpiModalExterno={kpiModalApp} onKpiModalExternoHandled={() => setKpiModalApp(null)} onNavigarGrupos={(subvista, fechaInicio, fechaFin, id) => { localStorage.setItem("fr_grupos_subvista", subvista); sessionStorage.setItem("fr_pending_nuevo", JSON.stringify({ tipo: subvista === "eventos" ? "evento" : "grupo", fecha_inicio: fechaInicio, fecha_fin: fechaFin, highlightId: id||null })); setView("grupos"); localStorage.setItem("fr_view", "grupos"); }} />,
+    dashboard: (props) => <DashboardView {...props} onMesDetalle={(m, a) => setMesDetalle({ mes: m, anio: a })} onDesgloseMovimiento={tipo => setDesgloseMovimiento(tipo)} kpiModal={kpiModal} setKpiModal={setKpiModal} kpiModalExterno={kpiModalApp} onKpiModalExternoHandled={() => setKpiModalApp(null)} onNavigarGrupos={(subvista, fechaInicio, fechaFin, id) => { localStorage.setItem("fr_grupos_subvista", subvista); sessionStorage.setItem("fr_pending_nuevo", JSON.stringify({ tipo: subvista === "eventos" ? "evento" : "grupo", fecha_inicio: fechaInicio, fecha_fin: fechaFin, highlightId: id||null })); sessionStorage.setItem("fr_from_heatmap", "1"); setView("grupos"); localStorage.setItem("fr_view", "grupos"); }} />,
     pickup:    (props) => <PickupView    {...props} />,
     budget:    (props) => <BudgetView    {...props} />,
-    grupos:    (props) => <GruposView    {...props} onRecargar={() => cargarDatos(true)} />,
+    grupos:    (props) => <GruposView    {...props} onRecargar={() => cargarDatos(true)} onVolverHeatmap={() => { setView("dashboard"); localStorage.setItem("fr_view", "dashboard"); }} />,
   };
   const View = views[view] || views["dashboard"];
 
