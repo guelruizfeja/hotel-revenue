@@ -232,6 +232,53 @@ export default async function handler(req, res) {
   <!-- gap -->
   <tr><td style="height:8px;background:#EEF2F7;"></td></tr>
 
+  <!-- FIRMA -->
+  <tr><td style="background:#ffffff;padding:20px 28px 24px;">
+    <table cellpadding="0" cellspacing="0">
+      <tr>
+        <td style="padding-bottom:12px;">
+          <img src="https://fastrevenue.app/fastrev-logo.png" alt="FastRevenue" width="140" style="display:block;border-radius:6px;" />
+        </td>
+      </tr>
+      <tr>
+        <td style="font-family:Arial,sans-serif;font-size:13px;color:#0A2540;padding-bottom:4px;">
+          <strong>Miguel Ruiz</strong>&nbsp;&nbsp;Founder &middot; <strong>FastRevenue</strong>
+        </td>
+      </tr>
+      <tr>
+        <td style="font-family:Arial,sans-serif;font-size:12px;color:#475569;padding-bottom:10px;">
+          <a href="mailto:info@fastrevenue.app" style="color:#475569;text-decoration:none;">info@fastrevenue.app</a>
+          &nbsp;|&nbsp;fastrevenue.app
+        </td>
+      </tr>
+      <tr>
+        <td style="padding-bottom:4px;">
+          <table cellpadding="0" cellspacing="0"><tr>
+            <td style="padding-right:8px;">
+              <img src="https://upload.wikimedia.org/wikipedia/commons/a/a5/Instagram_icon.png" alt="Instagram" width="22" height="22" style="display:block;border-radius:4px;" />
+            </td>
+            <td style="font-family:Arial,sans-serif;font-size:12px;color:#475569;">@fastrevenueapp</td>
+          </tr></table>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding-top:6px;">
+          <table cellpadding="0" cellspacing="0"><tr>
+            <td style="padding-right:8px;">
+              <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WhatsApp" width="22" height="22" style="display:block;" />
+            </td>
+            <td style="font-family:Arial,sans-serif;font-size:12px;color:#475569;">
+              <a href="https://wa.me/34657288707" style="color:#475569;text-decoration:none;">0034 657 28 87 07</a>
+            </td>
+          </tr></table>
+        </td>
+      </tr>
+    </table>
+  </td></tr>
+
+  <!-- gap -->
+  <tr><td style="height:8px;background:#EEF2F7;"></td></tr>
+
   <!-- FOOTER -->
   <tr><td style="background:#0A2540;border-radius:0 0 10px 10px;padding:12px 28px;">
     <table width="100%" cellpadding="0" cellspacing="0"><tr>
