@@ -3714,81 +3714,83 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
               }
 
               return (
-                <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.45)", zIndex:1200, display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}
+                <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.55)", zIndex:1200, display:"flex", alignItems:"center", justifyContent:"center", padding:24 }}
                   onClick={()=>setHmDayModal(null)}>
-                  <div style={{ background:C.bgCard, borderRadius:14, width:"100%", maxWidth:380, maxHeight:"90vh", overflowY:"auto", padding:"22px 24px", boxShadow:"0 20px 60px rgba(0,0,0,0.3)" }}
+                  <div style={{ background:C.bgCard, borderRadius:16, width:"100%", maxWidth:640, maxHeight:"88vh", overflowY:"auto", padding:"28px 32px", boxShadow:"0 24px 80px rgba(0,0,0,0.35)" }}
                     onClick={e=>e.stopPropagation()}>
 
                     {/* Cabecera */}
-                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
+                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:24, paddingBottom:18, borderBottom:`1px solid ${C.border}` }}>
                       <div>
-                        <p style={{ fontSize:10, color:C.textLight, textTransform:"uppercase", letterSpacing:"1.5px", fontWeight:600, marginBottom:2 }}>Resumen del día</p>
-                        <h3 style={{ fontSize:18, fontWeight:800, color:C.text, fontFamily:"'Plus Jakarta Sans',sans-serif", letterSpacing:-0.5 }}>{labelDia}</h3>
+                        <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:"2px", fontWeight:600, marginBottom:4 }}>Resumen del día</p>
+                        <h2 style={{ fontSize:24, fontWeight:800, color:C.text, fontFamily:"'Plus Jakarta Sans',sans-serif", letterSpacing:-0.5, margin:0 }}>{labelDia}</h2>
                       </div>
-                      <button onClick={()=>setHmDayModal(null)} style={{ background:"none", border:`1.5px solid ${C.border}`, borderRadius:8, width:32, height:32, cursor:"pointer", fontSize:16, color:C.textMid, display:"flex", alignItems:"center", justifyContent:"center", padding:0 }}>×</button>
+                      <button onClick={()=>setHmDayModal(null)} style={{ background:"none", border:`1.5px solid ${C.border}`, borderRadius:8, width:36, height:36, cursor:"pointer", fontSize:18, color:C.textMid, display:"flex", alignItems:"center", justifyContent:"center", padding:0 }}>×</button>
                     </div>
 
-                    {/* OCC + ADR */}
-                    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:14 }}>
-                      <div style={{ background:C.bg, borderRadius:10, padding:"12px 14px" }}>
-                        <p style={{ fontSize:9, color:C.textLight, textTransform:"uppercase", letterSpacing:"1px", marginBottom:4 }}>Ocupación</p>
-                        <p style={{ fontSize:26, fontWeight:800, color: occ!=null ? heatColor(occ) : C.border, lineHeight:1 }}>
+                    {/* OCC + ADR + Antelación en fila */}
+                    <div style={{ display:"grid", gridTemplateColumns: antelMediaDias!=null ? "1fr 1fr 1fr" : "1fr 1fr", gap:12, marginBottom:24 }}>
+                      <div style={{ background:C.bg, borderRadius:12, padding:"16px 18px" }}>
+                        <p style={{ fontSize:10, color:C.textLight, textTransform:"uppercase", letterSpacing:"1px", marginBottom:6 }}>Ocupación</p>
+                        <p style={{ fontSize:32, fontWeight:800, color: occ!=null ? heatColor(occ) : C.border, lineHeight:1 }}>
                           {occ!=null ? `${occ.toFixed(0)}%` : "—"}
                         </p>
                       </div>
-                      <div style={{ background:C.bg, borderRadius:10, padding:"12px 14px" }}>
-                        <p style={{ fontSize:9, color:C.textLight, textTransform:"uppercase", letterSpacing:"1px", marginBottom:4 }}>ADR</p>
-                        <p style={{ fontSize:26, fontWeight:800, color:C.text, lineHeight:1 }}>
+                      <div style={{ background:C.bg, borderRadius:12, padding:"16px 18px" }}>
+                        <p style={{ fontSize:10, color:C.textLight, textTransform:"uppercase", letterSpacing:"1px", marginBottom:6 }}>ADR</p>
+                        <p style={{ fontSize:32, fontWeight:800, color:C.text, lineHeight:1 }}>
                           {adr!=null ? `€${Math.round(adr)}` : "—"}
                         </p>
                       </div>
+                      {antelMediaDias != null && (
+                        <div style={{ background:C.bg, borderRadius:12, padding:"16px 18px" }}>
+                          <p style={{ fontSize:10, color:C.textLight, textTransform:"uppercase", letterSpacing:"1px", marginBottom:6 }}>Antelación media</p>
+                          <p style={{ fontSize:32, fontWeight:800, color:C.text, lineHeight:1 }}>{antelMediaDias}<span style={{ fontSize:14, fontWeight:600, color:C.textMid, marginLeft:4 }}>días</span></p>
+                        </div>
+                      )}
                     </div>
 
-                    {/* Antelación */}
-                    {antelMediaDias != null && (
-                      <div style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 14px", background:C.bg, borderRadius:10, marginBottom:14 }}>
-                        <span style={{ fontSize:18 }}>🕐</span>
+                    {/* Grupos/eventos + Origen lado a lado si hay ambos, o full width si solo uno */}
+                    <div style={{ display:"grid", gridTemplateColumns: gruposDia.length>0 && canales.length>0 ? "1fr 1fr" : "1fr", gap:20 }}>
+
+                      {/* Grupos/eventos */}
+                      {gruposDia.length > 0 && (
                         <div>
-                          <p style={{ fontSize:9, color:C.textLight, letterSpacing:"0.5px", marginBottom:2 }}>Antelación media de reserva</p>
-                          <p style={{ fontSize:15, fontWeight:800, color:C.text }}>{antelMediaDias} días</p>
+                          <p style={{ fontSize:11, fontWeight:700, color:C.textMid, textTransform:"uppercase", letterSpacing:"1.5px", marginBottom:12 }}>Grupos / Eventos</p>
+                          {gruposDia.map((g,i) => (
+                            <div key={i} style={{ display:"flex", alignItems:"center", gap:10, marginBottom:8, padding:"10px 14px", background:C.bg, borderRadius:10, border:`1px solid ${C.border}` }}>
+                              <span style={{ fontSize:18 }}>{g.tipo==="evento"?"📌":"🏨"}</span>
+                              <div style={{ flex:1, minWidth:0 }}>
+                                <p style={{ fontSize:13, fontWeight:700, color:C.text, margin:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{g.nombre}</p>
+                                {g.habitaciones ? <p style={{ fontSize:11, color:C.textLight, margin:0 }}>{g.habitaciones} hab.</p> : null}
+                              </div>
+                              <span style={{ fontSize:10, padding:"3px 7px", borderRadius:5, background: g.estado==="confirmado"?"#16a34a22":"#ca8a0422", color: g.estado==="confirmado"?"#16a34a":"#ca8a04", fontWeight:700, flexShrink:0 }}>{g.estado}</span>
+                            </div>
+                          ))}
                         </div>
-                      </div>
-                    )}
+                      )}
 
-                    {/* Grupos/eventos */}
-                    {gruposDia.length > 0 && (
-                      <div style={{ marginBottom:14 }}>
-                        <p style={{ fontSize:10, fontWeight:700, color:C.textMid, textTransform:"uppercase", letterSpacing:"1px", marginBottom:8 }}>Grupos / Eventos</p>
-                        {gruposDia.map((g,i) => (
-                          <div key={i} style={{ display:"flex", alignItems:"center", gap:8, marginBottom:6, padding:"8px 12px", background:C.bg, borderRadius:8, border:`1px solid ${C.border}` }}>
-                            <span style={{ fontSize:16 }}>{g.tipo==="evento"?"📌":"🏨"}</span>
-                            <span style={{ fontSize:12, fontWeight:700, color:C.text, flex:1 }}>{g.nombre}</span>
-                            <span style={{ fontSize:10, padding:"2px 6px", borderRadius:5, background: g.estado==="confirmado"?"#16a34a22":"#ca8a0422", color: g.estado==="confirmado"?"#16a34a":"#ca8a04", fontWeight:700 }}>{g.estado}</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Origen reservas */}
-                    {canales.length > 0 && (
-                      <div>
-                        <p style={{ fontSize:10, fontWeight:700, color:C.textMid, textTransform:"uppercase", letterSpacing:"1px", marginBottom:8 }}>Origen reservas</p>
-                        {canales.map(([canal, n]) => (
-                          <div key={canal} style={{ marginBottom:8 }}>
-                            <div style={{ display:"flex", justifyContent:"space-between", marginBottom:3 }}>
-                              <span style={{ fontSize:11, color:C.text }}>{canal}</span>
-                              <span style={{ fontSize:11, fontWeight:700, color:C.text }}>{n} <span style={{ color:C.textLight, fontWeight:400 }}>({totalRes>0?Math.round(n/totalRes*100):0}%)</span></span>
+                      {/* Origen reservas */}
+                      {canales.length > 0 && (
+                        <div>
+                          <p style={{ fontSize:11, fontWeight:700, color:C.textMid, textTransform:"uppercase", letterSpacing:"1.5px", marginBottom:12 }}>Origen reservas</p>
+                          {canales.map(([canal, n]) => (
+                            <div key={canal} style={{ marginBottom:10 }}>
+                              <div style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
+                                <span style={{ fontSize:12, color:C.text }}>{canal}</span>
+                                <span style={{ fontSize:12, fontWeight:700, color:C.text }}>{n} <span style={{ color:C.textLight, fontWeight:400 }}>({totalRes>0?Math.round(n/totalRes*100):0}%)</span></span>
+                              </div>
+                              <div style={{ height:5, borderRadius:3, background:C.border, overflow:"hidden" }}>
+                                <div style={{ height:"100%", width:`${totalRes>0?n/totalRes*100:0}%`, background:C.accent, borderRadius:3 }}/>
+                              </div>
                             </div>
-                            <div style={{ height:4, borderRadius:3, background:C.border, overflow:"hidden" }}>
-                              <div style={{ height:"100%", width:`${totalRes>0?n/totalRes*100:0}%`, background:C.accent, borderRadius:3 }}/>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                          ))}
+                        </div>
+                      )}
+                    </div>
 
                     {canales.length===0 && gruposDia.length===0 && antelMediaDias==null && (
-                      <p style={{ fontSize:12, color:C.textLight, textAlign:"center", padding:"16px 0" }}>Sin datos de reservas para este día</p>
+                      <p style={{ fontSize:13, color:C.textLight, textAlign:"center", padding:"24px 0" }}>Sin datos de reservas para este día</p>
                     )}
                   </div>
                 </div>
