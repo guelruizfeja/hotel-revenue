@@ -1580,6 +1580,15 @@ function ImportarExcel({ onClose, session, onImportado, onProduccionDirecta, hot
 
       const NO_OTA_KEYS = ['directo', 'teléfono', 'telefono', 'email', 'empresa', 'corporativo', 'grupos', 'mice'];
       const isOTA = (canal) => { const c = (canal || '').toLowerCase(); return !NO_OTA_KEYS.some(k => c.includes(k)); };
+      const isGrupo = (canal) => { const c = (canal || '').toLowerCase(); return c.includes('grupo') || c.includes('mice'); };
+      const normCanal = (canal) => {
+        const c = (canal || '').toLowerCase().trim();
+        if (c.includes('directo') || c.includes('web')) return 'Directo / Web';
+        if (c.includes('teléfono') || c.includes('telefono') || c.includes('email')) return 'Teléfono / Email';
+        if (c.includes('empresa') || c.includes('corporativo')) return 'Empresa / Corp.';
+        if (c.includes('grupo') || c.includes('mice')) return 'Grupos / MICE';
+        return canal || 'Directo / Web';
+      };
 
       const [{ data: datosMes }, { data: pickupRows }, { data: pptoData }, { data: pickupMes }] = await Promise.all([
         supabase.from("produccion_diaria")
@@ -1628,10 +1637,12 @@ function ImportarExcel({ onClose, session, onImportado, onProduccionDirecta, hot
       const avgTrevpar= totHabDisp > 0 ? totRevTotal / totHabDisp : null;
 
       const canalMap = {};
+      let revGrupos = 0, revIndividual = 0;
       for (const p of (pickupMes || [])) {
-        const key = isOTA(p.canal) ? 'OTAs' : (p.canal || 'Directo / Web');
         const peso = p.precio_total || (p.num_reservas || 1);
+        const key = isOTA(p.canal) ? 'OTAs' : normCanal(p.canal);
         canalMap[key] = (canalMap[key] || 0) + peso;
+        if (isGrupo(p.canal)) revGrupos += peso; else revIndividual += peso;
       }
       const canalesRevenue = Object.entries(canalMap).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]).map(([canal,revenue])=>({canal,revenue}));
 
@@ -1660,7 +1671,7 @@ function ImportarExcel({ onClose, session, onImportado, onProduccionDirecta, hot
             revenueAcumulado,
             presupuestoMensual: pptoData?.rev_total_ppto ?? null,
             avg_occ: avgOcc, avg_adr: avgAdr, avg_revpar: avgRevpar, avg_trevpar: avgTrevpar,
-            revHabMes: totRevHab, revFnbMes: totRevFnb, canalesRevenue,
+            revHabMes: totRevHab, revFnbMes: totRevFnb, canalesRevenue, revGruposMes: revGrupos, revIndividualMes: revIndividual,
           },
         }),
       });
@@ -8052,6 +8063,8 @@ export default function App() {
                     const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
                     const NO_OTA_KEYS2 = ['directo', 'teléfono', 'telefono', 'email', 'empresa', 'corporativo', 'grupos', 'mice'];
                     const isOTA2 = (canal) => { const c = (canal || '').toLowerCase(); return !NO_OTA_KEYS2.some(k => c.includes(k)); };
+                    const isGrupo2 = (canal) => { const c = (canal || '').toLowerCase(); return c.includes('grupo') || c.includes('mice'); };
+                    const normCanal2 = (canal) => { const c = (canal || '').toLowerCase().trim(); if (c.includes('directo') || c.includes('web')) return 'Directo / Web'; if (c.includes('teléfono') || c.includes('telefono') || c.includes('email')) return 'Teléfono / Email'; if (c.includes('empresa') || c.includes('corporativo')) return 'Empresa / Corp.'; if (c.includes('grupo') || c.includes('mice')) return 'Grupos / MICE'; return canal || 'Directo / Web'; };
                     const [{ data: datosMes }, { data: pickupRows }, { data: pptoData }, { data: pickupMes2 }] = await Promise.all([
                       supabase.from("produccion_diaria").select("fecha,hab_ocupadas,hab_disponibles,revenue_hab,revenue_fnb,revenue_total").eq("hotel_id", session.user.id).gte("fecha", inicioMes).lt("fecha", inicioSig).order("fecha", { ascending: true }),
                       supabase.from("pickup_entries").select("num_reservas,precio_total,estado").eq("hotel_id", session.user.id).eq("fecha_pickup", ultimoDia.fecha),
@@ -8075,7 +8088,8 @@ export default function App() {
                     const avgRevpar2 = totHabDisp2 > 0 ? totRevHab2 / totHabDisp2 : null;
                     const avgTrevpar2= totHabDisp2 > 0 ? totRevTotal2 / totHabDisp2 : null;
                     const canalMap2 = {};
-                    for (const p of (pickupMes2 || [])) { const key = isOTA2(p.canal) ? 'OTAs' : (p.canal || 'Directo / Web'); const peso = p.precio_total || (p.num_reservas || 1); canalMap2[key] = (canalMap2[key] || 0) + peso; }
+                    let revGrupos2 = 0, revIndividual2 = 0;
+                    for (const p of (pickupMes2 || [])) { const peso = p.precio_total || (p.num_reservas || 1); const key = isOTA2(p.canal) ? 'OTAs' : normCanal2(p.canal); canalMap2[key] = (canalMap2[key] || 0) + peso; if (isGrupo2(p.canal)) revGrupos2 += peso; else revIndividual2 += peso; }
                     const canalesRevenue2 = Object.entries(canalMap2).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]).map(([canal,revenue])=>({canal,revenue}));
                     const occ    = ultimoDia.hab_disponibles > 0 ? ultimoDia.hab_ocupadas / ultimoDia.hab_disponibles * 100 : null;
                     const adr    = ultimoDia.adr    ?? (ultimoDia.hab_ocupadas > 0 && ultimoDia.revenue_hab ? ultimoDia.revenue_hab / ultimoDia.hab_ocupadas : null);
@@ -8087,7 +8101,7 @@ export default function App() {
                       body: JSON.stringify({
                         email: session.user.email,
                         hotelNombre: datos.hotel?.nombre || null,
-                        kpis: { fecha: ultimoDia.fecha, mesNombre: MESES[mesActual-1], occ, adr, revpar, trevpar, hab_ocupadas: ultimoDia.hab_ocupadas, hab_disponibles: ultimoDia.hab_disponibles, revenue_hab: ultimoDia.revenue_hab, revenue_total: ultimoDia.revenue_total, pickup_neto: nuevas, cancelaciones: cancels, revenue_pickup_ayer: revPickup || null, revenueAcumulado, presupuestoMensual: pptoData?.rev_total_ppto ?? null, avg_occ: avgOcc2, avg_adr: avgAdr2, avg_revpar: avgRevpar2, avg_trevpar: avgTrevpar2, revHabMes: totRevHab2, revFnbMes: totRevFnb2, canalesRevenue: canalesRevenue2 },
+                        kpis: { fecha: ultimoDia.fecha, mesNombre: MESES[mesActual-1], occ, adr, revpar, trevpar, hab_ocupadas: ultimoDia.hab_ocupadas, hab_disponibles: ultimoDia.hab_disponibles, revenue_hab: ultimoDia.revenue_hab, revenue_total: ultimoDia.revenue_total, pickup_neto: nuevas, cancelaciones: cancels, revenue_pickup_ayer: revPickup || null, revenueAcumulado, presupuestoMensual: pptoData?.rev_total_ppto ?? null, avg_occ: avgOcc2, avg_adr: avgAdr2, avg_revpar: avgRevpar2, avg_trevpar: avgTrevpar2, revHabMes: totRevHab2, revFnbMes: totRevFnb2, canalesRevenue: canalesRevenue2, revGruposMes: revGrupos2, revIndividualMes: revIndividual2 },
                       }),
                     });
                     const json = await resp.json();

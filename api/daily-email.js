@@ -54,53 +54,65 @@ function buildDonutChart(segments, size = 110) {
   return `<img src="${url}" width="${size}" height="${size}" alt="" style="display:block;" />`;
 }
 
-function buildRevenueCharts(revHabMes, revFnbMes, canalesRevenue) {
+function buildRevenueCharts(revHabMes, revFnbMes, canalesRevenue, revGruposMes, revIndividualMes) {
   const CANAL_COLORS = {
-    'Directo / Web': '#0A2540', 'Directo': '#0A2540',
+    'Directo / Web': '#0A2540',
     'OTAs': '#D4A017',
-    'Empresa / Corporativo': '#059669', 'Empresa': '#059669',
-    'Teléfono / Email': '#2563EB', 'Teléfono': '#2563EB',
-    'Grupos / MICE': '#7C3AED', 'Grupos': '#7C3AED',
+    'Empresa / Corp.': '#059669',
+    'Teléfono / Email': '#2563EB',
+    'Grupos / MICE': '#7C3AED',
   };
   const totalHabFnb = (revHabMes || 0) + (revFnbMes || 0);
   const habPct = totalHabFnb > 0 ? Math.round((revHabMes || 0) / totalHabFnb * 100) : 0;
   const fnbPct = 100 - habPct;
+  const totalGrpInd = (revGruposMes || 0) + (revIndividualMes || 0);
+  const grpPct = totalGrpInd > 0 ? Math.round((revGruposMes || 0) / totalGrpInd * 100) : 0;
+  const indPct = 100 - grpPct;
 
+  const dot = (color) => `<td style="width:8px;height:8px;background:${color};border-radius:2px;font-size:0;" bgcolor="${color}">&nbsp;</td><td style="width:6px;"></td>`;
+  const legendRow = (color, label, pct) => `<tr><td style="padding:3px 0;"><table cellpadding="0" cellspacing="0"><tr>
+    ${dot(color)}
+    <td style="font-family:Arial,sans-serif;font-size:10px;color:#374151;white-space:nowrap;">${label}</td>
+    <td style="width:6px;"></td>
+    <td style="font-family:Arial,sans-serif;font-size:10px;font-weight:700;color:#0A2540;">${pct}%</td>
+  </tr></table></td></tr>`;
+
+  const chartCell = (title, svg, legendHtml) => `
+    <td style="padding:12px 10px 12px 12px;vertical-align:top;">
+      <p style="margin:0 0 8px;font-size:9px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:1px;">${title}</p>
+      ${svg ? `<table cellpadding="0" cellspacing="0"><tr>
+        <td style="padding-right:8px;vertical-align:middle;">${svg}</td>
+        <td style="vertical-align:middle;"><table cellpadding="0" cellspacing="0">${legendHtml}</table></td>
+      </tr></table>` : '<p style="margin:0;font-size:11px;color:#94A3B8;">Sin datos</p>'}
+    </td>`;
+
+  // Hab vs F&B
   const habSvg = totalHabFnb > 0 ? buildDonutChart([
     { value: revHabMes || 0, color: '#0A2540' },
     { value: revFnbMes || 0, color: '#D4A017' },
   ]) : '';
+  const habLegend = legendRow('#0A2540', 'Habitaciones', habPct) + legendRow('#D4A017', 'F&amp;B', fnbPct);
 
-  const dot = (color) => `<td style="width:8px;height:8px;background:${color};border-radius:2px;font-size:0;" bgcolor="${color}">&nbsp;</td><td style="width:6px;"></td>`;
-  const habLegend = `
-    <tr><td style="padding:4px 0;"><table cellpadding="0" cellspacing="0"><tr>
-      ${dot('#0A2540')}
-      <td style="font-family:Arial,sans-serif;font-size:11px;color:#374151;">Habitaciones</td>
-      <td style="width:6px;"></td>
-      <td style="font-family:Arial,sans-serif;font-size:11px;font-weight:700;color:#0A2540;">${habPct}%</td>
-    </tr></table></td></tr>
-    <tr><td style="padding:4px 0;"><table cellpadding="0" cellspacing="0"><tr>
-      ${dot('#D4A017')}
-      <td style="font-family:Arial,sans-serif;font-size:11px;color:#374151;">F&amp;B</td>
-      <td style="width:6px;"></td>
-      <td style="font-family:Arial,sans-serif;font-size:11px;font-weight:700;color:#0A2540;">${fnbPct}%</td>
-    </tr></table></td></tr>`;
-
+  // Procedencia — filtrar < 1% y normalizar
   const canales = canalesRevenue || [];
   const totalCanal = canales.reduce((s, c) => s + c.revenue, 0);
-  const canalSegs = canales.map(c => ({ value: c.revenue, color: CANAL_COLORS[c.canal] || '#94A3B8', label: c.canal }));
+  const canalSegs = canales
+    .map(c => ({ value: c.revenue, color: CANAL_COLORS[c.canal] || '#94A3B8', label: c.canal }))
+    .filter(c => totalCanal > 0 && Math.round(c.value / totalCanal * 100) >= 1);
   const canalSvg = canalSegs.length ? buildDonutChart(canalSegs) : '';
   const canalLegend = canalSegs.map(c => {
     const p = totalCanal > 0 ? Math.round(c.value / totalCanal * 100) : 0;
-    return `<tr><td style="padding:3px 0;"><table cellpadding="0" cellspacing="0"><tr>
-      ${dot(c.color)}
-      <td style="font-family:Arial,sans-serif;font-size:10px;color:#374151;white-space:nowrap;">${escapeHtmlStr(c.label)}</td>
-      <td style="width:6px;"></td>
-      <td style="font-family:Arial,sans-serif;font-size:10px;font-weight:700;color:#0A2540;">${p}%</td>
-    </tr></table></td></tr>`;
+    return legendRow(c.color, escapeHtmlStr(c.label), p);
   }).join('');
 
-  if (!totalHabFnb && !canalSegs.length) return '';
+  // Grupos vs Individual
+  const grpSvg = totalGrpInd > 0 ? buildDonutChart([
+    { value: revGruposMes || 0, color: '#7C3AED' },
+    { value: revIndividualMes || 0, color: '#0A2540' },
+  ]) : '';
+  const grpLegend = legendRow('#7C3AED', 'Grupos', grpPct) + legendRow('#0A2540', 'Individual', indPct);
+
+  if (!totalHabFnb && !canalSegs.length && !totalGrpInd) return '';
 
   return `
   <!-- gap -->
@@ -109,25 +121,15 @@ function buildRevenueCharts(revHabMes, revFnbMes, canalesRevenue) {
   <!-- GRÁFICOS REVENUE -->
   <tr><td style="background:#FFFFFF;border:1px solid #E2E8F0;padding:0;">
     <table width="100%" cellpadding="0" cellspacing="0">
-      <tr><td colspan="3" style="padding:12px 16px 8px;border-bottom:1px solid #F1F5F9;">
+      <tr><td colspan="5" style="padding:12px 16px 8px;border-bottom:1px solid #F1F5F9;">
         <p style="margin:0;font-size:12px;font-weight:700;color:#0A2540;text-transform:uppercase;letter-spacing:0.8px;">Mix de Revenue — Mes Actual</p>
       </td></tr>
       <tr>
-        <td width="46%" style="padding:14px 12px 14px 16px;vertical-align:top;">
-          <p style="margin:0 0 10px;font-size:9px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:1px;">Hab. vs F&amp;B</p>
-          ${habSvg ? `<table cellpadding="0" cellspacing="0"><tr>
-            <td style="padding-right:10px;vertical-align:middle;">${habSvg}</td>
-            <td style="vertical-align:middle;"><table cellpadding="0" cellspacing="0">${habLegend}</table></td>
-          </tr></table>` : '<p style="margin:0;font-size:12px;color:#94A3B8;">Sin datos</p>'}
-        </td>
+        ${chartCell('Hab. vs F&amp;B', habSvg, habLegend)}
         <td style="width:1px;background:#E2E8F0;padding:0;"></td>
-        <td width="46%" style="padding:14px 16px 14px 12px;vertical-align:top;">
-          <p style="margin:0 0 10px;font-size:9px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:1px;">Procedencia</p>
-          ${canalSvg ? `<table cellpadding="0" cellspacing="0"><tr>
-            <td style="padding-right:10px;vertical-align:middle;">${canalSvg}</td>
-            <td style="vertical-align:middle;"><table cellpadding="0" cellspacing="0">${canalLegend}</table></td>
-          </tr></table>` : '<p style="margin:0;font-size:12px;color:#94A3B8;">Sin datos de canal</p>'}
-        </td>
+        ${chartCell('Procedencia', canalSvg, canalLegend || '<p style="margin:0;font-size:11px;color:#94A3B8;">Sin datos</p>')}
+        <td style="width:1px;background:#E2E8F0;padding:0;"></td>
+        ${chartCell('Grupos vs Individual', grpSvg, grpLegend)}
       </tr>
     </table>
   </td></tr>`;
@@ -213,7 +215,7 @@ export default async function handler(req, res) {
     pickup_neto, cancelaciones, revenue_pickup_ayer,
     revenueAcumulado, presupuestoMensual,
     avg_occ, avg_adr, avg_revpar, avg_trevpar,
-    revHabMes, revFnbMes, canalesRevenue,
+    revHabMes, revFnbMes, canalesRevenue, revGruposMes, revIndividualMes,
   } = kpis;
 
   const safeFecha     = cleanString(fecha, 10) ?? '';
@@ -222,7 +224,7 @@ export default async function handler(req, res) {
   let progressBar = '';
   try { progressBar = buildProgressBar(revenueAcumulado, presupuestoMensual); } catch { /* ignored */ }
   let revenueCharts = '';
-  try { revenueCharts = buildRevenueCharts(revHabMes, revFnbMes, canalesRevenue); } catch { /* ignored */ }
+  try { revenueCharts = buildRevenueCharts(revHabMes, revFnbMes, canalesRevenue, revGruposMes, revIndividualMes); } catch { /* ignored */ }
 
   const alerts     = buildAlerts(kpis);
   const pickupRev  = revenue_pickup_ayer ? `+€${Math.round(revenue_pickup_ayer).toLocaleString('es-ES')}` : '';
