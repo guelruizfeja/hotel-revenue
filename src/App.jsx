@@ -3651,7 +3651,6 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
               const labelDia = `${diasSemNombre[dt.getDay()]} ${diaN} ${MESES_H[hmMesSel]} ${anio}`;
 
               const dayData = diasDelMes.find(d => d.dia === diaN);
-              const occ = dayData?.occ ?? null;
               const adr = dayData?.adr ?? null;
 
               const getFechaSalidaD = e => {
@@ -3683,6 +3682,13 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
               });
               const canales = Object.entries(canalMap).sort((a,b)=>b[1]-a[1]).slice(0,6);
               const totalRes = canales.reduce((a,[,v])=>a+v,0);
+
+              // OCC coherente con el canal breakdown: habitaciones pernoctando / total hotel
+              // Para pasado usa producción (más preciso); para futuro calcula desde activasIso
+              const dayDataOcc = dayData?.tieneReal ? dayData?.occ ?? null : null;
+              const habHotelModal = datos.hotel?.habitaciones || habHotel;
+              const occDesdeActivas = habHotelModal > 0 ? Math.min(100, totalRes / habHotelModal * 100) : null;
+              const occ = dayDataOcc ?? occDesdeActivas;
 
               const gruposDia = (datos.grupos||[]).filter(g =>
                 g.fecha_inicio <= iso && (g.fecha_fin||g.fecha_inicio) >= iso &&
