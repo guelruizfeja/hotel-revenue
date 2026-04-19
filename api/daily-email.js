@@ -139,6 +139,84 @@ function escapeHtmlStr(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
+function buildAdrBar(adrReal, adrPpto) {
+  if (!adrReal || !adrPpto) return '';
+  const pct    = ((adrReal - adrPpto) / adrPpto) * 100;
+  const isOver = pct >= 0;
+  const color  = isOver ? '#059669' : '#DC2626';
+  const pctStr = `${isOver ? '+' : ''}${pct.toFixed(1)}%`;
+  const fillW  = Math.min(Math.abs(pct) / 40 * 50, 49);
+  const emptyW = 50 - fillW;
+  const barLeft  = isOver
+    ? `<td style="width:50%;background:#E2E8F0;height:10px;border-radius:4px 0 0 4px;"></td>`
+    : `<td style="width:${emptyW.toFixed(1)}%;background:#E2E8F0;height:10px;border-radius:4px 0 0 4px;"></td><td style="width:${fillW.toFixed(1)}%;background:${color};height:10px;"></td>`;
+  const barRight = isOver
+    ? `<td style="width:${fillW.toFixed(1)}%;background:${color};height:10px;"></td><td style="width:${emptyW.toFixed(1)}%;background:#E2E8F0;height:10px;border-radius:0 4px 4px 0;"></td>`
+    : `<td style="width:50%;background:#E2E8F0;height:10px;border-radius:0 4px 4px 0;"></td>`;
+  return `<table width="100%" cellpadding="0" cellspacing="0" style="margin-top:14px;">
+  <tr>
+    <td style="padding-bottom:3px;"><p style="margin:0;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#64748B;">ADR medio del mes</p></td>
+    <td style="text-align:right;padding-bottom:3px;"><p style="margin:0;font-size:9px;color:#64748B;">Ppto: <strong style="color:#0A2540;">${fmtEur(adrPpto)}</strong></p></td>
+  </tr>
+  <tr>
+    <td width="50%" style="text-align:right;padding:0 4px 3px 0;vertical-align:bottom;">
+      ${!isOver ? `<p style="margin:0;font-size:16px;font-weight:700;color:${color};line-height:1;">${fmtEur(adrReal)}</p>` : '&nbsp;'}
+    </td>
+    <td width="50%" style="text-align:left;padding:0 0 3px 4px;vertical-align:bottom;">
+      ${isOver ? `<p style="margin:0;font-size:16px;font-weight:700;color:${color};line-height:1;">${fmtEur(adrReal)}</p>` : '&nbsp;'}
+    </td>
+  </tr>
+  <tr><td colspan="2" style="padding:2px 0;">
+    <table width="100%" cellpadding="0" cellspacing="0"><tr>
+      ${barLeft}
+      <td style="width:2px;background:#0A2540;height:10px;"></td>
+      ${barRight}
+    </tr></table>
+  </td></tr>
+  <tr><td colspan="2" style="text-align:center;padding-top:4px;">
+    <p style="margin:0;font-size:11px;color:${color};font-weight:700;">${pctStr} vs presupuesto</p>
+  </td></tr>
+</table>`;
+}
+
+function buildGruposProximos(grupos) {
+  if (!grupos?.length) return '';
+  const MESES_C = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  const CATS = { corporativo:'Corporativo', boda:'Boda', feria:'Feria', deportivo:'Deportivo', otros:'Otros', evento:'Evento' };
+  const fmtF = (iso) => { if (!iso) return '—'; const [,m,d] = iso.split('-'); return `${parseInt(d)} ${MESES_C[parseInt(m)-1]}`; };
+  const rows = grupos.map((g,i) => {
+    const noches = Math.max(0, (new Date(g.fecha_fin+'T00:00:00') - new Date(g.fecha_inicio+'T00:00:00')) / 86400000);
+    const rev = ((g.habitaciones||0)*(g.adr_grupo||0)*noches + (g.revenue_fnb||0) + (g.revenue_sala||0)) * (g.estado==='cotizado'?0.5:1);
+    const border = i < grupos.length - 1 ? 'border-bottom:1px solid #F1F5F9;' : '';
+    return `<tr style="${border}">
+      <td style="padding:8px 8px 8px 16px;font-family:Arial,sans-serif;font-size:11px;color:#0A2540;font-weight:600;">${escapeHtmlStr(g.nombre||'—')}</td>
+      <td style="padding:8px 6px;font-family:Arial,sans-serif;font-size:10px;color:#64748B;">${CATS[g.categoria]||g.categoria||'—'}</td>
+      <td style="padding:8px 6px;font-family:Arial,sans-serif;font-size:10px;color:#374151;white-space:nowrap;">${fmtF(g.fecha_inicio)}${g.fecha_fin&&g.fecha_fin!==g.fecha_inicio?` – ${fmtF(g.fecha_fin)}`:''}</td>
+      <td style="padding:8px 6px;font-family:Arial,sans-serif;font-size:10px;color:#374151;text-align:center;">${g.habitaciones||0} hab.</td>
+      <td style="padding:8px 16px 8px 6px;font-family:Arial,sans-serif;font-size:10px;font-weight:700;color:#0A2540;text-align:right;">${rev>0?fmtEur(rev):'—'}</td>
+    </tr>`;
+  }).join('');
+  return `
+  <!-- gap -->
+  <tr><td style="height:8px;background:#EEF2F7;"></td></tr>
+  <!-- GRUPOS PRÓXIMOS -->
+  <tr><td style="background:#FFFFFF;border:1px solid #E2E8F0;padding:0;">
+    <table width="100%" cellpadding="0" cellspacing="0">
+      <tr><td colspan="5" style="padding:12px 16px 8px;border-bottom:1px solid #F1F5F9;">
+        <p style="margin:0;font-size:12px;font-weight:700;color:#0A2540;text-transform:uppercase;letter-spacing:0.8px;">Grupos &amp; Eventos — Próximos 7 días</p>
+      </td></tr>
+      <tr style="background:#F8FAFC;">
+        <td style="padding:5px 8px 5px 16px;font-family:Arial,sans-serif;font-size:9px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.8px;">Nombre</td>
+        <td style="padding:5px 6px;font-family:Arial,sans-serif;font-size:9px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.8px;">Tipo</td>
+        <td style="padding:5px 6px;font-family:Arial,sans-serif;font-size:9px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.8px;">Fechas</td>
+        <td style="padding:5px 6px;font-family:Arial,sans-serif;font-size:9px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.8px;text-align:center;">Hab.</td>
+        <td style="padding:5px 16px 5px 6px;font-family:Arial,sans-serif;font-size:9px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.8px;text-align:right;">Revenue</td>
+      </tr>
+      ${rows}
+    </table>
+  </td></tr>`;
+}
+
 function buildProgressBar(revenueAcumulado, presupuestoMensual) {
   if (!revenueAcumulado?.length) return '';
   const acum    = revenueAcumulado[revenueAcumulado.length - 1]?.acum || 0;
@@ -216,6 +294,7 @@ export default async function handler(req, res) {
     revenueAcumulado, presupuestoMensual,
     avg_occ, avg_adr, avg_revpar, avg_trevpar,
     revHabMes, revFnbMes, canalesRevenue, revGruposMes, revIndividualMes,
+    adrPpto, gruposProximos,
   } = kpis;
 
   const safeFecha     = cleanString(fecha, 10) ?? '';
@@ -225,6 +304,10 @@ export default async function handler(req, res) {
   try { progressBar = buildProgressBar(revenueAcumulado, presupuestoMensual); } catch { /* ignored */ }
   let revenueCharts = '';
   try { revenueCharts = buildRevenueCharts(revHabMes, revFnbMes, canalesRevenue, revGruposMes, revIndividualMes); } catch { /* ignored */ }
+  let adrBar = '';
+  try { adrBar = buildAdrBar(avg_adr, adrPpto); } catch { /* ignored */ }
+  let gruposSection = '';
+  try { gruposSection = buildGruposProximos(gruposProximos); } catch { /* ignored */ }
 
   const alerts     = buildAlerts(kpis);
   const pickupRev  = revenue_pickup_ayer ? `+€${Math.round(revenue_pickup_ayer).toLocaleString('es-ES')}` : '';
@@ -313,6 +396,7 @@ export default async function handler(req, res) {
       <tr>
         <td style="padding:12px 16px 14px;">
           ${progressBar || '<p style="margin:0;font-size:12px;color:#94A3B8;">Sin datos de progreso mensual</p>'}
+          ${adrBar}
         </td>
       </tr>
     </table>
@@ -332,6 +416,8 @@ export default async function handler(req, res) {
       <tr><td style="height:6px;"></td></tr>
     </table>
   </td></tr>` : ''}
+
+  ${gruposSection}
 
   <!-- gap -->
   <tr><td style="height:8px;background:#EEF2F7;"></td></tr>

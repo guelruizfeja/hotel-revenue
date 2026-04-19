@@ -1590,7 +1590,12 @@ function ImportarExcel({ onClose, session, onImportado, onProduccionDirecta, hot
         return canal || 'Directo / Web';
       };
 
-      const [{ data: datosMes }, { data: pickupRows }, { data: pptoData }, { data: pickupMes }, { data: gruposMes }] = await Promise.all([
+      const hoyDate = new Date(diaRow.fecha + 'T00:00:00'); hoyDate.setDate(hoyDate.getDate() + 1);
+      const hoy = hoyDate.toISOString().slice(0, 10);
+      const fin7Date = new Date(hoyDate); fin7Date.setDate(fin7Date.getDate() + 7);
+      const hoyMas7 = fin7Date.toISOString().slice(0, 10);
+
+      const [{ data: datosMes }, { data: pickupRows }, { data: pptoData }, { data: pickupMes }, { data: gruposMes }, { data: gruposProx }] = await Promise.all([
         supabase.from("produccion_diaria")
           .select("fecha,hab_ocupadas,hab_disponibles,revenue_hab,revenue_fnb,revenue_total")
           .eq("hotel_id", session.user.id).gte("fecha", inicioMes).lt("fecha", inicioSig)
@@ -1599,7 +1604,7 @@ function ImportarExcel({ onClose, session, onImportado, onProduccionDirecta, hot
           .select("num_reservas,precio_total,estado")
           .eq("hotel_id", session.user.id).eq("fecha_pickup", diaRow.fecha),
         supabase.from("presupuesto")
-          .select("rev_total_ppto")
+          .select("rev_total_ppto,adr_ppto")
           .eq("hotel_id", session.user.id).eq("mes", mesActual).eq("anio", anioActual)
           .maybeSingle(),
         supabase.from("pickup_entries")
@@ -1610,6 +1615,11 @@ function ImportarExcel({ onClose, session, onImportado, onProduccionDirecta, hot
           .select("habitaciones,adr_grupo,revenue_fnb,revenue_sala,fecha_inicio,fecha_fin,estado")
           .eq("hotel_id", session.user.id).neq("estado", "cancelado")
           .gte("fecha_fin", inicioMes).lt("fecha_inicio", inicioSig),
+        supabase.from("grupos_eventos")
+          .select("nombre,categoria,estado,fecha_inicio,fecha_fin,habitaciones,adr_grupo,revenue_fnb,revenue_sala")
+          .eq("hotel_id", session.user.id).neq("estado", "cancelado")
+          .gte("fecha_inicio", hoy).lte("fecha_inicio", hoyMas7)
+          .order("fecha_inicio"),
       ]);
 
       let nuevasAyer = 0, cancelAyer = 0, revPickupAyer = 0;
@@ -1684,6 +1694,7 @@ function ImportarExcel({ onClose, session, onImportado, onProduccionDirecta, hot
             presupuestoMensual: pptoData?.rev_total_ppto ?? null,
             avg_occ: avgOcc, avg_adr: avgAdr, avg_revpar: avgRevpar, avg_trevpar: avgTrevpar,
             revHabMes: totRevHab, revFnbMes: totRevFnb, canalesRevenue, revGruposMes: revGrupos, revIndividualMes: revIndividual,
+            adrPpto: pptoData?.adr_ppto ?? null, gruposProximos: gruposProx || [],
           },
         }),
       });
@@ -8076,12 +8087,13 @@ export default function App() {
                     const NO_OTA_KEYS2 = ['directo', 'teléfono', 'telefono', 'email', 'empresa', 'corporativo', 'grupos', 'mice'];
                     const isOTA2 = (canal) => { const c = (canal || '').toLowerCase(); return !NO_OTA_KEYS2.some(k => c.includes(k)); };
                     const normCanal2 = (canal) => { const c = (canal || '').toLowerCase().trim(); if (c.includes('directo') || c.includes('web')) return 'Directo / Web'; if (c.includes('teléfono') || c.includes('telefono') || c.includes('email')) return 'Teléfono / Email'; if (c.includes('empresa') || c.includes('corporativo')) return 'Empresa / Corp.'; if (c.includes('grupo') || c.includes('mice')) return 'Grupos / MICE'; return canal || 'Directo / Web'; };
-                    const [{ data: datosMes }, { data: pickupRows }, { data: pptoData }, { data: pickupMes2 }, { data: gruposMes2 }] = await Promise.all([
+                    const [{ data: datosMes }, { data: pickupRows }, { data: pptoData }, { data: pickupMes2 }, { data: gruposMes2 }, { data: gruposProx2 }] = await Promise.all([
                       supabase.from("produccion_diaria").select("fecha,hab_ocupadas,hab_disponibles,revenue_hab,revenue_fnb,revenue_total").eq("hotel_id", session.user.id).gte("fecha", inicioMes).lt("fecha", inicioSig).order("fecha", { ascending: true }),
                       supabase.from("pickup_entries").select("num_reservas,precio_total,estado").eq("hotel_id", session.user.id).eq("fecha_pickup", ultimoDia.fecha),
-                      supabase.from("presupuesto").select("rev_total_ppto").eq("hotel_id", session.user.id).eq("mes", mesActual).eq("anio", anioActual).maybeSingle(),
+                      supabase.from("presupuesto").select("rev_total_ppto,adr_ppto").eq("hotel_id", session.user.id).eq("mes", mesActual).eq("anio", anioActual).maybeSingle(),
                       supabase.from("pickup_entries").select("canal,precio_total,num_reservas,estado").eq("hotel_id", session.user.id).gte("fecha_pickup", inicioMes).lt("fecha_pickup", inicioSig).neq("estado", "cancelada"),
                       supabase.from("grupos_eventos").select("habitaciones,adr_grupo,revenue_fnb,revenue_sala,fecha_inicio,fecha_fin,estado").eq("hotel_id", session.user.id).neq("estado", "cancelado").gte("fecha_fin", inicioMes).lt("fecha_inicio", inicioSig),
+                      supabase.from("grupos_eventos").select("nombre,categoria,estado,fecha_inicio,fecha_fin,habitaciones,adr_grupo,revenue_fnb,revenue_sala").eq("hotel_id", session.user.id).neq("estado", "cancelado").gte("fecha_inicio", (() => { const d=new Date(ultimoDia.fecha+'T00:00:00'); d.setDate(d.getDate()+1); return d.toISOString().slice(0,10); })()).lte("fecha_inicio", (() => { const d=new Date(ultimoDia.fecha+'T00:00:00'); d.setDate(d.getDate()+8); return d.toISOString().slice(0,10); })()).order("fecha_inicio"),
                     ]);
                     let nuevas = 0, cancels = 0, revPickup = 0;
                     for (const p of (pickupRows || [])) {
@@ -8115,7 +8127,7 @@ export default function App() {
                       body: JSON.stringify({
                         email: session.user.email,
                         hotelNombre: datos.hotel?.nombre || null,
-                        kpis: { fecha: ultimoDia.fecha, mesNombre: MESES[mesActual-1], occ, adr, revpar, trevpar, hab_ocupadas: ultimoDia.hab_ocupadas, hab_disponibles: ultimoDia.hab_disponibles, revenue_hab: ultimoDia.revenue_hab, revenue_total: ultimoDia.revenue_total, pickup_neto: nuevas, cancelaciones: cancels, revenue_pickup_ayer: revPickup || null, revenueAcumulado, presupuestoMensual: pptoData?.rev_total_ppto ?? null, avg_occ: avgOcc2, avg_adr: avgAdr2, avg_revpar: avgRevpar2, avg_trevpar: avgTrevpar2, revHabMes: totRevHab2, revFnbMes: totRevFnb2, canalesRevenue: canalesRevenue2, revGruposMes: revGrupos2, revIndividualMes: revIndividual2 },
+                        kpis: { fecha: ultimoDia.fecha, mesNombre: MESES[mesActual-1], occ, adr, revpar, trevpar, hab_ocupadas: ultimoDia.hab_ocupadas, hab_disponibles: ultimoDia.hab_disponibles, revenue_hab: ultimoDia.revenue_hab, revenue_total: ultimoDia.revenue_total, pickup_neto: nuevas, cancelaciones: cancels, revenue_pickup_ayer: revPickup || null, revenueAcumulado, presupuestoMensual: pptoData?.rev_total_ppto ?? null, avg_occ: avgOcc2, avg_adr: avgAdr2, avg_revpar: avgRevpar2, avg_trevpar: avgTrevpar2, revHabMes: totRevHab2, revFnbMes: totRevFnb2, canalesRevenue: canalesRevenue2, revGruposMes: revGrupos2, revIndividualMes: revIndividual2, adrPpto: pptoData?.adr_ppto ?? null, gruposProximos: gruposProx2 || [] },
                       }),
                     });
                     const json = await resp.json();
