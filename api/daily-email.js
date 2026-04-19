@@ -115,7 +115,7 @@ export default async function handler(req, res) {
     revenue_hab, revenue_total,
     pickup_neto, cancelaciones, revenue_pickup_ayer,
     revenueAcumulado, presupuestoMensual,
-    ly_occ, ly_adr, ly_revpar, ly_trevpar,
+    avg_occ, avg_adr, avg_revpar, avg_trevpar,
   } = kpis;
 
   const safeFecha     = cleanString(fecha, 10) ?? '';
@@ -133,7 +133,7 @@ export default async function handler(req, res) {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1.0">
-  <title>Informe diario — ${hotel}</title>
+  <title>Informe Diario</title>
 </head>
 <body style="margin:0;padding:0;background:#EEF2F7;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;">
 
@@ -143,9 +143,9 @@ export default async function handler(req, res) {
 
   <!-- HEADER -->
   <tr><td style="background:#0A2540;border-radius:10px 10px 0 0;padding:22px 28px 18px;text-align:center;">
-    <p style="margin:0 0 6px;font-size:17px;font-weight:700;color:#FFFFFF;letter-spacing:2px;text-transform:uppercase;">Informe Diario de Revenue</p>
+    <p style="margin:0 0 6px;font-size:17px;font-weight:700;color:#FFFFFF;letter-spacing:2px;text-transform:uppercase;">Informe Diario</p>
     <p style="margin:0;font-size:12px;color:rgba(255,255,255,0.55);">
-      FastRevenue &nbsp;&#8212;&nbsp; <strong style="color:#FFFFFF;font-size:14px;">${hotel}</strong> &nbsp;&#8212;&nbsp; ${fmtDate(safeFecha)}
+      <strong style="color:#FFFFFF;font-size:14px;">${hotel}</strong> &nbsp;&#8212;&nbsp; ${fmtDate(safeFecha)}
     </p>
     <div style="height:2px;background:linear-gradient(90deg,transparent,#D4A017,transparent);margin-top:16px;"></div>
   </td></tr>
@@ -157,7 +157,7 @@ export default async function handler(req, res) {
         <td colspan="5" style="padding:12px 16px 8px;border-bottom:1px solid #F1F5F9;">
           <p style="margin:0;font-size:12px;font-weight:700;color:#0A2540;text-transform:uppercase;letter-spacing:0.8px;">
             Resumen de Ayer
-            <span style="font-size:11px;font-weight:400;color:#94A3B8;text-transform:none;letter-spacing:0;">(vs. Año Anterior)</span>
+            <span style="font-size:11px;font-weight:400;color:#94A3B8;text-transform:none;letter-spacing:0;">(vs. Media del Mes)</span>
           </p>
         </td>
       </tr>
@@ -165,23 +165,23 @@ export default async function handler(req, res) {
         <td style="padding:14px 8px 12px;text-align:center;vertical-align:top;width:20%;">
           <p style="margin:0 0 5px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:#64748B;">Ocupación</p>
           <p style="margin:0;font-size:26px;font-weight:700;color:#0A2540;line-height:1;">${fmt(occ)}%</p>
-          ${badge(ppChg(occ, ly_occ), { isPP: true })}
+          ${badge(ppChg(occ, avg_occ), { isPP: true })}
           ${hab_ocupadas != null ? `<p style="margin:5px 0 0;font-size:10px;color:#94A3B8;">${hab_ocupadas}/${hab_disponibles} hab.</p>` : ''}
         </td>
         <td style="padding:14px 8px 12px;text-align:center;vertical-align:top;width:20%;border-left:1px solid #E2E8F0;">
           <p style="margin:0 0 5px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:#64748B;">ADR</p>
           <p style="margin:0;font-size:26px;font-weight:700;color:#0A2540;line-height:1;">${fmtEur(adr)}</p>
-          ${badge(absChg(adr, ly_adr), { isAbs: true, prefix: '€' })}
+          ${badge(absChg(adr, avg_adr), { isAbs: true, prefix: '€' })}
         </td>
         <td style="padding:14px 8px 12px;text-align:center;vertical-align:top;width:20%;border-left:1px solid #E2E8F0;">
           <p style="margin:0 0 5px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:#64748B;">RevPAR</p>
           <p style="margin:0;font-size:26px;font-weight:700;color:#0A2540;line-height:1;">${fmtEur(revpar)}</p>
-          ${badge(pctChg(revpar, ly_revpar))}
+          ${badge(pctChg(revpar, avg_revpar))}
         </td>
         <td style="padding:14px 8px 12px;text-align:center;vertical-align:top;width:20%;border-left:1px solid #E2E8F0;">
           <p style="margin:0 0 5px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:#64748B;">TRevPAR</p>
           <p style="margin:0;font-size:26px;font-weight:700;color:#0A2540;line-height:1;">${trevpar ? fmtEur(trevpar) : '—'}</p>
-          ${trevpar ? badge(pctChg(trevpar, ly_trevpar)) : ''}
+          ${trevpar ? badge(pctChg(trevpar, avg_trevpar)) : ''}
         </td>
         <td style="padding:14px 8px 12px;text-align:center;vertical-align:top;width:20%;border-left:1px solid #E2E8F0;">
           <p style="margin:0 0 5px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:#64748B;">Pickup Neto</p>
@@ -237,7 +237,7 @@ export default async function handler(req, res) {
     <table cellpadding="0" cellspacing="0">
       <tr>
         <td style="padding-bottom:12px;">
-          <img src="https://fastrevenue.app/fastrev-logo.png" alt="FastRevenue" width="140" style="display:block;border-radius:6px;" />
+          <img src="https://fastrevenue.app/fastrev-logo.png" alt="FastRevenue" width="90" style="display:block;border-radius:6px;" />
         </td>
       </tr>
       <tr>
@@ -305,7 +305,7 @@ export default async function handler(req, res) {
     const { error } = await resend.emails.send({
       from: 'FastRevenue <info@fastrevenue.app>',
       to: cleanEmail,
-      subject: `Informe ${fmtDate(safeFecha)} — ${hotel}`,
+      subject: `Informe diario — ${hotel}`,
       html,
       headers: {
         'X-Entity-Ref-ID': `daily-${cleanEmail}-${safeFecha}-${Date.now()}`,

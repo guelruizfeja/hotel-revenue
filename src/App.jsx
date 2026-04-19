@@ -1578,17 +1578,18 @@ function ImportarExcel({ onClose, session, onImportado, onProduccionDirecta, hot
       const inicioMesLY = `${anioActual-1}-${mesStr}-01`;
       const inicioSigLY = mesActual === 12 ? `${anioActual}-01-01` : `${anioActual-1}-${String(mesActual+1).padStart(2,'0')}-01`;
 
-      const [{ data: datosMes }, { data: datosMesLY }, { data: pickupRows }] = await Promise.all([
+      const [{ data: datosMes }, { data: pickupRows }, { data: pptoData }] = await Promise.all([
         supabase.from("produccion_diaria")
           .select("fecha,hab_ocupadas,hab_disponibles,revenue_hab,revenue_total")
           .eq("hotel_id", session.user.id).gte("fecha", inicioMes).lt("fecha", inicioSig)
           .order("fecha", { ascending: true }),
-        supabase.from("produccion_diaria")
-          .select("fecha,hab_ocupadas,hab_disponibles,revenue_hab,revenue_total")
-          .eq("hotel_id", session.user.id).gte("fecha", inicioMesLY).lt("fecha", inicioSigLY),
         supabase.from("pickup_entries")
           .select("num_reservas,precio_total,estado")
           .eq("hotel_id", session.user.id).eq("fecha_pickup", diaRow.fecha),
+        supabase.from("presupuesto")
+          .select("rev_total_ppto")
+          .eq("hotel_id", session.user.id).eq("mes", mesActual).eq("anio", anioActual)
+          .maybeSingle(),
       ]);
 
       let nuevasAyer = 0, cancelAyer = 0, revPickupAyer = 0;
@@ -1604,12 +1605,19 @@ function ImportarExcel({ onClose, session, onImportado, onProduccionDirecta, hot
         return { dia: parseInt(d.fecha.split('-')[2]), acum: Math.round(acum) };
       });
 
-      const lyFecha = `${anioActual-1}-${diaRow.fecha.slice(5)}`;
-      const lyDia   = (datosMesLY || []).find(d => d.fecha === lyFecha);
-      const lyOcc    = lyDia?.hab_disponibles > 0 ? lyDia.hab_ocupadas / lyDia.hab_disponibles * 100 : null;
-      const lyAdr    = lyDia?.hab_ocupadas > 0 && lyDia?.revenue_hab ? lyDia.revenue_hab / lyDia.hab_ocupadas : null;
-      const lyRevpar = lyDia?.hab_disponibles > 0 && lyDia?.revenue_hab ? lyDia.revenue_hab / lyDia.hab_disponibles : null;
-      const lyTrevpar= lyDia?.hab_disponibles > 0 && lyDia?.revenue_total ? lyDia.revenue_total / lyDia.hab_disponibles : null;
+      let totHabOcu = 0, totHabDisp = 0, totRevHab = 0, totRevTotal = 0;
+      for (const d of (datosMes || [])) {
+        if (d.hab_disponibles > 0) {
+          totHabOcu += d.hab_ocupadas || 0;
+          totHabDisp += d.hab_disponibles || 0;
+          totRevHab += d.revenue_hab || 0;
+          totRevTotal += d.revenue_total || 0;
+        }
+      }
+      const avgOcc    = totHabDisp > 0 ? totHabOcu / totHabDisp * 100 : null;
+      const avgAdr    = totHabOcu > 0 ? totRevHab / totHabOcu : null;
+      const avgRevpar = totHabDisp > 0 ? totRevHab / totHabDisp : null;
+      const avgTrevpar= totHabDisp > 0 ? totRevTotal / totHabDisp : null;
 
       const occ    = diaRow.hab_disponibles > 0 ? diaRow.hab_ocupadas / diaRow.hab_disponibles * 100 : null;
       const adr    = diaRow.adr    ?? (diaRow.hab_ocupadas > 0 && diaRow.revenue_hab ? diaRow.revenue_hab / diaRow.hab_ocupadas : null);
@@ -1634,8 +1642,8 @@ function ImportarExcel({ onClose, session, onImportado, onProduccionDirecta, hot
             cancelaciones: cancelAyer,
             revenue_pickup_ayer: revPickupAyer,
             revenueAcumulado,
-            presupuestoMensual: null,
-            ly_occ: lyOcc, ly_adr: lyAdr, ly_revpar: lyRevpar, ly_trevpar: lyTrevpar,
+            presupuestoMensual: pptoData?.rev_total_ppto ?? null,
+            avg_occ: avgOcc, avg_adr: avgAdr, avg_revpar: avgRevpar, avg_trevpar: avgTrevpar,
           },
         }),
       });
@@ -8024,13 +8032,11 @@ export default function App() {
                     const mesStr     = String(mesActual).padStart(2,'0');
                     const inicioMes  = `${anioActual}-${mesStr}-01`;
                     const inicioSig  = mesActual === 12 ? `${anioActual+1}-01-01` : `${anioActual}-${String(mesActual+1).padStart(2,'0')}-01`;
-                    const inicioMesLY  = `${anioActual-1}-${mesStr}-01`;
-                    const inicioSigLY  = mesActual === 12 ? `${anioActual}-01-01` : `${anioActual-1}-${String(mesActual+1).padStart(2,'0')}-01`;
                     const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-                    const [{ data: datosMes }, { data: datosMesLY }, { data: pickupRows }] = await Promise.all([
+                    const [{ data: datosMes }, { data: pickupRows }, { data: pptoData }] = await Promise.all([
                       supabase.from("produccion_diaria").select("fecha,hab_ocupadas,hab_disponibles,revenue_hab,revenue_total").eq("hotel_id", session.user.id).gte("fecha", inicioMes).lt("fecha", inicioSig).order("fecha", { ascending: true }),
-                      supabase.from("produccion_diaria").select("fecha,hab_ocupadas,hab_disponibles,revenue_hab,revenue_total").eq("hotel_id", session.user.id).gte("fecha", inicioMesLY).lt("fecha", inicioSigLY),
                       supabase.from("pickup_entries").select("num_reservas,precio_total,estado").eq("hotel_id", session.user.id).eq("fecha_pickup", ultimoDia.fecha),
+                      supabase.from("presupuesto").select("rev_total_ppto").eq("hotel_id", session.user.id).eq("mes", mesActual).eq("anio", anioActual).maybeSingle(),
                     ]);
                     let nuevas = 0, cancels = 0, revPickup = 0;
                     for (const p of (pickupRows || [])) {
@@ -8040,12 +8046,14 @@ export default function App() {
                     }
                     let acum = 0;
                     const revenueAcumulado = (datosMes || []).map(d => { acum += d.revenue_hab || 0; return { dia: parseInt(d.fecha.split('-')[2]), acum: Math.round(acum) }; });
-                    const lyFecha = `${anioActual-1}-${ultimoDia.fecha.slice(5)}`;
-                    const lyDia   = (datosMesLY || []).find(d => d.fecha === lyFecha);
-                    const lyOcc    = lyDia?.hab_disponibles > 0 ? lyDia.hab_ocupadas / lyDia.hab_disponibles * 100 : null;
-                    const lyAdr    = lyDia?.hab_ocupadas > 0 && lyDia?.revenue_hab ? lyDia.revenue_hab / lyDia.hab_ocupadas : null;
-                    const lyRevpar = lyDia?.hab_disponibles > 0 && lyDia?.revenue_hab ? lyDia.revenue_hab / lyDia.hab_disponibles : null;
-                    const lyTrevpar= lyDia?.hab_disponibles > 0 && lyDia?.revenue_total ? lyDia.revenue_total / lyDia.hab_disponibles : null;
+                    let totHabOcu2 = 0, totHabDisp2 = 0, totRevHab2 = 0, totRevTotal2 = 0;
+                    for (const d of (datosMes || [])) {
+                      if (d.hab_disponibles > 0) { totHabOcu2 += d.hab_ocupadas || 0; totHabDisp2 += d.hab_disponibles || 0; totRevHab2 += d.revenue_hab || 0; totRevTotal2 += d.revenue_total || 0; }
+                    }
+                    const avgOcc2    = totHabDisp2 > 0 ? totHabOcu2 / totHabDisp2 * 100 : null;
+                    const avgAdr2    = totHabOcu2 > 0 ? totRevHab2 / totHabOcu2 : null;
+                    const avgRevpar2 = totHabDisp2 > 0 ? totRevHab2 / totHabDisp2 : null;
+                    const avgTrevpar2= totHabDisp2 > 0 ? totRevTotal2 / totHabDisp2 : null;
                     const occ    = ultimoDia.hab_disponibles > 0 ? ultimoDia.hab_ocupadas / ultimoDia.hab_disponibles * 100 : null;
                     const adr    = ultimoDia.adr    ?? (ultimoDia.hab_ocupadas > 0 && ultimoDia.revenue_hab ? ultimoDia.revenue_hab / ultimoDia.hab_ocupadas : null);
                     const revpar = ultimoDia.revpar ?? (ultimoDia.hab_disponibles > 0 && ultimoDia.revenue_hab ? ultimoDia.revenue_hab / ultimoDia.hab_disponibles : null);
@@ -8056,7 +8064,7 @@ export default function App() {
                       body: JSON.stringify({
                         email: session.user.email,
                         hotelNombre: datos.hotel?.nombre || null,
-                        kpis: { fecha: ultimoDia.fecha, mesNombre: MESES[mesActual-1], occ, adr, revpar, trevpar, hab_ocupadas: ultimoDia.hab_ocupadas, hab_disponibles: ultimoDia.hab_disponibles, revenue_hab: ultimoDia.revenue_hab, revenue_total: ultimoDia.revenue_total, pickup_neto: nuevas, cancelaciones: cancels, revenue_pickup_ayer: revPickup || null, revenueAcumulado, presupuestoMensual: null, ly_occ: lyOcc, ly_adr: lyAdr, ly_revpar: lyRevpar, ly_trevpar: lyTrevpar },
+                        kpis: { fecha: ultimoDia.fecha, mesNombre: MESES[mesActual-1], occ, adr, revpar, trevpar, hab_ocupadas: ultimoDia.hab_ocupadas, hab_disponibles: ultimoDia.hab_disponibles, revenue_hab: ultimoDia.revenue_hab, revenue_total: ultimoDia.revenue_total, pickup_neto: nuevas, cancelaciones: cancels, revenue_pickup_ayer: revPickup || null, revenueAcumulado, presupuestoMensual: pptoData?.rev_total_ppto ?? null, avg_occ: avgOcc2, avg_adr: avgAdr2, avg_revpar: avgRevpar2, avg_trevpar: avgTrevpar2 },
                       }),
                     });
                     const json = await resp.json();
