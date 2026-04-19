@@ -3559,7 +3559,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
             if (est === "cancelada" || est === "tentativo") return;
             const fl = String(e.fecha_llegada||"").slice(0,10);
             const fs = getFsSt(e) || "";
-            const key = e._grupo ? `_g|${fl}|${e.canal||""}` : `${fl}|${e.canal||""}|${fs}`;
+            const key = e._grupo ? `_g|${fl}|${e._grupoId||e.canal||""}` : `${fl}|${e.canal||""}|${fs}`;
             const fp = String(e.fecha_pickup||"").slice(0,10);
             if (!dd[key] || fp > dd[key]._fp) dd[key] = { ...e, _fp: fp, _fs: fs };
           });
@@ -3880,7 +3880,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
                 if (est === "cancelada") return;
                 const fl = String(e.fecha_llegada||"").slice(0,10);
                 const fs = getFechaSalidaD(e) || "";
-                const key = `${fl}|${e.canal||""}|${fs}`;
+                const key = e._grupo ? `_g|${fl}|${e._grupoId||e.canal||""}` : `${fl}|${e.canal||""}|${fs}`;
                 const fp = String(e.fecha_pickup||"").slice(0,10);
                 if (!dedupMap[key] || fp > dedupMap[key]._fp) dedupMap[key] = { ...e, _fp: fp };
               });
@@ -7852,6 +7852,7 @@ export default function App() {
           precio_total:   g.adr_grupo || 0,
           estado:         "confirmada",
           _grupo:         true,
+          _grupoId:       g.id || g.nombre || fecha,
         });
       }
     }
