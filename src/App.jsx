@@ -3800,7 +3800,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
                         <div>
                           <p style={{ fontSize:11, fontWeight:700, color:C.textMid, textTransform:"uppercase", letterSpacing:"1.5px", marginBottom:12 }}>Grupos / Eventos</p>
                           {gruposDia.map((g,i) => (
-                            <div key={i} onClick={()=>{ setHmDayModal(null); setHmMesSel(null); onNavigarGrupos && onNavigarGrupos(g.tipo==="evento"?"eventos":"grupos", g.fecha_inicio, g.fecha_fin||g.fecha_inicio); }}
+                            <div key={i} onClick={()=>{ setHmDayModal(null); setHmMesSel(null); onNavigarGrupos && onNavigarGrupos(g.tipo==="evento"?"eventos":"grupos", g.fecha_inicio, g.fecha_fin||g.fecha_inicio, g.id); }}
                               style={{ display:"flex", alignItems:"center", gap:10, marginBottom:8, padding:"10px 14px", background:C.bg, borderRadius:10, border:`1px solid ${C.border}`, cursor:"pointer", transition:"background 0.12s" }}
                               onMouseEnter={e=>e.currentTarget.style.background=C.accentLight}
                               onMouseLeave={e=>e.currentTarget.style.background=C.bg}>
@@ -5760,14 +5760,21 @@ function GruposView({ datos, onRecargar }) {
     setModalGrupo({});
   };
 
+  const [highlightId, setHighlightId] = useState(null);
+  useEffect(() => {
+    if (highlightId) { const t = setTimeout(()=>setHighlightId(null), 2500); return ()=>clearTimeout(t); }
+  }, [highlightId]);
+
   useEffect(() => {
     const raw = sessionStorage.getItem("fr_pending_nuevo");
     if (!raw) return;
     sessionStorage.removeItem("fr_pending_nuevo");
     try {
-      const { tipo, fecha_inicio, fecha_fin } = JSON.parse(raw);
-      cambiarSubVista(tipo === "evento" ? "eventos" : "grupos");
-      abrirNuevo(fecha_inicio, tipo, fecha_fin);
+      const { tipo, fecha_inicio, fecha_fin, highlightId: hid } = JSON.parse(raw);
+      const subvista = tipo === "evento" ? "eventos" : "grupos";
+      cambiarSubVista(subvista);
+      if (hid) { setHighlightId(hid); }
+      else { abrirNuevo(fecha_inicio, tipo, fecha_fin); }
     } catch {}
   }, []);
 
@@ -6283,10 +6290,11 @@ function GruposView({ datos, onRecargar }) {
                       <tbody>
                         {lista.map((g,i)=>{
                           const noches = g.fecha_inicio && g.fecha_fin ? Math.max(1,Math.round((new Date(g.fecha_fin)-new Date(g.fecha_inicio))/86400000)) : 1;
+                          const isHL = highlightId === g.id;
                           return (
-                            <tr key={g.id} onClick={()=>setDetalleGrupo(g)} style={{ borderBottom:`1px solid ${C.border}`, background:i%2===0?C.bg:C.bgCard, cursor:"pointer" }}
-                              onMouseEnter={e=>e.currentTarget.style.background=C.accentLight}
-                              onMouseLeave={e=>e.currentTarget.style.background=i%2===0?C.bg:C.bgCard}>
+                            <tr key={g.id} onClick={()=>setDetalleGrupo(g)} style={{ borderBottom:`1px solid ${C.border}`, background: isHL ? "#EBF5FF" : i%2===0?C.bg:C.bgCard, cursor:"pointer", outline: isHL ? "2px solid #3B82F6" : "none", outlineOffset:"-2px", transition:"background 0.3s" }}
+                              onMouseEnter={e=>{ if(!isHL) e.currentTarget.style.background=C.accentLight; }}
+                              onMouseLeave={e=>{ e.currentTarget.style.background= isHL?"#EBF5FF":i%2===0?C.bg:C.bgCard; }}>
                               <td style={{ padding:"8px 12px", fontWeight:600, color:C.text, whiteSpace:"nowrap" }}>{g.nombre}</td>
                               <td style={{ padding:"8px 12px" }}><span style={{ fontSize:10, fontWeight:700, padding:"2px 8px", borderRadius:10, background:ESTADOS[g.estado]?.bg, color:ESTADOS[g.estado]?.color, whiteSpace:"nowrap" }}>{ESTADOS[g.estado]?.label}</span></td>
                               <td style={{ padding:"8px 12px", color:C.textMid, whiteSpace:"nowrap" }}>{g.fecha_inicio||"—"}</td>
@@ -6362,10 +6370,11 @@ function GruposView({ datos, onRecargar }) {
                         {lista.map((g,i)=>{
                           const ev = parseNotasEvento(g.notas);
                           const hora = ev.hora_inicio && ev.hora_fin ? `${ev.hora_inicio} – ${ev.hora_fin}` : (ev.hora_inicio||"—");
+                          const isHL = highlightId === g.id;
                           return (
-                            <tr key={g.id} onClick={()=>setDetalleGrupo(g)} style={{ borderBottom:`1px solid ${C.border}`, background:i%2===0?C.bg:C.bgCard, cursor:"pointer" }}
-                              onMouseEnter={e=>e.currentTarget.style.background=C.accentLight}
-                              onMouseLeave={e=>e.currentTarget.style.background=i%2===0?C.bg:C.bgCard}>
+                            <tr key={g.id} onClick={()=>setDetalleGrupo(g)} style={{ borderBottom:`1px solid ${C.border}`, background: isHL?"#EBF5FF":i%2===0?C.bg:C.bgCard, cursor:"pointer", outline: isHL?"2px solid #3B82F6":"none", outlineOffset:"-2px", transition:"background 0.3s" }}
+                              onMouseEnter={e=>{ if(!isHL) e.currentTarget.style.background=C.accentLight; }}
+                              onMouseLeave={e=>{ e.currentTarget.style.background= isHL?"#EBF5FF":i%2===0?C.bg:C.bgCard; }}>
                               <td style={{ padding:"8px 12px", fontWeight:600, color:C.text, whiteSpace:"nowrap" }}>{g.nombre}</td>
                               <td style={{ padding:"8px 12px" }}><span style={{ fontSize:10, fontWeight:700, padding:"2px 8px", borderRadius:10, background:ESTADOS[g.estado]?.bg, color:ESTADOS[g.estado]?.color, whiteSpace:"nowrap" }}>{ESTADOS[g.estado]?.label}</span></td>
                               <td style={{ padding:"8px 12px", color:C.textMid, whiteSpace:"nowrap" }}>{g.fecha_inicio||"—"}</td>
@@ -7724,7 +7733,7 @@ export default function App() {
   const handleOnboardingSkip = () => { localStorage.setItem("fr_onboarding_v1", "1"); setOnboardingStep(null); };
 
   const views = {
-    dashboard: (props) => <DashboardView {...props} onMesDetalle={(m, a) => setMesDetalle({ mes: m, anio: a })} onDesgloseMovimiento={tipo => setDesgloseMovimiento(tipo)} kpiModal={kpiModal} setKpiModal={setKpiModal} kpiModalExterno={kpiModalApp} onKpiModalExternoHandled={() => setKpiModalApp(null)} onNavigarGrupos={(subvista, fechaInicio, fechaFin) => { localStorage.setItem("fr_grupos_subvista", subvista); sessionStorage.setItem("fr_pending_nuevo", JSON.stringify({ tipo: subvista === "eventos" ? "evento" : "grupo", fecha_inicio: fechaInicio, fecha_fin: fechaFin })); setView("grupos"); localStorage.setItem("fr_view", "grupos"); }} />,
+    dashboard: (props) => <DashboardView {...props} onMesDetalle={(m, a) => setMesDetalle({ mes: m, anio: a })} onDesgloseMovimiento={tipo => setDesgloseMovimiento(tipo)} kpiModal={kpiModal} setKpiModal={setKpiModal} kpiModalExterno={kpiModalApp} onKpiModalExternoHandled={() => setKpiModalApp(null)} onNavigarGrupos={(subvista, fechaInicio, fechaFin, id) => { localStorage.setItem("fr_grupos_subvista", subvista); sessionStorage.setItem("fr_pending_nuevo", JSON.stringify({ tipo: subvista === "eventos" ? "evento" : "grupo", fecha_inicio: fechaInicio, fecha_fin: fechaFin, highlightId: id||null })); setView("grupos"); localStorage.setItem("fr_view", "grupos"); }} />,
     pickup:    (props) => <PickupView    {...props} />,
     budget:    (props) => <BudgetView    {...props} />,
     grupos:    (props) => <GruposView    {...props} onRecargar={() => cargarDatos(true)} />,
