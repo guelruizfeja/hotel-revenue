@@ -48,7 +48,7 @@ function buildDonutChart(segments, size = 110) {
     data: {
       datasets: [{ data: segments.map(s => s.value), backgroundColor: segments.map(s => s.color), borderWidth: 2, borderColor: '#ffffff' }],
     },
-    options: { plugins: { legend: { display: false } }, cutout: '60%' },
+    options: { plugins: { legend: { display: false }, datalabels: { display: false } }, cutout: '60%' },
   };
   const url = `https://quickchart.io/chart?c=${encodeURIComponent(JSON.stringify(config))}&w=${size}&h=${size}&bkg=white`;
   return `<img src="${url}" width="${size}" height="${size}" alt="" style="display:block;" />`;

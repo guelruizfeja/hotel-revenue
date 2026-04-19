@@ -1594,8 +1594,8 @@ function ImportarExcel({ onClose, session, onImportado, onProduccionDirecta, hot
           .eq("hotel_id", session.user.id).eq("mes", mesActual).eq("anio", anioActual)
           .maybeSingle(),
         supabase.from("pickup_entries")
-          .select("canal,precio_total,estado")
-          .eq("hotel_id", session.user.id).gte("fecha_llegada", inicioMes).lt("fecha_llegada", inicioSig)
+          .select("canal,precio_total,num_reservas,estado")
+          .eq("hotel_id", session.user.id).gte("fecha_pickup", inicioMes).lt("fecha_pickup", inicioSig)
           .neq("estado", "cancelada"),
       ]);
 
@@ -1629,10 +1629,9 @@ function ImportarExcel({ onClose, session, onImportado, onProduccionDirecta, hot
 
       const canalMap = {};
       for (const p of (pickupMes || [])) {
-        const rev = p.precio_total || 0;
-        if (!rev) continue;
         const key = isOTA(p.canal) ? 'OTAs' : (p.canal || 'Directo / Web');
-        canalMap[key] = (canalMap[key] || 0) + rev;
+        const peso = p.precio_total || (p.num_reservas || 1);
+        canalMap[key] = (canalMap[key] || 0) + peso;
       }
       const canalesRevenue = Object.entries(canalMap).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]).map(([canal,revenue])=>({canal,revenue}));
 
@@ -8057,7 +8056,7 @@ export default function App() {
                       supabase.from("produccion_diaria").select("fecha,hab_ocupadas,hab_disponibles,revenue_hab,revenue_fnb,revenue_total").eq("hotel_id", session.user.id).gte("fecha", inicioMes).lt("fecha", inicioSig).order("fecha", { ascending: true }),
                       supabase.from("pickup_entries").select("num_reservas,precio_total,estado").eq("hotel_id", session.user.id).eq("fecha_pickup", ultimoDia.fecha),
                       supabase.from("presupuesto").select("rev_total_ppto").eq("hotel_id", session.user.id).eq("mes", mesActual).eq("anio", anioActual).maybeSingle(),
-                      supabase.from("pickup_entries").select("canal,precio_total,estado").eq("hotel_id", session.user.id).gte("fecha_llegada", inicioMes).lt("fecha_llegada", inicioSig).neq("estado", "cancelada"),
+                      supabase.from("pickup_entries").select("canal,precio_total,num_reservas,estado").eq("hotel_id", session.user.id).gte("fecha_pickup", inicioMes).lt("fecha_pickup", inicioSig).neq("estado", "cancelada"),
                     ]);
                     let nuevas = 0, cancels = 0, revPickup = 0;
                     for (const p of (pickupRows || [])) {
@@ -8076,7 +8075,7 @@ export default function App() {
                     const avgRevpar2 = totHabDisp2 > 0 ? totRevHab2 / totHabDisp2 : null;
                     const avgTrevpar2= totHabDisp2 > 0 ? totRevTotal2 / totHabDisp2 : null;
                     const canalMap2 = {};
-                    for (const p of (pickupMes2 || [])) { const rev = p.precio_total || 0; if (!rev) continue; const key = isOTA2(p.canal) ? 'OTAs' : (p.canal || 'Directo / Web'); canalMap2[key] = (canalMap2[key] || 0) + rev; }
+                    for (const p of (pickupMes2 || [])) { const key = isOTA2(p.canal) ? 'OTAs' : (p.canal || 'Directo / Web'); const peso = p.precio_total || (p.num_reservas || 1); canalMap2[key] = (canalMap2[key] || 0) + peso; }
                     const canalesRevenue2 = Object.entries(canalMap2).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]).map(([canal,revenue])=>({canal,revenue}));
                     const occ    = ultimoDia.hab_disponibles > 0 ? ultimoDia.hab_ocupadas / ultimoDia.hab_disponibles * 100 : null;
                     const adr    = ultimoDia.adr    ?? (ultimoDia.hab_ocupadas > 0 && ultimoDia.revenue_hab ? ultimoDia.revenue_hab / ultimoDia.hab_ocupadas : null);
