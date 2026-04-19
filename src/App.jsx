@@ -3230,7 +3230,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
   const { produccion } = datos;
   const pickupEntries = datos.pickupEntries || [];
   const presupuesto   = datos.presupuesto   || [];
-  const [hmMesSel, setHmMesSel] = useState(null);
+  const [hmMesSel, setHmMesSel] = useState(() => { try { const v=localStorage.getItem("fr_hmMesSel"); return v!==null?JSON.parse(v):null; } catch { return null; } });
   const [modalDiario, setModalDiario] = useState(null); // {mesIdx, anioIdx}
 
   // ── Pickup del último día importado por mes de llegada ──
@@ -3273,6 +3273,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
   const borrarHmEvent  = (idx) => { const a=hmEvents.filter((_,i)=>i!==idx); setHmEvents(a); localStorage.setItem("fr_hm_events",JSON.stringify(a)); };
   const [hmModoCrear, setHmModoCrear] = useState(false);
   const [hmDayModal, setHmDayModal] = useState(null); // iso string
+  useEffect(() => { localStorage.setItem("fr_hmMesSel", JSON.stringify(hmMesSel)); }, [hmMesSel]);
   useEffect(() => { setHmDragStart(null); setHmDragEnd(null); setHmIsDragging(false); setHmModoCrear(false); setHmDayModal(null); }, [hmMesSel]);
   useEffect(() => {
     const up = () => { if (hmIsDragging) setHmIsDragging(false); };
@@ -3641,65 +3642,97 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
                   <div style={{ flex:1, padding:"20px 24px", overflowY:"auto", minWidth:0 }}>
 
                     {/* Días semana */}
-                    <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:4, marginBottom:4, maxWidth:560 }}>
+                    <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:4, marginBottom:4 }}>
                       {t("dias_semana").map(d=>(
                         <p key={d} style={{ fontSize:10, color:C.textLight, textAlign:"center", fontWeight:600 }}>{d}</p>
                       ))}
                     </div>
 
-                    {/* Grid días */}
-                    <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:4, maxWidth:560 }} onMouseLeave={()=>{ if(hmIsDragging){ setHmIsDragging(false); } }}>
-                      {Array.from({length:(diasDelMes[0]?.diaSem===0?6:diasDelMes[0]?.diaSem-1)||0},(_,i)=>(
-                        <div key={"e"+i} style={{ aspectRatio:"1" }}/>
-                      ))}
-                      {diasDelMes.map(({dia,occ,adr,esFut,resUltDia})=>{
-                        const resDia = resUltDia || 0;
-                        const tieneReserva = resDia > 0;
-                        const _pad2 = n=>String(n).padStart(2,"0");
-                        const isoDay = hmMesSel!=null ? `${anio}-${_pad2(hmMesSel+1)}-${_pad2(dia)}` : "";
-                        const inSel = hmModoCrear && hmIsDragging && hmDragStart!=null && hmDragEnd!=null &&
-                          dia >= Math.min(hmDragStart,hmDragEnd) && dia <= Math.max(hmDragStart,hmDragEnd);
-                        const isDaySelected = hmDayModal === isoDay;
-                        const evDay = hmEvents.filter(ev => ev.from <= isoDay && ev.to >= isoDay);
-                        const borderColor = isDaySelected ? C.accent : inSel ? "#3B82F6" : tieneReserva ? "#B8860B" : occ!=null ? heatColor(occ)+"CC" : C.border;
-                        const bg = isDaySelected ? C.accentLight : inSel ? "#3B82F618" : occ!=null ? heatBg(occ) : C.bg;
-                        return (
-                          <div key={dia}
-                            style={{ aspectRatio:"1", borderRadius:5, background: bg, border:`${inSel||isDaySelected?"2px":"1.5px"} solid ${borderColor}`, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:1, position:"relative", cursor: hmModoCrear ? "crosshair" : "pointer", userSelect:"none" }}
-                            onClick={()=>{ if (!hmModoCrear) { setHmDayModal(isoDay === hmDayModal ? null : isoDay); } }}
-                            onMouseDown={(e)=>{ if (!hmModoCrear) return; e.preventDefault(); setHmDragStart(dia); setHmDragEnd(dia); setHmIsDragging(true); }}
-                            onMouseEnter={()=>{ if(hmModoCrear && hmIsDragging) setHmDragEnd(dia); }}
-                            onMouseUp={()=>{
-                              if(hmModoCrear && hmIsDragging){
-                                setHmIsDragging(false);
-                                const from=Math.min(hmDragStart||dia,dia), to=Math.max(hmDragStart||dia,dia);
-                                if(from!==to){
-                                  setHmSelRango({ fromISO:`${anio}-${_pad2(hmMesSel+1)}-${_pad2(from)}`, toISO:`${anio}-${_pad2(hmMesSel+1)}-${_pad2(to)}` });
-                                }
-                              }
-                            }}>
-                            {tieneReserva && (
-                              <span style={{ position:"absolute", top:2, right:2, fontSize:8, lineHeight:1, animation:"pulse-rayo 1.5s ease-in-out infinite" }}>⚡</span>
-                            )}
-                            {evDay.length>0 && (
-                              <div style={{ position:"absolute", bottom:2, left:2, right:2, display:"flex", gap:1, justifyContent:"center" }}>
-                                {evDay.map((ev,ei)=><span key={ei} style={{ width:8, height:8, borderRadius:"50%", background:ev.color, display:"inline-block", flexShrink:0 }}/>)}
-                              </div>
-                            )}
-                            <p style={{ fontSize:8, color:C.text, lineHeight:1, fontWeight:600 }}>{dia}</p>
-                            {occ!=null
-                              ? <p style={{ fontSize:11, fontWeight:800, color:"#111", lineHeight:1 }}>{occ.toFixed(0)}%</p>
-                              : <p style={{ fontSize:8, color:C.border }}>—</p>
-                            }
-                            {adr && !esFut && <p style={{ fontSize:7, color:C.textMid, lineHeight:1, fontWeight:600 }}>€{Math.round(adr)}</p>}
-                            {resDia!==0 && <p style={{ fontSize:7, color:tieneReserva?"#B8860B":C.red, fontWeight:700, lineHeight:1 }}>{resDia>0?"+":""}{resDia}</p>}
-                          </div>
-                        );
-                      })}
-                    </div>
+                    {/* Grid días — semana a semana con barras de eventos */}
+                    {(() => {
+                      const _pad2 = n=>String(n).padStart(2,"0");
+                      const mesPrefix = `${anio}-${_pad2(hmMesSel+1)}`;
+                      const CATCOLORS = { corporativo:"#2B7EC1", boda:"#D4547A", feria:"#E85D04", deportivo:"#059669", otros:"#7C3AED", evento:"#0A7C6A" };
+                      const firstDayOffset = (diasDelMes[0]?.diaSem===0?6:diasDelMes[0]?.diaSem-1)||0;
+                      const allCells = [...Array.from({length:firstDayOffset},()=>null), ...diasDelMes];
+                      const weeks = [];
+                      for (let i=0; i<allCells.length; i+=7) weeks.push(allCells.slice(i,i+7));
+                      const gruposDelMes = (datos.grupos||[]).filter(g=>{
+                        const ini=(g.fecha_inicio||"").slice(0,7);
+                        const fin=(g.fecha_fin||g.fecha_inicio||"").slice(0,7);
+                        return ini<=mesPrefix && fin>=mesPrefix;
+                      });
+                      const allEvs = [
+                        ...gruposDelMes.map(g=>({ from:g.fecha_inicio||"", to:g.fecha_fin||g.fecha_inicio||"", title:g.nombre||"(sin nombre)", color:CATCOLORS[g.categoria||"otros"]||CATCOLORS.otros })),
+                        ...hmEvents.map(ev=>({ from:ev.from, to:ev.to, title:ev.title||"(sin título)", color:ev.color }))
+                      ];
+                      return (
+                        <div onMouseLeave={()=>{ if(hmIsDragging) setHmIsDragging(false); }}>
+                          {weeks.map((weekCells,wi)=>{
+                            const weekISOs = weekCells.map(c=>c?`${anio}-${_pad2(hmMesSel+1)}-${_pad2(c.dia)}`:null);
+                            const weekDays = weekISOs.filter(Boolean);
+                            const weekStart=weekDays[0]||"", weekEnd=weekDays[weekDays.length-1]||"";
+                            const eventsThisWeek = allEvs.filter(ev=>ev.from<=weekEnd&&ev.to>=weekStart);
+                            return (
+                              <React.Fragment key={wi}>
+                                <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:4, marginBottom:eventsThisWeek.length>0?2:4 }}>
+                                  {weekCells.map((cell,ci)=>{
+                                    if(!cell) return <div key={"e"+ci} style={{ aspectRatio:"1" }}/>;
+                                    const {dia,occ,adr,esFut,resUltDia}=cell;
+                                    const resDia=resUltDia||0, tieneReserva=resDia>0;
+                                    const isoDay=`${anio}-${_pad2(hmMesSel+1)}-${_pad2(dia)}`;
+                                    const inSel=hmModoCrear&&hmIsDragging&&hmDragStart!=null&&hmDragEnd!=null&&dia>=Math.min(hmDragStart,hmDragEnd)&&dia<=Math.max(hmDragStart,hmDragEnd);
+                                    const isDaySelected=hmDayModal===isoDay;
+                                    const borderColor=isDaySelected?C.accent:inSel?"#3B82F6":tieneReserva?"#B8860B":occ!=null?heatColor(occ)+"CC":C.border;
+                                    const bg=isDaySelected?C.accentLight:inSel?"#3B82F618":occ!=null?heatBg(occ):C.bg;
+                                    return (
+                                      <div key={dia}
+                                        style={{ aspectRatio:"1", borderRadius:5, background:bg, border:`${inSel||isDaySelected?"2px":"1.5px"} solid ${borderColor}`, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:1, position:"relative", cursor:hmModoCrear?"crosshair":"pointer", userSelect:"none" }}
+                                        onClick={()=>{ if(!hmModoCrear){setHmDayModal(isoDay===hmDayModal?null:isoDay);} }}
+                                        onMouseDown={(e)=>{ if(!hmModoCrear)return; e.preventDefault(); setHmDragStart(dia); setHmDragEnd(dia); setHmIsDragging(true); }}
+                                        onMouseEnter={()=>{ if(hmModoCrear&&hmIsDragging)setHmDragEnd(dia); }}
+                                        onMouseUp={()=>{
+                                          if(hmModoCrear&&hmIsDragging){
+                                            setHmIsDragging(false);
+                                            const from=Math.min(hmDragStart||dia,dia),to=Math.max(hmDragStart||dia,dia);
+                                            if(from!==to){ setHmSelRango({fromISO:`${anio}-${_pad2(hmMesSel+1)}-${_pad2(from)}`,toISO:`${anio}-${_pad2(hmMesSel+1)}-${_pad2(to)}`}); }
+                                          }
+                                        }}>
+                                        {tieneReserva&&<span style={{ position:"absolute", top:2, right:2, fontSize:8, lineHeight:1, animation:"pulse-rayo 1.5s ease-in-out infinite" }}>⚡</span>}
+                                        <p style={{ fontSize:8, color:C.text, lineHeight:1, fontWeight:600 }}>{dia}</p>
+                                        {occ!=null?<p style={{ fontSize:11, fontWeight:800, color:"#111", lineHeight:1 }}>{occ.toFixed(0)}%</p>:<p style={{ fontSize:8, color:C.border }}>—</p>}
+                                        {adr&&!esFut&&<p style={{ fontSize:7, color:C.textMid, lineHeight:1, fontWeight:600 }}>€{Math.round(adr)}</p>}
+                                        {resDia!==0&&<p style={{ fontSize:7, color:tieneReserva?"#B8860B":C.red, fontWeight:700, lineHeight:1 }}>{resDia>0?"+":""}{resDia}</p>}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                                {eventsThisWeek.length>0&&(
+                                  <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:4, marginBottom:4, gridAutoRows:"15px" }}>
+                                    {eventsThisWeek.map((ev,ei)=>{
+                                      const evFrom=ev.from>weekStart?ev.from:weekStart;
+                                      const evTo=ev.to<weekEnd?ev.to:weekEnd;
+                                      let c1=weekISOs.findIndex(iso=>iso===evFrom);
+                                      if(c1<0) c1=weekISOs.findIndex(iso=>iso!==null)||0;
+                                      let c2=weekISOs.lastIndexOf(evTo);
+                                      if(c2<0) c2=weekISOs.map((iso,i)=>iso!==null?i:-1).filter(i=>i>=0).slice(-1)[0]||6;
+                                      return (
+                                        <div key={ei} style={{ gridColumn:`${c1+1}/${c2+2}`, height:14, borderRadius:3, background:ev.color, display:"flex", alignItems:"center", paddingLeft:5, overflow:"hidden" }}>
+                                          <span style={{ fontSize:9, color:"#fff", fontWeight:700, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{ev.title}</span>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                )}
+                              </React.Fragment>
+                            );
+                          })}
+                        </div>
+                      );
+                    })()}
 
                     {/* Leyenda */}
-                    <div style={{ marginTop:12, display:"flex", flexWrap:"wrap", gap:8, alignItems:"center", maxWidth:560 }}>
+                    <div style={{ marginTop:12, display:"flex", flexWrap:"wrap", gap:8, alignItems:"center" }}>
                       {[["#81C784","<25%"],["#4CAF50","25-40%"],["#FFC107","40-55%"],["#FF7043","55-70%"],["#E53935","70-85%"],["#B71C1C",">85%"]].map(([col,lbl])=>(
                         <span key={lbl} style={{ display:"flex", alignItems:"center", gap:3, fontSize:9, color:C.textLight }}>
                           <span style={{ width:10, height:10, borderRadius:2, background:col, display:"inline-block" }}/>
@@ -3847,7 +3880,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
               const canalMap = {};
               activasIso.forEach(e => {
                 const c = e.canal||"Directo";
-                canalMap[c] = (canalMap[c]||0) + (e.num_reservas||1);
+                canalMap[c] = (canalMap[c]||0) + (e._grupo ? 1 : (e.num_reservas||1));
               });
               const canales = Object.entries(canalMap).sort((a,b)=>b[1]-a[1]).slice(0,6);
               const totalRes = canales.reduce((a,[,v])=>a+v,0);
@@ -7786,7 +7819,7 @@ export default function App() {
           num_reservas:   g.habitaciones || 0,
           fecha_salida:   g.fecha_fin,
           noches:         1,
-          precio_total:   (g.habitaciones || 0) * (g.adr_grupo || 0),
+          precio_total:   g.adr_grupo || 0,
           estado:         "confirmada",
           _grupo:         true,
         });
