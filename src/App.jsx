@@ -3212,7 +3212,9 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
   const [hmEvents, setHmEvents] = useState(() => { try { return JSON.parse(localStorage.getItem("fr_hm_events")||"[]"); } catch { return []; } });
   const guardarHmEvent = (ev) => { const a=[...hmEvents,ev]; setHmEvents(a); localStorage.setItem("fr_hm_events",JSON.stringify(a)); };
   const borrarHmEvent  = (idx) => { const a=hmEvents.filter((_,i)=>i!==idx); setHmEvents(a); localStorage.setItem("fr_hm_events",JSON.stringify(a)); };
-  useEffect(() => { setHmDragStart(null); setHmDragEnd(null); setHmIsDragging(false); }, [hmMesSel]);
+  const [hmModoCrear, setHmModoCrear] = useState(false);
+  const [hmDayModal, setHmDayModal] = useState(null); // iso string
+  useEffect(() => { setHmDragStart(null); setHmDragEnd(null); setHmIsDragging(false); setHmModoCrear(false); setHmDayModal(null); }, [hmMesSel]);
   useEffect(() => {
     const up = () => { if (hmIsDragging) setHmIsDragging(false); };
     window.addEventListener("mouseup", up);
@@ -3224,6 +3226,8 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
   useEffect(() => {
     const handler = (e) => {
       if (e.key !== "Escape") return;
+      if (hmDayModal)   { setHmDayModal(null);   return; }
+      if (hmModoCrear)  { setHmModoCrear(false); return; }
       if (hmSelRango)   { setHmSelRango(null);   return; }
       if (hmEventForm) { setHmEventForm(null); return; }
       if (modalDiario) { setModalDiario(null); return; }
@@ -3231,7 +3235,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [modalDiario, hmMesSel, hmEventForm, hmSelRango]);
+  }, [modalDiario, hmMesSel, hmEventForm, hmSelRango, hmDayModal, hmModoCrear]);
 
   if (!produccion || produccion.length === 0) return <EmptyState />;
 
@@ -3374,6 +3378,8 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
         const _hoyStr = `${_hoy.getFullYear()}-${_pad(_hoy.getMonth()+1)}-${_pad(_hoy.getDate())}`;
         const otbDia = {};
         (datos.pickupEntries||[]).forEach(e => {
+          const est = e.estado||"confirmada";
+          if (est === "cancelada" || est === "tentativo") return;
           const f = String(e.fecha_llegada||"").slice(0,10);
           if (!f||f.length<10) return;
           otbDia[f] = (otbDia[f]||0)+(e.num_reservas||1);
@@ -3440,7 +3446,8 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
         // ADR desde pickup para un día ISO (usa precios_por_noche si disponible, sino precio_total/noches)
         const calcAdrPickup = (iso) => {
           const activas = pickupEntries.filter(e => {
-            if ((e.estado||"confirmada") === "cancelada") return false;
+            const est = e.estado||"confirmada";
+            if (est === "cancelada" || est === "tentativo") return false;
             const fl = String(e.fecha_llegada||"").slice(0,10);
             const fs = e.fecha_salida
               ? String(e.fecha_salida).slice(0,10)
@@ -3468,15 +3475,17 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
           return sumHabs > 0 ? sumRev / sumHabs : null;
         };
 
-        // Neto acumulado por día para meses futuros (confirmadas - canceladas)
+        // Neto acumulado por día para meses futuros (solo confirmadas, sin tentativos ni canceladas)
         const netoPorDia = {};
         if (hmMesSel != null) {
           const padM = n => String(n).padStart(2,"0");
           const mesStr = `${anio}-${padM(hmMesSel+1)}`;
           pickupEntries.forEach(e => {
+            const est = e.estado||"confirmada";
+            if (est === "tentativo") return;
             const fl = String(e.fecha_llegada||"").slice(0,10);
             if (!fl.startsWith(mesStr)) return;
-            const cancelada = (e.estado||"confirmada") === "cancelada";
+            const cancelada = est === "cancelada";
             const nr = (e.num_reservas||1) * (cancelada ? -1 : 1);
             netoPorDia[fl] = (netoPorDia[fl]||0) + nr;
           });
@@ -3522,7 +3531,13 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
                       <h3 style={{ fontSize:15, fontWeight:700, color:C.text }}>{MESES_H[hmMesSel]} {anio}</h3>
                       <button onClick={()=>setHmMesSel(m=>m<11?m+1:0)} style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:6, width:26, height:26, cursor:"pointer", fontSize:12, color:C.textMid, display:"flex", alignItems:"center", justifyContent:"center", padding:0 }}>›</button>
                     </div>
-                    <button onClick={()=>setHmMesSel(null)} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, width:26, height:26, cursor:"pointer", fontSize:15, color:C.textMid, display:"flex", alignItems:"center", justifyContent:"center", padding:0 }}>×</button>
+                    <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                      <button onClick={()=>{ setHmModoCrear(v=>!v); setHmDayModal(null); }}
+                        style={{ padding:"4px 10px", borderRadius:6, border:`1.5px solid ${hmModoCrear?"#3B82F6":C.border}`, background:hmModoCrear?"#3B82F618":C.bg, color:hmModoCrear?"#3B82F6":C.textMid, fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:5, transition:"all 0.15s" }}>
+                        <span style={{ fontSize:13 }}>+</span> Nuevo evento/grupo
+                      </button>
+                      <button onClick={()=>setHmMesSel(null)} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, width:26, height:26, cursor:"pointer", fontSize:15, color:C.textMid, display:"flex", alignItems:"center", justifyContent:"center", padding:0 }}>×</button>
+                    </div>
                   </div>
 
                   {/* Días semana */}
@@ -3542,18 +3557,20 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
                       const tieneReserva = resDia > 0;
                       const _pad2 = n=>String(n).padStart(2,"0");
                       const isoDay = hmMesSel!=null ? `${anio}-${_pad2(hmMesSel+1)}-${_pad2(dia)}` : "";
-                      const inSel = hmIsDragging && hmDragStart!=null && hmDragEnd!=null &&
+                      const inSel = hmModoCrear && hmIsDragging && hmDragStart!=null && hmDragEnd!=null &&
                         dia >= Math.min(hmDragStart,hmDragEnd) && dia <= Math.max(hmDragStart,hmDragEnd);
+                      const isDaySelected = hmDayModal === isoDay;
                       const evDay = hmEvents.filter(ev => ev.from <= isoDay && ev.to >= isoDay);
-                      const borderColor = inSel ? "#3B82F6" : tieneReserva ? "#B8860B" : occ!=null ? heatColor(occ)+"CC" : C.border;
-                      const bg = inSel ? "#3B82F618" : occ!=null ? heatBg(occ) : C.bg;
+                      const borderColor = isDaySelected ? C.accent : inSel ? "#3B82F6" : tieneReserva ? "#B8860B" : occ!=null ? heatColor(occ)+"CC" : C.border;
+                      const bg = isDaySelected ? C.accentLight : inSel ? "#3B82F618" : occ!=null ? heatBg(occ) : C.bg;
                       return (
                         <div key={dia}
-                          style={{ aspectRatio:"1", borderRadius:5, background: bg, border:`${inSel?"2px":"1.5px"} solid ${borderColor}`, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:1, position:"relative", cursor:"crosshair", userSelect:"none" }}
-                          onMouseDown={(e)=>{ e.preventDefault(); setHmDragStart(dia); setHmDragEnd(dia); setHmIsDragging(true); }}
-                          onMouseEnter={()=>{ if(hmIsDragging) setHmDragEnd(dia); }}
+                          style={{ aspectRatio:"1", borderRadius:5, background: bg, border:`${inSel||isDaySelected?"2px":"1.5px"} solid ${borderColor}`, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:1, position:"relative", cursor: hmModoCrear ? "crosshair" : "pointer", userSelect:"none" }}
+                          onClick={()=>{ if (!hmModoCrear) { setHmDayModal(isoDay === hmDayModal ? null : isoDay); } }}
+                          onMouseDown={(e)=>{ if (!hmModoCrear) return; e.preventDefault(); setHmDragStart(dia); setHmDragEnd(dia); setHmIsDragging(true); }}
+                          onMouseEnter={()=>{ if(hmModoCrear && hmIsDragging) setHmDragEnd(dia); }}
                           onMouseUp={()=>{
-                            if(hmIsDragging){
+                            if(hmModoCrear && hmIsDragging){
                               setHmIsDragging(false);
                               const from=Math.min(hmDragStart||dia,dia), to=Math.max(hmDragStart||dia,dia);
                               if(from!==to){
@@ -3592,7 +3609,10 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
                     <span style={{ fontSize:9, color:C.textLight, display:"flex", alignItems:"center", gap:3 }}>
                       <span style={{ fontSize:10 }}>⚡</span> Reserva captada
                     </span>
-                    <span style={{ fontSize:9, color:"#3B82F6", fontWeight:600, marginLeft:"auto" }}>Arrastra para crear grupo o evento</span>
+                    {hmModoCrear
+                      ? <span style={{ fontSize:9, color:"#3B82F6", fontWeight:600, marginLeft:"auto" }}>Arrastra para seleccionar rango · ESC para cancelar</span>
+                      : <span style={{ fontSize:9, color:C.textLight, marginLeft:"auto" }}>Pulsa un día para ver KPIs</span>
+                    }
                   </div>
 
                   {/* Eventos del mes */}
@@ -3617,9 +3637,162 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
                     );
                   })()}
 
+
                 </div>
               </div>
             )}
+
+            {/* ── MODAL KPI DÍA ── */}
+            {hmDayModal && hmMesSel!=null && (() => {
+              const iso = hmDayModal;
+              const diaN = parseInt(iso.slice(8,10));
+              const dt = new Date(iso+"T00:00:00");
+              const diasSemNombre = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
+              const labelDia = `${diasSemNombre[dt.getDay()]} ${diaN} ${MESES_H[hmMesSel]} ${anio}`;
+
+              const dayData = diasDelMes.find(d => d.dia === diaN);
+              const occ = dayData?.occ ?? null;
+              const adr = dayData?.adr ?? null;
+
+              const getFechaSalidaD = e => {
+                if (e.fecha_salida) return String(e.fecha_salida).slice(0,10);
+                if (e.noches && e.fecha_llegada) { const d=new Date(String(e.fecha_llegada).slice(0,10)); d.setDate(d.getDate()+Number(e.noches)); return d.toISOString().slice(0,10); }
+                return null;
+              };
+              // Deduplicar: mismo booking aparece una vez por cada día importado — conservar el más reciente
+              const dedupMap = {};
+              (pickupEntries||[]).forEach(e => {
+                const est = e.estado||"confirmada";
+                if (est === "cancelada") return;
+                const fl = String(e.fecha_llegada||"").slice(0,10);
+                const fs = getFechaSalidaD(e) || "";
+                const key = `${fl}|${e.canal||""}|${fs}`;
+                const fp = String(e.fecha_pickup||"").slice(0,10);
+                if (!dedupMap[key] || fp > dedupMap[key]._fp) dedupMap[key] = { ...e, _fp: fp };
+              });
+              const activasIso = Object.values(dedupMap).filter(e => {
+                const fl = String(e.fecha_llegada||"").slice(0,10);
+                const fs = getFechaSalidaD(e);
+                return fl && fs && fl <= iso && fs > iso;
+              });
+              const canalMap = {};
+              activasIso.forEach(e => {
+                const c = e.canal||"Directo";
+                canalMap[c] = (canalMap[c]||0) + (e.num_reservas||1);
+              });
+              const canales = Object.entries(canalMap).sort((a,b)=>b[1]-a[1]).slice(0,6);
+              const totalRes = canales.reduce((a,[,v])=>a+v,0);
+
+              const gruposDia = (datos.grupos||[]).filter(g =>
+                g.fecha_inicio <= iso && (g.fecha_fin||g.fecha_inicio) >= iso &&
+                (g.estado==="confirmado"||g.estado==="tentativo")
+              );
+
+              // Antelación: reservas con llegada ese día, deduplicadas, antelación = fecha_llegada - fecha_pickup más antiguo
+              const resEseDia = Object.values(dedupMap).filter(e => String(e.fecha_llegada||"").slice(0,10)===iso);
+              let antelMediaDias = null;
+              if (resEseDia.length > 0) {
+                // Para la antelación queremos el pickup más antiguo (cuándo se creó la reserva)
+                const dedupAntel = {};
+                (pickupEntries||[]).forEach(e => {
+                  const est = e.estado||"confirmada";
+                  if (est === "cancelada") return;
+                  const fl = String(e.fecha_llegada||"").slice(0,10);
+                  if (fl !== iso) return;
+                  const fs = getFechaSalidaD(e) || "";
+                  const key = `${fl}|${e.canal||""}|${fs}`;
+                  const fp = String(e.fecha_pickup||"").slice(0,10);
+                  if (!dedupAntel[key] || fp < dedupAntel[key]._fp) dedupAntel[key] = { ...e, _fp: fp };
+                });
+                const dias = Object.values(dedupAntel).map(e => {
+                  const fp = e._fp;
+                  if (!fp) return null;
+                  return Math.round((new Date(iso)-new Date(fp))/86400000);
+                }).filter(d => d!=null && d>=0);
+                if (dias.length > 0) antelMediaDias = Math.round(dias.reduce((a,b)=>a+b,0)/dias.length);
+              }
+
+              return (
+                <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.45)", zIndex:1200, display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}
+                  onClick={()=>setHmDayModal(null)}>
+                  <div style={{ background:C.bgCard, borderRadius:14, width:"100%", maxWidth:380, maxHeight:"90vh", overflowY:"auto", padding:"22px 24px", boxShadow:"0 20px 60px rgba(0,0,0,0.3)" }}
+                    onClick={e=>e.stopPropagation()}>
+
+                    {/* Cabecera */}
+                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
+                      <div>
+                        <p style={{ fontSize:10, color:C.textLight, textTransform:"uppercase", letterSpacing:"1.5px", fontWeight:600, marginBottom:2 }}>Resumen del día</p>
+                        <h3 style={{ fontSize:18, fontWeight:800, color:C.text, fontFamily:"'Plus Jakarta Sans',sans-serif", letterSpacing:-0.5 }}>{labelDia}</h3>
+                      </div>
+                      <button onClick={()=>setHmDayModal(null)} style={{ background:"none", border:`1.5px solid ${C.border}`, borderRadius:8, width:32, height:32, cursor:"pointer", fontSize:16, color:C.textMid, display:"flex", alignItems:"center", justifyContent:"center", padding:0 }}>×</button>
+                    </div>
+
+                    {/* OCC + ADR */}
+                    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:14 }}>
+                      <div style={{ background:C.bg, borderRadius:10, padding:"12px 14px" }}>
+                        <p style={{ fontSize:9, color:C.textLight, textTransform:"uppercase", letterSpacing:"1px", marginBottom:4 }}>Ocupación</p>
+                        <p style={{ fontSize:26, fontWeight:800, color: occ!=null ? heatColor(occ) : C.border, lineHeight:1 }}>
+                          {occ!=null ? `${occ.toFixed(0)}%` : "—"}
+                        </p>
+                      </div>
+                      <div style={{ background:C.bg, borderRadius:10, padding:"12px 14px" }}>
+                        <p style={{ fontSize:9, color:C.textLight, textTransform:"uppercase", letterSpacing:"1px", marginBottom:4 }}>ADR</p>
+                        <p style={{ fontSize:26, fontWeight:800, color:C.text, lineHeight:1 }}>
+                          {adr!=null ? `€${Math.round(adr)}` : "—"}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Antelación */}
+                    {antelMediaDias != null && (
+                      <div style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 14px", background:C.bg, borderRadius:10, marginBottom:14 }}>
+                        <span style={{ fontSize:18 }}>🕐</span>
+                        <div>
+                          <p style={{ fontSize:9, color:C.textLight, letterSpacing:"0.5px", marginBottom:2 }}>Antelación media de reserva</p>
+                          <p style={{ fontSize:15, fontWeight:800, color:C.text }}>{antelMediaDias} días</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Grupos/eventos */}
+                    {gruposDia.length > 0 && (
+                      <div style={{ marginBottom:14 }}>
+                        <p style={{ fontSize:10, fontWeight:700, color:C.textMid, textTransform:"uppercase", letterSpacing:"1px", marginBottom:8 }}>Grupos / Eventos</p>
+                        {gruposDia.map((g,i) => (
+                          <div key={i} style={{ display:"flex", alignItems:"center", gap:8, marginBottom:6, padding:"8px 12px", background:C.bg, borderRadius:8, border:`1px solid ${C.border}` }}>
+                            <span style={{ fontSize:16 }}>{g.tipo==="evento"?"📌":"🏨"}</span>
+                            <span style={{ fontSize:12, fontWeight:700, color:C.text, flex:1 }}>{g.nombre}</span>
+                            <span style={{ fontSize:10, padding:"2px 6px", borderRadius:5, background: g.estado==="confirmado"?"#16a34a22":"#ca8a0422", color: g.estado==="confirmado"?"#16a34a":"#ca8a04", fontWeight:700 }}>{g.estado}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Origen reservas */}
+                    {canales.length > 0 && (
+                      <div>
+                        <p style={{ fontSize:10, fontWeight:700, color:C.textMid, textTransform:"uppercase", letterSpacing:"1px", marginBottom:8 }}>Origen reservas</p>
+                        {canales.map(([canal, n]) => (
+                          <div key={canal} style={{ marginBottom:8 }}>
+                            <div style={{ display:"flex", justifyContent:"space-between", marginBottom:3 }}>
+                              <span style={{ fontSize:11, color:C.text }}>{canal}</span>
+                              <span style={{ fontSize:11, fontWeight:700, color:C.text }}>{n} <span style={{ color:C.textLight, fontWeight:400 }}>({totalRes>0?Math.round(n/totalRes*100):0}%)</span></span>
+                            </div>
+                            <div style={{ height:4, borderRadius:3, background:C.border, overflow:"hidden" }}>
+                              <div style={{ height:"100%", width:`${totalRes>0?n/totalRes*100:0}%`, background:C.accent, borderRadius:3 }}/>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {canales.length===0 && gruposDia.length===0 && antelMediaDias==null && (
+                      <p style={{ fontSize:12, color:C.textLight, textAlign:"center", padding:"16px 0" }}>Sin datos de reservas para este día</p>
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* ── FORM EVENTO HEATMAP ── */}
             {hmSelRango && (
