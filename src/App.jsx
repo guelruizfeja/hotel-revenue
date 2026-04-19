@@ -3509,6 +3509,8 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
             const est = e.estado||"confirmada";
             if (est === "cancelada" || est === "tentativo") return false;
             const fl = String(e.fecha_llegada||"").slice(0,10);
+            // grupos: solo la entrada sintética del día exacto (evita triple-cuenta por días anteriores)
+            if (e._grupo) return fl === iso;
             const fs = e.fecha_salida
               ? String(e.fecha_salida).slice(0,10)
               : e.noches && fl ? (() => { const d=new Date(fl); d.setDate(d.getDate()+Number(e.noches)); return d.toISOString().slice(0,10); })()
@@ -3898,12 +3900,9 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
               const canales = Object.entries(canalMap).sort((a,b)=>b[1]-a[1]).slice(0,6);
               const totalRes = canales.reduce((a,[,v])=>a+v,0);
 
-              // OCC coherente con el canal breakdown: habitaciones pernoctando / total hotel
-              // Para pasado usa producción (más preciso); para futuro calcula desde activasIso
-              const dayDataOcc = dayData?.tieneReal ? dayData?.occ ?? null : null;
+              // OCC: para pasado usa producción; para futuro usa habPorDia (incluye grupos + individuales)
               const habHotelModal = datos.hotel?.habitaciones || habHotel;
-              const occDesdeActivas = habHotelModal > 0 ? Math.min(100, totalRes / habHotelModal * 100) : null;
-              const occ = dayDataOcc ?? occDesdeActivas;
+              const occ = dayData?.occ ?? (habHotelModal > 0 ? Math.min(100, totalRes / habHotelModal * 100) : null);
 
               const gruposDia = (datos.grupos||[]).filter(g =>
                 g.fecha_inicio <= iso && (g.fecha_fin||g.fecha_inicio) >= iso &&
