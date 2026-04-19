@@ -3653,7 +3653,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
                     {(() => {
                       const _pad2 = n=>String(n).padStart(2,"0");
                       const mesPrefix = `${anio}-${_pad2(hmMesSel+1)}`;
-                      const CATCOLORS = { corporativo:"#2B7EC1", boda:"#D4547A", feria:"#E85D04", deportivo:"#059669", otros:"#7C3AED", evento:"#0A7C6A" };
+                      const COL_GRUPO = "#059669", COL_EVENTO = "#2563EB";
                       const firstDayOffset = (diasDelMes[0]?.diaSem===0?6:diasDelMes[0]?.diaSem-1)||0;
                       const allCells = [...Array.from({length:firstDayOffset},()=>null), ...diasDelMes];
                       const weeks = [];
@@ -3664,8 +3664,8 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
                         return ini<=mesPrefix && fin>=mesPrefix;
                       });
                       const allEvs = [
-                        ...gruposDelMes.map(g=>({ from:g.fecha_inicio||"", to:g.fecha_fin||g.fecha_inicio||"", title:g.nombre||"(sin nombre)", color:CATCOLORS[g.categoria||"otros"]||CATCOLORS.otros, id:g.id, categoria:g.categoria, tipo:"db" })),
-                        ...hmEvents.map(ev=>({ from:ev.from, to:ev.to, title:ev.title||"(sin título)", color:ev.color, tipo:"manual" }))
+                        ...gruposDelMes.map(g=>({ from:g.fecha_inicio||"", to:g.fecha_fin||g.fecha_inicio||"", title:g.nombre||"(sin nombre)", color:g.categoria==="evento"?COL_EVENTO:COL_GRUPO, id:g.id, categoria:g.categoria, tipo:"db" })),
+                        ...hmEvents.map(ev=>({ from:ev.from, to:ev.to, title:ev.title||"(sin título)", color:COL_EVENTO, tipo:"manual" }))
                       ];
                       return (
                         <div onMouseLeave={()=>{ if(hmIsDragging) setHmIsDragging(false); }}>
@@ -3760,86 +3760,91 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
                   {(() => {
                     const _pad2 = n=>String(n).padStart(2,"0");
                     const mesPrefix = `${anio}-${_pad2(hmMesSel+1)}`;
-                    const CATCOLORS = { corporativo:"#2B7EC1", boda:"#D4547A", feria:"#E85D04", deportivo:"#059669", otros:"#7C3AED", evento:"#0A7C6A" };
-                    const gruposMes = (datos.grupos||[]).filter(g => {
+                    const COL_GRUPO = "#059669", COL_EVENTO = "#2563EB";
+                    const todasEntradas = (datos.grupos||[]).filter(g => {
                       const ini = (g.fecha_inicio||"").slice(0,7);
                       const fin = (g.fecha_fin||g.fecha_inicio||"").slice(0,7);
                       return ini <= mesPrefix && fin >= mesPrefix;
                     }).sort((a,b)=>a.fecha_inicio>b.fecha_inicio?1:-1);
+                    const soloGrupos  = todasEntradas.filter(g => g.categoria !== "evento");
+                    const soloEventos = todasEntradas.filter(g => g.categoria === "evento");
                     const evMes = hmEvents.map((ev,idx)=>({...ev,idx})).filter(ev => ev.from.slice(0,7)===mesPrefix || ev.to.slice(0,7)===mesPrefix);
-                    const totalRevGrupos = gruposMes.reduce((sum,g)=>{
+                    const totalRev = todasEntradas.reduce((sum,g)=>{
                       const ini = new Date((g.fecha_inicio||mesPrefix+"-01")+"T00:00:00");
                       const fin = new Date((g.fecha_fin||g.fecha_inicio||mesPrefix+"-01")+"T00:00:00");
                       const noches = Math.max(1,(fin-ini)/86400000);
                       const peso = g.estado==="cotizado"?0.5:1.0;
                       return sum + ((g.habitaciones||0)*(g.adr_grupo||0)*noches+(g.revenue_fnb||0)+(g.revenue_sala||0))*peso;
                     },0);
+
+                    const renderCard = (g, i, color) => {
+                      const esEvento = g.categoria === "evento";
+                      const ini = new Date((g.fecha_inicio||"")+"T00:00:00");
+                      const fin = new Date((g.fecha_fin||g.fecha_inicio||"")+"T00:00:00");
+                      const noches = Math.max(1,(fin-ini)/86400000);
+                      const peso = g.estado==="cotizado"?0.5:1.0;
+                      const rev = ((g.habitaciones||0)*(g.adr_grupo||0)*noches+(g.revenue_fnb||0)+(g.revenue_sala||0))*peso;
+                      const estadoBadge = { confirmado:"#059669", cotizado:"#D97706", perdido:C.red, cancelado:C.red }[g.estado]||C.textLight;
+                      return (
+                        <div key={g.id||i}
+                          onClick={()=>{ if(g.id){ setHmMesSel(null); onNavigarGrupos&&onNavigarGrupos(esEvento?"eventos":"grupos",g.fecha_inicio,g.fecha_fin||g.fecha_inicio,g.id); } }}
+                          style={{ background:C.bgCard, borderRadius:9, padding:"10px 12px", marginBottom:8, borderLeft:`3px solid ${color}`, cursor:g.id?"pointer":"default", transition:"opacity 0.12s" }}
+                          onMouseEnter={e=>{ if(g.id) e.currentTarget.style.opacity="0.75"; }}
+                          onMouseLeave={e=>e.currentTarget.style.opacity="1"}>
+                          <div style={{ display:"flex", alignItems:"flex-start", gap:8 }}>
+                            <div style={{ flex:1, minWidth:0 }}>
+                              <p style={{ fontSize:12, fontWeight:700, color:C.text, marginBottom:2, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{g.nombre||"(sin nombre)"}</p>
+                              <div style={{ display:"flex", gap:6, flexWrap:"wrap", alignItems:"center" }}>
+                                <span style={{ fontSize:10, color:C.textLight }}>
+                                  {(g.fecha_inicio||"").slice(8,10)}/{(g.fecha_inicio||"").slice(5,7)}
+                                  {!esEvento && g.fecha_fin && g.fecha_fin!==g.fecha_inicio && ` – ${g.fecha_fin.slice(8,10)}/${g.fecha_fin.slice(5,7)}`}
+                                </span>
+                                {!esEvento && g.habitaciones>0 && (
+                                  <span style={{ fontSize:10, color:C.textLight }}>{g.habitaciones} hab · {noches} noche{noches!==1?"s":""}</span>
+                                )}
+                                <span style={{ fontSize:9, fontWeight:700, color:estadoBadge, textTransform:"capitalize" }}>{g.estado||""}</span>
+                              </div>
+                            </div>
+                            {rev>0 && <span style={{ fontSize:12, fontWeight:700, color:C.text, flexShrink:0 }}>€{Math.round(rev).toLocaleString("es-ES")}</span>}
+                          </div>
+                        </div>
+                      );
+                    };
+
                     return (
                       <div style={{ width:340, padding:"20px 20px", overflowY:"auto", flexShrink:0 }}>
                         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
                           <p style={{ fontSize:13, fontWeight:700, color:C.text }}>Grupos y eventos</p>
-                          {totalRevGrupos>0 && (
-                            <span style={{ fontSize:11, fontWeight:700, color:C.accent }}>
-                              €{Math.round(totalRevGrupos).toLocaleString("es-ES")}
-                            </span>
-                          )}
+                          {totalRev>0 && <span style={{ fontSize:11, fontWeight:700, color:C.accent }}>€{Math.round(totalRev).toLocaleString("es-ES")}</span>}
                         </div>
 
-                        {gruposMes.length===0 && evMes.length===0 && (
+                        {todasEntradas.length===0 && evMes.length===0 && (
                           <p style={{ fontSize:12, color:C.textLight, textAlign:"center", marginTop:40 }}>Sin grupos ni eventos este mes</p>
                         )}
 
-                        {gruposMes.map((g,i)=>{
-                          const cat = g.categoria||"otros";
-                          const color = CATCOLORS[cat]||CATCOLORS.otros;
-                          const esEvento = cat==="evento";
-                          const ini = new Date((g.fecha_inicio||"")+"T00:00:00");
-                          const fin = new Date((g.fecha_fin||g.fecha_inicio||"")+"T00:00:00");
-                          const noches = Math.max(1,(fin-ini)/86400000);
-                          const peso = g.estado==="cotizado"?0.5:1.0;
-                          const rev = ((g.habitaciones||0)*(g.adr_grupo||0)*noches+(g.revenue_fnb||0)+(g.revenue_sala||0))*peso;
-                          const estadoBadge = { confirmado:"#059669", cotizado:"#D97706", perdido:C.red, cancelado:C.red }[g.estado]||C.textLight;
-                          return (
-                            <div key={g.id||i}
-                              onClick={()=>{ if(g.id){ setHmMesSel(null); onNavigarGrupos&&onNavigarGrupos(g.categoria==="evento"?"eventos":"grupos",g.fecha_inicio,g.fecha_fin||g.fecha_inicio,g.id); } }}
-                              style={{ background:C.bgCard, borderRadius:9, padding:"10px 12px", marginBottom:8, borderLeft:`3px solid ${color}`, cursor:g.id?"pointer":"default", transition:"opacity 0.12s" }}
-                              onMouseEnter={e=>{ if(g.id) e.currentTarget.style.opacity="0.75"; }}
-                              onMouseLeave={e=>e.currentTarget.style.opacity="1"}>
-                              <div style={{ display:"flex", alignItems:"flex-start", gap:8 }}>
-                                <div style={{ flex:1, minWidth:0 }}>
-                                  <p style={{ fontSize:12, fontWeight:700, color:C.text, marginBottom:2, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{g.nombre||"(sin nombre)"}</p>
-                                  <div style={{ display:"flex", gap:6, flexWrap:"wrap", alignItems:"center" }}>
-                                    <span style={{ fontSize:10, color:C.textLight }}>
-                                      {(g.fecha_inicio||"").slice(8,10)}/{(g.fecha_inicio||"").slice(5,7)}
-                                      {!esEvento && g.fecha_fin && g.fecha_fin!==g.fecha_inicio && ` – ${g.fecha_fin.slice(8,10)}/${g.fecha_fin.slice(5,7)}`}
-                                    </span>
-                                    {!esEvento && g.habitaciones>0 && (
-                                      <span style={{ fontSize:10, color:C.textLight }}>{g.habitaciones} hab · {noches} noche{noches!==1?"s":""}</span>
-                                    )}
-                                    <span style={{ fontSize:9, fontWeight:700, color:estadoBadge, textTransform:"capitalize" }}>{g.estado||""}</span>
-                                  </div>
-                                </div>
-                                {rev>0 && (
-                                  <span style={{ fontSize:12, fontWeight:700, color:C.text, flexShrink:0 }}>
-                                    €{Math.round(rev).toLocaleString("es-ES")}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          );
-                        })}
+                        {soloGrupos.length>0 && (
+                          <>
+                            <p style={{ fontSize:10, fontWeight:700, color:COL_GRUPO, textTransform:"uppercase", letterSpacing:"1px", marginBottom:8 }}>Grupos</p>
+                            {soloGrupos.map((g,i)=>renderCard(g,i,COL_GRUPO))}
+                          </>
+                        )}
+
+                        {soloEventos.length>0 && (
+                          <>
+                            {soloGrupos.length>0 && <div style={{ height:1, background:C.border, margin:"10px 0" }}/>}
+                            <p style={{ fontSize:10, fontWeight:700, color:COL_EVENTO, textTransform:"uppercase", letterSpacing:"1px", marginBottom:8 }}>Eventos</p>
+                            {soloEventos.map((g,i)=>renderCard(g,i,COL_EVENTO))}
+                          </>
+                        )}
 
                         {evMes.length>0 && (
                           <>
-                            {gruposMes.length>0 && <div style={{ height:1, background:C.border, margin:"10px 0" }}/>}
-                            <p style={{ fontSize:11, fontWeight:600, color:C.textLight, marginBottom:8 }}>Eventos manuales</p>
+                            {todasEntradas.length>0 && <div style={{ height:1, background:C.border, margin:"10px 0" }}/>}
+                            <p style={{ fontSize:10, fontWeight:700, color:C.textLight, textTransform:"uppercase", letterSpacing:"1px", marginBottom:8 }}>Eventos manuales</p>
                             {evMes.map(ev=>(
-                              <div key={ev.idx} style={{ display:"flex", alignItems:"center", gap:8, marginBottom:6, background:C.bgCard, borderRadius:7, padding:"7px 10px" }}>
-                                <span style={{ width:8, height:8, borderRadius:2, background:ev.color, display:"inline-block", flexShrink:0 }}/>
+                              <div key={ev.idx} style={{ display:"flex", alignItems:"center", gap:8, marginBottom:6, background:C.bgCard, borderRadius:7, padding:"7px 10px", borderLeft:`3px solid ${COL_EVENTO}` }}>
                                 <span style={{ fontSize:12, fontWeight:600, color:C.text, flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{ev.title||"(sin título)"}</span>
-                                <span style={{ fontSize:10, color:C.textLight, flexShrink:0 }}>
-                                  {ev.from.slice(8,10)}/{ev.from.slice(5,7)} – {ev.to.slice(8,10)}/{ev.to.slice(5,7)}
-                                </span>
+                                <span style={{ fontSize:10, color:C.textLight, flexShrink:0 }}>{ev.from.slice(8,10)}/{ev.from.slice(5,7)} – {ev.to.slice(8,10)}/{ev.to.slice(5,7)}</span>
                                 <button onClick={()=>borrarHmEvent(ev.idx)} style={{ background:"none", border:"none", cursor:"pointer", color:C.red, fontSize:13, padding:"0 2px", lineHeight:1, flexShrink:0 }}>×</button>
                               </div>
                             ))}
