@@ -8062,6 +8062,7 @@ export default function App() {
                     <p style={{ fontSize:12, fontWeight:600, color:C.text, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{session.user.email}</p>
                   </div>
                   {[
+                    { label:"Configuración del hotel", key:"hotel" },
                     { label:t("suscripcion"), key:"suscripcion" },
                     { label:t("extranets"), key:"extranets" },
                     { label:t("informe_mensual"), key:"informe" },
@@ -8134,6 +8135,49 @@ export default function App() {
 
 
       {/* Modal Suscripción */}
+      {perfilSeccion === "hotel" && (() => {
+        const [hForm, setHForm] = React.useState({ nombre: datos.hotel?.nombre||"", ciudad: datos.hotel?.ciudad||"", habitaciones: datos.hotel?.habitaciones||"" });
+        const [hGuardando, setHGuardando] = React.useState(false);
+        const [hOk, setHOk] = React.useState(false);
+        const inp = { width:"100%", padding:"9px 12px", borderRadius:8, border:`1px solid ${C.border}`, background:C.bg, color:C.text, fontSize:13, fontFamily:"'Plus Jakarta Sans',sans-serif", boxSizing:"border-box", outline:"none" };
+        return (
+          <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:1000 }}>
+            <div style={{ background:C.bgCard, borderRadius:16, padding:"32px 36px", width:400, boxShadow:"0 24px 60px rgba(0,0,0,0.2)", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:24 }}>
+                <h2 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:20, fontWeight:700, color:C.text }}>Configuración del hotel</h2>
+                <button onClick={()=>setPerfilSeccion(null)} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, width:28, height:28, cursor:"pointer", fontSize:15, color:C.textLight, display:"flex", alignItems:"center", justifyContent:"center", padding:0 }}>✕</button>
+              </div>
+
+              <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
+                <div>
+                  <p style={{ fontSize:11, color:C.textLight, fontWeight:600, marginBottom:5 }}>NOMBRE DEL HOTEL</p>
+                  <input style={inp} value={hForm.nombre} onChange={e=>setHForm(f=>({...f,nombre:e.target.value}))} placeholder="Nombre del hotel" />
+                </div>
+                <div>
+                  <p style={{ fontSize:11, color:C.textLight, fontWeight:600, marginBottom:5 }}>CIUDAD</p>
+                  <input style={inp} value={hForm.ciudad} onChange={e=>setHForm(f=>({...f,ciudad:e.target.value}))} placeholder="Ciudad" />
+                </div>
+                <div>
+                  <p style={{ fontSize:11, color:C.textLight, fontWeight:600, marginBottom:5 }}>NÚMERO DE HABITACIONES</p>
+                  <input style={inp} type="number" min="1" value={hForm.habitaciones} onChange={e=>setHForm(f=>({...f,habitaciones:e.target.value}))} placeholder="Ej: 110" />
+                  <p style={{ fontSize:10, color:C.textLight, marginTop:4 }}>Usado para calcular la ocupación en el heatmap y previsiones futuras.</p>
+                </div>
+              </div>
+
+              <button disabled={hGuardando||hOk} onClick={async()=>{
+                setHGuardando(true);
+                await supabase.from("hoteles").update({ nombre:hForm.nombre||null, ciudad:hForm.ciudad||null, habitaciones:parseInt(hForm.habitaciones)||null }).eq("id",session.user.id);
+                setHGuardando(false); setHOk(true);
+                cargarDatos(true);
+                setTimeout(()=>{ setHOk(false); setPerfilSeccion(null); }, 1500);
+              }} style={{ marginTop:24, width:"100%", padding:"11px", borderRadius:9, border:"none", background:hOk?"#059669":C.accent, color:"#fff", fontSize:14, fontWeight:700, cursor:hGuardando||hOk?"not-allowed":"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", transition:"background 0.2s" }}>
+                {hGuardando ? "Guardando..." : hOk ? "✓ Guardado" : "Guardar cambios"}
+              </button>
+            </div>
+          </div>
+        );
+      })()}
+
       {perfilSeccion === "suscripcion" && (
         <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:1000 }}>
           <div style={{ background:C.bgCard, borderRadius:16, padding:"36px 40px", width:440, boxShadow:"0 24px 60px rgba(0,0,0,0.2)", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
