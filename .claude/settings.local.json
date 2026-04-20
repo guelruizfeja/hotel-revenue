@@ -33,7 +33,9 @@
       "Bash(python.exe --version)",
       "Bash(py --version)",
       "Bash(ls \"/c/Users/guelr/Downloads/\"*Dise*)",
-      "Bash(curl -s http://localhost:5173)"
+      "Bash(curl -s http://localhost:5173)",
+      "Bash(awk -F: '$1 >= 4280 && $1 <= 4400')",
+      "Bash(awk -F: '$1 >= 4280 && $1 <= 4500')"
     ]
   }
 }

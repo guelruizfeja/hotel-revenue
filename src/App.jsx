@@ -372,6 +372,43 @@ const AnimatedBar = (props) => {
   );
 };
 
+// Habitaciones pernoctando en diaIso — fuente única de verdad usada por heatmap y ticker
+function calcHabEnCasa(pickupEntries, grupos, diaIso) {
+  const pad = n => String(n).padStart(2,"0");
+  const isoL = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+  let total = 0;
+  // 1) Grupos confirmados
+  (grupos||[]).filter(g => g.estado==="confirmado" && g.habitaciones>0 && g.fecha_inicio && g.fecha_fin)
+    .forEach(g => {
+      let d = new Date(g.fecha_inicio+"T00:00:00");
+      const fin = new Date(g.fecha_fin+"T00:00:00");
+      while (d < fin) {
+        const iso = isoL(d);
+        if (iso === diaIso) { total += g.habitaciones; break; }
+        if (iso > diaIso) break;
+        d.setDate(d.getDate()+1);
+      }
+    });
+  // 2) Individuales — dedup por fl|canal|fs conservando el pickup más reciente
+  const dd = {};
+  (pickupEntries||[]).forEach(e => {
+    if (e._grupo) return;
+    const est = e.estado||"confirmada";
+    if (est==="cancelada"||est==="tentativo") return;
+    const fl = String(e.fecha_llegada||"").slice(0,10);
+    const fs = e.fecha_salida ? String(e.fecha_salida).slice(0,10)
+      : (fl ? (() => { const d=new Date(fl+"T00:00:00"); d.setDate(d.getDate()+Math.max(1,Number(e.noches)||1)); return isoL(d); })() : null);
+    if (!fl||!fs) return;
+    const key = `${fl}|${e.canal||""}|${fs}`;
+    const fp  = String(e.fecha_pickup||"").slice(0,10);
+    if (!dd[key]||fp>dd[key]._fp) dd[key]={...e,_fp:fp,_fs:fs};
+  });
+  total += Object.values(dd)
+    .filter(e => String(e.fecha_llegada||"").slice(0,10)<=diaIso && e._fs>diaIso)
+    .reduce((a,e)=>a+(e.num_reservas||1),0);
+  return total;
+}
+
 const SimpleBar = ({ x, y, width, height, fill, fillOpacity }) => {
   if (!height || height <= 0) return null;
   return <rect x={x} y={y} width={width} height={height} rx={4} ry={4} fill={fill} fillOpacity={fillOpacity}/>;
@@ -415,7 +452,7 @@ const CustomTooltip = ({ active, payload, label, unit }) => {
   );
 };
 
-function WeatherBar({ ciudad, datos, lang }) {
+function WeatherBar({ ciudad, datos, lang, occDeTicker }) {
   const [weather, setWeather] = useState(null);
   const [ahora, setAhora] = useState(new Date());
   useEffect(() => { const id = setInterval(() => setAhora(new Date()), 1000); return () => clearInterval(id); }, []);
@@ -460,8 +497,6 @@ function WeatherBar({ ciudad, datos, lang }) {
     const anioActual = hoy.getFullYear();
     const mesPad = String(mesActual).padStart(2, "0");
     const mesPrefijo = `${anioActual}-${mesPad}`;
-    const hab = datos?.hotel?.habitaciones || 30;
-
     const fmtFecha = iso => { const [y,m,d]=iso.split("-"); return `${d}/${m}/${y.slice(2)}`; };
     const getFechaSalida = e => {
       if (e.fecha_salida) return String(e.fecha_salida).slice(0,10);
@@ -475,13 +510,9 @@ function WeatherBar({ ciudad, datos, lang }) {
     const salidasHoy   = activas.filter(e => getFechaSalida(e) === hoyStr).reduce((a,e)=>a+(e.num_reservas||1),0);
     const entradasAyer = activas.filter(e => String(e.fecha_llegada||"").slice(0,10) === ayerStr).reduce((a,e)=>a+(e.num_reservas||1),0);
     const salidasAyer  = activas.filter(e => getFechaSalida(e) === ayerStr).reduce((a,e)=>a+(e.num_reservas||1),0);
-    const ayerProd     = produccion.find(d => d.fecha === ayerStr);
-    const occAyerProd  = ayerProd?.hab_disponibles > 0 ? Math.round(ayerProd.hab_ocupadas/ayerProd.hab_disponibles*100) : null;
-    const netoHoy      = pickupEntries.reduce((a,e) => { if(String(e.fecha_llegada||"").slice(0,10)!==hoyStr)return a; return a+(e.num_reservas||1)*((e.estado||"confirmada")==="cancelada"?-1:1); },0);
-    const occHoy       = hab>0 ? Math.min(Math.round(Math.max(0,netoHoy)/hab*100),100) : null;
-    const netoAyer     = pickupEntries.reduce((a,e) => { if(String(e.fecha_llegada||"").slice(0,10)!==ayerStr)return a; return a+(e.num_reservas||1)*((e.estado||"confirmada")==="cancelada"?-1:1); },0);
-    const occAyerOTB   = hab>0 ? Math.min(Math.round(Math.max(0,netoAyer)/hab*100),100) : null;
-    const occAyer      = occAyerProd ?? occAyerOTB;
+    // OCC directo del cálculo centralizado en App (mismo valor que el heatmap)
+    const occHoy  = occDeTicker?.occHoy  ?? null;
+    const occAyer = occDeTicker?.occAyer ?? null;
     const fmtDelta     = (hoy,ayer) => { if(ayer==null)return ""; const d=hoy-ayer; return ` (${d>=0?"+":""}${d}%)`; };
     {
       const parts = [];
@@ -540,7 +571,7 @@ function WeatherBar({ ciudad, datos, lang }) {
     const sep = "          ◆          ";
     const full = msgs.join(sep) + sep;
     return full + full; // duplicar para loop continuo
-  }, [datos?.produccion?.length, datos?.pickupEntries?.length, datos?.grupos?.length]);
+  }, [datos?.produccion?.length, datos?.pickupEntries?.length, datos?.grupos?.length, occDeTicker]);
 
   const duration = Math.max(25, (tickerText.length / 2) * 0.13);
 
@@ -2041,7 +2072,6 @@ function ImportarExcel({ onClose, session, onImportado, onProduccionDirecta, hot
     { id:"presupuesto", label:"Presupuesto",      done: !!resultadoPpto },
     { id:"historico",   label:"Histórico",         done: !!resultadoMain },
     { id:"produccion",  label:"Producción Diaria", done: prodRecientes.length > 0 },
-    { id:"pickup",      label:"Pick Up",            done: pickupRecientes.length > 0 },
   ];
 
   const inner = (
@@ -2058,7 +2088,7 @@ function ImportarExcel({ onClose, session, onImportado, onProduccionDirecta, hot
       </div>
 
         {/* Tab cards */}
-        <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:8, padding:"0 26px 20px" }}>
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:8, padding:"0 26px 20px" }}>
           {tabs.map(tab => {
             const active = activeBlock === tab.id;
             return (
@@ -2434,7 +2464,7 @@ function ImportarExcel({ onClose, session, onImportado, onProduccionDirecta, hot
           )}
 
           {/* ── PICK UP ── */}
-          {activeBlock === "pickup" && (
+          {false && (
             <div>
               <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16, flexWrap:"wrap", gap:8 }}>
                 <p style={{ fontSize:12, color:H.textMid, lineHeight:1.5, margin:0 }}>Añade el pick up diario de reservas en el mismo formato que el Excel.</p>
@@ -3605,7 +3635,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
             const iso  = `${anio}-${pad(hmMesSel+1)}-${pad(di+1)}`;
             const prod = produccion.find(r=>r.fecha===iso);
             const esFut = iso > hoyStr2;
-            const neto  = netoPorDia[iso] || 0;
+            const neto  = calcHabEnCasa(pickupEntries, datos.grupos, iso);
             let occ=null, adr=null;
             if (prod) {
               occ = prod.hab_disponibles>0 ? Math.min(100,prod.hab_ocupadas/prod.hab_disponibles*100) : null;
@@ -4161,20 +4191,19 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
               const proxEntrada = numEntradas===0 ? todasActivas.map(e=>String(e.fecha_llegada||"").slice(0,10)).filter(f=>f>hoyStr).sort()[0]||null : null;
               const proxSalida  = numSalidas===0  ? todasActivas.map(e=>getFechaSalida(e)).filter(f=>f&&f>hoyStr).sort()[0]||null : null;
 
-              const habH = datos.hotel?.habitaciones || 0;
-              const netoHoy = habH ? (pickupEntries||[]).reduce((a,e) => {
-                if (String(e.fecha_llegada||"").slice(0,10) !== hoyStr) return a;
-                return a + (e.num_reservas||1) * ((e.estado||"confirmada")==="cancelada" ? -1 : 1);
-              }, 0) : 0;
-              const occHoy   = habH ? Math.min(Math.round(Math.max(0,netoHoy)/habH*100),100) : null;
-              const occColor = occHoy>=85?"#E53935":occHoy>=70?"#C49A0A":occHoy>=50?C.accent:C.textLight;
+              const habFromProd2 = produccion.length > 0
+                ? Math.round(produccion.reduce((a,r)=>a+(r.hab_disponibles||0),0)/produccion.length) : 30;
+              const habH = (datos.hotel?.habitaciones && datos.hotel.habitaciones > 0)
+                ? datos.hotel.habitaciones : habFromProd2;
+              const prodHoy  = produccion.find(d => d.fecha === hoyStr);
+              const occHoy   = prodHoy?.hab_disponibles > 0
+                ? Math.min(100, Math.round(prodHoy.hab_ocupadas/prodHoy.hab_disponibles*100))
+                : (habH > 0 ? Math.round(calcHabEnCasa(pickupEntries, datos.grupos, hoyStr)/habH*100) : null);
+              const occColor = occHoy>100?"#7B0000":occHoy>=85?"#E53935":occHoy>=70?"#C49A0A":occHoy>=50?C.accent:C.textLight;
               const ayerProd = produccion.find(d => d.fecha === ayerStr);
-              const netoAyer = habH ? (pickupEntries||[]).reduce((a,e) => {
-                if (String(e.fecha_llegada||"").slice(0,10) !== ayerStr) return a;
-                return a + (e.num_reservas||1) * ((e.estado||"confirmada")==="cancelada" ? -1 : 1);
-              }, 0) : 0;
-              const occAyerOTB = habH ? Math.min(Math.round(Math.max(0,netoAyer)/habH*100),100) : null;
-              const occAyer  = ayerProd?.hab_disponibles > 0 ? Math.round(ayerProd.hab_ocupadas / ayerProd.hab_disponibles * 100) : occAyerOTB;
+              const occAyer  = ayerProd?.hab_disponibles > 0
+                ? Math.round(ayerProd.hab_ocupadas/ayerProd.hab_disponibles*100)
+                : (habH > 0 ? Math.round(calcHabEnCasa(pickupEntries, datos.grupos, ayerStr)/habH*100) : null);
 
               const Delta = ({ hoy, ayer, unit="" }) => {
                 const d = hoy - ayer;
@@ -4442,7 +4471,8 @@ function PickupView({ datos, onGuardado }) {
   const [modalNR, setModalNR] = useState(() => { try { return localStorage.getItem("fr_nr_modal") === "1"; } catch { return false; } });
   const setModalNRPersist = (v) => { setModalNR(v); try { localStorage.setItem("fr_nr_modal", v ? "1" : "0"); } catch {} };
   const [nrForm, setNrForm] = useState(() => {
-    try { const s = localStorage.getItem("fr_nr_form"); return s ? JSON.parse(s) : { canal:"", num_reservas:"1", fecha_salida:"", noches:"", precio_total:"" }; } catch { return { canal:"", num_reservas:"1", fecha_salida:"", noches:"", precio_total:"" }; }
+    const hoy0 = new Date(); const _p0=n=>String(n).padStart(2,"0"); const hoyD=`${hoy0.getFullYear()}-${_p0(hoy0.getMonth()+1)}-${_p0(hoy0.getDate())}`;
+    try { const s = localStorage.getItem("fr_nr_form"); return s ? JSON.parse(s) : { canal:"", num_reservas:"1", fecha_llegada:hoyD, fecha_salida:"", noches:"", precio_total:"" }; } catch { return { canal:"", num_reservas:"1", fecha_llegada:hoyD, fecha_salida:"", noches:"", precio_total:"" }; }
   });
   const setNrFormPersist = (fn) => setNrForm(prev => { const next = typeof fn === "function" ? fn(prev) : fn; try { localStorage.setItem("fr_nr_form", JSON.stringify(next)); } catch {} return next; });
   const [nrGuardando, setNrGuardando] = useState(false);
@@ -4452,11 +4482,12 @@ function PickupView({ datos, onGuardado }) {
   const guardarNuevaReserva = async () => {
     setNrGuardando(true); setNrError("");
     try {
-      const noches = nrForm.noches ? parseInt(nrForm.noches) : null;
+      const noches = nrForm.noches ? parseInt(nrForm.noches) : 1;
+      const fechaLlegada = nrForm.fecha_llegada || hoyISO;
       let fechaSalida = nrForm.fecha_salida || null;
-      if (!fechaSalida && noches) { const d = new Date(hoyISO); d.setDate(d.getDate()+noches); fechaSalida = d.toISOString().slice(0,10); }
+      if (!fechaSalida) { const d = new Date(fechaLlegada+"T00:00:00"); d.setDate(d.getDate()+noches); fechaSalida = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; }
       const row = {
-        hotel_id: session.user.id, fecha_pickup: hoyISO, fecha_llegada: hoyISO,
+        hotel_id: session.user.id, fecha_pickup: hoyISO, fecha_llegada: fechaLlegada,
         canal: nrForm.canal || null, num_reservas: parseInt(nrForm.num_reservas)||1,
         fecha_salida: fechaSalida, noches,
         precio_total: nrForm.precio_total ? parseFloat(nrForm.precio_total) : null,
@@ -4719,9 +4750,9 @@ function PickupView({ datos, onGuardado }) {
                 <button onClick={()=>setModalNRPersist(false)} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, width:28, height:28, cursor:"pointer", fontSize:14, color:C.textLight }}>✕</button>
               </div>
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
-                <div style={{ gridColumn:"1/-1" }}>
-                  <p style={{ fontSize:10, color:C.textLight, fontWeight:600, textTransform:"uppercase", letterSpacing:"0.8px", marginBottom:4 }}>Fecha pickup & entrada</p>
-                  <input type="text" readOnly value={hoyISO} style={{ width:"100%", padding:"8px 10px", borderRadius:7, border:`1px solid ${C.border}`, fontSize:13, background:C.bg, color:C.textMid, fontFamily:"inherit", boxSizing:"border-box" }}/>
+                <div>
+                  <p style={{ fontSize:10, color:C.textLight, fontWeight:600, textTransform:"uppercase", letterSpacing:"0.8px", marginBottom:4 }}>Fecha llegada</p>
+                  <input type="date" value={nrForm.fecha_llegada||hoyISO} onChange={e=>{ const v=e.target.value; setNrFormPersist(f=>({ ...f, fecha_llegada:v, fecha_salida:"", noches:"" })); }} style={{ width:"100%", padding:"8px 10px", borderRadius:7, border:`1px solid ${C.border}`, fontSize:13, background:C.bgCard, color:C.text, fontFamily:"inherit", boxSizing:"border-box" }}/>
                 </div>
                 <div>
                   <p style={{ fontSize:10, color:C.textLight, fontWeight:600, textTransform:"uppercase", letterSpacing:"0.8px", marginBottom:4 }}>Canal</p>
@@ -4738,12 +4769,12 @@ function PickupView({ datos, onGuardado }) {
                 </div>
                 <div>
                   <p style={{ fontSize:10, color:C.textLight, fontWeight:600, textTransform:"uppercase", letterSpacing:"0.8px", marginBottom:4 }}>Noches</p>
-                  <input type="number" min="1" value={nrForm.noches} onChange={e=>{ const v=e.target.value; const d=new Date(hoyISO); if(parseInt(v)>0){d.setDate(d.getDate()+parseInt(v));} setNrFormPersist(f=>({...f,noches:v,fecha_salida:parseInt(v)>0?d.toISOString().slice(0,10):""})); }}
+                  <input type="number" min="1" value={nrForm.noches} onChange={e=>{ const v=e.target.value; const fl=nrForm.fecha_llegada||hoyISO; const d=new Date(fl+"T00:00:00"); if(parseInt(v)>0){d.setDate(d.getDate()+parseInt(v));} const _p=n=>String(n).padStart(2,"0"); setNrFormPersist(f=>({...f,noches:v,fecha_salida:parseInt(v)>0?`${d.getFullYear()}-${_p(d.getMonth()+1)}-${_p(d.getDate())}`:""})); }}
                     style={{ width:"100%", padding:"8px 10px", borderRadius:7, border:`1px solid ${C.border}`, fontSize:13, background:C.bgCard, color:C.text, fontFamily:"inherit", boxSizing:"border-box" }}/>
                 </div>
                 <div>
                   <p style={{ fontSize:10, color:C.textLight, fontWeight:600, textTransform:"uppercase", letterSpacing:"0.8px", marginBottom:4 }}>Fecha salida</p>
-                  <input type="date" value={nrForm.fecha_salida} onChange={e=>{ const v=e.target.value; const n=v?Math.round((new Date(v)-new Date(hoyISO))/86400000):0; setNrFormPersist(f=>({...f,fecha_salida:v,noches:n>0?String(n):""})); }}
+                  <input type="date" value={nrForm.fecha_salida} onChange={e=>{ const v=e.target.value; const fl=nrForm.fecha_llegada||hoyISO; const n=v?Math.round((new Date(v+"T00:00:00")-new Date(fl+"T00:00:00"))/86400000):0; setNrFormPersist(f=>({...f,fecha_salida:v,noches:n>0?String(n):""})); }}
                     style={{ width:"100%", padding:"8px 10px", borderRadius:7, border:`1px solid ${C.border}`, fontSize:13, background:C.bgCard, color:C.text, fontFamily:"inherit", boxSizing:"border-box" }}/>
                 </div>
                 <div style={{ gridColumn:"1/-1" }}>
@@ -8108,6 +8139,31 @@ export default function App() {
 
   const handleLogout = async () => { await supabase.auth.signOut(); };
 
+  // OCC de hoy/ayer para el ticker — misma fuente que el heatmap
+  const _occDeTicker = useMemo(() => {
+    const produccion    = datos.produccion || [];
+    const pickupEntries = datos.pickupEntries || [];
+    const grupos        = datos.grupos || [];
+    const pad = n => String(n).padStart(2,"0");
+    const hoy  = new Date();
+    const ayer = new Date(hoy); ayer.setDate(hoy.getDate()-1);
+    const hoyStr  = `${hoy.getFullYear()}-${pad(hoy.getMonth()+1)}-${pad(hoy.getDate())}`;
+    const ayerStr = `${ayer.getFullYear()}-${pad(ayer.getMonth()+1)}-${pad(ayer.getDate())}`;
+    const habFromProd = produccion.length > 0
+      ? Math.round(produccion.reduce((a,r)=>a+(r.hab_disponibles||0),0)/produccion.length)
+      : 30;
+    const hab = (datos.hotel?.habitaciones && datos.hotel.habitaciones > 0)
+      ? datos.hotel.habitaciones : habFromProd;
+    const occDia = (iso) => {
+      const prod = produccion.find(r => r.fecha === iso);
+      if (prod?.hab_disponibles > 0)
+        return Math.min(100, Math.round(prod.hab_ocupadas/prod.hab_disponibles*100));
+      const n = calcHabEnCasa(pickupEntries, grupos, iso);
+      return hab > 0 ? Math.round(n/hab*100) : null;
+    };
+    return { hoyStr, ayerStr, occHoy: occDia(hoyStr), occAyer: occDia(ayerStr) };
+  }, [datos.produccion, datos.pickupEntries, datos.grupos, datos.hotel]);
+
   const [mesDetalle, setMesDetalle] = useState(null);
   const [desgloseMovimiento, setDesgloseMovimiento] = useState(null); // null | "entradas" | "salidas" | "estancias"
   const [generandoPDF, setGenerandoPDF] = useState(false);
@@ -8330,7 +8386,7 @@ export default function App() {
       </header>
 
       <div style={{ height: "0.5px", background: "#fff", width: "100%", position:"sticky", top:52, zIndex:100 }} />
-      <WeatherBar ciudad={datos.hotel?.ciudad} datos={datos} lang={lang} />
+      <WeatherBar ciudad={datos.hotel?.ciudad} datos={datos} lang={lang} occDeTicker={_occDeTicker} />
       <div style={{ height: 8, background: "#fff", width: "100%" }} />
 
       {/* Main */}
