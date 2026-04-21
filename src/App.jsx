@@ -1920,17 +1920,17 @@ function ImportarExcel({ onClose, session, onImportado, onProduccionDirecta, hot
     setGuardandoPickup(false);
   };
 
-  // ── Generar pickup mock de ayer basado en histórico ──
+  // ── Generar pickup mock de hoy basado en histórico ──
   const [generandoMock, setGenerandoMock] = useState(false);
   const [okMock, setOkMock] = useState(false);
   const generarPickupMock = async () => {
     if (!session?.user?.id) { setErrorPickup("Sesión no disponible, recarga la página."); return; }
     setGenerandoMock(true);
     try {
-      const ayer = new Date(); ayer.setDate(ayer.getDate() - 1);
-      const ayerStr = `${ayer.getFullYear()}-${String(ayer.getMonth()+1).padStart(2,"0")}-${String(ayer.getDate()).padStart(2,"0")}`;
+      const hoy = new Date();
+      const ayerStr = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,"0")}-${String(hoy.getDate()).padStart(2,"0")}`;
 
-      // Limpiar entradas de ayer y todas las entradas de Grupos/Eventos de cualquier fecha
+      // Limpiar entradas de hoy y todas las entradas de Grupos/Eventos de cualquier fecha
       await Promise.all([
         supabase.from("pickup_entries")
           .delete()
@@ -2006,7 +2006,7 @@ function ImportarExcel({ onClose, session, onImportado, onProduccionDirecta, hot
 
       const mkFila = ({ canal, mesesDesde, mesesHasta, nochesDef, factorADR }, estado) => {
         const diasOffset = Math.round((mesesDesde * 30) + Math.random() * ((mesesHasta - mesesDesde) * 30));
-        const llegada = new Date(ayer); llegada.setDate(llegada.getDate() + diasOffset);
+        const llegada = new Date(hoy); llegada.setDate(llegada.getDate() + diasOffset);
         const noches = Math.max(1, Math.round(nochesDef + (Math.random() - 0.5)));
         const adr = Math.round(mediaADR * factorADR * (0.93 + Math.random() * 0.14));
         const salida = new Date(llegada); salida.setDate(salida.getDate() + noches);
@@ -2521,10 +2521,10 @@ function ImportarExcel({ onClose, session, onImportado, onProduccionDirecta, hot
               <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16, flexWrap:"wrap", gap:8 }}>
                 <p style={{ fontSize:12, color:H.textMid, lineHeight:1.5, margin:0 }}>Añade el pick up diario de reservas en el mismo formato que el Excel.</p>
                 <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                  {okMock && <span style={{ fontSize:11, color:H.green, fontWeight:600 }}>✓ Pickup de ayer generado</span>}
+                  {okMock && <span style={{ fontSize:11, color:H.green, fontWeight:600 }}>✓ Pickup de hoy generado</span>}
                   <button onClick={generarPickupMock} disabled={generandoMock}
                     style={{ padding:"6px 13px", borderRadius:6, border:`1px solid ${H.border}`, background:H.card, color:H.textMid, fontSize:11, fontWeight:600, cursor:generandoMock?"not-allowed":"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", whiteSpace:"nowrap" }}>
-                    {generandoMock ? "Generando…" : "⚡ Generar pickup de ayer"}
+                    {generandoMock ? "Generando…" : "⚡ Generar pickup de hoy"}
                   </button>
                 </div>
               </div>
