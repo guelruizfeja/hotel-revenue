@@ -3768,7 +3768,12 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
                               <React.Fragment key={wi}>
                                 <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:3, marginBottom:eventsThisWeek.length>0?2:3 }}>
                                   {weekCells.map((cell,ci)=>{
-                                    if(!cell) return <div key={"e"+ci} style={{ aspectRatio:"1" }}/>;
+                                    if(!cell) return (
+                      <div key={"e"+ci} style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:2, visibility:"hidden" }}>
+                        <p style={{ fontSize:13, fontWeight:700, lineHeight:1 }}>0</p>
+                        <div style={{ width:"100%", aspectRatio:"1" }}/>
+                      </div>
+                    );
                                     const {dia,occ,adr,esFut,resUltDia}=cell;
                                     const resDia=resUltDia||0, tieneReserva=resDia>0;
                                     const isoDay=`${anio}-${_pad2(hmMesSel+1)}-${_pad2(dia)}`;
