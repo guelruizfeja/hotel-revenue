@@ -45,9 +45,9 @@ const TRANSLATIONS = {
     dias_semana:["L","M","X","J","V","S","D"],
     dias_abrev:["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"],
     // Dashboard
-    bienvenido:"Bienvenido", ocup_mensual:"Ocupación mensual", adr_ocupacion:"ADR & Ocupación",
+    bienvenido:"Bienvenido", ocup_mensual:"Ocupación mensual", adr_ocupacion:"ADR, RevPAR & Ocupación",
     ultimos_12m:"Últimos 12 meses", sin_datos_mes:"Sin datos para este mes",
-    adr_ocup_diaria:"ADR & Ocupación diaria", otb:"OTB",
+    adr_ocup_diaria:"ADR, RevPAR & Ocupación diaria", otb:"OTB",
     // Table headers
     th_anio:"Año", th_mes:"Mes", th_ocup:"Ocup.", th_adr:"ADR",
     th_revpar:"RevPAR", th_trevpar:"TRevPAR", th_rev_hab:"Rev. Hab.", th_rev_total:"Rev. Total",
@@ -96,6 +96,7 @@ const TRANSLATIONS = {
     cat_deportivo:"Deportivo", cat_otros:"Otros",
     estado_confirmado:"Confirmado", estado_cotizacion:"Cotizado", estado_cancelado:"Cancelado",
     form_nombre:"Nombre del evento *", form_categoria:"Categoría", form_estado:"Estado",
+    form_segmento:"Segmento", seg_deportivo:"Deportivo", seg_negocio:"Negocio", seg_turistico:"Turístico", seg_congreso:"Congreso", seg_social:"Social", seg_otros:"Otros",
     form_fecha_entrada:"Fecha entrada *", form_fecha_salida:"Fecha salida *", form_fecha_confirmacion:"Fecha confirmación",
     form_habitaciones:"Habitaciones", form_adr:"ADR Grupo", form_fnb:"Revenue F&B",
     form_sala:"Revenue Sala", form_notas:"Notas", form_motivo:"Motivo de pérdida",
@@ -156,9 +157,9 @@ const TRANSLATIONS = {
     meses_corto:["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],
     dias_semana:["M","T","W","T","F","S","S"],
     dias_abrev:["Sun","Mon","Tue","Wed","Thu","Fri","Sat"],
-    bienvenido:"Welcome", ocup_mensual:"Monthly Occupancy", adr_ocupacion:"ADR & Occupancy",
+    bienvenido:"Welcome", ocup_mensual:"Monthly Occupancy", adr_ocupacion:"ADR, RevPAR & Occupancy",
     ultimos_12m:"Last 12 months", sin_datos_mes:"No data for this month",
-    adr_ocup_diaria:"Daily ADR & Occupancy", otb:"OTB",
+    adr_ocup_diaria:"Daily ADR, RevPAR & Occupancy", otb:"OTB",
     th_anio:"Year", th_mes:"Month", th_ocup:"Occup.", th_adr:"ADR",
     th_revpar:"RevPAR", th_trevpar:"TRevPAR", th_rev_hab:"Room Rev.", th_rev_total:"Total Rev.",
     th_fecha:"Date", th_hab_ocup:"Occ. Rooms", th_rev_day:"Total Rev.",
@@ -203,6 +204,7 @@ const TRANSLATIONS = {
     cat_deportivo:"Sports", cat_otros:"Others",
     estado_confirmado:"Confirmed", estado_cotizacion:"Quoted", estado_cancelado:"Cancelled",
     form_nombre:"Event name *", form_categoria:"Category", form_estado:"Status",
+    form_segmento:"Segment", seg_deportivo:"Sports", seg_negocio:"Business", seg_turistico:"Tourism", seg_congreso:"Congress", seg_social:"Social", seg_otros:"Others",
     form_fecha_entrada:"Check-in date *", form_fecha_salida:"Check-out date *", form_fecha_confirmacion:"Confirmation date",
     form_habitaciones:"Rooms", form_adr:"Group ADR", form_fnb:"F&B Revenue",
     form_sala:"Meeting Room Revenue", form_notas:"Notes", form_motivo:"Reason for loss",
@@ -260,9 +262,9 @@ const TRANSLATIONS = {
     meses_corto:["Jan","Fév","Mar","Avr","Mai","Jun","Jul","Aoû","Sep","Oct","Nov","Déc"],
     dias_semana:["L","M","M","J","V","S","D"],
     dias_abrev:["Dim","Lun","Mar","Mer","Jeu","Ven","Sam"],
-    bienvenido:"Bienvenue", ocup_mensual:"Occupation mensuelle", adr_ocupacion:"ADR & Occupation",
+    bienvenido:"Bienvenue", ocup_mensual:"Occupation mensuelle", adr_ocupacion:"ADR, RevPAR & Occupation",
     ultimos_12m:"12 derniers mois", sin_datos_mes:"Pas de données pour ce mois",
-    adr_ocup_diaria:"ADR & Occupation journalière", otb:"OTB",
+    adr_ocup_diaria:"ADR, RevPAR & Occupation journalière", otb:"OTB",
     th_anio:"Année", th_mes:"Mois", th_ocup:"Occup.", th_adr:"ADR",
     th_revpar:"RevPAR", th_trevpar:"TRevPAR", th_rev_hab:"Rev. Ch.", th_rev_total:"Rev. Total",
     th_fecha:"Date", th_hab_ocup:"Ch. Occup.", th_rev_day:"Rev. Total",
@@ -307,6 +309,7 @@ const TRANSLATIONS = {
     cat_deportivo:"Sportif", cat_otros:"Autres",
     estado_confirmado:"Confirmé", estado_cotizacion:"Devis", estado_cancelado:"Annulé",
     form_nombre:"Nom de l'événement *", form_categoria:"Catégorie", form_estado:"Statut",
+    form_segmento:"Segment", seg_deportivo:"Sportif", seg_negocio:"Affaires", seg_turistico:"Tourisme", seg_congreso:"Congrès", seg_social:"Social", seg_otros:"Autres",
     form_fecha_entrada:"Date d'arrivée *", form_fecha_salida:"Date de départ *", form_fecha_confirmacion:"Date de confirmation",
     form_habitaciones:"Chambres", form_adr:"ADR Groupe", form_fnb:"Revenu F&B",
     form_sala:"Revenu Salle", form_notas:"Notes", form_motivo:"Motif de perte",
@@ -372,6 +375,36 @@ const AnimatedBar = (props) => {
   );
 };
 
+// Construye mapa {fecha→habitaciones} en un solo paso — usar para lookups masivos
+function buildHabEnCasaMap(pickupEntries, grupos) {
+  const map = {};
+  const pad = n => String(n).padStart(2,"0");
+  const isoL = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+  const addRange = (fl, fs, nr) => {
+    let d = new Date(fl+"T00:00:00");
+    const end = new Date(fs+"T00:00:00");
+    while (d < end) { const iso=isoL(d); map[iso]=(map[iso]||0)+nr; d.setDate(d.getDate()+1); }
+  };
+  (grupos||[]).filter(g=>g.estado==="confirmado"&&g.habitaciones>0&&g.fecha_inicio&&g.fecha_fin)
+    .forEach(g=>addRange(g.fecha_inicio,g.fecha_fin,g.habitaciones));
+  const dd = {};
+  (pickupEntries||[]).forEach(e=>{
+    if(e._grupo)return;
+    const est=e.estado||"confirmada";
+    if(est==="cancelada"||est==="tentativo")return;
+    const fl=String(e.fecha_llegada||"").slice(0,10);
+    const fs=e.fecha_salida?String(e.fecha_salida).slice(0,10)
+      :(fl?(()=>{const d=new Date(fl+"T00:00:00");d.setDate(d.getDate()+Math.max(1,Number(e.noches)||1));return isoL(d);})():null);
+    if(!fl||!fs)return;
+    if(e.es_individual){addRange(fl,fs,e.num_reservas||1);return;}
+    const key=`${fl}|${e.canal||""}|${fs}`;
+    const fp=String(e.fecha_pickup||"").slice(0,10);
+    if(!dd[key]||fp>dd[key]._fp)dd[key]={fl,fs,nr:e.num_reservas||1,_fp:fp};
+  });
+  Object.values(dd).forEach(({fl,fs,nr})=>addRange(fl,fs,nr));
+  return map;
+}
+
 // Habitaciones pernoctando en diaIso — fuente única de verdad usada por heatmap y ticker
 function calcHabEnCasa(pickupEntries, grupos, diaIso) {
   const pad = n => String(n).padStart(2,"0");
@@ -389,8 +422,10 @@ function calcHabEnCasa(pickupEntries, grupos, diaIso) {
         d.setDate(d.getDate()+1);
       }
     });
-  // 2) Individuales — dedup por fl|canal|fs conservando el pickup más reciente
+  // 2) Pickup reports — dedup por fl|canal|fs conservando el más reciente
+  //    Reservas individuales (es_individual=true) se cuentan sin deduplicar
   const dd = {};
+  let contInd = 0;
   (pickupEntries||[]).forEach(e => {
     if (e._grupo) return;
     const est = e.estado||"confirmada";
@@ -399,11 +434,15 @@ function calcHabEnCasa(pickupEntries, grupos, diaIso) {
     const fs = e.fecha_salida ? String(e.fecha_salida).slice(0,10)
       : (fl ? (() => { const d=new Date(fl+"T00:00:00"); d.setDate(d.getDate()+Math.max(1,Number(e.noches)||1)); return isoL(d); })() : null);
     if (!fl||!fs) return;
+    if (e.es_individual) {
+      if (fl <= diaIso && fs > diaIso) contInd += (e.num_reservas||1);
+      return;
+    }
     const key = `${fl}|${e.canal||""}|${fs}`;
     const fp  = String(e.fecha_pickup||"").slice(0,10);
     if (!dd[key]||fp>dd[key]._fp) dd[key]={...e,_fp:fp,_fs:fs};
   });
-  total += Object.values(dd)
+  total += contInd + Object.values(dd)
     .filter(e => String(e.fecha_llegada||"").slice(0,10)<=diaIso && e._fs>diaIso)
     .reduce((a,e)=>a+(e.num_reservas||1),0);
   return total;
@@ -500,10 +539,23 @@ function WeatherBar({ ciudad, datos, lang, occDeTicker }) {
     const fmtFecha = iso => { const [y,m,d]=iso.split("-"); return `${d}/${m}/${y.slice(2)}`; };
     const getFechaSalida = e => {
       if (e.fecha_salida) return String(e.fecha_salida).slice(0,10);
-      if (e.noches && e.fecha_llegada) { const d=new Date(e.fecha_llegada); d.setDate(d.getDate()+Number(e.noches)); return d.toISOString().slice(0,10); }
+      if (e.noches && e.fecha_llegada) { const d=new Date(String(e.fecha_llegada).slice(0,10)+"T00:00:00"); d.setDate(d.getDate()+Number(e.noches)); return d.toISOString().slice(0,10); }
       return null;
     };
-    const activas = pickupEntries.filter(e => (e.estado||"confirmada") !== "cancelada" && !((e.canal||"").toLowerCase().includes("grupo")||(e.canal||"").toLowerCase().includes("evento")));
+    // Dedup igual que el dashboard: pickup reports por (fl|canal|fs) más reciente,
+    // reservas individuales (es_individual) se acumulan sin deduplicar
+    const rawActivas = pickupEntries.filter(e => !e._grupo && (e.estado||"confirmada") !== "cancelada" && (e.estado||"confirmada") !== "tentativo");
+    const dedupMap = {};
+    const individuales = [];
+    rawActivas.forEach(e => {
+      const fl = String(e.fecha_llegada||"").slice(0,10);
+      const fs = getFechaSalida(e) || "";
+      if (e.es_individual) { individuales.push(e); return; }
+      const key = `${fl}|${e.canal||""}|${fs}`;
+      const fp  = String(e.fecha_pickup||"").slice(0,10);
+      if (!dedupMap[key] || fp > dedupMap[key]._fp) dedupMap[key] = { ...e, _fp: fp };
+    });
+    const activas = [...individuales, ...Object.values(dedupMap)];
 
     // ── 1. MOVIMIENTO DE HOY + comparación ayer ──
     const entradasHoy  = activas.filter(e => String(e.fecha_llegada||"").slice(0,10) === hoyStr).reduce((a,e)=>a+(e.num_reservas||1),0);
@@ -524,7 +576,7 @@ function WeatherBar({ ciudad, datos, lang, occDeTicker }) {
 
     // ── 2. GRUPOS / EVENTOS HOY → si no hay, próximo evento ──
     const grupos = datos?.grupos || [];
-    const gruposHoy = grupos.filter(g => g.fecha_inicio <= hoyStr && (g.fecha_fin||g.fecha_inicio) >= hoyStr && (g.estado==="confirmado"||g.estado==="tentativo"));
+    const gruposHoy = grupos.filter(g => g.fecha_inicio <= hoyStr && (g.fecha_fin||g.fecha_inicio) >= hoyStr && (g.estado==="confirmado"||g.estado==="cotizado"||g.estado==="tentativo"));
     if (gruposHoy.length > 0) {
       const partes = gruposHoy.map(g => {
         let txt = g.nombre;
@@ -3263,6 +3315,12 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
   const [hmMesSel, setHmMesSel] = useState(() => { try { const v=localStorage.getItem("fr_hmMesSel"); return v!==null?JSON.parse(v):null; } catch { return null; } });
   const [modalDiario, setModalDiario] = useState(null); // {mesIdx, anioIdx}
 
+  // Mapa precalculado fecha→habitaciones (un solo paso, O(1) lookups en render)
+  const habEnCasaMap = useMemo(
+    () => buildHabEnCasaMap(datos.pickupEntries, datos.grupos),
+    [datos.pickupEntries, datos.grupos]
+  );
+
   // ── Pickup del último día importado por mes de llegada ──
   const todasFechasPickup = pickupEntries
     .filter(e => !e._grupo)
@@ -3288,7 +3346,8 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
     .sort((a,b) => b[1]-a[1])
     .slice(0,2)
     .map(([mes]) => mes);
-  const [metricaSel, setMetricaSel] = useState("adr_occ");
+  const [metricaSel, setMetricaSel] = useState(() => localStorage.getItem("fr_metrica_sel") || "adr_occ");
+  const setMetricaSelPersist = (v) => { setMetricaSel(v); localStorage.setItem("fr_metrica_sel", v); };
   const [notasMes, setNotasMes] = useState(() => { try { return JSON.parse(localStorage.getItem("fr_notas_mes")||"{}"); } catch { return {}; } });
   const [editingNota, setEditingNota] = useState(null);
   const guardarNota = (key, txt) => { const n={...notasMes,[key]:txt}; setNotasMes(n); localStorage.setItem("fr_notas_mes",JSON.stringify(n)); };
@@ -3466,14 +3525,6 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
         const _pad = n => String(n).padStart(2,"0");
         const _hoy = new Date();
         const _hoyStr = `${_hoy.getFullYear()}-${_pad(_hoy.getMonth()+1)}-${_pad(_hoy.getDate())}`;
-        const otbDia = {};
-        (datos.pickupEntries||[]).forEach(e => {
-          const est = e.estado||"confirmada";
-          if (est === "cancelada" || est === "tentativo") return;
-          const f = String(e.fecha_llegada||"").slice(0,10);
-          if (!f||f.length<10) return;
-          otbDia[f] = (otbDia[f]||0)+(e.num_reservas||1);
-        });
         const occPorMes = MESES_H.map((label, mi) => {
           const d = produccion.filter(r => {
             const f = new Date(r.fecha+"T00:00:00");
@@ -3502,13 +3553,13 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
           const habH = (datos.hotel?.habitaciones && datos.hotel.habitaciones > 0)
             ? datos.hotel.habitaciones
             : habFromProd;
-          let totalRes = 0;
+          let totalRoomNights = 0;
           for (let di=1; di<=diasMes; di++) {
             const iso = `${mesStr}-${_pad(di)}`;
-            totalRes += otbDia[iso] || 0;
+            totalRoomNights += habEnCasaMap[iso] || 0;
           }
-          const occ = habH > 0 ? (totalRes / (habH * diasMes) * 100) : null;
-          return { label, mi, occ: totalRes>0 ? occ : null, occLY, esOtb: true };
+          const occ = habH > 0 ? (totalRoomNights / (habH * diasMes) * 100) : null;
+          return { label, mi, occ: totalRoomNights>0 ? occ : null, occLY, esOtb: true };
         });
 
         // Color heatmap — verde (baja) → amarillo → rojo (alta ocupación)
@@ -3635,7 +3686,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
             const iso  = `${anio}-${pad(hmMesSel+1)}-${pad(di+1)}`;
             const prod = produccion.find(r=>r.fecha===iso);
             const esFut = iso > hoyStr2;
-            const neto  = calcHabEnCasa(pickupEntries, datos.grupos, iso);
+            const neto  = habEnCasaMap[iso] || 0;
             let occ=null, adr=null;
             if (prod) {
               occ = prod.hab_disponibles>0 ? Math.min(100,prod.hab_ocupadas/prod.hab_disponibles*100) : null;
@@ -3726,23 +3777,25 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
                                     const borderColor=isDaySelected?C.accent:inSel?"#3B82F6":tieneReserva?"#B8860B":occ!=null?heatColor(occ)+"CC":C.border;
                                     const bg=isDaySelected?C.accentLight:inSel?"#3B82F618":occ!=null?heatBg(occ):C.bg;
                                     return (
-                                      <div key={dia}
-                                        style={{ aspectRatio:"1", borderRadius:5, background:bg, border:`${inSel||isDaySelected?"2px":"1.5px"} solid ${borderColor}`, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:1, position:"relative", cursor:hmModoCrear?"crosshair":"pointer", userSelect:"none" }}
-                                        onClick={()=>{ if(!hmModoCrear){setHmDayModal(isoDay===hmDayModal?null:isoDay);} }}
-                                        onMouseDown={(e)=>{ if(!hmModoCrear)return; e.preventDefault(); setHmDragStart(dia); setHmDragEnd(dia); setHmIsDragging(true); }}
-                                        onMouseEnter={()=>{ if(hmModoCrear&&hmIsDragging)setHmDragEnd(dia); }}
-                                        onMouseUp={()=>{
-                                          if(hmModoCrear&&hmIsDragging){
-                                            setHmIsDragging(false);
-                                            const from=Math.min(hmDragStart||dia,dia),to=Math.max(hmDragStart||dia,dia);
-                                            if(from!==to){ setHmSelRango({fromISO:`${anio}-${_pad2(hmMesSel+1)}-${_pad2(from)}`,toISO:`${anio}-${_pad2(hmMesSel+1)}-${_pad2(to)}`}); }
-                                          }
-                                        }}>
-                                        {tieneReserva&&<span style={{ position:"absolute", top:2, right:2, fontSize:8, lineHeight:1, animation:"pulse-rayo 1.5s ease-in-out infinite" }}>⚡</span>}
-                                        <p style={{ fontSize:8, color:C.text, lineHeight:1, fontWeight:600 }}>{dia}</p>
-                                        {occ!=null?<p style={{ fontSize:11, fontWeight:800, color:"#111", lineHeight:1 }}>{occ.toFixed(0)}%</p>:<p style={{ fontSize:8, color:C.border }}>—</p>}
-                                        {adr&&!esFut&&<p style={{ fontSize:7, color:C.textMid, lineHeight:1, fontWeight:600 }}>€{Math.round(adr)}</p>}
-                                        {resDia!==0&&<p style={{ fontSize:7, color:tieneReserva?"#B8860B":C.red, fontWeight:700, lineHeight:1 }}>{resDia>0?"+":""}{resDia}</p>}
+                                      <div key={dia} style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:2 }}>
+                                        <p style={{ fontSize:13, fontWeight:700, color:isDaySelected?C.accent:C.text, lineHeight:1, textAlign:"center" }}>{dia}</p>
+                                        <div
+                                          style={{ width:"100%", aspectRatio:"1", borderRadius:5, background:bg, border:`${inSel||isDaySelected?"2px":"1.5px"} solid ${borderColor}`, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:1, position:"relative", cursor:hmModoCrear?"crosshair":"pointer", userSelect:"none" }}
+                                          onClick={()=>{ if(!hmModoCrear){setHmDayModal(isoDay===hmDayModal?null:isoDay);} }}
+                                          onMouseDown={(e)=>{ if(!hmModoCrear)return; e.preventDefault(); setHmDragStart(dia); setHmDragEnd(dia); setHmIsDragging(true); }}
+                                          onMouseEnter={()=>{ if(hmModoCrear&&hmIsDragging)setHmDragEnd(dia); }}
+                                          onMouseUp={()=>{
+                                            if(hmModoCrear&&hmIsDragging){
+                                              setHmIsDragging(false);
+                                              const from=Math.min(hmDragStart||dia,dia),to=Math.max(hmDragStart||dia,dia);
+                                              if(from!==to){ setHmSelRango({fromISO:`${anio}-${_pad2(hmMesSel+1)}-${_pad2(from)}`,toISO:`${anio}-${_pad2(hmMesSel+1)}-${_pad2(to)}`}); }
+                                            }
+                                          }}>
+                                          {tieneReserva&&<span style={{ position:"absolute", top:2, right:2, fontSize:8, lineHeight:1, animation:"pulse-rayo 1.5s ease-in-out infinite" }}>⚡</span>}
+                                          {occ!=null?<p style={{ fontSize:11, fontWeight:800, color:"#111", lineHeight:1 }}>{occ.toFixed(0)}%</p>:<p style={{ fontSize:8, color:C.border }}>—</p>}
+                                          {adr&&!esFut&&<p style={{ fontSize:7, color:C.textMid, lineHeight:1, fontWeight:600 }}>€{Math.round(adr)}</p>}
+                                          {resDia!==0&&<p style={{ fontSize:7, color:tieneReserva?"#B8860B":C.red, fontWeight:700, lineHeight:1 }}>{resDia>0?"+":""}{resDia}</p>}
+                                        </div>
                                       </div>
                                     );
                                   })}
@@ -3912,23 +3965,28 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
                 if (e.noches && e.fecha_llegada) { const d=new Date(String(e.fecha_llegada).slice(0,10)); d.setDate(d.getDate()+Number(e.noches)); return d.toISOString().slice(0,10); }
                 return null;
               };
-              // Deduplicar: mismo booking aparece una vez por cada día importado — conservar el más reciente
+              // Deduplicar pickup reports; reservas individuales se cuentan sin deduplicar
               const dedupMap = {};
-              (pickupEntries||[]).forEach(e => {
+              const individualesIso = [];
+              (pickupEntries||[]).forEach((e, idx) => {
                 const est = e.estado||"confirmada";
                 if (est === "cancelada") return;
                 const fl = String(e.fecha_llegada||"").slice(0,10);
                 const fs = getFechaSalidaD(e) || "";
+                if (e.es_individual) {
+                  if (fl && fs && fl <= iso && fs > iso) individualesIso.push(e);
+                  return;
+                }
                 const key = e._grupo ? `_g|${fl}|${e._grupoId||e.canal||""}` : `${fl}|${e.canal||""}|${fs}`;
                 const fp = String(e.fecha_pickup||"").slice(0,10);
                 if (!dedupMap[key] || fp > dedupMap[key]._fp) dedupMap[key] = { ...e, _fp: fp };
               });
-              const activasIso = Object.values(dedupMap).filter(e => {
+              const activasIso = [...individualesIso, ...Object.values(dedupMap).filter(e => {
                 if (e._grupo) return String(e.fecha_llegada||"").slice(0,10) === iso;
                 const fl = String(e.fecha_llegada||"").slice(0,10);
                 const fs = getFechaSalidaD(e);
                 return fl && fs && fl <= iso && fs > iso;
-              });
+              })];
               const canalMap = {};
               activasIso.forEach(e => {
                 const c = e.canal||"Directo";
@@ -3943,7 +4001,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
 
               const gruposDia = (datos.grupos||[]).filter(g =>
                 g.fecha_inicio <= iso && (g.fecha_fin||g.fecha_inicio) >= iso &&
-                (g.estado==="confirmado"||g.estado==="tentativo")
+                (g.estado==="confirmado"||g.estado==="cotizado"||g.estado==="tentativo"||g.estado==="cancelado")
               );
 
               // Antelación: reservas con llegada ese día, deduplicadas, antelación = fecha_llegada - fecha_pickup más antiguo
@@ -4024,7 +4082,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
                                 <p style={{ fontSize:13, fontWeight:700, color:C.text, margin:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{g.nombre}</p>
                                 {g.habitaciones ? <p style={{ fontSize:11, color:C.textLight, margin:0 }}>{g.habitaciones} hab.</p> : null}
                               </div>
-                              <span style={{ fontSize:10, padding:"3px 7px", borderRadius:5, background: g.estado==="confirmado"?"#16a34a22":"#ca8a0422", color: g.estado==="confirmado"?"#16a34a":"#ca8a04", fontWeight:700, flexShrink:0 }}>{g.estado}</span>
+                              <span style={{ fontSize:10, padding:"3px 7px", borderRadius:5, background: g.estado==="confirmado"?"#16a34a22":g.estado==="cancelado"?"#99999922":"#ca8a0422", color: g.estado==="confirmado"?"#16a34a":g.estado==="cancelado"?"#999":"#ca8a04", fontWeight:700, flexShrink:0 }}>{g.estado}</span>
                             </div>
                           ))}
                         </div>
@@ -4168,20 +4226,19 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
                 }
                 return null;
               };
-              const todasActivas = (pickupEntries||[]).filter(e => !e._grupo && (e.estado||"confirmada") !== "cancelada");
+              const todasActivas = (pickupEntries||[]).filter(e => !e._grupo && (e.estado||"confirmada") !== "cancelada" && (e.estado||"confirmada") !== "tentativo");
 
-              // Deduplicar: si el Excel usa snapshots diarios de OTB, la misma reserva
-              // aparece en múltiples fecha_pickup. Quedarse solo con la entrada más reciente
-              // por clave (fecha_llegada + canal + fecha_salida/noches).
-              const deduped = {};
+              const _dedupMov = {};
+              const _indMov = [];
               todasActivas.forEach(e => {
                 const fl = String(e.fecha_llegada||"").slice(0,10);
                 const fs = getFechaSalida(e) || "";
+                if (e.es_individual) { _indMov.push(e); return; }
                 const key = `${fl}|${e.canal||""}|${fs}`;
                 const fp  = String(e.fecha_pickup||"").slice(0,10);
-                if (!deduped[key] || fp > deduped[key]._fp) deduped[key] = { ...e, _fp: fp };
+                if (!_dedupMov[key] || fp > _dedupMov[key]._fp) _dedupMov[key] = { ...e, _fp: fp };
               });
-              const activas = Object.values(deduped);
+              const activas = [..._indMov, ...Object.values(_dedupMov)];
 
               const numEntradas      = activas.filter(e => String(e.fecha_llegada||"").slice(0,10) === hoyStr).reduce((a,e)=>a+(e.num_reservas||1),0);
               const numSalidas       = activas.filter(e => getFechaSalida(e) === hoyStr).reduce((a,e)=>a+(e.num_reservas||1),0);
@@ -4198,12 +4255,12 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
               const prodHoy  = produccion.find(d => d.fecha === hoyStr);
               const occHoy   = prodHoy?.hab_disponibles > 0
                 ? Math.min(100, Math.round(prodHoy.hab_ocupadas/prodHoy.hab_disponibles*100))
-                : (habH > 0 ? Math.round(calcHabEnCasa(pickupEntries, datos.grupos, hoyStr)/habH*100) : null);
+                : (habH > 0 ? Math.round((habEnCasaMap[hoyStr]||0)/habH*100) : null);
               const occColor = occHoy>100?"#7B0000":occHoy>=85?"#E53935":occHoy>=70?"#C49A0A":occHoy>=50?C.accent:C.textLight;
               const ayerProd = produccion.find(d => d.fecha === ayerStr);
               const occAyer  = ayerProd?.hab_disponibles > 0
                 ? Math.round(ayerProd.hab_ocupadas/ayerProd.hab_disponibles*100)
-                : (habH > 0 ? Math.round(calcHabEnCasa(pickupEntries, datos.grupos, ayerStr)/habH*100) : null);
+                : (habH > 0 ? Math.round((habEnCasaMap[ayerStr]||0)/habH*100) : null);
 
               const Delta = ({ hoy, ayer, unit="" }) => {
                 const d = hoy - ayer;
@@ -4302,6 +4359,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
                     {[
                       { color:"#004B87", opacity:0.75, label:"Ocupación", type:"bar" },
                       { color:"#B8860B", opacity:1,    label:"ADR",       type:"line" },
+                      { color:"#E53935", opacity:1,    label:"RevPAR",    type:"line" },
                     ].map((item,i) => (
                       <div key={i} style={{ display:"flex", alignItems:"center", gap:5 }}>
                         {item.type==="bar" && <div style={{ width:10, height:10, borderRadius:2, background:item.color, opacity:item.opacity }}/>}
@@ -4331,7 +4389,8 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
                           shape={(p) => <AnimatedBar {...p} onClick={() => { if(p?.mesIdx!=null) setModalDiario({mesIdx:p.mesIdx, anioIdx:p.anioIdx}); }}/>}
                           onClick={(data) => { if(data?.mesIdx!=null) setModalDiario({mesIdx:data.mesIdx, anioIdx:data.anioIdx}); }}
                         />
-                        <Line yAxisId="right" dataKey="adr" name="ADR" type="monotone" stroke="#B8860B" strokeWidth={2} dot={{fill:"#B8860B", r:3, strokeWidth:0}} activeDot={{r:4}} isAnimationActive={false}/>
+                        <Line yAxisId="right" dataKey="adr"    name="ADR"    type="monotone" stroke="#B8860B" strokeWidth={2} dot={{fill:"#B8860B", r:3, strokeWidth:0}} activeDot={{r:4}} isAnimationActive={false}/>
+                        <Line yAxisId="right" dataKey="revpar" name="RevPAR" type="monotone" stroke="#E53935" strokeWidth={2} dot={{fill:"#E53935", r:3, strokeWidth:0}} activeDot={{r:4}} isAnimationActive={false}/>
                       </ComposedChart>
                     ) : (
                       <AreaChart data={porMes}>
@@ -4408,8 +4467,9 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
               dia: f.getDate(),
               label: `${f.getDate()}/${f.getMonth()+1}`,
               fecha: f.toLocaleDateString("es-ES",{day:"numeric",month:"long",year:"numeric"}),
-              occ: habDis>0 ? Math.min(100, Math.round(r.hab_ocupadas/habDis*100)) : 0,
-              adr: r.hab_ocupadas>0 ? Math.round(r.revenue_hab/r.hab_ocupadas) : 0,
+              occ:    habDis>0 ? Math.min(100, Math.round(r.hab_ocupadas/habDis*100)) : 0,
+              adr:    r.hab_ocupadas>0 ? Math.round(r.revenue_hab/r.hab_ocupadas) : 0,
+              revpar: habDis>0 ? Math.round((r.revenue_hab||0)/habDis) : 0,
             };
           });
 
@@ -4448,7 +4508,8 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
                     <Tooltip content={<CustomTooltip/>} cursor={false}/>
                     <Legend wrapperStyle={{ fontSize: 11, color: C.textMid, paddingTop: 8 }}/>
                     <Bar yAxisId="left" dataKey="occ" name="Ocupación" fill="url(#gradOccDiario)" radius={[4,4,0,0]} activeBar={false}/>
-                    <Line yAxisId="right" dataKey="adr" name="ADR" type="monotone" stroke="#B8860B" strokeWidth={2} dot={{fill:"#B8860B",r:2,strokeWidth:0}} activeDot={{r:4}}/>
+                    <Line yAxisId="right" dataKey="adr"    name="ADR"    type="monotone" stroke="#B8860B" strokeWidth={2} dot={{fill:"#B8860B",r:2,strokeWidth:0}} activeDot={{r:4}}/>
+                    <Line yAxisId="right" dataKey="revpar" name="RevPAR" type="monotone" stroke="#E53935" strokeWidth={2} dot={{fill:"#E53935",r:2,strokeWidth:0}} activeDot={{r:4}}/>
                   </ComposedChart>
                 </ResponsiveContainer>
               )}
@@ -4466,6 +4527,17 @@ function PickupView({ datos, onGuardado }) {
   const { session, presupuesto, produccion } = datos;
   const pickupEntries = datos.pickupEntries || [];
   const cargando = false;
+
+  // Mapa precalculado — mismo origen que el heatmap
+  const habEnCasaMapPU = useMemo(
+    () => buildHabEnCasaMap(datos.pickupEntries, datos.grupos),
+    [datos.pickupEntries, datos.grupos]
+  );
+  const habHotelPU = useMemo(() => {
+    if (datos.hotel?.habitaciones && datos.hotel.habitaciones > 0) return datos.hotel.habitaciones;
+    const p = datos.produccion || [];
+    return p.length > 0 ? Math.round(p.reduce((a,r)=>a+(r.hab_disponibles||0),0)/p.length) : 30;
+  }, [datos.hotel, datos.produccion]);
 
   const hoyISO = new Date().toISOString().slice(0,10);
   const [modalNR, setModalNR] = useState(() => { try { return localStorage.getItem("fr_nr_modal") === "1"; } catch { return false; } });
@@ -4492,6 +4564,7 @@ function PickupView({ datos, onGuardado }) {
         fecha_salida: fechaSalida, noches,
         precio_total: nrForm.precio_total ? parseFloat(nrForm.precio_total) : null,
         estado: "confirmada",
+        es_individual: true,
       };
       const { error } = await supabase.from("pickup_entries").insert(row);
       if (error) throw new Error(error.message);
@@ -4510,7 +4583,7 @@ function PickupView({ datos, onGuardado }) {
   const trimTipRef = useRef(null);
   const [canalMetric, setCanalMetric]     = useState("adr"); // "adr" | "noches"
   const [ayerVista, setAyerVista]         = useState(null); // null | "count"|"adr"|"noches"|"antelacion"
-  const [reservasVentana, setReservasVentana] = useState("30d"); // "30d" | "year"
+  const [reservasVentana, setReservasVentana] = useState("30d"); // "ayer" | "7d" | "30d" | "year"
   const [reservasVista, setReservasVista]     = useState("count"); // "count"|"adr"|"noches"|"antelacion"
   const [otaDetalle, setOtaDetalle]           = useState(false);
 
@@ -4672,13 +4745,18 @@ function PickupView({ datos, onGuardado }) {
     .map(([canal, d]) => ({ canal, media: (d.total/d.count).toFixed(1) }))
     .sort((a,b) => b.media - a.media);
 
-  // ── Reservas por ventana temporal (30d / año) ──
+  // ── Reservas por ventana temporal ──
   const hoyTs = new Date();
-  const ventanaMs = reservasVentana === "30d" ? 30 * 86400000 : 365 * 86400000;
-  const ventanaDesde = new Date(hoyTs - ventanaMs).toISOString().slice(0,10);
+  const _hoyD = hoyTs.toISOString().slice(0,10);
+  const _ayerD = (() => { const d=new Date(hoyTs); d.setDate(d.getDate()-1); return d.toISOString().slice(0,10); })();
+  const ventanaDesde = reservasVentana === "ayer" ? _ayerD
+    : reservasVentana === "7d"   ? new Date(hoyTs - 7   * 86400000).toISOString().slice(0,10)
+    : reservasVentana === "30d"  ? new Date(hoyTs - 30  * 86400000).toISOString().slice(0,10)
+    :                              new Date(hoyTs - 365 * 86400000).toISOString().slice(0,10);
+  const ventanaHasta = reservasVentana === "ayer" ? _ayerD : _hoyD;
   const reservasVentanaEntries = pickupEntries.filter(e => {
     const fp = String(e.fecha_pickup||"").slice(0,10);
-    return fp >= ventanaDesde && (e.estado||"confirmada") !== "cancelada" && normCanal(e.canal) !== "Grupos/Eventos";
+    return fp >= ventanaDesde && fp <= ventanaHasta && (e.estado||"confirmada") !== "cancelada" && normCanal(e.canal) !== "Grupos/Eventos";
   });
   const ventanaCanalStats = {};
   reservasVentanaEntries.forEach(e => {
@@ -5013,18 +5091,10 @@ function PickupView({ datos, onGuardado }) {
           {(() => {
             const padL = n => String(n).padStart(2,"0");
             const hoyStr = `${hoy.getFullYear()}-${padL(hoy.getMonth()+1)}-${padL(hoy.getDate())}`;
-            const hab = datos.hotel?.habitaciones || 30;
-            const otbPorDia = {};
-            (pickupEntries || []).forEach(e => {
-              const fl = String(e.fecha_llegada || "").slice(0, 10);
-              const fp = String(e.fecha_pickup  || "").slice(0, 10);
-              if (fl.length < 10 || fp.length < 10) return;
-              if (fl <= hoyStr) return;
-              if (fp > hoyStr) return;
-              if ((e.estado || "confirmada") === "cancelada") return;
-              otbPorDia[fl] = (otbPorDia[fl] || 0) + (e.num_reservas || 1);
-            });
-            const top5 = Object.entries(otbPorDia).sort((a,b) => b[1]-a[1]).slice(0,5);
+            const top5 = Object.entries(habEnCasaMapPU)
+              .filter(([iso, n]) => iso > hoyStr && n > 0)
+              .sort((a,b) => b[1]-a[1])
+              .slice(0,5);
             if (top5.length === 0) return <p style={{ fontSize:11, color:C.textLight }}>{t("sin_futuras")}</p>;
             const maxVal = top5[0][1] || 1;
             const fmt = (iso) => {
@@ -5033,8 +5103,8 @@ function PickupView({ datos, onGuardado }) {
               return `${t("dias_abrev")[dt.getDay()]} ${Number(d)} ${t("meses_corto")[Number(m)-1]}`;
             };
             return top5.map(([fecha, otb]) => {
-              const occ = Math.round(otb / hab * 100);
-              const occColor = occ >= 85 ? "#E53935" : occ >= 70 ? "#FF7043" : occ >= 55 ? "#FFC107" : "#4CAF50";
+              const occ = Math.round(otb / habHotelPU * 100);
+              const occColor = occ > 100 ? "#7B0000" : occ >= 85 ? "#E53935" : occ >= 70 ? "#FF7043" : occ >= 55 ? "#FFC107" : "#4CAF50";
               return (
                 <div key={fecha} style={{ display:"flex", flexDirection:"column", gap:3 }}>
                   <div style={{ display:"flex", justifyContent:"space-between", alignItems:"baseline" }}>
@@ -5123,8 +5193,8 @@ function PickupView({ datos, onGuardado }) {
               <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:18, color:C.text, marginBottom:8 }}>Reservas obtenidas</p>
               {/* Toggle ventana */}
               <div style={{ display:"flex", borderRadius:8, overflow:"hidden", border:`1px solid ${C.border}`, width:"fit-content" }}>
-                {[["30d","Últimos 30 días"], ["year","Último año"]].map(([key, label]) => (
-                  <button key={key} onClick={()=>setReservasVentana(key)}
+                {[["ayer","Ayer"], ["7d","7 días"], ["30d","30 días"], ["year","1 año"]].map(([key, label]) => (
+                  <button key={key} onClick={()=>{ setReservasVentana(key); setOtaDetalle(false); }}
                     style={{ padding:"5px 14px", fontSize:11, fontWeight:700, cursor:"pointer", border:"none", background: reservasVentana===key ? "#111" : "transparent", color: reservasVentana===key ? "#fff" : C.textMid, transition:"background 0.2s", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
                     {label}
                   </button>
@@ -5923,17 +5993,25 @@ function GruposView({ datos, onRecargar, onVolverHeatmap }) {
     confirmado: { label: t("estado_confirmado"), color: "#1A7A3C", bg: "#E6F7EE", peso: 1.0 },
     cotizado:   { label: t("estado_cotizacion"), color: "#B8860B", bg: "#FFF8E7", peso: 0.5 },
     cancelado:  { label: t("estado_cancelado"),  color: "#999",    bg: "#F5F5F5", peso: 0   },
+    tentativo:  { label: t("estado_cotizacion"), color: "#B8860B", bg: "#FFF8E7", peso: 0.5 },
   };
+  const normEstado = (e) => (e === "tentativo" || e === "cotizacion") ? "cotizado" : (e || "confirmado");
 
   const MESES = t("meses_corto");
   const MESES_FULL = t("meses_full");
 
-  const [anio, setAnio] = useState(new Date().getFullYear());
-  const [mes, setMes] = useState(new Date().getMonth());
-  const [mesCal, setMesCal] = useState(new Date().getMonth());
-  const [anioCal, setAnioCal] = useState(new Date().getFullYear());
-  const [modalGrupo, setModalGrupo] = useState(null);
-  const [detalleGrupo, setDetalleGrupo] = useState(null);
+  const [anio, setAnioRaw] = useState(() => parseInt(localStorage.getItem("fr_grupos_anio")) || new Date().getFullYear());
+  const setAnio = (v) => { const val = typeof v === "function" ? v(anio) : v; setAnioRaw(val); localStorage.setItem("fr_grupos_anio", val); };
+  const [mes, setMesRaw] = useState(() => { const v = localStorage.getItem("fr_grupos_mes"); return v !== null ? parseInt(v) : new Date().getMonth(); });
+  const setMes = (v) => { const val = typeof v === "function" ? v(mes) : v; setMesRaw(val); localStorage.setItem("fr_grupos_mes", val); };
+  const [mesCal, setMesCalRaw] = useState(() => { const v = localStorage.getItem("fr_grupos_mes_cal"); return v !== null ? parseInt(v) : new Date().getMonth(); });
+  const setMesCal = (v) => { const val = typeof v === "function" ? v(mesCal) : v; setMesCalRaw(val); localStorage.setItem("fr_grupos_mes_cal", val); };
+  const [anioCal, setAnioCalRaw] = useState(() => parseInt(localStorage.getItem("fr_grupos_anio_cal")) || new Date().getFullYear());
+  const setAnioCal = (v) => { const val = typeof v === "function" ? v(anioCal) : v; setAnioCalRaw(val); localStorage.setItem("fr_grupos_anio_cal", val); };
+  const [modalGrupo, setModalGrupoRaw] = useState(null);
+  const setModalGrupo = (g) => { setModalGrupoRaw(g); try { if (g?.id) localStorage.setItem("fr_grupos_modal_id", g.id); else localStorage.removeItem("fr_grupos_modal_id"); } catch {} };
+  const [detalleGrupo, setDetalleGrupoRaw] = useState(null);
+  const setDetalleGrupo = (g) => { setDetalleGrupoRaw(g); try { if (g?.id) localStorage.setItem("fr_grupos_detalle_id", g.id); else localStorage.removeItem("fr_grupos_detalle_id"); } catch {} };
   const [guardando, setGuardando] = useState(false);
   const [menuNuevo, setMenuNuevo] = useState(false);
   const [subVista, setSubVista] = useState(() => localStorage.getItem("fr_grupos_subvista") || "grupos");
@@ -5954,7 +6032,7 @@ function GruposView({ datos, onRecargar, onVolverHeatmap }) {
   const nextMes = () => { if (mes === 11) { setMes(0); setAnio(a => a + 1); } else setMes(m => m + 1); };
 
   // ── Formulario estado ──
-  const FORM_VACIO = { tipo:"grupo", nombre:"", categoria:"corporativo", estado:"confirmado", fecha_inicio:"", fecha_fin:"", fecha_confirmacion:"", habitaciones:"", pax:"", adr_grupo:"", revenue_fnb:"", revenue_sala:"", notas:"", motivo_perdida:"", hora_inicio:"", hora_fin:"", sala_nombre:"", servicio_incluido:false };
+  const FORM_VACIO = { tipo:"grupo", nombre:"", categoria:"corporativo", estado:"confirmado", segmento:"negocio", fecha_inicio:"", fecha_fin:"", fecha_confirmacion:"", habitaciones:"", pax:"", adr_grupo:"", revenue_fnb:"", revenue_sala:"", notas:"", motivo_perdida:"", hora_inicio:"", hora_fin:"", sala_nombre:"", servicio_incluido:false };
   const [form, setForm] = useState(FORM_VACIO);
 
   // Parsea el prefijo de metadata de evento de las notas
@@ -5988,6 +6066,21 @@ function GruposView({ datos, onRecargar, onVolverHeatmap }) {
     }
   }, [highlightId]);
 
+  // Restaurar detalle y modal con datos frescos al montar
+  useEffect(() => {
+    if (!datos?.grupos?.length) return;
+    const detalleId = localStorage.getItem("fr_grupos_detalle_id");
+    if (detalleId) {
+      const g = datos.grupos.find(x => String(x.id) === String(detalleId));
+      if (g) setDetalleGrupoRaw(g); else localStorage.removeItem("fr_grupos_detalle_id");
+    }
+    const modalId = localStorage.getItem("fr_grupos_modal_id");
+    if (modalId) {
+      const g = datos.grupos.find(x => String(x.id) === String(modalId));
+      if (g) abrirEditar(g); else localStorage.removeItem("fr_grupos_modal_id");
+    }
+  }, [datos?.grupos]);
+
   useEffect(() => {
     if (sessionStorage.getItem("fr_from_heatmap")) {
       setFromHeatmap(true);
@@ -6010,7 +6103,7 @@ function GruposView({ datos, onRecargar, onVolverHeatmap }) {
     const { hora_inicio, hora_fin, sala_nombre, servicio_incluido, notasUser } = esEvento ? parseNotasEvento(g.notas) : {};
     setForm({
       tipo: esEvento ? "evento" : "grupo",
-      nombre: g.nombre||"", categoria: g.categoria||"corporativo", estado: g.estado||"confirmado",
+      nombre: g.nombre||"", categoria: g.categoria||"corporativo", estado: normEstado(g.estado), segmento: g.segmento||"negocio",
       fecha_inicio: g.fecha_inicio||"", fecha_fin: g.fecha_fin||"", fecha_confirmacion: g.fecha_confirmacion||"",
       habitaciones: g.habitaciones||"", pax: g.pax||"", adr_grupo: g.adr_grupo||"",
       revenue_fnb: g.revenue_fnb||"", revenue_sala: g.revenue_sala||"",
@@ -6029,14 +6122,15 @@ function GruposView({ datos, onRecargar, onVolverHeatmap }) {
       hotel_id: session.user.id,
       nombre: form.nombre,
       categoria: esEvento ? "evento" : form.categoria,
-      estado: form.estado,
+      estado: normEstado(form.estado),
+      segmento: form.segmento||null,
       fecha_inicio: form.fecha_inicio,
       fecha_fin: esEvento ? form.fecha_inicio : (form.fecha_fin || form.fecha_inicio),
       habitaciones: esEvento ? 0 : (parseInt(form.habitaciones)||0),
       adr_grupo: esEvento ? 0 : (parseFloat(form.adr_grupo)||0),
       revenue_fnb: parseFloat(form.revenue_fnb)||0,
       revenue_sala: parseFloat(form.revenue_sala)||0,
-      fecha_confirmacion: esEvento ? null : (form.fecha_confirmacion||null),
+      fecha_confirmacion: form.fecha_confirmacion||null,
       notas: esEvento ? packNotasEvento(form) : (form.notas||null),
       motivo_perdida: form.motivo_perdida||null,
     };
@@ -6226,11 +6320,10 @@ function GruposView({ datos, onRecargar, onVolverHeatmap }) {
             <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16 }}>
               <div style={{ display:"flex", alignItems:"center", gap:8 }}>
                 <button onClick={prevMes} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, width:28, height:28, cursor:"pointer", fontSize:15, color:C.textMid, display:"flex", alignItems:"center", justifyContent:"center" }}>‹</button>
-                <button onClick={nextMes} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, width:28, height:28, cursor:"pointer", fontSize:15, color:C.textMid, display:"flex", alignItems:"center", justifyContent:"center" }}>›</button>
-                <span style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontWeight:700, fontSize:15, color:C.text }}>
+                <span style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontWeight:700, fontSize:15, color:C.text, minWidth:120, textAlign:"center" }}>
                   {MESES_ES[mesCal]} {anioCal}
                 </span>
-                <button onClick={irHoy} style={{ padding:"3px 10px", borderRadius:6, border:`1px solid ${C.border}`, background:"none", fontSize:11, color:C.textMid, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>Hoy</button>
+                <button onClick={nextMes} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, width:28, height:28, cursor:"pointer", fontSize:15, color:C.textMid, display:"flex", alignItems:"center", justifyContent:"center" }}>›</button>
               </div>
               <div style={{ display:"flex", gap:12 }}>
                 {Object.entries(colEstado).map(([k,col]) => (
@@ -6275,12 +6368,12 @@ function GruposView({ datos, onRecargar, onVolverHeatmap }) {
                       const g = gsEnFila.find(g=>g.fecha_inicio<=d && g.fecha_fin>=d);
                       const esInicio = g && (g.fecha_inicio===d || ci===0);
                       const esFin    = g && (g.fecha_fin===d   || ci===6);
-                      const col = g ? colEstado[g.estado]||"#888" : null;
-                      const bg  = g ? bgEstado[g.estado] ||"#eee" : null;
+                      const col = g ? colEstado[normEstado(g.estado)]||"#888" : null;
+                      const bg  = g ? bgEstado[normEstado(g.estado)] ||"#eee" : null;
                       return (
                         <div key={d} style={{ borderRight:`1px solid ${C.border}`, borderBottom:`1px solid ${C.border}`, padding:"2px 1px", gridRow:fi+2 }}>
                           {g && (
-                            <div onClick={()=>setDetalleGrupo(g)}
+                            <div onClick={e=>{e.stopPropagation();setDetalleGrupo(g);}}
                               style={{
                                 height:"100%", borderRadius: esInicio&&esFin?"4px": esInicio?"4px 0 0 4px": esFin?"0 4px 4px 0":"0",
                                 background:bg, borderLeft:esInicio?`3px solid ${col}`:"none",
@@ -6515,7 +6608,7 @@ function GruposView({ datos, onRecargar, onVolverHeatmap }) {
                     <table style={{ width:"100%", borderCollapse:"collapse", fontSize:13 }}>
                       <thead>
                         <tr>
-                          {["Nombre","Estado","Entrada","Salida","Noches","Habs","ADR","F&B","Sala","Revenue total","Notas"].map(h=>(
+                          {["Nombre","Segmento","Estado","F. Confirm.","Entrada","Salida","Noches","Habs","ADR","F&B","Sala","Revenue total","Notas"].map(h=>(
                             <th key={h} style={{ padding:"6px 12px", textAlign:"left", fontSize:10, fontWeight:600, color:C.textLight, textTransform:"uppercase", letterSpacing:"1px", borderBottom:`1px solid ${C.border}`, whiteSpace:"nowrap" }}>{h}</th>
                           ))}
                         </tr>
@@ -6529,7 +6622,9 @@ function GruposView({ datos, onRecargar, onVolverHeatmap }) {
                               onMouseEnter={e=>{ if(!isHL) e.currentTarget.style.background=C.accentLight; }}
                               onMouseLeave={e=>{ e.currentTarget.style.background= isHL?"#EBF5FF":i%2===0?C.bg:C.bgCard; }}>
                               <td style={{ padding:"8px 12px", fontWeight:600, color:C.text, whiteSpace:"nowrap" }}>{g.nombre}</td>
-                              <td style={{ padding:"8px 12px" }}><span style={{ fontSize:10, fontWeight:700, padding:"2px 8px", borderRadius:10, background:ESTADOS[g.estado]?.bg, color:ESTADOS[g.estado]?.color, whiteSpace:"nowrap" }}>{ESTADOS[g.estado]?.label}</span></td>
+                              <td style={{ padding:"8px 12px", color:C.textMid, whiteSpace:"nowrap" }}>{g.segmento ? t("seg_"+g.segmento) : "—"}</td>
+                              <td style={{ padding:"8px 12px" }}><span style={{ fontSize:10, fontWeight:700, padding:"2px 8px", borderRadius:10, background:ESTADOS[normEstado(g.estado)]?.bg, color:ESTADOS[normEstado(g.estado)]?.color, whiteSpace:"nowrap" }}>{ESTADOS[normEstado(g.estado)]?.label}</span></td>
+                              <td style={{ padding:"8px 12px", color:C.textMid, whiteSpace:"nowrap" }}>{g.fecha_confirmacion||"—"}</td>
                               <td style={{ padding:"8px 12px", color:C.textMid, whiteSpace:"nowrap" }}>{g.fecha_inicio||"—"}</td>
                               <td style={{ padding:"8px 12px", color:C.textMid, whiteSpace:"nowrap" }}>{g.fecha_fin||"—"}</td>
                               <td style={{ padding:"8px 12px", color:C.textMid, textAlign:"center" }}>{noches}</td>
@@ -6594,7 +6689,7 @@ function GruposView({ datos, onRecargar, onVolverHeatmap }) {
                     <table style={{ width:"100%", borderCollapse:"collapse", fontSize:13 }}>
                       <thead>
                         <tr>
-                          {["Nombre","Estado","Fecha","Hora","Sala","F&B","Sala Rev.","Revenue total","Notas"].map(h=>(
+                          {["Nombre","Segmento","Estado","F. Confirm.","Fecha","Hora","Sala","F&B","Sala Rev.","Revenue total","Notas"].map(h=>(
                             <th key={h} style={{ padding:"6px 12px", textAlign:"left", fontSize:10, fontWeight:600, color:C.textLight, textTransform:"uppercase", letterSpacing:"1px", borderBottom:`1px solid ${C.border}`, whiteSpace:"nowrap" }}>{h}</th>
                           ))}
                         </tr>
@@ -6609,7 +6704,9 @@ function GruposView({ datos, onRecargar, onVolverHeatmap }) {
                               onMouseEnter={e=>{ if(!isHL) e.currentTarget.style.background=C.accentLight; }}
                               onMouseLeave={e=>{ e.currentTarget.style.background= isHL?"#EBF5FF":i%2===0?C.bg:C.bgCard; }}>
                               <td style={{ padding:"8px 12px", fontWeight:600, color:C.text, whiteSpace:"nowrap" }}>{g.nombre}</td>
-                              <td style={{ padding:"8px 12px" }}><span style={{ fontSize:10, fontWeight:700, padding:"2px 8px", borderRadius:10, background:ESTADOS[g.estado]?.bg, color:ESTADOS[g.estado]?.color, whiteSpace:"nowrap" }}>{ESTADOS[g.estado]?.label}</span></td>
+                              <td style={{ padding:"8px 12px", color:C.textMid, whiteSpace:"nowrap" }}>{g.segmento ? t("seg_"+g.segmento) : "—"}</td>
+                              <td style={{ padding:"8px 12px" }}><span style={{ fontSize:10, fontWeight:700, padding:"2px 8px", borderRadius:10, background:ESTADOS[normEstado(g.estado)]?.bg, color:ESTADOS[normEstado(g.estado)]?.color, whiteSpace:"nowrap" }}>{ESTADOS[normEstado(g.estado)]?.label}</span></td>
+                              <td style={{ padding:"8px 12px", color:C.textMid, whiteSpace:"nowrap" }}>{g.fecha_confirmacion||"—"}</td>
                               <td style={{ padding:"8px 12px", color:C.textMid, whiteSpace:"nowrap" }}>{g.fecha_inicio||"—"}</td>
                               <td style={{ padding:"8px 12px", color:C.textMid, whiteSpace:"nowrap" }}>{hora}</td>
                               <td style={{ padding:"8px 12px", color:C.textMid, whiteSpace:"nowrap" }}>{ev.sala_nombre||"—"}</td>
@@ -6748,10 +6845,7 @@ function GruposView({ datos, onRecargar, onVolverHeatmap }) {
 
       {/* ── PANEL DETALLE EVENTO (desde calendario) ── */}
       {detalleGrupo !== null && (
-        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.55)", zIndex:1000, display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}
-          onClick={()=>setDetalleGrupo(null)}>
-          <div style={{ background:C.bgCard, borderRadius:14, width:"95vw", maxWidth:1100, maxHeight:"90vh", overflow:"auto", padding:"28px 36px", boxShadow:"0 24px 80px rgba(0,0,0,0.2)" }}
-            onClick={e=>e.stopPropagation()}>
+        <div style={{ position:"fixed", top:"50%", left:"50%", transform:"translate(-50%,-50%)", zIndex:600, background:C.bgCard, borderRadius:14, width:"95vw", maxWidth:1100, maxHeight:"85vh", overflow:"auto", padding:"28px 36px", boxShadow:"0 8px 60px rgba(0,0,0,0.35)", border:`1px solid ${C.border}` }}>
 
             {/* Cabecera */}
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:20 }}>
@@ -6759,8 +6853,8 @@ function GruposView({ datos, onRecargar, onVolverHeatmap }) {
                 <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4 }}>
                   <h3 style={{ fontSize:18, fontWeight:700, color:C.text }}>{detalleGrupo.nombre}</h3>
                 </div>
-                <span style={{ fontSize:11, fontWeight:700, padding:"3px 10px", borderRadius:10, background:ESTADOS[detalleGrupo.estado]?.bg, color:ESTADOS[detalleGrupo.estado]?.color }}>
-                  {ESTADOS[detalleGrupo.estado]?.label}
+                <span style={{ fontSize:11, fontWeight:700, padding:"3px 10px", borderRadius:10, background:ESTADOS[detalleGrupo.estado]?.bg||"#eee", color:ESTADOS[detalleGrupo.estado]?.color||"#666" }}>
+                  {ESTADOS[detalleGrupo.estado]?.label || detalleGrupo.estado || "—"}
                 </span>
               </div>
               <button onClick={()=>setDetalleGrupo(null)} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, width:28, height:28, cursor:"pointer", fontSize:16, color:C.textMid, flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center", padding:0 }}>×</button>
@@ -6777,7 +6871,7 @@ function GruposView({ datos, onRecargar, onVolverHeatmap }) {
                   <table style={{ width:"100%", borderCollapse:"collapse", fontSize:14 }}>
                     <thead>
                       <tr>
-                        {["Evento","Estado","Entrada","Salida","Noches","Habs","PAX","ADR","F&B","Sala","Revenue total","Notas"].map(h => (
+                        {["Evento","Segmento","Estado","F. Confirmación","Entrada","Salida","Noches","Habs","PAX","ADR","F&B","Sala","Revenue total","Notas"].map(h => (
                           <th key={h} style={{ padding:"10px 14px", textAlign:"left", fontSize:10, fontWeight:600, color:C.textLight, textTransform:"uppercase", letterSpacing:"1px", borderBottom:`2px solid ${C.border}`, whiteSpace:"nowrap" }}>{h}</th>
                         ))}
                       </tr>
@@ -6785,11 +6879,13 @@ function GruposView({ datos, onRecargar, onVolverHeatmap }) {
                     <tbody>
                       <tr style={{ borderBottom:`1px solid ${C.border}`, background: C.bg }}>
                         <td style={{ padding:"9px 14px", fontWeight:600, color:C.text, whiteSpace:"nowrap" }}>{g.nombre}</td>
+                        <td style={{ padding:"9px 14px", color:C.textMid, whiteSpace:"nowrap" }}>{g.segmento ? t("seg_"+g.segmento) : "—"}</td>
                         <td style={{ padding:"9px 14px" }}>
-                          <span style={{ fontSize:10, fontWeight:700, padding:"2px 8px", borderRadius:10, background:ESTADOS[g.estado]?.bg, color:ESTADOS[g.estado]?.color, whiteSpace:"nowrap" }}>
-                            {ESTADOS[g.estado]?.label}
+                          <span style={{ fontSize:10, fontWeight:700, padding:"2px 8px", borderRadius:10, background:ESTADOS[normEstado(g.estado)]?.bg||"#eee", color:ESTADOS[normEstado(g.estado)]?.color||"#666", whiteSpace:"nowrap" }}>
+                            {ESTADOS[normEstado(g.estado)]?.label || g.estado || "—"}
                           </span>
                         </td>
+                        <td style={{ padding:"9px 14px", color:C.textMid, whiteSpace:"nowrap" }}>{g.fecha_confirmacion||"—"}</td>
                         <td style={{ padding:"9px 14px", color:C.textMid, whiteSpace:"nowrap" }}>{g.fecha_inicio||"—"}</td>
                         <td style={{ padding:"9px 14px", color:C.textMid, whiteSpace:"nowrap" }}>{g.fecha_fin||"—"}</td>
                         <td style={{ padding:"9px 14px", color:C.textMid, textAlign:"center" }}>{noches}</td>
@@ -6812,12 +6908,11 @@ function GruposView({ datos, onRecargar, onVolverHeatmap }) {
             {/* Botón editar */}
             <div style={{ display:"flex", justifyContent:"flex-end", marginTop:20 }}>
               <button onClick={()=>{ setDetalleGrupo(null); abrirEditar(detalleGrupo); }}
-                style={{ background:"#7C3AED", color:"#fff", border:"none", borderRadius:7, padding:"9px 22px", fontSize:13, fontWeight:600, cursor:"pointer" }}>
+                style={{ background:"#1F1F1F", color:"#fff", border:"none", borderRadius:7, padding:"9px 22px", fontSize:13, fontWeight:600, cursor:"pointer" }}>
                 ✏️ {detalleGrupo?.categoria === "evento" ? t("editar_evento") : t("editar_grupo")}
               </button>
             </div>
           </div>
-        </div>
       )}
 
       {/* ── MODAL FORMULARIO ── */}
@@ -6843,7 +6938,7 @@ function GruposView({ datos, onRecargar, onVolverHeatmap }) {
                 <input style={inp} placeholder="Boda García · Congreso Pharma..." value={form.nombre} onChange={e=>setForm(f=>({...f,nombre:e.target.value}))}/>
               </div>
 
-              <div style={{ display:"grid", gridTemplateColumns: form.tipo === "evento" ? "1fr" : "1fr 1fr", gap:10 }}>
+              <div style={{ display:"grid", gridTemplateColumns: form.tipo === "evento" ? "1fr 1fr" : "1fr 1fr 1fr", gap:10 }}>
                 {form.tipo !== "evento" && (
                   <div>
                     <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>{t("form_categoria")}</p>
@@ -6852,6 +6947,12 @@ function GruposView({ datos, onRecargar, onVolverHeatmap }) {
                     </select>
                   </div>
                 )}
+                <div>
+                  <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>{t("form_segmento")}</p>
+                  <select style={inp} value={form.segmento} onChange={e=>setForm(f=>({...f,segmento:e.target.value}))}>
+                    {["deportivo","negocio","turistico","congreso","social","otros"].map(s=><option key={s} value={s}>{t("seg_"+s)}</option>)}
+                  </select>
+                </div>
                 <div>
                   <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>{t("form_estado")}</p>
                   <select style={inp} value={form.estado} onChange={e=>setForm(f=>({...f,estado:e.target.value}))}>
@@ -6862,9 +6963,15 @@ function GruposView({ datos, onRecargar, onVolverHeatmap }) {
 
               {/* Fechas — eventos solo tienen fecha de celebración; grupos tienen entrada+salida */}
               {form.tipo === "evento" ? (
-                <div>
-                  <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>Fecha del evento *</p>
-                  <input style={inp} type="date" value={form.fecha_inicio} onChange={e=>setForm(f=>({...f,fecha_inicio:e.target.value,fecha_fin:e.target.value}))}/>
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
+                  <div>
+                    <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>Fecha del evento *</p>
+                    <input style={inp} type="date" value={form.fecha_inicio} onChange={e=>setForm(f=>({...f,fecha_inicio:e.target.value,fecha_fin:e.target.value}))}/>
+                  </div>
+                  <div>
+                    <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>{t("form_fecha_confirmacion")}</p>
+                    <input style={inp} type="date" value={form.fecha_confirmacion} onChange={e=>setForm(f=>({...f,fecha_confirmacion:e.target.value}))}/>
+                  </div>
                 </div>
               ) : (
                 <>
@@ -8063,7 +8170,7 @@ export default function App() {
     let pickupEntries = [];
     try {
       const { data: pe0, count } = await supabase.from("pickup_entries")
-        .select("fecha_llegada, fecha_pickup, canal, num_reservas, fecha_salida, noches, precio_total, estado", { count: "exact" })
+        .select("fecha_llegada, fecha_pickup, canal, num_reservas, fecha_salida, noches, precio_total, estado, es_individual", { count: "exact" })
         .eq("hotel_id", session.user.id)
         .range(0, 999);
       if (pe0 && pe0.length > 0) {
@@ -8074,7 +8181,7 @@ export default function App() {
           ? await Promise.all(
               Array.from({ length: paginas - 1 }, (_, i) =>
                 supabase.from("pickup_entries")
-                  .select("fecha_llegada, fecha_pickup, canal, num_reservas, fecha_salida, noches, precio_total, estado")
+                  .select("fecha_llegada, fecha_pickup, canal, num_reservas, fecha_salida, noches, precio_total, estado, es_individual")
                   .eq("hotel_id", session.user.id)
                   .range((i + 1) * PAGINA, (i + 2) * PAGINA - 1)
                   .then(r => r.data || [])
@@ -8141,9 +8248,7 @@ export default function App() {
 
   // OCC de hoy/ayer para el ticker — misma fuente que el heatmap
   const _occDeTicker = useMemo(() => {
-    const produccion    = datos.produccion || [];
-    const pickupEntries = datos.pickupEntries || [];
-    const grupos        = datos.grupos || [];
+    const produccion = datos.produccion || [];
     const pad = n => String(n).padStart(2,"0");
     const hoy  = new Date();
     const ayer = new Date(hoy); ayer.setDate(hoy.getDate()-1);
@@ -8154,11 +8259,12 @@ export default function App() {
       : 30;
     const hab = (datos.hotel?.habitaciones && datos.hotel.habitaciones > 0)
       ? datos.hotel.habitaciones : habFromProd;
+    const tickerMap = buildHabEnCasaMap(datos.pickupEntries, datos.grupos);
     const occDia = (iso) => {
       const prod = produccion.find(r => r.fecha === iso);
       if (prod?.hab_disponibles > 0)
         return Math.min(100, Math.round(prod.hab_ocupadas/prod.hab_disponibles*100));
-      const n = calcHabEnCasa(pickupEntries, grupos, iso);
+      const n = tickerMap[iso] || 0;
       return hab > 0 ? Math.round(n/hab*100) : null;
     };
     return { hoyStr, ayerStr, occHoy: occDia(hoyStr), occAyer: occDia(ayerStr) };
