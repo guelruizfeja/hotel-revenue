@@ -6353,7 +6353,7 @@ function GruposView({ datos, onRecargar, onVolverHeatmap }) {
                     const esHoy = d===hoyStr;
                     return (
                       <div key={d} style={{ borderRight:`1px solid ${C.border}`, borderBottom:`1px solid ${C.border}`, padding:"4px 6px", background: esHoy?`${C.accent}12`: esMes?C.bgCard:C.bg, gridRow:1 }}>
-                        <span style={{ fontSize:12, fontWeight:esHoy?800:500, color:esHoy?C.accent:esMes?C.text:C.textLight, fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+                        <span style={{ fontSize:12, fontWeight:esHoy?800:600, color:esHoy?C.accent:esMes?"#1A1A1A":C.textMid, fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
                           {parseInt(d.slice(8))}
                         </span>
                       </div>
