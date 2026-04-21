@@ -4527,7 +4527,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
 }
 
 // ─── PICKUP VIEW ──────────────────────────────────────────────────
-function PickupView({ datos, onGuardado }) {
+function PickupView({ datos, onGuardado, onGenerarMock, generandoMock }) {
   const t = useT();
   const { session, presupuesto, produccion } = datos;
   const pickupEntries = datos.pickupEntries || [];
@@ -4815,12 +4815,18 @@ function PickupView({ datos, onGuardado }) {
     <div style={{ display:"flex", flexDirection:"column", gap:20 }}>
 
       {/* Botón Nueva Reserva — independiente, arriba a la izquierda */}
-      <div>
+      <div style={{ display:"flex", gap:8, alignItems:"center" }}>
         <button onClick={abrirNuevaReserva}
           style={{ display:"inline-flex", alignItems:"center", gap:7, background:C.text, color:"#fff", border:"none", borderRadius:8, padding:"9px 18px", cursor:"pointer", fontSize:12, fontWeight:700, fontFamily:"'Plus Jakarta Sans',sans-serif", letterSpacing:"0.3px" }}>
           <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><line x1="6.5" y1="1" x2="6.5" y2="12" stroke="#fff" strokeWidth="2" strokeLinecap="round"/><line x1="1" y1="6.5" x2="12" y2="6.5" stroke="#fff" strokeWidth="2" strokeLinecap="round"/></svg>
           Nueva reserva
         </button>
+        {onGenerarMock && (
+          <button onClick={onGenerarMock} disabled={generandoMock}
+            style={{ display:"inline-flex", alignItems:"center", gap:6, background:"none", color:C.textMid, border:`1px solid ${C.border}`, borderRadius:8, padding:"8px 14px", cursor:generandoMock?"not-allowed":"pointer", fontSize:11, fontWeight:600, fontFamily:"'Plus Jakarta Sans',sans-serif", opacity:generandoMock?0.6:1 }}>
+            ⚡ {generandoMock ? "Generando…" : "Generar pickup ficticio"}
+          </button>
+        )}
       </div>
 
       {/* Modal nueva reserva */}
@@ -8318,7 +8324,7 @@ export default function App() {
 
   const views = {
     dashboard: (props) => <DashboardView {...props} onMesDetalle={(m, a) => setMesDetalle({ mes: m, anio: a })} onDesgloseMovimiento={tipo => setDesgloseMovimiento(tipo)} kpiModal={kpiModal} setKpiModal={setKpiModal} kpiModalExterno={kpiModalApp} onKpiModalExternoHandled={() => setKpiModalApp(null)} onNavigarGrupos={(subvista, fechaInicio, fechaFin, id) => { localStorage.setItem("fr_grupos_subvista", subvista); sessionStorage.setItem("fr_pending_nuevo", JSON.stringify({ tipo: subvista === "eventos" ? "evento" : "grupo", fecha_inicio: fechaInicio, fecha_fin: fechaFin, highlightId: id||null })); sessionStorage.setItem("fr_from_heatmap", "1"); setView("grupos"); localStorage.setItem("fr_view", "grupos"); }} />,
-    pickup:    (props) => <PickupView    {...props} />,
+    pickup:    (props) => <PickupView    {...props} onGenerarMock={generarPickupMock} generandoMock={generandoMock} />,
     budget:    (props) => <BudgetView    {...props} />,
     grupos:    (props) => <GruposView    {...props} onRecargar={() => cargarDatos(true)} onVolverHeatmap={() => { setView("dashboard"); localStorage.setItem("fr_view", "dashboard"); }} />,
   };
