@@ -3754,7 +3754,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
                         return ini<=mesPrefix && fin>=mesPrefix;
                       });
                       const allEvs = [
-                        ...gruposDelMes.map(g=>{ const finRaw=g.fecha_fin||g.fecha_inicio||""; const finD=new Date(finRaw+"T00:00:00"); finD.setDate(finD.getDate()-1); const toISO=finD.toISOString().slice(0,10); const to=toISO>=( g.fecha_inicio||"") ? toISO : (g.fecha_inicio||""); return { from:g.fecha_inicio||"", to, title:g.nombre||"(sin nombre)", color:g.categoria==="evento"?COL_EVENTO:COL_GRUPO, id:g.id, categoria:g.categoria, tipo:"db" }; }),
+                        ...gruposDelMes.map(g=>{ const finRaw=g.fecha_fin||g.fecha_inicio||""; const finD=new Date(finRaw+"T12:00:00"); finD.setDate(finD.getDate()-1); const yy=finD.getFullYear(),mm=String(finD.getMonth()+1).padStart(2,"0"),dd=String(finD.getDate()).padStart(2,"0"); const toISO=`${yy}-${mm}-${dd}`; const to=toISO>=(g.fecha_inicio||"") ? toISO : (g.fecha_inicio||""); return { from:g.fecha_inicio||"", to, title:g.nombre||"(sin nombre)", color:g.categoria==="evento"?COL_EVENTO:COL_GRUPO, id:g.id, categoria:g.categoria, tipo:"db" }; }),
                         ...hmEvents.map(ev=>({ from:ev.from, to:ev.to, title:ev.title||"(sin título)", color:COL_EVENTO, tipo:"manual" }))
                       ];
                       return (
