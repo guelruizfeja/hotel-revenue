@@ -5739,8 +5739,8 @@ function BudgetView({ datos, anio: anioProp }) {
           <table style={{ width:"100%", borderCollapse:"collapse", fontSize:12 }}>
             <thead>
               <tr>
-                {[t("th_mes"),t("th_adr_ppto"),t("th_adr_real"),t("th_desv_adr"),t("th_revpar_ppto"),t("th_revpar_real"),t("th_desv_revpar"),t("th_rev_ppto"),t("th_rev_real"),t("th_desv_rev"),t("th_forecast")].map((h,hi) => (
-                  <th key={hi} style={{ padding:"10px 14px", textAlign: hi===0?"left":"right", fontSize:10, color: hi===10?"#B8860B":C.textLight, textTransform:"uppercase", letterSpacing:"1px", fontWeight:600, borderBottom:`2px solid ${C.border}`, whiteSpace:"nowrap" }}>{h}</th>
+                {[t("th_mes"),t("th_adr_ppto"),t("th_adr_real"),t("th_desv_adr"),t("th_revpar_ppto"),t("th_revpar_real"),t("th_desv_revpar"),t("th_rev_ppto"),t("th_rev_real"),t("th_desv_rev"),"RevPAR Fc.",t("th_forecast")].map((h,hi) => (
+                  <th key={hi} style={{ padding:"10px 14px", textAlign: hi===0?"left":"right", fontSize:10, color: (hi===10||hi===11)?"#B8860B":C.textLight, textTransform:"uppercase", letterSpacing:"1px", fontWeight:600, borderBottom:`2px solid ${C.border}`, whiteSpace:"nowrap" }}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -5760,6 +5760,9 @@ function BudgetView({ datos, anio: anioProp }) {
                     <td style={{ padding:"9px 14px", textAlign:"right", color:C.textMid }}>€{f.rev_total_ppto?.toLocaleString("es-ES")}</td>
                     <td style={{ padding:"9px 14px", textAlign:"right", color:"#1A7A3C", fontWeight:f.rev_total_real?600:400 }}>{f.rev_total_real!=null?`€${f.rev_total_real.toLocaleString("es-ES")}`:"—"}</td>
                     <td style={{ padding:"9px 14px", textAlign:"right" }}><DevBadge val={f.revtotal_dev} pct={f.revtotal_dev_pct}/></td>
+                    <td style={{ padding:"9px 14px", textAlign:"right", background: f.mesCerrado?"transparent":"#FFF8E7", borderLeft:`2px solid ${f.forecast_revpar?"#B8860B44":"transparent"}` }}>
+                      {f.forecast_revpar != null ? <span style={{ fontSize:13, fontWeight:700, color:"#B8860B" }}>€{Math.round(f.forecast_revpar)}</span> : "—"}
+                    </td>
                     <td style={{ padding:"9px 14px", textAlign:"right", background: f.mesCerrado?"transparent":"#FFF8E7", borderLeft:`2px solid ${f.forecast_rev?"#B8860B44":"transparent"}` }}>
                       {f.forecast_rev != null ? (
                         <div>
@@ -5786,6 +5789,7 @@ function BudgetView({ datos, anio: anioProp }) {
                   <td style={{ padding:"10px 14px", textAlign:"right", color:C.textMid, fontSize:11 }}>€{Math.round(filasConReal.reduce((a,f)=>a+(f.rev_total_ppto||0),0)).toLocaleString("es-ES")}</td>
                   <td style={{ padding:"10px 14px", textAlign:"right", color:"#1A7A3C", fontWeight:700 }}>€{Math.round(totalRevReal).toLocaleString("es-ES")}</td>
                   <td style={{ padding:"10px 14px", textAlign:"right" }}><DevBadge val={Math.round(totalRevDev)} pct={totalRevDevPct}/></td>
+                  <td style={{ padding:"10px 14px", textAlign:"right", background:"#FFF8E7", borderLeft:"2px solid #B8860B44" }}></td>
                   <td style={{ padding:"10px 14px", textAlign:"right", background:"#FFF8E7", borderLeft:"2px solid #B8860B44" }}>
                     {totalForecast > 0 && <span style={{ fontSize:13, fontWeight:700, color:"#B8860B" }}>€{Math.round(totalForecast).toLocaleString("es-ES")}</span>}
                   </td>
