@@ -6268,7 +6268,7 @@ function GruposView({ datos, onRecargar, onVolverHeatmap }) {
 
       {/* ── Vista mensual (Calendario) ── */}
       {subVista === "semana" && (() => {
-        const DIAS_ES = ["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"];
+        const DIAS_ES = ["Lunes","Martes","Miércoles","Jueves","Viernes","Sábado","Domingo"];
         const MESES_ES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
         const hoyStr = new Date().toISOString().slice(0,10);
         const pad = n => String(n).padStart(2,"0");
@@ -6336,8 +6336,8 @@ function GruposView({ datos, onRecargar, onVolverHeatmap }) {
             {/* Cabecera días */}
             <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", borderTop:`1px solid ${C.border}`, borderLeft:`1px solid ${C.border}` }}>
               {DIAS_ES.map(d => (
-                <div key={d} style={{ borderRight:`1px solid ${C.border}`, borderBottom:`1px solid ${C.border}`, padding:"6px 4px", textAlign:"center", background:C.bg }}>
-                  <span style={{ fontSize:10, color:C.textLight, fontWeight:600, textTransform:"uppercase", letterSpacing:"0.5px" }}>{d}</span>
+                <div key={d} style={{ borderRight:`1px solid ${C.border}`, borderBottom:`1px solid ${C.border}`, padding:"7px 4px", textAlign:"center", background:"#fff" }}>
+                  <span style={{ fontSize:11, color:"#111", fontWeight:600, textTransform:"uppercase", letterSpacing:"0.5px" }}>{d}</span>
                 </div>
               ))}
             </div>
@@ -6352,8 +6352,8 @@ function GruposView({ datos, onRecargar, onVolverHeatmap }) {
                     const esMes = d.slice(0,7)===mesStr;
                     const esHoy = d===hoyStr;
                     return (
-                      <div key={d} style={{ borderRight:`1px solid ${C.border}`, borderBottom:`1px solid ${C.border}`, padding:"4px 6px", background: esHoy?`${C.accent}12`: esMes?C.bgCard:C.bg, gridRow:1 }}>
-                        <span style={{ fontSize:12, fontWeight:esHoy?800:600, color:esHoy?C.accent:esMes?"#1A1A1A":C.textMid, fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+                      <div key={d} style={{ borderRight:`1px solid ${C.border}`, borderBottom:`1px solid ${C.border}`, padding:"4px 6px", background: esHoy?`${C.accent}18`: esMes?"#F0F0F0":"#E4E4E4", gridRow:1, display:"flex", alignItems:"center", justifyContent:"center" }}>
+                        <span style={{ fontSize:12, fontWeight:esHoy?800:600, color:esHoy?C.accent:esMes?"#1A1A1A":"#888", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
                           {parseInt(d.slice(8))}
                         </span>
                       </div>
