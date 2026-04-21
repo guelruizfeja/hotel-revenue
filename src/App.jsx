@@ -6469,7 +6469,7 @@ function GruposView({ datos, onRecargar, onVolverHeatmap }) {
               {[
                 { label:"Tasa de conversión", value: tasaConv!=null?`${tasaConv}%`:"—", color:"#1A7A3C", sub:"confirmados / cerrados" },
                 { label:"Revenue confirmado",  value: fmtEur(revConfirmado), color:"#1A7A3C", sub:`${confirmados.length} grupos` },
-                { label:"Revenue en pipeline", value: fmtEur(revCotizado),   color:"#B8860B", sub:`${cotizados.length} cotizaciones` },
+                { label:"Revenue cotizado",    value: fmtEur(revCotizado),   color:"#B8860B", sub:`${cotizados.length} cotizaciones` },
                 { label:"Tiempo medio cierre", value: tiempoMedio!=null?`${tiempoMedio}d`:"—", color:C.accent, sub:"días hasta confirmar" },
               ].map((k,i)=>(
                 <div key={i} style={{ background:C.bgCard, border:`1px solid ${C.border}`, borderRadius:10, padding:"14px 18px", borderLeft:`3px solid ${k.color}` }}>
