@@ -1661,16 +1661,17 @@ function ImportarExcel({ onClose, session, onImportado, onProduccionDirecta, hot
       const inicioMesLY = `${anioActual-1}-${mesStr}-01`;
       const inicioSigLY = mesActual === 12 ? `${anioActual}-01-01` : `${anioActual-1}-${String(mesActual+1).padStart(2,'0')}-01`;
 
-      const NO_OTA_KEYS = ['directo', 'teléfono', 'telefono', 'email', 'empresa', 'corporativo', 'grupos', 'mice'];
+      const NO_OTA_KEYS = ['directo', 'web', 'teléfono', 'telefono', 'email', 'empresa', 'corporativo', 'grupos', 'mice'];
       const isOTA = (canal) => { const c = (canal || '').toLowerCase(); return !NO_OTA_KEYS.some(k => c.includes(k)); };
       const isGrupo = (canal) => { const c = (canal || '').toLowerCase(); return c.includes('grupo') || c.includes('mice'); };
       const normCanal = (canal) => {
         const c = (canal || '').toLowerCase().trim();
-        if (c.includes('directo') || c.includes('web')) return 'Directo / Web';
+        if (c.includes('directo')) return 'Directo';
+        if (c.includes('web')) return 'Web';
         if (c.includes('teléfono') || c.includes('telefono') || c.includes('email')) return 'Teléfono / Email';
         if (c.includes('empresa') || c.includes('corporativo')) return 'Empresa / Corp.';
         if (c.includes('grupo') || c.includes('mice')) return 'Grupos / MICE';
-        return canal || 'Directo / Web';
+        return canal || 'Directo';
       };
 
       const hoyDate = new Date(diaRow.fecha + 'T00:00:00'); hoyDate.setDate(hoyDate.getDate() + 1);
@@ -1746,7 +1747,7 @@ function ImportarExcel({ onClose, session, onImportado, onProduccionDirecta, hot
         const ini = new Date(g.fecha_inicio + 'T00:00:00');
         const fin = new Date(g.fecha_fin + 'T00:00:00');
         const noches = Math.max(1, (fin - ini) / 86400000);
-        const peso = g.estado === 'cotizado' ? 0.5 : 1.0;
+        const peso = g.estado === 'cotizado' ? 0 : 1.0;
         revGrupos += ((g.habitaciones || 0) * (g.adr_grupo || 0) * noches + (g.revenue_fnb || 0) + (g.revenue_sala || 0)) * peso;
       }
       const revIndividual = Math.max(0, totRevHab - revGrupos);
@@ -1977,7 +1978,8 @@ function ImportarExcel({ onClose, session, onImportado, onProduccionDirecta, hot
         // Defaults hotel estándar
         patronCanales = [
           { canal:"Booking.com",           peso:0.38 },
-          { canal:"Directo / Web",          peso:0.26 },
+          { canal:"Directo",                  peso:0.16 },
+          { canal:"Web",                      peso:0.10 },
           { canal:"Expedia",                peso:0.14 },
           { canal:"Empresa / Corporativo",  peso:0.12 },
           { canal:"Tour operador",          peso:0.10 },
@@ -1989,13 +1991,14 @@ function ImportarExcel({ onClose, session, onImportado, onProduccionDirecta, hot
       // 3-4 reservas confirmadas + 1-2 cancelaciones
       const plantillaConf = [
         { canal:"Booking.com",          mesesDesde:1, mesesHasta:4,  nochesDef:2, factorADR:0.97 },
-        { canal:"Directo / Web",         mesesDesde:2, mesesHasta:6,  nochesDef:3, factorADR:1.05 },
+        { canal:"Directo",               mesesDesde:2, mesesHasta:6,  nochesDef:3, factorADR:1.05 },
+        { canal:"Web",                   mesesDesde:1, mesesHasta:5,  nochesDef:2, factorADR:1.02 },
         { canal:"Expedia",               mesesDesde:4, mesesHasta:8,  nochesDef:2, factorADR:0.95 },
         { canal:"Empresa / Corporativo", mesesDesde:1, mesesHasta:3,  nochesDef:1, factorADR:1.10 },
       ];
       const plantillaCancel = [
         { canal:"Booking.com",  mesesDesde:2, mesesHasta:5, nochesDef:2, factorADR:0.97 },
-        { canal:"Directo / Web", mesesDesde:3, mesesHasta:7, nochesDef:2, factorADR:1.02 },
+        { canal:"Web", mesesDesde:3, mesesHasta:7, nochesDef:2, factorADR:1.02 },
       ];
       // Tomar aleatoriamente 3 ó 4 confirmadas y 1 ó 2 canceladas
       const numConf   = Math.random() < 0.5 ? 3 : 4;
@@ -2546,7 +2549,8 @@ function ImportarExcel({ onClose, session, onImportado, onProduccionDirecta, hot
                       onChange={e => { setPickupForm(f=>({...f, canal:e.target.value})); if (e.target.value !== "otro") setCanalPersonalizado(""); }}
                       style={{...inputStyle, cursor:"pointer"}}>
                       <option value="">— Selecciona canal —</option>
-                      <option value="Directo / Web">Directo / Web</option>
+                      <option value="Directo">Directo</option>
+                      <option value="Web">Web</option>
                       <option value="Teléfono / Email">Teléfono / Email</option>
                       <option value="Booking.com">Booking.com</option>
                       <option value="Expedia">Expedia</option>
@@ -3870,7 +3874,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
                       const ini = new Date((g.fecha_inicio||mesPrefix+"-01")+"T00:00:00");
                       const fin = new Date((g.fecha_fin||g.fecha_inicio||mesPrefix+"-01")+"T00:00:00");
                       const noches = Math.max(1,(fin-ini)/86400000);
-                      const peso = g.estado==="cotizado"?0.5:1.0;
+                      const peso = g.estado==="cotizado"?0:1.0;
                       return sum + ((g.habitaciones||0)*(g.adr_grupo||0)*noches+(g.revenue_fnb||0)+(g.revenue_sala||0))*peso;
                     },0);
 
@@ -3879,7 +3883,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
                       const ini = new Date((g.fecha_inicio||"")+"T00:00:00");
                       const fin = new Date((g.fecha_fin||g.fecha_inicio||"")+"T00:00:00");
                       const noches = Math.max(1,(fin-ini)/86400000);
-                      const peso = g.estado==="cotizado"?0.5:1.0;
+                      const peso = g.estado==="cotizado"?0:1.0;
                       const rev = ((g.habitaciones||0)*(g.adr_grupo||0)*noches+(g.revenue_fnb||0)+(g.revenue_sala||0))*peso;
                       const estadoBadge = { confirmado:"#059669", cotizado:"#D97706", perdido:C.red, cancelado:C.red }[g.estado]||C.textLight;
                       return (
@@ -4527,11 +4531,60 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
 }
 
 // ─── PICKUP VIEW ──────────────────────────────────────────────────
-function PickupView({ datos, onGuardado, onGenerarMock, generandoMock }) {
+function PickupView({ datos, onGuardado }) {
   const t = useT();
   const { session, presupuesto, produccion } = datos;
   const pickupEntries = datos.pickupEntries || [];
   const cargando = false;
+
+  const [generandoMock, setGenerandoMock] = useState(false);
+  const [okMock, setOkMock] = useState(false);
+  const generarPickupMock = async () => {
+    if (!session?.user?.id) return;
+    setGenerandoMock(true);
+    try {
+      const hoy = new Date();
+      const hoyStr = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,"0")}-${String(hoy.getDate()).padStart(2,"0")}`;
+      await Promise.all([
+        supabase.from("pickup_entries").delete().eq("hotel_id", session.user.id).eq("fecha_pickup", hoyStr),
+        supabase.from("pickup_entries").delete().eq("hotel_id", session.user.id).ilike("canal", "%grupo%"),
+        supabase.from("pickup_entries").delete().eq("hotel_id", session.user.id).ilike("canal", "%evento%"),
+      ]);
+      const { data: todos } = await supabase.from("pickup_entries").select("canal,num_reservas,noches,precio_total,estado,fecha_llegada").eq("hotel_id", session.user.id).neq("estado", "cancelada");
+      const EXCL = ["grupos/eventos","grupo","evento","groups/events"];
+      const ind = (todos||[]).filter(r => !EXCL.some(x => (r.canal||"").toLowerCase().includes(x)));
+      let patronCanales, mediaNoches, mediaADR;
+      if (ind.length > 20) {
+        const cc = {}; ind.forEach(r => { const c=r.canal||"Directo / Web"; cc[c]=(cc[c]||0)+(r.num_reservas||1); });
+        const tot = Object.values(cc).reduce((a,b)=>a+b,0);
+        patronCanales = Object.entries(cc).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([canal,cnt])=>({canal,peso:cnt/tot}));
+        const cn = ind.filter(r=>r.noches>0); mediaNoches = cn.length ? cn.reduce((a,r)=>a+r.noches,0)/cn.length : 2;
+        const cp = ind.filter(r=>r.precio_total>0&&r.noches>0); mediaADR = cp.length ? cp.reduce((a,r)=>a+(r.precio_total/r.noches),0)/cp.length : 120;
+      } else {
+        patronCanales = [{canal:"Booking.com",peso:0.38},{canal:"Directo",peso:0.16},{canal:"Web",peso:0.10},{canal:"Expedia",peso:0.14},{canal:"Empresa / Corporativo",peso:0.12},{canal:"Tour operador",peso:0.10}];
+        mediaNoches = 2; mediaADR = 120;
+      }
+      const plantillaConf = [{canal:"Booking.com",mesesDesde:1,mesesHasta:4,nochesDef:2,factorADR:0.97},{canal:"Directo",mesesDesde:2,mesesHasta:6,nochesDef:3,factorADR:1.05},{canal:"Web",mesesDesde:1,mesesHasta:5,nochesDef:2,factorADR:1.02},{canal:"Expedia",mesesDesde:4,mesesHasta:8,nochesDef:2,factorADR:0.95},{canal:"Empresa / Corporativo",mesesDesde:1,mesesHasta:3,nochesDef:1,factorADR:1.10}];
+      const plantillaCancel = [{canal:"Booking.com",mesesDesde:2,mesesHasta:5,nochesDef:2,factorADR:0.97},{canal:"Web",mesesDesde:3,mesesHasta:7,nochesDef:2,factorADR:1.02}];
+      const numConf = Math.random()<0.5?3:4, numCancel = Math.random()<0.5?1:2;
+      const shuffled = arr => [...arr].sort(()=>Math.random()-0.5);
+      const mkFila = ({canal,mesesDesde,mesesHasta,nochesDef,factorADR}, estado) => {
+        const dias = Math.round(mesesDesde*30 + Math.random()*(mesesHasta-mesesDesde)*30);
+        const llegada = new Date(hoy); llegada.setDate(llegada.getDate()+dias);
+        const noches = Math.max(1, Math.round(nochesDef+(Math.random()-0.5)));
+        const adr = Math.round(mediaADR*factorADR*(0.93+Math.random()*0.14));
+        const salida = new Date(llegada); salida.setDate(salida.getDate()+noches);
+        const fmt = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+        return { hotel_id:session.user.id, fecha_pickup:hoyStr, fecha_llegada:fmt(llegada), fecha_salida:fmt(salida), canal, num_reservas:1, noches, precio_total:Math.round(adr*noches*100)/100, estado };
+      };
+      const filas = [...shuffled(plantillaConf).slice(0,numConf).map(p=>mkFila(p,"confirmada")), ...shuffled(plantillaCancel).slice(0,numCancel).map(p=>mkFila(p,"cancelada"))];
+      const { error } = await supabase.from("pickup_entries").insert(filas);
+      if (error) throw new Error(error.message);
+      setOkMock(true);
+      setTimeout(() => { setOkMock(false); onGuardado && onGuardado(true); }, 2000);
+    } catch(e) { console.error("Error generando mock:", e); }
+    setGenerandoMock(false);
+  };
 
   // Mapa precalculado — mismo origen que el heatmap
   const habEnCasaMapPU = useMemo(
@@ -4701,8 +4754,10 @@ function PickupView({ datos, onGuardado, onGenerarMock, generandoMock }) {
   const reservasAyer = pickupEntries.filter(e => String(e.fecha_pickup||"").slice(0,10) === ayerStr);
 
   const normCanal = c => {
-    const aliases = { "Directo Web": "Directo", "Teléfono": "Directo" };
-    return aliases[c] || c || "Directo";
+    const lc = (c || "").toLowerCase().trim();
+    if (lc.includes("directo")) return "Directo";
+    if (lc.includes("web")) return "Web";
+    return c || "Directo";
   };
 
   const ayerPorMes = {};
@@ -4720,7 +4775,7 @@ function PickupView({ datos, onGuardado, onGenerarMock, generandoMock }) {
 
   const CANAL_COLORS = {
     "Booking.com": "#0052CC", "Expedia": "#FFD700",
-    "Directo": "#555555", "Agencia": "#7C3AED"
+    "Directo": "#111111", "Web": "#BDBDBD", "Agencia": "#7C3AED"
   };
 
   // ── Cancelaciones de ayer ──
@@ -4821,12 +4876,10 @@ function PickupView({ datos, onGuardado, onGenerarMock, generandoMock }) {
           <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><line x1="6.5" y1="1" x2="6.5" y2="12" stroke="#fff" strokeWidth="2" strokeLinecap="round"/><line x1="1" y1="6.5" x2="12" y2="6.5" stroke="#fff" strokeWidth="2" strokeLinecap="round"/></svg>
           Nueva reserva
         </button>
-        {onGenerarMock && (
-          <button onClick={onGenerarMock} disabled={generandoMock}
-            style={{ display:"inline-flex", alignItems:"center", gap:6, background:"none", color:C.textMid, border:`1px solid ${C.border}`, borderRadius:8, padding:"8px 14px", cursor:generandoMock?"not-allowed":"pointer", fontSize:11, fontWeight:600, fontFamily:"'Plus Jakarta Sans',sans-serif", opacity:generandoMock?0.6:1 }}>
-            ⚡ {generandoMock ? "Generando…" : "Generar pickup ficticio"}
-          </button>
-        )}
+        <button onClick={generarPickupMock} disabled={generandoMock}
+          style={{ display:"inline-flex", alignItems:"center", gap:6, background:"none", color:C.textMid, border:`1px solid ${C.border}`, borderRadius:8, padding:"8px 14px", cursor:generandoMock?"not-allowed":"pointer", fontSize:11, fontWeight:600, fontFamily:"'Plus Jakarta Sans',sans-serif", opacity:generandoMock?0.6:1 }}>
+          ⚡ {generandoMock ? "Generando…" : "Generar pickup ficticio"}
+        </button>
       </div>
 
       {/* Modal nueva reserva */}
@@ -4848,7 +4901,7 @@ function PickupView({ datos, onGuardado, onGenerarMock, generandoMock }) {
                   <select value={nrForm.canal} onChange={e=>setNrFormPersist(f=>({...f,canal:e.target.value}))}
                     style={{ width:"100%", padding:"8px 10px", borderRadius:7, border:`1px solid ${C.border}`, fontSize:13, background:C.bgCard, color:C.text, fontFamily:"inherit", boxSizing:"border-box" }}>
                     <option value="">Seleccionar</option>
-                    {["Booking.com","Expedia","Directo","Directo Web","Teléfono","Agencia","Corporativo","Grupo","Evento","Otro"].map(c=><option key={c} value={c}>{c}</option>)}
+                    {["Booking.com","Expedia","Directo","Web","Teléfono","Agencia","Corporativo","Grupo","Evento","Otro"].map(c=><option key={c} value={c}>{c}</option>)}
                   </select>
                 </div>
                 <div>
@@ -6000,7 +6053,7 @@ function GruposView({ datos, onRecargar, onVolverHeatmap }) {
 
   const ESTADOS = {
     confirmado: { label: t("estado_confirmado"), color: "#1A7A3C", bg: "#E6F7EE", peso: 1.0 },
-    cotizado:   { label: t("estado_cotizacion"), color: "#B8860B", bg: "#FFF8E7", peso: 0.5 },
+    cotizado:   { label: t("estado_cotizacion"), color: "#B8860B", bg: "#FFF8E7", peso: 0 },
     cancelado:  { label: t("estado_cancelado"),  color: "#999",    bg: "#F5F5F5", peso: 0   },
     tentativo:  { label: t("estado_cotizacion"), color: "#B8860B", bg: "#FFF8E7", peso: 0.5 },
   };
@@ -8324,7 +8377,7 @@ export default function App() {
 
   const views = {
     dashboard: (props) => <DashboardView {...props} onMesDetalle={(m, a) => setMesDetalle({ mes: m, anio: a })} onDesgloseMovimiento={tipo => setDesgloseMovimiento(tipo)} kpiModal={kpiModal} setKpiModal={setKpiModal} kpiModalExterno={kpiModalApp} onKpiModalExternoHandled={() => setKpiModalApp(null)} onNavigarGrupos={(subvista, fechaInicio, fechaFin, id) => { localStorage.setItem("fr_grupos_subvista", subvista); sessionStorage.setItem("fr_pending_nuevo", JSON.stringify({ tipo: subvista === "eventos" ? "evento" : "grupo", fecha_inicio: fechaInicio, fecha_fin: fechaFin, highlightId: id||null })); sessionStorage.setItem("fr_from_heatmap", "1"); setView("grupos"); localStorage.setItem("fr_view", "grupos"); }} />,
-    pickup:    (props) => <PickupView    {...props} onGenerarMock={generarPickupMock} generandoMock={generandoMock} />,
+    pickup:    (props) => <PickupView    {...props} />,
     budget:    (props) => <BudgetView    {...props} />,
     grupos:    (props) => <GruposView    {...props} onRecargar={() => cargarDatos(true)} onVolverHeatmap={() => { setView("dashboard"); localStorage.setItem("fr_view", "dashboard"); }} />,
   };
@@ -8660,7 +8713,7 @@ export default function App() {
                     const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
                     const NO_OTA_KEYS2 = ['directo', 'teléfono', 'telefono', 'email', 'empresa', 'corporativo', 'grupos', 'mice'];
                     const isOTA2 = (canal) => { const c = (canal || '').toLowerCase(); return !NO_OTA_KEYS2.some(k => c.includes(k)); };
-                    const normCanal2 = (canal) => { const c = (canal || '').toLowerCase().trim(); if (c.includes('directo') || c.includes('web')) return 'Directo / Web'; if (c.includes('teléfono') || c.includes('telefono') || c.includes('email')) return 'Teléfono / Email'; if (c.includes('empresa') || c.includes('corporativo')) return 'Empresa / Corp.'; if (c.includes('grupo') || c.includes('mice')) return 'Grupos / MICE'; return canal || 'Directo / Web'; };
+                    const normCanal2 = (canal) => { const c = (canal || '').toLowerCase().trim(); if (c.includes('directo')) return 'Directo'; if (c.includes('web')) return 'Web'; if (c.includes('teléfono') || c.includes('telefono') || c.includes('email')) return 'Teléfono / Email'; if (c.includes('empresa') || c.includes('corporativo')) return 'Empresa / Corp.'; if (c.includes('grupo') || c.includes('mice')) return 'Grupos / MICE'; return canal || 'Directo'; };
                     const [{ data: datosMes }, { data: pickupRows }, { data: pptoData }, { data: pickupMes2 }, { data: gruposMes2 }, { data: gruposProx2 }] = await Promise.all([
                       supabase.from("produccion_diaria").select("fecha,hab_ocupadas,hab_disponibles,revenue_hab,revenue_fnb,revenue_total").eq("hotel_id", session.user.id).gte("fecha", inicioMes).lt("fecha", inicioSig).order("fecha", { ascending: true }),
                       supabase.from("pickup_entries").select("num_reservas,precio_total,estado").eq("hotel_id", session.user.id).eq("fecha_pickup", ultimoDia.fecha),
@@ -8689,7 +8742,7 @@ export default function App() {
                     for (const p of (pickupMes2 || [])) { const peso = p.precio_total || (p.num_reservas || 1); const key = isOTA2(p.canal) ? 'OTAs' : normCanal2(p.canal); canalMap2[key] = (canalMap2[key] || 0) + peso; }
                     const canalesRevenue2 = Object.entries(canalMap2).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]).map(([canal,revenue])=>({canal,revenue}));
                     let revGrupos2 = 0;
-                    for (const g of (gruposMes2 || [])) { const noches = Math.max(1, (new Date(g.fecha_fin+'T00:00:00') - new Date(g.fecha_inicio+'T00:00:00')) / 86400000); const peso = g.estado === 'cotizado' ? 0.5 : 1.0; revGrupos2 += ((g.habitaciones||0)*(g.adr_grupo||0)*noches+(g.revenue_fnb||0)+(g.revenue_sala||0))*peso; }
+                    for (const g of (gruposMes2 || [])) { const noches = Math.max(1, (new Date(g.fecha_fin+'T00:00:00') - new Date(g.fecha_inicio+'T00:00:00')) / 86400000); const peso = g.estado === 'cotizado' ? 0 : 1.0; revGrupos2 += ((g.habitaciones||0)*(g.adr_grupo||0)*noches+(g.revenue_fnb||0)+(g.revenue_sala||0))*peso; }
                     const revIndividual2 = Math.max(0, totRevHab2 - revGrupos2);
                     const occ    = ultimoDia.hab_disponibles > 0 ? ultimoDia.hab_ocupadas / ultimoDia.hab_disponibles * 100 : null;
                     const adr    = ultimoDia.adr    ?? (ultimoDia.hab_ocupadas > 0 && ultimoDia.revenue_hab ? ultimoDia.revenue_hab / ultimoDia.hab_ocupadas : null);
