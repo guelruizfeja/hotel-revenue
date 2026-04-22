@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo, createContext, useContext } from "react";
+import React, { useState, useEffect, useRef, useMemo, useCallback, createContext, useContext } from "react";
 import { supabase } from "./supabase";
 import {
   AreaChart, Area, BarChart, Bar, LineChart, Line, ComposedChart,
@@ -89,7 +89,7 @@ const TRANSLATIONS = {
     eliminar_grupo:"¿Eliminar este grupo?", eliminar_evento:"¿Eliminar este evento?",
     form_hora_inicio:"Hora inicio", form_hora_fin:"Hora fin", form_sala_nombre:"Sala / Espacio",
     form_servicio_incluido:"Servicio incluido",
-    vista_calendario:"Calendario", vista_lista:"Lista", vista_pipeline:"Pipeline", vista_tabla:"Tabla",
+    vista_calendario:"Calendario", vista_lista:"Lista", vista_pipeline:"Resumen", vista_tabla:"Tabla",
     rev_confirmado:"Revenue confirmado", rev_tentativo:"Revenue tentativo (50%)",
     pipeline_cotizacion:"Pipeline en cotización", cancelados_perdidos:"Cancelados / Perdidos",
     cat_corporativo:"Corporativo", cat_boda:"Boda / Social", cat_feria:"Feria / Congreso",
@@ -197,7 +197,7 @@ const TRANSLATIONS = {
     eliminar_grupo:"Delete this group?", eliminar_evento:"Delete this event?",
     form_hora_inicio:"Start time", form_hora_fin:"End time", form_sala_nombre:"Room / Space",
     form_servicio_incluido:"Service included",
-    vista_calendario:"Calendar", vista_lista:"List", vista_pipeline:"Pipeline", vista_tabla:"Table",
+    vista_calendario:"Calendar", vista_lista:"List", vista_pipeline:"Resumen", vista_tabla:"Table",
     rev_confirmado:"Confirmed revenue", rev_tentativo:"Tentative revenue (50%)",
     pipeline_cotizacion:"Quotation pipeline", cancelados_perdidos:"Cancelled / Lost",
     cat_corporativo:"Corporate", cat_boda:"Wedding / Social", cat_feria:"Trade Fair / Congress",
@@ -302,7 +302,7 @@ const TRANSLATIONS = {
     eliminar_grupo:"Supprimer ce groupe ?", eliminar_evento:"Supprimer cet événement ?",
     form_hora_inicio:"Heure début", form_hora_fin:"Heure fin", form_sala_nombre:"Salle / Espace",
     form_servicio_incluido:"Service inclus",
-    vista_calendario:"Calendrier", vista_lista:"Liste", vista_pipeline:"Pipeline", vista_tabla:"Tableau",
+    vista_calendario:"Calendrier", vista_lista:"Liste", vista_pipeline:"Resumen", vista_tabla:"Tableau",
     rev_confirmado:"Revenu confirmé", rev_tentativo:"Revenu tentative (50%)",
     pipeline_cotizacion:"Pipeline en devis", cancelados_perdidos:"Annulés / Perdus",
     cat_corporativo:"Corporatif", cat_boda:"Mariage / Social", cat_feria:"Foire / Congrès",
@@ -3325,6 +3325,39 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
     [datos.pickupEntries, datos.grupos]
   );
 
+  // ADR real desde precios de pickup para un día ISO — fórmula correcta: Σ(precio_noche×nr)/Σ(nr)
+  const calcAdrPickup = useCallback((iso) => {
+    const activas = pickupEntries.filter(e => {
+      const est = e.estado||"confirmada";
+      if (est === "cancelada" || est === "tentativo") return false;
+      const fl = String(e.fecha_llegada||"").slice(0,10);
+      if (e._grupo) return fl === iso;
+      const fs = e.fecha_salida
+        ? String(e.fecha_salida).slice(0,10)
+        : e.noches && fl ? (() => { const d=new Date(fl); d.setDate(d.getDate()+Number(e.noches)); return d.toISOString().slice(0,10); })()
+        : null;
+      return fl && fs && fl <= iso && fs > iso;
+    });
+    let sumRev = 0, sumHabs = 0;
+    for (const e of activas) {
+      const fl = String(e.fecha_llegada||"").slice(0,10);
+      const nightIdx = Math.round((new Date(iso) - new Date(fl)) / 86400000);
+      const nr = e.num_reservas || 1;
+      let pn = null;
+      if (e.precios_por_noche && Array.isArray(e.precios_por_noche) && e.precios_por_noche[nightIdx] != null) {
+        pn = e.precios_por_noche[nightIdx];
+      } else if (e.precio_total) {
+        const noches = e.noches || (() => {
+          const fs = e.fecha_salida ? String(e.fecha_salida).slice(0,10) : null;
+          return fs ? Math.round((new Date(fs)-new Date(fl))/86400000) : null;
+        })();
+        if (noches > 0) pn = e.precio_total / noches;
+      }
+      if (pn != null && pn > 0) { sumRev += pn * nr; sumHabs += nr; }
+    }
+    return sumHabs > 0 ? sumRev / sumHabs : null;
+  }, [pickupEntries]);
+
   // ── Pickup del último día importado por mes de llegada ──
   const todasFechasPickup = pickupEntries
     .filter(e => !e._grupo)
@@ -3448,7 +3481,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
       dia: new Date(d.fecha + "T00:00:00").toLocaleDateString("es-ES", { day: "numeric", month: "short" }),
       fecha: new Date(d.fecha + "T00:00:00").toLocaleDateString("es-ES", { weekday: "short", day: "numeric", month: "short" }),
       occ: d.hab_disponibles > 0 ? Math.round(d.hab_ocupadas / d.hab_disponibles * 100) : 0,
-      adr: d.hab_ocupadas > 0 ? Math.round(d.revenue_hab / d.hab_ocupadas) : 0,
+      adr: Math.round(calcAdrPickup(d.fecha) ?? (d.hab_ocupadas > 0 ? d.revenue_hab / d.hab_ocupadas : 0)),
     }));
 
   const mesPrevIdx = mes === 0 ? 11 : mes - 1;
@@ -3589,40 +3622,6 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
         const hoyStr2 = `${_hoy2.getFullYear()}-${pad2(_hoy2.getMonth()+1)}-${pad2(_hoy2.getDate())}`;
 
 
-        // ADR desde pickup para un día ISO (usa precios_por_noche si disponible, sino precio_total/noches)
-        const calcAdrPickup = (iso) => {
-          const activas = pickupEntries.filter(e => {
-            const est = e.estado||"confirmada";
-            if (est === "cancelada" || est === "tentativo") return false;
-            const fl = String(e.fecha_llegada||"").slice(0,10);
-            // grupos: solo la entrada sintética del día exacto (evita triple-cuenta por días anteriores)
-            if (e._grupo) return fl === iso;
-            const fs = e.fecha_salida
-              ? String(e.fecha_salida).slice(0,10)
-              : e.noches && fl ? (() => { const d=new Date(fl); d.setDate(d.getDate()+Number(e.noches)); return d.toISOString().slice(0,10); })()
-              : null;
-            return fl && fs && fl <= iso && fs > iso;
-          });
-          let sumRev = 0, sumHabs = 0;
-          for (const e of activas) {
-            const fl = String(e.fecha_llegada||"").slice(0,10);
-            const nightIdx = Math.round((new Date(iso) - new Date(fl)) / 86400000);
-            const nr = e.num_reservas || 1;
-            let pn = null;
-            if (e.precios_por_noche && Array.isArray(e.precios_por_noche) && e.precios_por_noche[nightIdx] != null) {
-              pn = e.precios_por_noche[nightIdx];
-            } else if (e.precio_total) {
-              const noches = e.noches || (() => {
-                const fs = e.fecha_salida ? String(e.fecha_salida).slice(0,10) : null;
-                return fs ? Math.round((new Date(fs)-new Date(fl))/86400000) : null;
-              })();
-              if (noches > 0) pn = e.precio_total / noches;
-            }
-            if (pn != null && pn > 0) { sumRev += pn * nr; sumHabs += nr; }
-          }
-          return sumHabs > 0 ? sumRev / sumHabs : null;
-        };
-
         // Habitaciones pernoctando por día — grupos directamente desde datos.grupos + individuales desde pickup
         const habPorDia = {};
         if (hmMesSel != null) {
@@ -3693,8 +3692,9 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
             const neto  = habEnCasaMap[iso] || 0;
             let occ=null, adr=null;
             if (prod) {
-              occ = prod.hab_disponibles>0 ? Math.min(100,prod.hab_ocupadas/prod.hab_disponibles*100) : null;
-              adr = prod.hab_ocupadas>0    ? (prod.revenue_hab/prod.hab_ocupadas) : null;
+              const habDen = prod.hab_disponibles > 0 ? prod.hab_disponibles : habHotel;
+              occ = habDen > 0 ? Math.round((neto || prod.hab_ocupadas) / habDen * 100) : null;
+              adr = calcAdrPickup(iso) ?? (prod.hab_ocupadas>0 ? prod.revenue_hab/prod.hab_ocupadas : null);
             } else if (iso >= hoyStr2) {
               occ = neto>0 ? Math.round(neto/habHotel*100) : null;
               adr = calcAdrPickup(iso);
@@ -4263,7 +4263,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
                 ? datos.hotel.habitaciones : habFromProd2;
               const prodHoy  = produccion.find(d => d.fecha === hoyStr);
               const occHoy   = prodHoy?.hab_disponibles > 0
-                ? Math.min(100, Math.round(prodHoy.hab_ocupadas/prodHoy.hab_disponibles*100))
+                ? Math.round(prodHoy.hab_ocupadas/prodHoy.hab_disponibles*100)
                 : (habH > 0 ? Math.round((habEnCasaMap[hoyStr]||0)/habH*100) : null);
               const occColor = occHoy>100?"#7B0000":occHoy>=85?"#E53935":occHoy>=70?"#C49A0A":occHoy>=50?C.accent:C.textLight;
               const ayerProd = produccion.find(d => d.fecha === ayerStr);
@@ -4346,6 +4346,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
                       {occAyer !== null ? <Delta hoy={occHoy} ayer={occAyer} unit="%"/> : <span/>}
                     </>}
                   </div>
+
 
                 </div>
               );
@@ -4553,17 +4554,11 @@ function PickupView({ datos, onGuardado }) {
       const { data: todos } = await supabase.from("pickup_entries").select("canal,num_reservas,noches,precio_total,estado,fecha_llegada").eq("hotel_id", session.user.id).neq("estado", "cancelada");
       const EXCL = ["grupos/eventos","grupo","evento","groups/events"];
       const ind = (todos||[]).filter(r => !EXCL.some(x => (r.canal||"").toLowerCase().includes(x)));
-      let patronCanales, mediaNoches, mediaADR;
+      let mediaNoches, mediaADR;
       if (ind.length > 20) {
-        const cc = {}; ind.forEach(r => { const c=r.canal||"Directo / Web"; cc[c]=(cc[c]||0)+(r.num_reservas||1); });
-        const tot = Object.values(cc).reduce((a,b)=>a+b,0);
-        patronCanales = Object.entries(cc).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([canal,cnt])=>({canal,peso:cnt/tot}));
         const cn = ind.filter(r=>r.noches>0); mediaNoches = cn.length ? cn.reduce((a,r)=>a+r.noches,0)/cn.length : 2;
         const cp = ind.filter(r=>r.precio_total>0&&r.noches>0); mediaADR = cp.length ? cp.reduce((a,r)=>a+(r.precio_total/r.noches),0)/cp.length : 120;
-      } else {
-        patronCanales = [{canal:"Booking.com",peso:0.38},{canal:"Directo",peso:0.16},{canal:"Web",peso:0.10},{canal:"Expedia",peso:0.14},{canal:"Empresa / Corporativo",peso:0.12},{canal:"Tour operador",peso:0.10}];
-        mediaNoches = 2; mediaADR = 120;
-      }
+      } else { mediaNoches = 2; mediaADR = 120; }
       const plantillaConf = [{canal:"Booking.com",mesesDesde:1,mesesHasta:4,nochesDef:2,factorADR:0.97},{canal:"Directo",mesesDesde:2,mesesHasta:6,nochesDef:3,factorADR:1.05},{canal:"Web",mesesDesde:1,mesesHasta:5,nochesDef:2,factorADR:1.02},{canal:"Expedia",mesesDesde:4,mesesHasta:8,nochesDef:2,factorADR:0.95},{canal:"Empresa / Corporativo",mesesDesde:1,mesesHasta:3,nochesDef:1,factorADR:1.10}];
       const plantillaCancel = [{canal:"Booking.com",mesesDesde:2,mesesHasta:5,nochesDef:2,factorADR:0.97},{canal:"Web",mesesDesde:3,mesesHasta:7,nochesDef:2,factorADR:1.02}];
       const numConf = Math.random()<0.5?3:4, numCancel = Math.random()<0.5?1:2;
@@ -6274,7 +6269,7 @@ function GruposView({ datos, onRecargar, onVolverHeatmap }) {
           )}
           {[
             { key:"semana",   label:"Calendario" },
-            { key:"pipeline", label:"Pipeline" },
+            { key:"pipeline", label:"Resumen" },
             { key:"grupos",   label:"Grupos" },
             { key:"eventos",  label:"Eventos" },
             { key:"revenue",  label:"Revenue" },
@@ -8325,7 +8320,7 @@ export default function App() {
     const occDia = (iso) => {
       const prod = produccion.find(r => r.fecha === iso);
       if (prod?.hab_disponibles > 0)
-        return Math.min(100, Math.round(prod.hab_ocupadas/prod.hab_disponibles*100));
+        return Math.round(prod.hab_ocupadas/prod.hab_disponibles*100);
       const n = tickerMap[iso] || 0;
       return hab > 0 ? Math.round(n/hab*100) : null;
     };
