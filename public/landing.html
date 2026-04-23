@@ -1088,28 +1088,52 @@ document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
 
 /* ── FULL-PAGE SCROLL ── */
 (function () {
-  const SECTIONS = Array.from(document.querySelectorAll(
-    '.hero, .stats-bar, .mockup-section, .features-section, .contact-section, .cta-section, footer'
-  ));
+  const SECTIONS = [
+    document.querySelector('.hero'),
+    document.querySelector('.mockup-section'),
+    document.querySelector('.features-section'),
+    document.querySelector('.contact-section'),
+  ].filter(Boolean);
+
   let current = 0;
   let busy = false;
-  const DURATION = 800; // ms de bloqueo entre transiciones
+  const DURATION = 750;
+
+  function easeInOut(t) {
+    return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+  }
+
+  function animateTo(targetY) {
+    const startY = window.scrollY;
+    const diff = targetY - startY;
+    if (Math.abs(diff) < 2) { busy = false; return; }
+    let startTime = null;
+
+    function step(ts) {
+      if (!startTime) startTime = ts;
+      const progress = Math.min((ts - startTime) / DURATION, 1);
+      window.scrollTo(0, startY + diff * easeInOut(progress));
+      if (progress < 1) {
+        requestAnimationFrame(step);
+      } else {
+        busy = false;
+      }
+    }
+    requestAnimationFrame(step);
+  }
 
   function goTo(index) {
     if (index < 0 || index >= SECTIONS.length || busy) return;
     busy = true;
     current = index;
-    SECTIONS[current].scrollIntoView({ behavior: 'smooth', block: 'start' });
-    setTimeout(() => { busy = false; }, DURATION);
+    animateTo(SECTIONS[current].getBoundingClientRect().top + window.scrollY);
   }
 
-  // Rueda de ratón
   window.addEventListener('wheel', function (e) {
     e.preventDefault();
     goTo(current + (e.deltaY > 0 ? 1 : -1));
   }, { passive: false });
 
-  // Flechas arriba/abajo y AvPág/RePág
   window.addEventListener('keydown', function (e) {
     const tag = document.activeElement ? document.activeElement.tagName : '';
     if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
