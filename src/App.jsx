@@ -7384,7 +7384,7 @@ function AuthScreen() {
   ];
 
   return (
-    <div style={{ minHeight: "100vh", background: "#F8F9FB", fontFamily: "'Plus Jakarta Sans', sans-serif", overflowX: "hidden" }}>
+    <div style={{ minHeight: "100vh", background: "#FFFFFF", fontFamily: "'Plus Jakarta Sans', sans-serif", overflowX: "hidden" }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;0,800;1,400;1,600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -7393,7 +7393,7 @@ function AuthScreen() {
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
         .fr-btn-primary:hover { background: #003A6B !important; }
-        .fr-btn-outline:hover { background: rgba(255,255,255,0.12) !important; }
+        .fr-btn-outline:hover { background: #F1F5F9 !important; }
         .fr-feat-card:hover { transform: translateY(-3px); box-shadow: 0 12px 40px rgba(0,0,0,0.10) !important; }
         .fr-feat-card { transition: transform 0.2s ease, box-shadow 0.2s ease; }
       `}</style>
@@ -7417,31 +7417,27 @@ function AuthScreen() {
       </nav>
 
       {/* ── HERO ────────────────────────────────────────── */}
-      <section style={{ background: "linear-gradient(135deg, #0A2540 0%, #0D3660 50%, #0A2540 100%)", padding: "96px 32px 80px", textAlign: "center", position: "relative", overflow: "hidden" }}>
-        {/* decorative circles */}
-        <div style={{ position: "absolute", top: -80, right: -80, width: 400, height: 400, borderRadius: "50%", background: "rgba(255,255,255,0.03)", pointerEvents: "none" }} />
-        <div style={{ position: "absolute", bottom: -60, left: -60, width: 300, height: 300, borderRadius: "50%", background: "rgba(255,255,255,0.03)", pointerEvents: "none" }} />
-
+      <section style={{ background: "#FFFFFF", borderBottom: "1px solid #E8EAED", padding: "96px 32px 88px", textAlign: "center" }}>
         <div style={{ maxWidth: 760, margin: "0 auto", animation: "fadeUp 0.7s ease both" }}>
-          <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 100, padding: "6px 16px", marginBottom: 28 }}>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "#EFF6FF", border: "1px solid #BFDBFE", borderRadius: 100, padding: "6px 16px", marginBottom: 28 }}>
             <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#22C55E", display: "inline-block" }} />
-            <span style={{ fontSize: 12, color: "rgba(255,255,255,0.8)", fontWeight: 500, letterSpacing: 0.5 }}>Revenue Management para hoteles independientes</span>
+            <span style={{ fontSize: 12, color: "#1D4ED8", fontWeight: 600, letterSpacing: 0.5 }}>Revenue Management para hoteles independientes</span>
           </div>
 
-          <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "clamp(40px, 6vw, 68px)", fontWeight: 700, color: "#FFFFFF", lineHeight: 1.1, marginBottom: 20 }}>
+          <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "clamp(40px, 6vw, 68px)", fontWeight: 700, color: "#0A2540", lineHeight: 1.1, marginBottom: 20 }}>
             Tu hotel, en pleno<br />
-            <span style={{ fontStyle: "italic", color: "#7EC8F5" }}>control.</span>
+            <span style={{ fontStyle: "italic", color: "#004B87" }}>control.</span>
           </h1>
 
-          <p style={{ fontSize: "clamp(15px, 2vw, 18px)", color: "rgba(255,255,255,0.72)", lineHeight: 1.7, maxWidth: 580, margin: "0 auto 40px" }}>
+          <p style={{ fontSize: "clamp(15px, 2vw, 18px)", color: "#6B7280", lineHeight: 1.7, maxWidth: 580, margin: "0 auto 40px" }}>
             Dashboard de KPIs, heatmap mensual, gestión de grupos y eventos, pickup diario e informes automáticos por email — todo en una sola plataforma.
           </p>
 
           <div style={{ display: "flex", justifyContent: "center", gap: 12, flexWrap: "wrap" }}>
-            <button className="fr-btn-primary" onClick={() => openAuth("register")} style={{ padding: "15px 32px", borderRadius: 10, border: "none", background: "#004B87", color: "#fff", fontSize: 15, fontWeight: 700, cursor: "pointer", fontFamily: "'Plus Jakarta Sans', sans-serif", boxShadow: "0 4px 20px rgba(0,75,135,0.5)" }}>
+            <button className="fr-btn-primary" onClick={() => openAuth("register")} style={{ padding: "15px 32px", borderRadius: 10, border: "none", background: "#004B87", color: "#fff", fontSize: 15, fontWeight: 700, cursor: "pointer", fontFamily: "'Plus Jakarta Sans', sans-serif", boxShadow: "0 4px 20px rgba(0,75,135,0.25)" }}>
               Empezar gratis →
             </button>
-            <button className="fr-btn-outline" onClick={() => openAuth("login")} style={{ padding: "15px 32px", borderRadius: 10, border: "1.5px solid rgba(255,255,255,0.3)", background: "transparent", color: "#fff", fontSize: 15, fontWeight: 600, cursor: "pointer", fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+            <button className="fr-btn-outline" onClick={() => openAuth("login")} style={{ padding: "15px 32px", borderRadius: 10, border: "1.5px solid #CBD5E1", background: "transparent", color: "#374151", fontSize: 15, fontWeight: 600, cursor: "pointer", fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
               Ya tengo cuenta
             </button>
           </div>
@@ -7486,10 +7482,10 @@ function AuthScreen() {
       </section>
 
       {/* ── HOW IT WORKS ────────────────────────────────── */}
-      <section style={{ background: "#0A2540", padding: "88px 32px" }}>
+      <section style={{ background: "#F8F9FB", borderTop: "1px solid #E8EAED", borderBottom: "1px solid #E8EAED", padding: "88px 32px" }}>
         <div style={{ maxWidth: 860, margin: "0 auto", textAlign: "center" }}>
-          <p style={{ fontSize: 12, fontWeight: 700, color: "#7EC8F5", textTransform: "uppercase", letterSpacing: 2, marginBottom: 12 }}>Cómo funciona</p>
-          <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "clamp(26px, 4vw, 42px)", fontWeight: 700, color: "#fff", marginBottom: 60 }}>
+          <p style={{ fontSize: 12, fontWeight: 700, color: "#004B87", textTransform: "uppercase", letterSpacing: 2, marginBottom: 12 }}>Cómo funciona</p>
+          <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "clamp(26px, 4vw, 42px)", fontWeight: 700, color: "#0A2540", marginBottom: 60 }}>
             En marcha en menos de 5 minutos
           </h2>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 32 }}>
@@ -7500,9 +7496,9 @@ function AuthScreen() {
               { n: "04", title: "Recibe informes", text: "Cada mañana recibes por email el resumen del día anterior con KPIs y gráficos." },
             ].map((s, i) => (
               <div key={i} style={{ textAlign: "left" }}>
-                <p style={{ fontSize: 36, fontWeight: 800, color: "rgba(126,200,245,0.3)", fontFamily: "'Cormorant Garamond', serif", marginBottom: 12 }}>{s.n}</p>
-                <h4 style={{ fontSize: 16, fontWeight: 700, color: "#fff", marginBottom: 8 }}>{s.title}</h4>
-                <p style={{ fontSize: 14, color: "rgba(255,255,255,0.6)", lineHeight: 1.6 }}>{s.text}</p>
+                <p style={{ fontSize: 36, fontWeight: 800, color: "#DBEAFE", fontFamily: "'Cormorant Garamond', serif", marginBottom: 12 }}>{s.n}</p>
+                <h4 style={{ fontSize: 16, fontWeight: 700, color: "#0A2540", marginBottom: 8 }}>{s.title}</h4>
+                <p style={{ fontSize: 14, color: "#6B7280", lineHeight: 1.6 }}>{s.text}</p>
               </div>
             ))}
           </div>
@@ -7526,12 +7522,12 @@ function AuthScreen() {
       </section>
 
       {/* ── FOOTER ──────────────────────────────────────── */}
-      <footer style={{ background: "#0A2540", padding: "32px", textAlign: "center" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 12 }}>
-          <img src="/fastrev-icon.png" alt="FastRevenue" style={{ height: 28, width: "auto", opacity: 0.7 }} />
-          <span style={{ fontSize: 15, fontWeight: 700, color: "rgba(255,255,255,0.5)" }}>FAST<span style={{ fontWeight: 400 }}>REVENUE</span></span>
+      <footer style={{ background: "#FFFFFF", borderTop: "1px solid #E8EAED", padding: "32px", textAlign: "center" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 10 }}>
+          <img src="/fastrev-icon.png" alt="FastRevenue" style={{ height: 26, width: "auto", opacity: 0.5 }} />
+          <span style={{ fontSize: 14, fontWeight: 700, color: "#9CA3AF" }}>FAST<span style={{ fontWeight: 400 }}>REVENUE</span></span>
         </div>
-        <p style={{ fontSize: 12, color: "rgba(255,255,255,0.3)" }}>© {new Date().getFullYear()} FastRevenue · Revenue management para hoteles independientes</p>
+        <p style={{ fontSize: 12, color: "#D1D5DB" }}>© {new Date().getFullYear()} FastRevenue · Revenue management para hoteles independientes</p>
       </footer>
 
       {/* ── AUTH MODAL ──────────────────────────────────── */}
