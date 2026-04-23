@@ -7277,8 +7277,8 @@ function GruposView({ datos, onRecargar, onVolverHeatmap }) {
 
 // ─── AUTH SCREEN ──────────────────────────────────────────────────
 function AuthScreen() {
-  const [showAuth, setShowAuth] = useState(false);
-  const [mode, setMode] = useState("login");
+  const [showAuth, setShowAuth] = useState(() => window.location.hash === "#login" || window.location.hash === "#register");
+  const [mode, setMode] = useState(() => window.location.hash === "#register" ? "register" : "login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [hotelNombre, setHotelNombre] = useState("");
