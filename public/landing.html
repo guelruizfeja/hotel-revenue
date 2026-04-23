@@ -30,7 +30,7 @@
     --text: #111827;
   }
 
-  html { scroll-behavior: smooth; }
+  html { scroll-behavior: auto; }
   body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--white); color: var(--text); overflow-x: hidden; }
 
   /* ── NAV ── */
@@ -1080,7 +1080,7 @@ document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
 
   let current = 0;
   let busy = false;
-  const DURATION = 750;
+  const DURATION = 1100;
 
   function easeOut(t) {
     return 1 - Math.pow(1 - t, 4);
