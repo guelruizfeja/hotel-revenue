@@ -7332,262 +7332,86 @@ function AuthScreen() {
 
   const inp = { width: "100%", padding: "11px 14px", borderRadius: 8, border: "1.5px solid #E0E0E0", fontSize: 14, fontFamily: "'Plus Jakarta Sans', sans-serif", color: "#1A1A1A", background: "#FDFDFD", outline: "none", boxSizing: "border-box" };
 
-  const FEATURES = [
-    {
-      icon: "▦",
-      color: "#1D4ED8",
-      bg: "#EFF6FF",
-      title: "Heatmap mensual",
-      desc: "Visualiza ocupación, ADR y RevPAR día a día en un calendario interactivo. Detecta fechas calientes con un solo vistazo.",
-    },
-    {
-      icon: "◈",
-      color: "#059669",
-      bg: "#ECFDF5",
-      title: "Grupos y Eventos",
-      desc: "Gestiona tu pipeline de grupos: confirmados, tentativos y cancelados. Barras visuales sobre el calendario, enlazadas a cada expediente.",
-    },
-    {
-      icon: "↗",
-      color: "#7C3AED",
-      bg: "#F5F3FF",
-      title: "Pickup diario",
-      desc: "Ritmo de nuevas reservas por canal, mes de llegada y ventana de reserva. Análisis de desplazamiento para aceptar o rechazar grupos.",
-    },
-    {
-      icon: "◎",
-      color: "#D97706",
-      bg: "#FFFBEB",
-      title: "Presupuesto y Forecast",
-      desc: "Compara producción real vs objetivo mensual. Proyecta el cierre del año con forecast automático basado en el ritmo actual.",
-    },
-    {
-      icon: "✉",
-      color: "#DB2777",
-      bg: "#FDF2F8",
-      title: "Informes automáticos",
-      desc: "Recibe cada día por email un resumen de KPIs con gráficos. Informe mensual en PDF con comparativa año anterior.",
-    },
-    {
-      icon: "⬡",
-      color: "#0891B2",
-      bg: "#ECFEFF",
-      title: "Gestión de Salas",
-      desc: "Planning diario por sala con horarios de eventos. Vista mensual de disponibilidad y revenue de F&B y sala.",
-    },
-  ];
-
-  const STATS = [
-    { value: "100%", label: "Visibilidad de tu hotel" },
-    { value: "0€", label: "Coste adicional de APIs" },
-    { value: "1 min", label: "Para ver tus primeros datos" },
-  ];
-
   return (
-    <div style={{ minHeight: "100vh", background: "#FFFFFF", fontFamily: "'Plus Jakarta Sans', sans-serif", overflowX: "hidden" }}>
+    <div style={{ minHeight: "100vh", background: "#0A2540", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", fontFamily: "'Plus Jakarta Sans', sans-serif", padding: "24px" }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;0,800;1,400;1,600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        html, body, #root { width: 100%; min-height: 100vh; }
-        @keyframes fadeUp { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
-        .fr-btn-primary:hover { background: #003A6B !important; }
-        .fr-btn-outline:hover { background: #F1F5F9 !important; }
-        .fr-feat-card:hover { transform: translateY(-3px); box-shadow: 0 12px 40px rgba(0,0,0,0.10) !important; }
-        .fr-feat-card { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+        * { box-sizing: border-box; }
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
       `}</style>
 
-      {/* ── NAVBAR ─────────────────────────────────────── */}
-      <nav style={{ position: "sticky", top: 0, zIndex: 100, background: "rgba(255,255,255,0.92)", backdropFilter: "blur(12px)", borderBottom: "1px solid #E8EAED", padding: "0 32px", height: 64, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <img src="/fastrev-icon.png" alt="FastRevenue" style={{ height: 36, width: "auto" }} />
-          <span style={{ fontSize: 18, fontWeight: 800, color: "#0A2540", letterSpacing: 0.3 }}>
-            FAST<span style={{ fontWeight: 400 }}>REVENUE</span>
-          </span>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <button className="fr-btn-outline" onClick={() => openAuth("login")} style={{ padding: "9px 20px", borderRadius: 8, border: "1.5px solid #0A2540", background: "transparent", color: "#0A2540", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
-            Iniciar sesión
-          </button>
-          <button className="fr-btn-primary" onClick={() => openAuth("register")} style={{ padding: "9px 20px", borderRadius: 8, border: "none", background: "#004B87", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
-            Crear cuenta gratis
-          </button>
-        </div>
-      </nav>
-
-      {/* ── HERO ────────────────────────────────────────── */}
-      <section style={{ background: "#FFFFFF", borderBottom: "1px solid #E8EAED", padding: "96px 32px 88px", textAlign: "center" }}>
-        <div style={{ maxWidth: 760, margin: "0 auto", animation: "fadeUp 0.7s ease both" }}>
-          <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "#EFF6FF", border: "1px solid #BFDBFE", borderRadius: 100, padding: "6px 16px", marginBottom: 28 }}>
-            <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#22C55E", display: "inline-block" }} />
-            <span style={{ fontSize: 12, color: "#1D4ED8", fontWeight: 600, letterSpacing: 0.5 }}>Revenue Management para hoteles independientes</span>
-          </div>
-
-          <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "clamp(40px, 6vw, 68px)", fontWeight: 700, color: "#0A2540", lineHeight: 1.1, marginBottom: 20 }}>
-            Tu hotel, en pleno<br />
-            <span style={{ fontStyle: "italic", color: "#004B87" }}>control.</span>
-          </h1>
-
-          <p style={{ fontSize: "clamp(15px, 2vw, 18px)", color: "#6B7280", lineHeight: 1.7, maxWidth: 580, margin: "0 auto 40px" }}>
-            Dashboard de KPIs, heatmap mensual, gestión de grupos y eventos, pickup diario e informes automáticos por email — todo en una sola plataforma.
-          </p>
-
-          <div style={{ display: "flex", justifyContent: "center", gap: 12, flexWrap: "wrap" }}>
-            <button className="fr-btn-primary" onClick={() => openAuth("register")} style={{ padding: "15px 32px", borderRadius: 10, border: "none", background: "#004B87", color: "#fff", fontSize: 15, fontWeight: 700, cursor: "pointer", fontFamily: "'Plus Jakarta Sans', sans-serif", boxShadow: "0 4px 20px rgba(0,75,135,0.25)" }}>
-              Empezar gratis →
-            </button>
-            <button className="fr-btn-outline" onClick={() => openAuth("login")} style={{ padding: "15px 32px", borderRadius: 10, border: "1.5px solid #CBD5E1", background: "transparent", color: "#374151", fontSize: 15, fontWeight: 600, cursor: "pointer", fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
-              Ya tengo cuenta
-            </button>
-          </div>
-        </div>
-      </section>
-
-      {/* ── STATS BAR ───────────────────────────────────── */}
-      <section style={{ background: "#fff", borderBottom: "1px solid #E8EAED", padding: "0 32px" }}>
-        <div style={{ maxWidth: 900, margin: "0 auto", display: "flex", justifyContent: "center", gap: 0 }}>
-          {STATS.map((s, i) => (
-            <div key={i} style={{ flex: 1, padding: "28px 24px", textAlign: "center", borderRight: i < STATS.length - 1 ? "1px solid #E8EAED" : "none" }}>
-              <p style={{ fontSize: 32, fontWeight: 800, color: "#0A2540", fontFamily: "'Cormorant Garamond', serif", marginBottom: 4 }}>{s.value}</p>
-              <p style={{ fontSize: 13, color: "#6B7280", fontWeight: 400 }}>{s.label}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ── FEATURES ────────────────────────────────────── */}
-      <section style={{ padding: "88px 32px", maxWidth: 1100, margin: "0 auto" }}>
-        <div style={{ textAlign: "center", marginBottom: 60 }}>
-          <p style={{ fontSize: 12, fontWeight: 700, color: "#004B87", textTransform: "uppercase", letterSpacing: 2, marginBottom: 12 }}>Funcionalidades</p>
-          <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "clamp(28px, 4vw, 44px)", fontWeight: 700, color: "#0A2540", lineHeight: 1.2, marginBottom: 16 }}>
-            Todo lo que necesita un<br />Revenue Manager moderno
-          </h2>
-          <p style={{ fontSize: 16, color: "#6B7280", maxWidth: 520, margin: "0 auto" }}>
-            Sin hojas de Excel. Sin sistemas legacy. FastRevenue centraliza toda la operativa de ingresos de tu hotel.
-          </p>
+      <div style={{ width: "100%", maxWidth: 400, animation: "fadeUp 0.4s ease both" }}>
+        {/* Logo */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginBottom: 36 }}>
+          <img src="/fastrev-icon.png" alt="FastRevenue" style={{ height: 38, width: "auto", filter: "brightness(0) invert(1)" }} />
+          <span style={{ fontSize: 19, fontWeight: 800, color: "#fff", letterSpacing: 0.3 }}>FAST<span style={{ fontWeight: 400 }}>REVENUE</span></span>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 24 }}>
-          {FEATURES.map((f, i) => (
-            <div key={i} className="fr-feat-card" style={{ background: "#fff", borderRadius: 16, padding: "28px 24px", border: "1px solid #E8EAED", boxShadow: "0 2px 12px rgba(0,0,0,0.05)" }}>
-              <div style={{ width: 44, height: 44, borderRadius: 12, background: f.bg, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 18, fontSize: 20, color: f.color }}>
-                {f.icon}
-              </div>
-              <h3 style={{ fontSize: 17, fontWeight: 700, color: "#0A2540", marginBottom: 10 }}>{f.title}</h3>
-              <p style={{ fontSize: 14, color: "#6B7280", lineHeight: 1.65 }}>{f.desc}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ── HOW IT WORKS ────────────────────────────────── */}
-      <section style={{ background: "#F8F9FB", borderTop: "1px solid #E8EAED", borderBottom: "1px solid #E8EAED", padding: "88px 32px" }}>
-        <div style={{ maxWidth: 860, margin: "0 auto", textAlign: "center" }}>
-          <p style={{ fontSize: 12, fontWeight: 700, color: "#004B87", textTransform: "uppercase", letterSpacing: 2, marginBottom: 12 }}>Cómo funciona</p>
-          <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "clamp(26px, 4vw, 42px)", fontWeight: 700, color: "#0A2540", marginBottom: 60 }}>
-            En marcha en menos de 5 minutos
-          </h2>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 32 }}>
-            {[
-              { n: "01", title: "Crea tu cuenta", text: "Registra tu hotel con nombre, ciudad y número de habitaciones." },
-              { n: "02", title: "Importa tus datos", text: "Descarga la plantilla Excel, rellénala y súbela. En segundos tienes el dashboard activo." },
-              { n: "03", title: "Analiza y decide", text: "Visualiza KPIs, detecta fechas calientes y gestiona grupos desde un único lugar." },
-              { n: "04", title: "Recibe informes", text: "Cada mañana recibes por email el resumen del día anterior con KPIs y gráficos." },
-            ].map((s, i) => (
-              <div key={i} style={{ textAlign: "left" }}>
-                <p style={{ fontSize: 36, fontWeight: 800, color: "#DBEAFE", fontFamily: "'Cormorant Garamond', serif", marginBottom: 12 }}>{s.n}</p>
-                <h4 style={{ fontSize: 16, fontWeight: 700, color: "#0A2540", marginBottom: 8 }}>{s.title}</h4>
-                <p style={{ fontSize: 14, color: "#6B7280", lineHeight: 1.6 }}>{s.text}</p>
-              </div>
+        {/* Card */}
+        <div style={{ background: "#fff", borderRadius: 16, padding: "32px 28px", boxShadow: "0 24px 60px rgba(0,0,0,0.4)" }}>
+          {/* Tabs */}
+          <div style={{ display: "flex", background: "#F3F4F6", borderRadius: 10, padding: 4, marginBottom: 24 }}>
+            {[["login","Iniciar sesión"],["register","Crear cuenta"]].map(([k,l]) => (
+              <button key={k} onClick={() => { setMode(k); setError(""); setMensaje(""); }}
+                style={{ flex: 1, padding: "9px", borderRadius: 7, border: "none", cursor: "pointer",
+                  background: mode===k ? "#fff" : "transparent",
+                  color: mode===k ? "#004B87" : "#6B7280",
+                  fontWeight: mode===k ? 700 : 400, fontSize: 13,
+                  fontFamily: "'Plus Jakarta Sans', sans-serif",
+                  boxShadow: mode===k ? "0 1px 4px rgba(0,0,0,0.08)" : "none",
+                  transition: "all 0.15s" }}>{l}</button>
             ))}
           </div>
-        </div>
-      </section>
 
-      {/* ── CTA BOTTOM ──────────────────────────────────── */}
-      <section style={{ padding: "88px 32px", textAlign: "center", background: "#fff" }}>
-        <div style={{ maxWidth: 560, margin: "0 auto" }}>
-          <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "clamp(28px, 4vw, 44px)", fontWeight: 700, color: "#0A2540", marginBottom: 16 }}>
-            ¿Listo para tomar el control<br />de tu revenue?
-          </h2>
-          <p style={{ fontSize: 16, color: "#6B7280", marginBottom: 36 }}>
-            Únete a los hoteles que ya gestionan su revenue con datos reales, no intuiciones.
-          </p>
-          <button className="fr-btn-primary" onClick={() => openAuth("register")} style={{ padding: "16px 40px", borderRadius: 10, border: "none", background: "#004B87", color: "#fff", fontSize: 16, fontWeight: 700, cursor: "pointer", fontFamily: "'Plus Jakarta Sans', sans-serif", boxShadow: "0 4px 20px rgba(0,75,135,0.3)" }}>
-            Crear cuenta gratis →
-          </button>
-          <p style={{ fontSize: 12, color: "#9CA3AF", marginTop: 16 }}>Sin tarjeta de crédito. Sin permanencia.</p>
-        </div>
-      </section>
-
-      {/* ── FOOTER ──────────────────────────────────────── */}
-      <footer style={{ background: "#FFFFFF", borderTop: "1px solid #E8EAED", padding: "32px", textAlign: "center" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 10 }}>
-          <img src="/fastrev-icon.png" alt="FastRevenue" style={{ height: 26, width: "auto", opacity: 0.5 }} />
-          <span style={{ fontSize: 14, fontWeight: 700, color: "#9CA3AF" }}>FAST<span style={{ fontWeight: 400 }}>REVENUE</span></span>
-        </div>
-        <p style={{ fontSize: 12, color: "#D1D5DB" }}>© {new Date().getFullYear()} FastRevenue · Revenue management para hoteles independientes</p>
-      </footer>
-
-      {/* ── AUTH MODAL ──────────────────────────────────── */}
-      {showAuth && (
-        <div onClick={e => { if (e.target === e.currentTarget) setShowAuth(false); }} style={{ position: "fixed", inset: 0, background: "rgba(10,37,64,0.75)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 20, animation: "fadeIn 0.2s ease both" }}>
-          <div style={{ width: "100%", maxWidth: 420, background: "#fff", borderRadius: 20, padding: "36px 32px", boxShadow: "0 40px 100px rgba(0,0,0,0.5)", animation: "slideUp 0.3s ease both", position: "relative" }}>
-            <button onClick={() => setShowAuth(false)} style={{ position: "absolute", top: 16, right: 16, background: "none", border: "none", fontSize: 20, color: "#9CA3AF", cursor: "pointer", lineHeight: 1 }}>×</button>
-
-            <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 28 }}>
-              <img src="/fastrev-icon.png" alt="FastRevenue" style={{ height: 36, width: "auto" }} />
-              <span style={{ fontSize: 18, fontWeight: 800, color: "#0A2540" }}>FAST<span style={{ fontWeight: 400 }}>REVENUE</span></span>
-            </div>
-
-            <div style={{ display: "flex", background: "#F3F4F6", borderRadius: 10, padding: 4, marginBottom: 24 }}>
-              {[["login","Iniciar sesión"],["register","Crear cuenta"]].map(([k,l]) => (
-                <button key={k} onClick={() => { setMode(k); setError(""); setMensaje(""); }} style={{ flex: 1, padding: "9px", borderRadius: 7, border: "none", cursor: "pointer", background: mode===k ? "#fff" : "transparent", color: mode===k ? "#004B87" : "#6B7280", fontWeight: mode===k ? 700 : 400, fontSize: 13, fontFamily: "'Plus Jakarta Sans', sans-serif", boxShadow: mode===k ? "0 1px 4px rgba(0,0,0,0.08)" : "none", transition: "all 0.15s" }}>{l}</button>
-              ))}
-            </div>
-
-            {mensaje ? (
-              <div style={{ background: "#ECFDF5", color: "#059669", padding: "14px", borderRadius: 8, fontSize: 13, textAlign: "center", fontWeight: 600 }}>{mensaje}</div>
-            ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                {mode === "register" && (
-                  <>
+          {mensaje ? (
+            <div style={{ background: "#ECFDF5", color: "#059669", padding: "14px", borderRadius: 8, fontSize: 13, textAlign: "center", fontWeight: 600 }}>{mensaje}</div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              {mode === "register" && (
+                <>
+                  <div>
+                    <p style={{ fontSize: 11, color: "#9CA3AF", marginBottom: 5, textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600 }}>Nombre del hotel *</p>
+                    <input style={inp} placeholder="Ej. Hotel Mediterráneo" value={hotelNombre} onChange={e => setHotelNombre(e.target.value)} />
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                     <div>
-                      <p style={{ fontSize: 11, color: "#9CA3AF", marginBottom: 5, textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600 }}>Nombre del hotel *</p>
-                      <input style={inp} placeholder="Ej. Hotel Mediterráneo" value={hotelNombre} onChange={e => setHotelNombre(e.target.value)} />
+                      <p style={{ fontSize: 11, color: "#9CA3AF", marginBottom: 5, textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600 }}>Ciudad</p>
+                      <input style={inp} placeholder="Ciudad" value={hotelCiudad} onChange={e => setHotelCiudad(e.target.value)} />
                     </div>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                      <div>
-                        <p style={{ fontSize: 11, color: "#9CA3AF", marginBottom: 5, textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600 }}>Ciudad</p>
-                        <input style={inp} placeholder="Ciudad" value={hotelCiudad} onChange={e => setHotelCiudad(e.target.value)} />
-                      </div>
-                      <div>
-                        <p style={{ fontSize: 11, color: "#9CA3AF", marginBottom: 5, textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600 }}>Habitaciones</p>
-                        <input style={inp} placeholder="Nº hab." type="number" value={habitaciones} onChange={e => setHabitaciones(e.target.value)} />
-                      </div>
+                    <div>
+                      <p style={{ fontSize: 11, color: "#9CA3AF", marginBottom: 5, textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600 }}>Habitaciones</p>
+                      <input style={inp} placeholder="Nº hab." type="number" value={habitaciones} onChange={e => setHabitaciones(e.target.value)} />
                     </div>
-                    <div style={{ height: 1, background: "#E5E7EB" }} />
-                  </>
-                )}
-                <div>
-                  <p style={{ fontSize: 11, color: "#9CA3AF", marginBottom: 5, textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600 }}>Email *</p>
-                  <input style={inp} type="email" value={email} onChange={e => setEmail(e.target.value)} autoComplete="email" />
-                </div>
-                <div>
-                  <p style={{ fontSize: 11, color: "#9CA3AF", marginBottom: 5, textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600 }}>Contraseña *</p>
-                  <input style={inp} type="password" value={password} onChange={e => setPassword(e.target.value)} onKeyDown={e => e.key==="Enter" && (mode==="login" ? handleLogin() : handleRegister())} autoComplete="current-password" />
-                  {mode === "register" && <p style={{ fontSize: 11, color: "#9CA3AF", marginTop: 4 }}>Mín. 8 caracteres, una mayúscula y un número</p>}
-                </div>
-                {error && <div style={{ background: "#FEF2F2", color: "#DC2626", padding: "10px 14px", borderRadius: 8, fontSize: 13 }}>{error}</div>}
-                <button onClick={mode==="login" ? handleLogin : handleRegister} disabled={loading} style={{ width: "100%", padding: "13px", borderRadius: 10, border: "none", background: loading ? "#BFDBFE" : "#004B87", color: loading ? "#1E40AF" : "#fff", fontSize: 14, fontWeight: 700, cursor: loading ? "not-allowed" : "pointer", fontFamily: "'Plus Jakarta Sans', sans-serif", marginTop: 2 }}>
-                  {loading ? "Cargando..." : mode==="login" ? "Entrar" : "Crear cuenta"}
-                </button>
+                  </div>
+                  <div style={{ height: 1, background: "#E5E7EB" }} />
+                </>
+              )}
+              <div>
+                <p style={{ fontSize: 11, color: "#9CA3AF", marginBottom: 5, textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600 }}>Email *</p>
+                <input style={inp} type="email" value={email} onChange={e => setEmail(e.target.value)} autoComplete="email" />
               </div>
-            )}
-          </div>
+              <div>
+                <p style={{ fontSize: 11, color: "#9CA3AF", marginBottom: 5, textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600 }}>Contraseña *</p>
+                <input style={inp} type="password" value={password} onChange={e => setPassword(e.target.value)} onKeyDown={e => e.key==="Enter" && (mode==="login" ? handleLogin() : handleRegister())} autoComplete="current-password" />
+                {mode === "register" && <p style={{ fontSize: 11, color: "#9CA3AF", marginTop: 4 }}>Mín. 8 caracteres, una mayúscula y un número</p>}
+              </div>
+              {error && <div style={{ background: "#FEF2F2", color: "#DC2626", padding: "10px 14px", borderRadius: 8, fontSize: 13 }}>{error}</div>}
+              <button onClick={mode==="login" ? handleLogin : handleRegister} disabled={loading}
+                style={{ width: "100%", padding: "13px", borderRadius: 10, border: "none",
+                  background: loading ? "#BFDBFE" : "#004B87",
+                  color: loading ? "#1E40AF" : "#fff",
+                  fontSize: 14, fontWeight: 700, cursor: loading ? "not-allowed" : "pointer",
+                  fontFamily: "'Plus Jakarta Sans', sans-serif", marginTop: 2 }}>
+                {loading ? "Cargando..." : mode==="login" ? "Entrar" : "Crear cuenta"}
+              </button>
+            </div>
+          )}
         </div>
-      )}
+
+        <p style={{ textAlign: "center", marginTop: 20, fontSize: 12, color: "rgba(255,255,255,0.35)" }}>
+          <a href="/" style={{ color: "rgba(255,255,255,0.35)", textDecoration: "none" }}>← Volver a fastrevenue.app</a>
+        </p>
+      </div>
     </div>
   );
 }
