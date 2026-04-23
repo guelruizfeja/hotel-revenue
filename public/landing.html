@@ -149,7 +149,26 @@
   .stat-label { font-size: 12px; color: rgba(255,255,255,0.4); letter-spacing: 0.3px; }
 
   /* ── MOCKUP ── */
-  .mockup-section { padding: 110px 6vw; background: var(--white); }
+  .mockup-section {
+    padding: 110px 6vw;
+    background-image: url('/hero-bg.jpg');
+    background-size: cover;
+    background-position: center 40%;
+    position: relative;
+  }
+  .mockup-section::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(to bottom, rgba(5,12,30,0.62) 0%, rgba(5,12,30,0.52) 100%);
+    pointer-events: none;
+  }
+  .mockup-section > * { position: relative; }
+  .mockup-section .section-eyebrow { color: rgba(255,255,255,0.7); }
+  .mockup-section .section-eyebrow::before,
+  .mockup-section .section-eyebrow::after { background: rgba(255,255,255,0.4); }
+  .mockup-section .section-title { color: #ffffff; }
+  .mockup-section .section-title em { color: #7EC8F5; }
+  .mockup-section .section-sub { color: rgba(255,255,255,0.75); }
   .section-eyebrow {
     text-align: center; font-size: 10px;
     letter-spacing: 3px; text-transform: uppercase;
