@@ -150,7 +150,7 @@
 
   /* ── MOCKUP ── */
   .mockup-section {
-    padding: 110px 6vw;
+    padding: 60px 6vw 80px;
     background-image: url('/mockup-bg.jpg');
     background-size: cover;
     background-position: center center;
@@ -535,13 +535,21 @@
 
 <!-- MOCKUP -->
 <section class="mockup-section reveal" id="producto">
-  <div class="section-eyebrow">El producto</div>
-  <h2 class="section-title">Una herramienta que centraliza<br>todos los datos de tu hotel</h2>
-  <p class="section-sub">Con FastRevenue puedes controlar los datos históricos y el forecast del ejercicio controlando en todo momento si se cumplen los objetivos.</p>
+  <div style="max-width:980px; margin:0 auto; padding-top:20px;">
+    <div class="section-eyebrow">El producto</div>
+    <h2 class="section-title">Una herramienta que centraliza<br>todos los datos de tu hotel</h2>
+    <p class="section-sub">Con FastRevenue puedes controlar los datos históricos y el forecast del ejercicio controlando en todo momento si se cumplen los objetivos.</p>
 
-  <div style="max-width:720px; margin:0 auto; border-radius:16px; overflow:hidden; box-shadow:0 40px 80px rgba(10,37,64,0.22); position:relative; line-height:0;">
-    <img src="/dashboard-preview.png" alt="FastRevenue Dashboard" style="width:100%; display:block; filter:blur(2px); transform:scale(1.02); transform-origin:center;">
-    <div style="position:absolute; inset:0; background:linear-gradient(to bottom, rgba(10,37,64,0.05), rgba(10,37,64,0.18)); pointer-events:none;"></div>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+      <div style="border-radius:12px; overflow:hidden; box-shadow:0 24px 60px rgba(0,0,0,0.35); position:relative; line-height:0;">
+        <img src="/dashboard-preview.png" alt="FastRevenue Dashboard" style="width:100%; display:block; filter:blur(1.5px); transform:scale(1.02); transform-origin:center;">
+        <div style="position:absolute; inset:0; background:linear-gradient(to bottom, rgba(10,37,64,0.04), rgba(10,37,64,0.15)); pointer-events:none;"></div>
+      </div>
+      <div style="border-radius:12px; overflow:hidden; box-shadow:0 24px 60px rgba(0,0,0,0.35); position:relative; line-height:0;">
+        <img src="/budget-preview.png" alt="FastRevenue Presupuesto" style="width:100%; display:block; filter:blur(1.5px); transform:scale(1.02); transform-origin:center;">
+        <div style="position:absolute; inset:0; background:linear-gradient(to bottom, rgba(10,37,64,0.04), rgba(10,37,64,0.15)); pointer-events:none;"></div>
+      </div>
+    </div>
   </div>
 </section>
 
