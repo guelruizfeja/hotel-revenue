@@ -37,28 +37,23 @@
   nav {
     position: fixed; top: 0; left: 0; right: 0; z-index: 100;
     display: flex; align-items: center; justify-content: space-between;
-    padding: 0 6vw; height: 60px;
-    background: rgba(235,240,248,0.97);
-    backdrop-filter: blur(16px);
-    border-bottom: 1px solid rgba(200,212,228,0.8);
+    padding: 0 6vw; height: 72px;
+    background: transparent;
+    border-bottom: none;
   }
-  .nav-logo { display: flex; align-items: center; gap: 8px; }
-  .nav-logo img { height: 36px; width: auto; }
-  .nav-logo span { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 16px; font-weight: 800; color: #0A2540; letter-spacing: 0.5px; white-space: nowrap; }
-  .nav-links { display: flex; gap: 28px; align-items: center; }
-  .nav-links a {
-    font-size: 13px; color: var(--gray); text-decoration: none;
-    font-weight: 400; letter-spacing: 0.1px; transition: color 0.2s;
+  .nav-logo { display: flex; align-items: center; gap: 10px; }
+  .nav-logo img { height: 38px; width: auto; filter: brightness(0) invert(1); }
+  .nav-logo span { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 17px; font-weight: 800; color: white; letter-spacing: 0.5px; white-space: nowrap; text-shadow: 0 1px 6px rgba(0,0,0,0.4); }
+  .nav-socios {
+    font-size: 13px; color: rgba(255,255,255,0.88); text-decoration: none;
+    font-weight: 600; letter-spacing: 0.3px;
+    border: 1.5px solid rgba(255,255,255,0.45);
+    padding: 8px 20px; border-radius: 50px;
+    transition: all 0.2s;
+    backdrop-filter: blur(8px);
+    background: rgba(255,255,255,0.1);
   }
-  .nav-links a:hover { color: var(--navy); }
-  .nav-cta {
-    background: var(--navy) !important; color: white !important;
-    padding: 9px 22px; border-radius: 50px;
-    font-weight: 600 !important; font-size: 13px !important;
-    transition: all 0.2s !important; letter-spacing: 0.2px;
-    box-shadow: 0 2px 10px rgba(10,37,64,0.18);
-  }
-  .nav-cta:hover { background: var(--navy-light) !important; transform: translateY(-1px); }
+  .nav-socios:hover { background: rgba(255,255,255,0.2); border-color: rgba(255,255,255,0.8); color: white; }
 
   /* ── HERO ── */
   .hero {
@@ -479,7 +474,7 @@
     .features-grid { grid-template-columns: 1fr; }
     .stats-inner { grid-template-columns: 1fr; gap: 28px; }
     .stat-item + .stat-item { border-left: none; border-top: 1px solid rgba(184,134,11,0.15); padding-top: 28px; }
-    .nav-links { display: none; }
+    .nav-socios { display: none; }
     .price-card { padding: 36px 28px; }
   }
 
@@ -506,12 +501,7 @@
     <img src="/fastrev-icon.png" alt="FastRevenue">
     <span>FAST<span style="font-weight:400">REVENUE</span></span>
   </div>
-  <div class="nav-links">
-    <a href="#producto">Producto</a>
-    <a href="#funciones">Funciones</a>
-    <a href="#consulta" class="nav-cta">Solicitar consulta</a>
-    <a href="/home" class="nav-cta">Iniciar sesión</a>
-  </div>
+  <a href="/home" class="nav-socios">Área de socios</a>
 </nav>
 
 <!-- HERO -->
@@ -520,9 +510,6 @@
     <div class="hero-badge">Revenue Management para hoteles independientes</div>
     <h1>Tu hotel, en pleno<br><em>control.</em></h1>
     <p class="hero-sub">Paneles interactivos, gestión de KPIs, ocupación y gestión de grupos en una única plataforma.</p>
-    <div class="hero-actions">
-      <a href="#consulta" class="btn-gold">Agenda tu consulta gratuita →</a>
-    </div>
   </div>
 </section>
 
