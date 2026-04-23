@@ -150,7 +150,7 @@
 
   /* ── MOCKUP ── */
   .mockup-section {
-    padding: 60px 6vw 80px;
+    padding: 72px 6vw 72px;
     background-image: url('/mockup-bg.jpg');
     background-size: cover;
     background-position: center center;
@@ -535,36 +535,35 @@
 
 <!-- MOCKUP -->
 <section class="mockup-section reveal" id="producto">
-  <div style="max-width:1000px; margin:0 auto;">
+  <div style="max-width:1100px; margin:0 auto; display:grid; grid-template-columns:1fr 1fr; gap:64px; align-items:center; min-height:calc(100vh - 72px);">
 
-    <div class="section-eyebrow">El producto</div>
-    <h2 class="section-title">Una herramienta que centraliza<br>todos los datos de tu hotel</h2>
-    <p class="section-sub">Con FastRevenue controlas los datos históricos y el forecast del ejercicio, comprobando en todo momento si se cumplen los objetivos.</p>
+    <!-- Texto izquierda -->
+    <div>
+      <div class="section-eyebrow" style="justify-content:flex-start; text-align:left;">El producto</div>
+      <h2 class="section-title" style="text-align:left;">Una herramienta que centraliza todos los datos de tu hotel</h2>
+      <p class="section-sub" style="text-align:left; margin:0 0 40px; max-width:none;">Con FastRevenue controlas los datos históricos y el forecast del ejercicio, comprobando en todo momento si se cumplen los objetivos.</p>
+      <a href="#consulta" class="btn-gold" onclick="event.preventDefault(); window.scrollToSection('consulta');">
+        Solicitar consulta para ver demo →
+      </a>
+    </div>
 
-    <!-- capturas con perspectiva -->
-    <div style="position:relative; height:320px; margin:0 auto 40px; max-width:860px;">
+    <!-- Capturas derecha -->
+    <div style="position:relative; height:320px;">
 
       <!-- captura principal — dashboard -->
-      <div style="position:absolute; left:0; top:0; width:62%; border-radius:10px; overflow:hidden;
+      <div style="position:absolute; left:0; top:0; width:68%; border-radius:10px; overflow:hidden;
                   box-shadow:0 28px 70px rgba(0,0,0,0.5); transform:perspective(900px) rotateY(4deg) rotateX(1deg);
                   border:1px solid rgba(255,255,255,0.08); line-height:0;">
         <img src="/dashboard-preview.png" alt="Dashboard" style="width:100%; display:block; filter:blur(1px);">
       </div>
 
-      <!-- captura secundaria — presupuesto, superpuesta a la derecha -->
-      <div style="position:absolute; right:0; bottom:0; width:52%; border-radius:10px; overflow:hidden;
+      <!-- captura secundaria — presupuesto -->
+      <div style="position:absolute; right:0; bottom:0; width:58%; border-radius:10px; overflow:hidden;
                   box-shadow:0 28px 70px rgba(0,0,0,0.6); transform:perspective(900px) rotateY(-4deg) rotateX(-1deg);
                   border:1px solid rgba(255,255,255,0.08); line-height:0;">
         <img src="/budget-preview.png" alt="Presupuesto" style="width:100%; display:block; filter:blur(1px);">
       </div>
 
-    </div>
-
-    <!-- CTA -->
-    <div style="text-align:center;">
-      <a href="#consulta" class="btn-gold" onclick="event.preventDefault(); window.scrollToSection('consulta');">
-        Solicitar consulta para ver demo →
-      </a>
     </div>
 
   </div>
