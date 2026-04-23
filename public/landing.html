@@ -73,6 +73,7 @@
     padding: 110px 6vw 80px;
     position: relative; overflow: hidden;
     text-align: center;
+    color: white;
   }
   .hero::before {
     content: '';
@@ -468,8 +469,8 @@
   .hero-visual { animation: fadeUp 0.8s ease 0.3s both; }
 
   @media (max-width: 768px) {
-    .hero { grid-template-columns: 1fr; padding: 100px 6vw 60px; }
-    .hero-visual { display: none; }
+    .hero { padding: 100px 6vw 60px; }
+
     .module-tabs { overflow-x: auto; }
     .module-tab { padding: 12px 14px; font-size: 10px; }
     .module-panel.active { grid-template-columns: 1fr; }
