@@ -1082,8 +1082,8 @@ document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
   let busy = false;
   const DURATION = 750;
 
-  function easeInOut(t) {
-    return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+  function easeOut(t) {
+    return 1 - Math.pow(1 - t, 4);
   }
 
   function animateTo(targetY) {
@@ -1095,7 +1095,7 @@ document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
     function step(ts) {
       if (!startTime) startTime = ts;
       const progress = Math.min((ts - startTime) / DURATION, 1);
-      window.scrollTo(0, startY + diff * easeInOut(progress));
+      window.scrollTo(0, startY + diff * easeOut(progress));
       if (progress < 1) {
         requestAnimationFrame(step);
       } else {
