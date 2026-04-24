@@ -255,27 +255,7 @@
   .mock-bar.peak { background: var(--accent); }
 
   /* ── FEATURES STICKY SCROLL ── */
-  .features-section {
-    background-image: url('/reception-bg.jpg');
-    background-size: cover;
-    background-position: center center;
-    background-attachment: fixed;
-    position: relative;
-  }
-  .features-section::before {
-    content: '';
-    position: absolute; inset: 0;
-    background: linear-gradient(to bottom, #000000 0%, rgba(5,12,30,0.62) 14%, rgba(5,12,30,0.62) 100%);
-    pointer-events: none;
-  }
-  .features-sticky-wrap { position: relative; }
-  .features-left .section-eyebrow { color: rgba(255,255,255,0.55); }
-  .features-left .section-eyebrow::before,
-  .features-left .section-eyebrow::after { background: rgba(255,255,255,0.3); }
-  .features-left .section-title { color: #ffffff; }
-  .fsi-num { color: var(--gold-light); opacity: 1; }
-  .fsi-title { color: var(--gold-light); }
-  .fsi-desc { color: rgba(255,255,255,0.78); }
+  .features-section { background: var(--off); }
   .features-sticky-wrap {
     max-width: 1100px; margin: 0 auto;
     display: grid; grid-template-columns: 1fr 1fr;
@@ -510,7 +490,7 @@
   <div class="features-sticky-wrap">
     <div class="features-left">
       <div class="section-eyebrow" style="justify-content:flex-start;">Gestión inteligente</div>
-      <h2 class="section-title" style="text-align:left;">La herramienta de revenue perfecta para tu hotel</h2>
+      <h2 class="section-title" style="text-align:left; color:var(--navy);">La herramienta de revenue perfecta para tu hotel</h2>
     </div>
     <div class="features-right">
       <div class="fsi-item">
