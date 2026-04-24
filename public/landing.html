@@ -699,7 +699,9 @@ document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
   const items = Array.from(document.querySelectorAll('.fsi-item'));
   if (!inner || !sec || !items.length) return;
 
-  if (window.innerWidth <= 768) {
+  const mq = window.matchMedia('(max-width: 768px)');
+
+  function applyMobile() {
     inner.style.opacity = '1';
     inner.style.transform = 'none';
     items.forEach(item => {
@@ -708,12 +710,27 @@ document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
       item.style.transform = 'none';
       item.style.pointerEvents = 'auto';
     });
-    return;
   }
+
+  function resetDesktop() {
+    inner.style.opacity = '';
+    inner.style.transform = '';
+    items.forEach(item => {
+      item.style.position = '';
+      item.style.opacity = '';
+      item.style.transform = '';
+      item.style.pointerEvents = '';
+    });
+  }
+
+  if (mq.matches) { applyMobile(); return; }
+
+  mq.addEventListener('change', e => { if (e.matches) applyMobile(); else resetDesktop(); });
 
   inner.classList.add('animating');
 
   let titleFixed = false;
+  let autoShown  = false;
   let current    = -1;     // -1=ninguna … N-1=última … N=todas mostradas
   let animating  = false;
   let accum      = 0;
@@ -731,6 +748,7 @@ document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
     inner.style.opacity   = p;
     inner.style.transform = `translateX(${(1 - p) * -120}px)`;
     titleFixed = p >= 1;
+    if (titleFixed && !autoShown) { autoShown = true; goForward(); }
   }
   window.addEventListener('scroll', updateTitle, { passive: true });
   updateTitle();
