@@ -254,102 +254,39 @@
   .mock-bar.hi { background: rgba(0,75,135,0.7); }
   .mock-bar.peak { background: var(--accent); }
 
-  /* ── FEATURES ── */
-  .features-section { padding: 110px 6vw; background: var(--off); }
-  .features-grid {
-    max-width: 980px; margin: 0 auto;
-    display: grid; grid-template-columns: repeat(3,1fr); gap: 1px;
-    background: var(--gray-light);
-    border: 1px solid var(--gray-light); border-radius: 12px; overflow: hidden;
+  /* ── FEATURES STICKY SCROLL ── */
+  .features-section { background: var(--off); }
+  .features-sticky-wrap {
+    max-width: 1100px; margin: 0 auto;
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 80px; align-items: start;
+    padding: 0 6vw;
   }
-  .feature-card {
-    background: var(--white); padding: 38px 32px;
-    transition: background 0.2s;
+  .features-left {
+    position: sticky; top: 50vh;
+    transform: translateY(-50%);
+    padding: 0;
   }
-  .feature-card:hover { background: #F0F5FF; }
-  .feature-num {
+  .features-right {
+    padding: 130px 0 130px;
+    display: flex; flex-direction: column; gap: 96px;
+  }
+  .fsi-item {
+    opacity: 0; transform: translateY(36px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+  }
+  .fsi-item.visible { opacity: 1; transform: translateY(0); }
+  .fsi-num {
     font-family: 'Cormorant Garamond', serif;
     font-size: 11px; color: var(--accent); font-weight: 600;
-    letter-spacing: 1px; margin-bottom: 18px; opacity: 0.7;
+    letter-spacing: 2px; margin-bottom: 14px; opacity: 0.6;
   }
-  .feature-title {
+  .fsi-title {
     font-family: 'Cormorant Garamond', serif;
-    font-size: 20px; font-weight: 700;
-    color: var(--navy); margin-bottom: 10px; line-height: 1.25;
+    font-size: 40px; font-weight: 700;
+    color: var(--navy); margin-bottom: 16px; line-height: 1.05;
   }
-  .feature-desc { font-size: 13px; color: var(--gray); line-height: 1.7; }
-
-  /* ── MODULE TABS ── */
-  .module-tabs {
-    display: flex; gap: 0; max-width: 980px; margin: 0 auto 48px;
-    border-bottom: 2px solid var(--gray-light);
-  }
-  .module-tab {
-    flex: 1; text-align: center;
-    padding: 16px 8px; background: none; border: none;
-    font-size: 12px; font-weight: 600; letter-spacing: 1px;
-    text-transform: uppercase; color: var(--gray);
-    cursor: pointer; font-family: 'Plus Jakarta Sans', sans-serif;
-    border-bottom: 2px solid transparent; margin-bottom: -2px;
-    transition: all 0.2s; white-space: nowrap;
-  }
-  .module-tab:hover { color: var(--navy); background: rgba(0,75,135,0.03); }
-  .module-tab.active { color: var(--navy); border-bottom-color: var(--navy); background: rgba(0,75,135,0.04); }
-  .module-panel { display: none; max-width: 980px; margin: 0 auto; }
-  .module-panel.active { display: grid; grid-template-columns: repeat(3,1fr); gap: 20px; }
-  .module-card {
-    background: var(--white); border-radius: 14px;
-    border: 1px solid var(--gray-light);
-    overflow: hidden; transition: box-shadow 0.2s, transform 0.2s;
-  }
-  .module-card:hover { box-shadow: 0 12px 40px rgba(10,37,64,0.1); transform: translateY(-3px); }
-  .module-card-visual {
-    background: var(--navy); height: 160px;
-    display: flex; align-items: center; justify-content: center;
-    padding: 20px; position: relative; overflow: hidden;
-  }
-  .module-card-body { padding: 22px 24px; }
-  .module-card-title {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 20px; font-weight: 700; color: var(--navy);
-    margin-bottom: 8px; line-height: 1.2;
-  }
-  .module-card-desc { font-size: 13px; color: var(--gray); line-height: 1.65; }
-  /* Mini visuals inside cards */
-  .mv-kpis { display: grid; grid-template-columns: repeat(3,1fr); gap: 6px; width: 100%; }
-  .mv-kpi { background: rgba(255,255,255,0.07); border-radius: 6px; padding: 8px 10px; border-left: 2px solid rgba(0,75,135,0.7); }
-  .mv-kpi-l { font-size: 7px; color: rgba(255,255,255,0.35); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
-  .mv-kpi-v { font-family: 'Cormorant Garamond', serif; font-size: 18px; font-weight: 600; color: white; line-height: 1; }
-  .mv-kpi-d { font-size: 7px; color: #34D399; margin-top: 2px; }
-  .mv-heatmap { display: grid; grid-template-columns: repeat(6,1fr); gap: 3px; width: 100%; }
-  .mv-hm { aspect-ratio: 1.2; border-radius: 3px; }
-  .mv-bars { display: flex; align-items: flex-end; gap: 4px; height: 80px; width: 100%; }
-  .mv-bar { flex: 1; border-radius: 2px 2px 0 0; background: rgba(0,75,135,0.3); }
-  .mv-bar.hi { background: rgba(0,75,135,0.6); }
-  .mv-bar.pk { background: var(--accent); }
-  .mv-stat-row { display: flex; flex-direction: column; gap: 8px; width: 100%; }
-  .mv-stat { background: rgba(255,255,255,0.07); border-radius: 6px; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; }
-  .mv-stat-l { font-size: 9px; color: rgba(255,255,255,0.45); text-transform: uppercase; letter-spacing: 0.8px; }
-  .mv-stat-v { font-family: 'Cormorant Garamond', serif; font-size: 17px; color: white; font-weight: 600; }
-  .mv-stat-delta { font-size: 9px; padding: 2px 7px; border-radius: 10px; font-weight: 600; }
-  .mv-delta-up { background: rgba(52,211,153,0.15); color: #34D399; }
-  .mv-delta-down { background: rgba(248,113,113,0.15); color: #F87171; }
-  .mv-badges { display: flex; flex-direction: column; gap: 8px; width: 100%; }
-  .mv-badge { display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.06); border-radius: 6px; padding: 8px 12px; }
-  .mv-badge-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
-  .mv-badge-label { font-size: 9px; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 0.8px; flex: 1; }
-  .mv-badge-val { font-size: 13px; font-weight: 600; color: white; }
-  .mv-doc { width: 70px; background: white; border-radius: 6px; padding: 10px 8px; display: flex; flex-direction: column; gap: 5px; box-shadow: 0 8px 24px rgba(0,0,0,0.25); }
-  .mv-doc-line { height: 3px; border-radius: 2px; background: var(--gray-light); }
-  .mv-doc-line.accent { background: var(--accent); width: 60%; }
-  .mv-doc-chart { height: 30px; margin-top: 4px; display: flex; align-items: flex-end; gap: 2px; }
-  .mv-doc-bar { flex: 1; border-radius: 1px 1px 0 0; background: rgba(0,75,135,0.25); }
-  .mv-doc-bar.hi { background: rgba(0,75,135,0.6); }
-  .mv-lines { display: flex; flex-direction: column; gap: 6px; width: 100%; }
-  .mv-line-row { display: flex; align-items: center; gap: 8px; }
-  .mv-line-label { font-size: 9px; color: rgba(255,255,255,0.4); width: 50px; text-align: right; }
-  .mv-line-track { flex: 1; height: 4px; background: rgba(255,255,255,0.08); border-radius: 2px; overflow: hidden; }
-  .mv-line-fill { height: 100%; border-radius: 2px; }
+  .fsi-desc { font-size: 15px; color: var(--gray); line-height: 1.75; max-width: 400px; }
 
   /* ── PRICING ── */
   .pricing-section { padding: 110px 6vw; background: var(--white); }
@@ -549,357 +486,32 @@
 
 
 <!-- FEATURES -->
-<section class="features-section reveal" id="funciones">
-  <div class="section-eyebrow">Gestión inteligente de tu hotel</div>
-  <h2 class="section-title">Todo lo que necesita<br>un <em>Revenue Manager moderno</em></h2>
-  <p class="section-sub">Siete módulos interactivos que centralizan toda la información de tu hotel. Sin dispersión, sin hojas sueltas, sin perder el hilo.</p>
-
-  <div class="module-tabs">
-    <button class="module-tab active" data-tab="dashboard">Dashboard</button>
-    <button class="module-tab" data-tab="heatmap">Heatmap</button>
-    <button class="module-tab" data-tab="pickup">Pickup</button>
-    <button class="module-tab" data-tab="presupuesto">Presupuesto</button>
-    <button class="module-tab" data-tab="mye">Grupos &amp; Eventos</button>
-    <button class="module-tab" data-tab="salas">Salas</button>
-    <button class="module-tab" data-tab="pdf">Informes</button>
-  </div>
-
-  <!-- DASHBOARD -->
-  <div class="module-panel active" id="tab-dashboard">
-    <div class="module-card">
-      <div class="module-card-visual">
-        <div class="mv-kpis">
-          <div class="mv-kpi"><div class="mv-kpi-l">Ocupación</div><div class="mv-kpi-v">74%</div><div class="mv-kpi-d">+5pp vs LY</div></div>
-          <div class="mv-kpi"><div class="mv-kpi-l">ADR</div><div class="mv-kpi-v">€118</div><div class="mv-kpi-d">+€9 vs LY</div></div>
-          <div class="mv-kpi"><div class="mv-kpi-l">RevPAR</div><div class="mv-kpi-v">€87</div><div class="mv-kpi-d">+12%</div></div>
-        </div>
-      </div>
-      <div class="module-card-body">
-        <div class="module-card-title">KPIs en tiempo real</div>
-        <p class="module-card-desc">Ocupación, ADR, RevPAR y TRevPAR siempre a la vista, comparados con el año anterior y el presupuesto del mes.</p>
-      </div>
+<section class="features-section" id="funciones">
+  <div class="features-sticky-wrap">
+    <div class="features-left">
+      <div class="section-eyebrow" style="justify-content:flex-start;">Gestión inteligente</div>
+      <h2 class="section-title" style="text-align:left;">Todo lo que necesita<br>un <em>Revenue Manager</em></h2>
     </div>
-    <div class="module-card">
-      <div class="module-card-visual">
-        <div class="mv-heatmap">
-          <div class="mv-hm" style="background:rgba(0,75,135,0.2)"></div><div class="mv-hm" style="background:rgba(0,75,135,0.3)"></div><div class="mv-hm" style="background:rgba(0,75,135,0.45)"></div><div class="mv-hm" style="background:rgba(0,75,135,0.55)"></div><div class="mv-hm" style="background:rgba(0,75,135,0.7)"></div><div class="mv-hm" style="background:rgba(0,75,135,0.85)"></div>
-          <div class="mv-hm" style="background:rgba(0,75,135,0.95)"></div><div class="mv-hm" style="background:rgba(0,75,135,1)"></div><div class="mv-hm" style="background:rgba(0,75,135,0.75)"></div><div class="mv-hm" style="background:rgba(0,75,135,0.5)"></div><div class="mv-hm" style="background:rgba(0,75,135,0.28)"></div><div class="mv-hm" style="background:rgba(0,75,135,0.38)"></div>
-        </div>
+    <div class="features-right">
+      <div class="fsi-item">
+        <div class="fsi-num">01</div>
+        <div class="fsi-title">Dashboard</div>
+        <p class="fsi-desc">KPIs en tiempo real — ocupación, ADR, RevPAR y TRevPAR — siempre a la vista y comparados con el año anterior y el presupuesto del mes.</p>
       </div>
-      <div class="module-card-body">
-        <div class="module-card-title">Heatmap anual</div>
-        <p class="module-card-desc">Todo el año de ocupación en un solo mapa de calor. Detecta temporadas, fechas calientes y huecos de demanda de un vistazo.</p>
+      <div class="fsi-item">
+        <div class="fsi-num">02</div>
+        <div class="fsi-title">Reservas</div>
+        <p class="fsi-desc">Heatmap anual, pickup diario y forecast de cierre. Del año completo al día concreto en un solo clic. OTB, cancelaciones y ritmo de entrada.</p>
       </div>
-    </div>
-    <div class="module-card">
-      <div class="module-card-visual">
-        <div class="mv-bars">
-          <div class="mv-bar" style="height:40%"></div><div class="mv-bar hi" style="height:55%"></div><div class="mv-bar hi" style="height:65%"></div><div class="mv-bar pk" style="height:78%"></div><div class="mv-bar pk" style="height:90%"></div><div class="mv-bar pk" style="height:82%"></div><div class="mv-bar pk" style="height:95%"></div><div class="mv-bar pk" style="height:100%"></div>
-        </div>
+      <div class="fsi-item">
+        <div class="fsi-num">03</div>
+        <div class="fsi-title">Presupuesto</div>
+        <p class="fsi-desc">Compara producción real vs. presupuesto mes a mes. Detecta desviaciones de ADR y RevPAR, y proyecta el cierre anual con los datos acumulados.</p>
       </div>
-      <div class="module-card-body">
-        <div class="module-card-title">Drill-down diario</div>
-        <p class="module-card-desc">Haz clic en cualquier mes para ver la evolución diaria de ADR y ocupación. Del año completo al día concreto en un solo clic.</p>
-      </div>
-    </div>
-  </div>
-
-  <!-- HEATMAP -->
-  <div class="module-panel" id="tab-heatmap">
-    <div class="module-card">
-      <div class="module-card-visual" style="padding:12px;">
-        <!-- Mini monthly calendar -->
-        <div style="width:100%;">
-          <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:4px;">
-            <div style="font-size:7px;color:rgba(255,255,255,0.3);text-align:center">L</div><div style="font-size:7px;color:rgba(255,255,255,0.3);text-align:center">M</div><div style="font-size:7px;color:rgba(255,255,255,0.3);text-align:center">X</div><div style="font-size:7px;color:rgba(255,255,255,0.3);text-align:center">J</div><div style="font-size:7px;color:rgba(255,255,255,0.3);text-align:center">V</div><div style="font-size:7px;color:rgba(255,255,255,0.3);text-align:center">S</div><div style="font-size:7px;color:rgba(255,255,255,0.3);text-align:center">D</div>
-          </div>
-          <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;">
-            <div style="aspect-ratio:1;border-radius:3px;background:rgba(0,75,135,0.15);font-size:7px;color:rgba(255,255,255,0.4);display:flex;align-items:center;justify-content:center;">1</div>
-            <div style="aspect-ratio:1;border-radius:3px;background:rgba(0,75,135,0.2);font-size:7px;color:rgba(255,255,255,0.5);display:flex;align-items:center;justify-content:center;">2</div>
-            <div style="aspect-ratio:1;border-radius:3px;background:rgba(0,75,135,0.3);font-size:7px;color:rgba(255,255,255,0.6);display:flex;align-items:center;justify-content:center;">3</div>
-            <div style="aspect-ratio:1;border-radius:3px;background:rgba(0,75,135,0.45);font-size:7px;color:rgba(255,255,255,0.7);display:flex;align-items:center;justify-content:center;">4</div>
-            <div style="aspect-ratio:1;border-radius:3px;background:rgba(0,75,135,0.6);font-size:7px;color:white;display:flex;align-items:center;justify-content:center;">5</div>
-            <div style="aspect-ratio:1;border-radius:3px;background:rgba(0,75,135,0.8);font-size:7px;color:white;display:flex;align-items:center;justify-content:center;">6</div>
-            <div style="aspect-ratio:1;border-radius:3px;background:rgba(0,75,135,0.9);font-size:7px;color:white;display:flex;align-items:center;justify-content:center;">7</div>
-            <div style="aspect-ratio:1;border-radius:3px;background:rgba(0,75,135,0.95);font-size:7px;color:white;display:flex;align-items:center;justify-content:center;">8</div>
-            <div style="aspect-ratio:1;border-radius:3px;background:rgba(0,75,135,1);font-size:7px;color:white;display:flex;align-items:center;justify-content:center;">9</div>
-            <div style="aspect-ratio:1;border-radius:3px;background:rgba(183,28,28,0.85);font-size:7px;color:white;display:flex;align-items:center;justify-content:center;">10</div>
-            <div style="aspect-ratio:1;border-radius:3px;background:rgba(0,75,135,0.7);font-size:7px;color:white;display:flex;align-items:center;justify-content:center;">11</div>
-            <div style="aspect-ratio:1;border-radius:3px;background:rgba(0,75,135,0.5);font-size:7px;color:rgba(255,255,255,0.8);display:flex;align-items:center;justify-content:center;">12</div>
-            <div style="aspect-ratio:1;border-radius:3px;background:rgba(0,75,135,0.35);font-size:7px;color:rgba(255,255,255,0.6);display:flex;align-items:center;justify-content:center;">13</div>
-            <div style="aspect-ratio:1;border-radius:3px;background:rgba(0,75,135,0.25);font-size:7px;color:rgba(255,255,255,0.5);display:flex;align-items:center;justify-content:center;">14</div>
-          </div>
-          <!-- Event bars -->
-          <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-top:4px;">
-            <div style="grid-column:1/5;height:8px;border-radius:2px;background:#059669;display:flex;align-items:center;padding:0 4px;"><span style="font-size:6px;color:white;font-weight:700;overflow:hidden;white-space:nowrap;">Congreso Tech</span></div>
-          </div>
-        </div>
-      </div>
-      <div class="module-card-body">
-        <div class="module-card-title">Heatmap mensual</div>
-        <p class="module-card-desc">Vista de pantalla completa con el calendario del mes. Cada día muestra ocupación en color — de azul claro a rojo oscuro para overbooking.</p>
-      </div>
-    </div>
-    <div class="module-card">
-      <div class="module-card-visual">
-        <div class="mv-badges">
-          <div class="mv-badge"><div class="mv-badge-dot" style="background:#059669"></div><span class="mv-badge-label">Grupos (verde)</span><span class="mv-badge-val">3 activos</span></div>
-          <div class="mv-badge"><div class="mv-badge-dot" style="background:#2563EB"></div><span class="mv-badge-label">Eventos (azul)</span><span class="mv-badge-val">2 activos</span></div>
-          <div class="mv-badge"><div class="mv-badge-dot" style="background:#7B0000"></div><span class="mv-badge-label">Overbooking</span><span class="mv-badge-val">día 10</span></div>
-        </div>
-      </div>
-      <div class="module-card-body">
-        <div class="module-card-title">Barras de grupos y eventos</div>
-        <p class="module-card-desc">Los grupos aparecen en verde y los eventos en azul directamente sobre el calendario. Un clic navega al expediente correspondiente.</p>
-      </div>
-    </div>
-    <div class="module-card">
-      <div class="module-card-visual">
-        <div class="mv-stat-row">
-          <div class="mv-stat"><span class="mv-stat-l">OCC día 10</span><span class="mv-stat-v">108%</span><span class="mv-stat-delta mv-delta-down">Overbooking</span></div>
-          <div class="mv-stat"><span class="mv-stat-l">ADR día 10</span><span class="mv-stat-v">€136</span><span class="mv-stat-delta mv-delta-up">+12 vs LY</span></div>
-          <div class="mv-stat"><span class="mv-stat-l">Grupos</span><span class="mv-stat-v">45 hab.</span></div>
-        </div>
-      </div>
-      <div class="module-card-body">
-        <div class="module-card-title">Click en el día → detalle</div>
-        <p class="module-card-desc">Pulsa cualquier celda para ver OCC real combinando individuales y grupos, ADR ponderado y desglose por canal de distribución.</p>
-      </div>
-    </div>
-  </div>
-
-  <!-- PICKUP -->
-  <div class="module-panel" id="tab-pickup">
-    <div class="module-card">
-      <div class="module-card-visual">
-        <div class="mv-stat-row">
-          <div class="mv-stat"><span class="mv-stat-l">OTB actual</span><span class="mv-stat-v">312 res.</span><span class="mv-stat-delta mv-delta-up">+18 hoy</span></div>
-          <div class="mv-stat"><span class="mv-stat-l">Cancelaciones</span><span class="mv-stat-v">7</span><span class="mv-stat-delta mv-delta-down">-2 vs ayer</span></div>
-          <div class="mv-stat"><span class="mv-stat-l">Estancia media</span><span class="mv-stat-v">2.4 noches</span></div>
-        </div>
-      </div>
-      <div class="module-card-body">
-        <div class="module-card-title">Reservas en tiempo real</div>
-        <p class="module-card-desc">OTB del mes, cancelaciones del día y duración media de estancia centralizados. Sin tener que abrir el PMS ni un Excel.</p>
-      </div>
-    </div>
-    <div class="module-card">
-      <div class="module-card-visual">
-        <div class="mv-bars">
-          <div class="mv-bar" style="height:30%"></div><div class="mv-bar" style="height:45%"></div><div class="mv-bar hi" style="height:60%"></div><div class="mv-bar hi" style="height:72%"></div><div class="mv-bar pk" style="height:88%"></div><div class="mv-bar pk" style="height:95%"></div><div class="mv-bar pk" style="height:80%"></div><div class="mv-bar pk" style="height:100%"></div>
-        </div>
-      </div>
-      <div class="module-card-body">
-        <div class="module-card-title">Forecast de cierre</div>
-        <p class="module-card-desc">Proyección automática del revenue de cierre combinando el OTB actual con el ritmo histórico de reservas por pace.</p>
-      </div>
-    </div>
-    <div class="module-card">
-      <div class="module-card-visual">
-        <div class="mv-lines">
-          <div class="mv-line-row"><span class="mv-line-label">Directo</span><div class="mv-line-track"><div class="mv-line-fill" style="width:72%;background:#3B82F6"></div></div></div>
-          <div class="mv-line-row"><span class="mv-line-label">OTA</span><div class="mv-line-track"><div class="mv-line-fill" style="width:55%;background:#60A5FA"></div></div></div>
-          <div class="mv-line-row"><span class="mv-line-label">TTOO</span><div class="mv-line-track"><div class="mv-line-fill" style="width:38%;background:#93C5FD"></div></div></div>
-          <div class="mv-line-row"><span class="mv-line-label">Grupos</span><div class="mv-line-track"><div class="mv-line-fill" style="width:25%;background:#BFDBFE"></div></div></div>
-        </div>
-      </div>
-      <div class="module-card-body">
-        <div class="module-card-title">Desglose por canal</div>
-        <p class="module-card-desc">Ve qué canales de distribución generan más reservas. Identifica oportunidades de mix y optimiza tu estrategia de distribución.</p>
-      </div>
-    </div>
-  </div>
-
-  <!-- PRESUPUESTO -->
-  <div class="module-panel" id="tab-presupuesto">
-    <div class="module-card">
-      <div class="module-card-visual">
-        <div class="mv-stat-row">
-          <div class="mv-stat"><span class="mv-stat-l">RevPAR Real</span><span class="mv-stat-v">€87</span><span class="mv-stat-delta mv-delta-up">+3.2% ppto</span></div>
-          <div class="mv-stat"><span class="mv-stat-l">RevPAR Ppto</span><span class="mv-stat-v">€84</span></div>
-          <div class="mv-stat"><span class="mv-stat-l">ADR Real</span><span class="mv-stat-v">€118</span><span class="mv-stat-delta mv-delta-down">-1.4% ppto</span></div>
-        </div>
-      </div>
-      <div class="module-card-body">
-        <div class="module-card-title">Real vs. presupuesto</div>
-        <p class="module-card-desc">Compara producción real contra presupuesto mes a mes. Detecta desviaciones de ADR, RevPAR y revenue en la misma vista.</p>
-      </div>
-    </div>
-    <div class="module-card">
-      <div class="module-card-visual">
-        <div class="mv-bars">
-          <div class="mv-bar hi" style="height:60%"></div><div class="mv-bar pk" style="height:75%"></div><div class="mv-bar hi" style="height:65%"></div><div class="mv-bar pk" style="height:88%"></div><div class="mv-bar hi" style="height:70%"></div><div class="mv-bar pk" style="height:92%"></div><div class="mv-bar hi" style="height:68%"></div><div class="mv-bar pk" style="height:85%"></div>
-        </div>
-      </div>
-      <div class="module-card-body">
-        <div class="module-card-title">Gráfica comparativa</div>
-        <p class="module-card-desc">Visualiza real y presupuesto mes a mes en una gráfica de barras con línea de referencia dinámica. El gap siempre visible.</p>
-      </div>
-    </div>
-    <div class="module-card">
-      <div class="module-card-visual">
-        <div class="mv-lines">
-          <div class="mv-line-row"><span class="mv-line-label">Ene–Mar</span><div class="mv-line-track"><div class="mv-line-fill" style="width:85%;background:#34D399"></div></div></div>
-          <div class="mv-line-row"><span class="mv-line-label">Abr–Jun</span><div class="mv-line-track"><div class="mv-line-fill" style="width:92%;background:#34D399"></div></div></div>
-          <div class="mv-line-row"><span class="mv-line-label">Jul–Sep</span><div class="mv-line-track"><div class="mv-line-fill" style="width:78%;background:#FBBF24"></div></div></div>
-          <div class="mv-line-row"><span class="mv-line-label">Oct–Dic</span><div class="mv-line-track"><div class="mv-line-fill" style="width:60%;background:rgba(255,255,255,0.2)"></div></div></div>
-        </div>
-      </div>
-      <div class="module-card-body">
-        <div class="module-card-title">Proyección anual</div>
-        <p class="module-card-desc">Seguimiento del cumplimiento del presupuesto por trimestre. Proyecta el cierre del año con los datos reales acumulados.</p>
-      </div>
-    </div>
-  </div>
-
-  <!-- M&E -->
-  <div class="module-panel" id="tab-mye">
-    <div class="module-card">
-      <div class="module-card-visual">
-        <div class="mv-badges">
-          <div class="mv-badge"><div class="mv-badge-dot" style="background:#34D399"></div><span class="mv-badge-label">Confirmados</span><span class="mv-badge-val">8 grupos</span></div>
-          <div class="mv-badge"><div class="mv-badge-dot" style="background:#FBBF24"></div><span class="mv-badge-label">Tentativos</span><span class="mv-badge-val">5 grupos</span></div>
-          <div class="mv-badge"><div class="mv-badge-dot" style="background:#F87171"></div><span class="mv-badge-label">Perdidos</span><span class="mv-badge-val">3 grupos</span></div>
-        </div>
-      </div>
-      <div class="module-card-body">
-        <div class="module-card-title">Pipeline de grupos</div>
-        <p class="module-card-desc">Todos tus grupos en un solo panel: confirmados, tentativos y perdidos. Ve el estado de cada oportunidad de negocio de un vistazo.</p>
-      </div>
-    </div>
-    <div class="module-card">
-      <div class="module-card-visual">
-        <div class="mv-stat-row">
-          <div class="mv-stat"><span class="mv-stat-l">Rev. Habitaciones</span><span class="mv-stat-v">€42.800</span></div>
-          <div class="mv-stat"><span class="mv-stat-l">Revenue F&amp;B</span><span class="mv-stat-v">€18.500</span></div>
-          <div class="mv-stat"><span class="mv-stat-l">Salas de reunión</span><span class="mv-stat-v">€6.200</span></div>
-        </div>
-      </div>
-      <div class="module-card-body">
-        <div class="module-card-title">Revenue completo</div>
-        <p class="module-card-desc">Desglosa el revenue de cada grupo: habitaciones, F&amp;B y salas. Entiende el valor real de cada cliente de grupos.</p>
-      </div>
-    </div>
-    <div class="module-card">
-      <div class="module-card-visual">
-        <div class="mv-lines">
-          <div class="mv-line-row"><span class="mv-line-label">Mar</span><div class="mv-line-track"><div class="mv-line-fill" style="width:80%;background:#60A5FA"></div></div></div>
-          <div class="mv-line-row"><span class="mv-line-label">Abr</span><div class="mv-line-track"><div class="mv-line-fill" style="width:95%;background:#60A5FA"></div></div></div>
-          <div class="mv-line-row"><span class="mv-line-label">May</span><div class="mv-line-track"><div class="mv-line-fill" style="width:60%;background:#93C5FD"></div></div></div>
-          <div class="mv-line-row"><span class="mv-line-label">Jun</span><div class="mv-line-track"><div class="mv-line-fill" style="width:40%;background:rgba(255,255,255,0.15)"></div></div></div>
-        </div>
-      </div>
-      <div class="module-card-body">
-        <div class="module-card-title">Seguimiento mensual</div>
-        <p class="module-card-desc">Controla qué meses tienen mayor actividad de grupos. Anticipa picos de demanda y coordina operaciones con antelación.</p>
-      </div>
-    </div>
-  </div>
-
-  <!-- SALAS -->
-  <div class="module-panel" id="tab-salas">
-    <div class="module-card">
-      <div class="module-card-visual" style="padding:12px;">
-        <!-- Timeline mock -->
-        <div style="width:100%;">
-          <div style="display:flex;flex-direction:column;gap:0;">
-            <div style="display:flex;border-bottom:1px solid rgba(255,255,255,0.07);height:36px;">
-              <div style="width:48px;font-size:8px;color:rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:flex-end;padding-right:8px;border-right:1px solid rgba(255,255,255,0.07);">09:00</div>
-              <div style="flex:1;background:rgba(255,255,255,0.02);display:flex;align-items:center;padding:0 8px;"><span style="font-size:8px;color:rgba(255,255,255,0.25)">Disponible</span></div>
-            </div>
-            <div style="display:flex;border-bottom:1px solid rgba(255,255,255,0.07);height:72px;">
-              <div style="width:48px;font-size:8px;color:rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:flex-end;padding-right:8px;border-right:1px solid rgba(255,255,255,0.07);">10:00</div>
-              <div style="flex:1;background:rgba(5,150,105,0.15);border:1px solid rgba(5,150,105,0.4);border-radius:4px;margin:4px;display:flex;align-items:center;padding:0 10px;"><div><div style="font-size:9px;color:#34D399;font-weight:700;">Congreso RR.HH.</div><div style="font-size:8px;color:rgba(255,255,255,0.45);">10:00 – 12:00 · €1.800</div></div></div>
-            </div>
-            <div style="display:flex;border-bottom:1px solid rgba(255,255,255,0.07);height:36px;">
-              <div style="width:48px;font-size:8px;color:rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:flex-end;padding-right:8px;border-right:1px solid rgba(255,255,255,0.07);">12:00</div>
-              <div style="flex:1;background:rgba(255,255,255,0.02);display:flex;align-items:center;padding:0 8px;"><span style="font-size:8px;color:rgba(255,255,255,0.25)">Disponible</span></div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="module-card-body">
-        <div class="module-card-title">Planning diario por sala</div>
-        <p class="module-card-desc">Vista de timeline hora a hora para cada sala. Bloques de eventos con nombre, horario y revenue de F&amp;B y sala de un vistazo.</p>
-      </div>
-    </div>
-    <div class="module-card">
-      <div class="module-card-visual">
-        <div class="mv-heatmap">
-          <div class="mv-hm" style="background:rgba(5,150,105,0.7)"></div><div class="mv-hm" style="background:rgba(5,150,105,0.4)"></div><div class="mv-hm" style="background:rgba(255,255,255,0.06)"></div><div class="mv-hm" style="background:rgba(5,150,105,0.9)"></div><div class="mv-hm" style="background:rgba(255,255,255,0.06)"></div><div class="mv-hm" style="background:rgba(5,150,105,0.5)"></div>
-          <div class="mv-hm" style="background:rgba(255,255,255,0.06)"></div><div class="mv-hm" style="background:rgba(5,150,105,0.6)"></div><div class="mv-hm" style="background:rgba(5,150,105,0.3)"></div><div class="mv-hm" style="background:rgba(255,255,255,0.06)"></div><div class="mv-hm" style="background:rgba(5,150,105,0.8)"></div><div class="mv-hm" style="background:rgba(255,255,255,0.06)"></div>
-        </div>
-      </div>
-      <div class="module-card-body">
-        <div class="module-card-title">Disponibilidad mensual</div>
-        <p class="module-card-desc">Calendario de ocupación de cada sala por mes. Detecta huecos de disponibilidad y planifica eventos con antelación.</p>
-      </div>
-    </div>
-    <div class="module-card">
-      <div class="module-card-visual">
-        <div class="mv-stat-row">
-          <div class="mv-stat"><span class="mv-stat-l">Rev. Sala mes</span><span class="mv-stat-v">€6.200</span><span class="mv-stat-delta mv-delta-up">+18% vs LY</span></div>
-          <div class="mv-stat"><span class="mv-stat-l">Rev. F&amp;B mes</span><span class="mv-stat-v">€18.500</span><span class="mv-stat-delta mv-delta-up">+8%</span></div>
-          <div class="mv-stat"><span class="mv-stat-l">Eventos activos</span><span class="mv-stat-v">12</span></div>
-        </div>
-      </div>
-      <div class="module-card-body">
-        <div class="module-card-title">Revenue de M&amp;E</div>
-        <p class="module-card-desc">Seguimiento de ingresos por sala y F&amp;B integrado con el módulo de grupos. El TRevPAR siempre completo.</p>
-      </div>
-    </div>
-  </div>
-
-  <!-- PDF -->
-  <div class="module-panel" id="tab-pdf">
-    <div class="module-card">
-      <div class="module-card-visual" style="justify-content:center;gap:16px;">
-        <div class="mv-doc">
-          <div class="mv-doc-line accent"></div>
-          <div class="mv-doc-line"></div><div class="mv-doc-line"></div>
-          <div class="mv-doc-chart">
-            <div class="mv-doc-bar" style="height:40%"></div><div class="mv-doc-bar hi" style="height:65%"></div><div class="mv-doc-bar hi" style="height:80%"></div><div class="mv-doc-bar hi" style="height:100%"></div>
-          </div>
-          <div class="mv-doc-line"></div><div class="mv-doc-line"></div>
-        </div>
-        <div class="mv-doc">
-          <div class="mv-doc-line accent"></div>
-          <div class="mv-doc-line"></div>
-          <div class="mv-doc-chart">
-            <div class="mv-doc-bar" style="height:50%"></div><div class="mv-doc-bar hi" style="height:75%"></div><div class="mv-doc-bar hi" style="height:90%"></div><div class="mv-doc-bar hi" style="height:70%"></div>
-          </div>
-          <div class="mv-doc-line"></div><div class="mv-doc-line"></div>
-        </div>
-      </div>
-      <div class="module-card-body">
-        <div class="module-card-title">Informe mensual completo</div>
-        <p class="module-card-desc">Genera en un clic un PDF con todos los KPIs, gráficas y comparativas del mes. Listo para enviar a dirección o propietarios.</p>
-      </div>
-    </div>
-    <div class="module-card">
-      <div class="module-card-visual">
-        <div class="mv-kpis">
-          <div class="mv-kpi"><div class="mv-kpi-l">Ocupación</div><div class="mv-kpi-v">74%</div></div>
-          <div class="mv-kpi"><div class="mv-kpi-l">ADR</div><div class="mv-kpi-v">€118</div></div>
-          <div class="mv-kpi"><div class="mv-kpi-l">RevPAR</div><div class="mv-kpi-v">€87</div></div>
-        </div>
-      </div>
-      <div class="module-card-body">
-        <div class="module-card-title">KPIs incluidos</div>
-        <p class="module-card-desc">El informe recoge ocupación, ADR, RevPAR, revenue real vs. presupuesto y pickup del mes en un formato visual y profesional.</p>
-      </div>
-    </div>
-    <div class="module-card">
-      <div class="module-card-visual">
-        <div class="mv-stat-row">
-          <div class="mv-stat"><span class="mv-stat-l">Ocupación ayer</span><span class="mv-stat-v">82%</span><span class="mv-stat-delta mv-delta-up">+6pp vs LY</span></div>
-          <div class="mv-stat"><span class="mv-stat-l">ADR ayer</span><span class="mv-stat-v">€124</span><span class="mv-stat-delta mv-delta-up">+€11</span></div>
-          <div class="mv-stat"><span class="mv-stat-l">Reservas captadas</span><span class="mv-stat-v">14</span></div>
-        </div>
-      </div>
-      <div class="module-card-body">
-        <div class="module-card-title">Email diario automático</div>
-        <p class="module-card-desc">Cada mañana recibes en tu email un resumen del día anterior: OCC, ADR, RevPAR, pickup y gráficos — sin abrir la app.</p>
+      <div class="fsi-item">
+        <div class="fsi-num">04</div>
+        <div class="fsi-title">Grupos</div>
+        <p class="fsi-desc">Pipeline completo de grupos y eventos: confirmados, tentativos y perdidos. Revenue de habitaciones, F&B y salas en una sola vista.</p>
       </div>
     </div>
   </div>
@@ -1013,16 +625,23 @@ document.getElementById('contactForm').addEventListener('submit', async function
 </footer>
 
 <script>
+/* ── REVEAL on scroll for .reveal elements ── */
 const observer = new IntersectionObserver((entries) => {
   entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target); } });
 }, { threshold: 0.1 });
 document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
 
+/* ── FSI items: reveal as they enter viewport ── */
+const fsiObserver = new IntersectionObserver((entries) => {
+  entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); fsiObserver.unobserve(e.target); } });
+}, { threshold: 0.35 });
+document.querySelectorAll('.fsi-item').forEach(el => fsiObserver.observe(el));
+
 /* ── FULL-PAGE SCROLL ── */
 (function () {
+  const featSec = document.querySelector('.features-section');
   const SECTIONS = [
     document.querySelector('.hero'),
-    document.querySelector('.features-section'),
     document.querySelector('.mockup-section'),
     document.querySelector('.contact-section'),
   ].filter(Boolean);
@@ -1031,28 +650,35 @@ document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
   let busy = false;
   const DURATION = 1300;
 
-  function easeOut(t) {
-    return 1 - Math.pow(1 - t, 3);
-  }
+  function easeOut(t) { return 1 - Math.pow(1 - t, 3); }
 
   function animateTo(targetY) {
     const startY = window.scrollY;
     const diff = targetY - startY;
     if (Math.abs(diff) < 2) { busy = false; return; }
     let startTime = null;
-
     function step(ts) {
       if (!startTime) startTime = ts;
       const progress = Math.min((ts - startTime) / DURATION, 1);
       window.scrollTo(0, startY + diff * easeOut(progress));
-      if (progress < 1) {
-        requestAnimationFrame(step);
-      } else {
-        busy = false;
-      }
+      if (progress < 1) { requestAnimationFrame(step); } else { busy = false; }
     }
     requestAnimationFrame(step);
   }
+
+  function inFeatures() {
+    if (!featSec) return false;
+    const r = featSec.getBoundingClientRect();
+    return r.top < window.innerHeight * 0.5 && r.bottom > window.innerHeight * 0.5;
+  }
+
+  /* Sync current index from scroll position */
+  window.addEventListener('scroll', function () {
+    if (!featSec) return;
+    const r = featSec.getBoundingClientRect();
+    if (r.bottom <= window.innerHeight * 0.1) current = 1; // past features → mockup
+    else if (r.top >= window.innerHeight * 0.9) current = 0; // before features → hero
+  }, { passive: true });
 
   function goTo(index) {
     if (index < 0 || index >= SECTIONS.length || busy) return;
@@ -1067,6 +693,7 @@ document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
   };
 
   window.addEventListener('wheel', function (e) {
+    if (inFeatures()) return; /* allow native scroll inside features */
     e.preventDefault();
     goTo(current + (e.deltaY > 0 ? 1 : -1));
   }, { passive: false });
