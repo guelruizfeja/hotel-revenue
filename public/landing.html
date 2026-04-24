@@ -285,8 +285,8 @@
     padding: 0;
   }
   .features-right {
-    padding: 130px 0 130px;
-    display: flex; flex-direction: column; gap: 96px;
+    padding: 160px 0 200px;
+    display: flex; flex-direction: column; gap: 220px;
   }
   .fsi-item {
     opacity: 0; transform: translateY(36px);
@@ -669,9 +669,9 @@ document.querySelectorAll('.fsi-item').forEach(el => fsiObserver.observe(el));
     const vh = window.innerHeight;
     const top = sec.getBoundingClientRect().top;
     // progress 0→1 as section enters: starts when top hits viewport bottom, ends 45vh in
-    const progress = Math.max(0, Math.min(1, (vh - top) / (vh * 0.55)));
+    const progress = Math.max(0, Math.min(1, (vh - top) / (vh * 1.1)));
     inner.style.opacity   = progress;
-    inner.style.transform = `translateX(${(1 - progress) * -80}px)`;
+    inner.style.transform = `translateX(${(1 - progress) * -120}px)`;
   }
   window.addEventListener('scroll', update, { passive: true });
   update();
