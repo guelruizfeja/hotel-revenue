@@ -263,7 +263,7 @@
   }
 
   /* ── FEATURES STICKY SCROLL ── */
-  .features-section { background: var(--navy-mid); position: relative; z-index: 1; }
+  .features-section { background: var(--navy-mid); position: relative; z-index: 1; min-height: 200vh; display: flex; align-items: center; }
   .features-left-inner {
     opacity: 0;
     transform: translateX(-80px);
@@ -285,14 +285,15 @@
     padding: 0;
   }
   .features-right {
-    padding: 160px 0 200px;
-    display: flex; flex-direction: column; gap: 220px;
+    padding: 60px 0 60px;
+    display: flex; flex-direction: column; gap: 52px;
+    justify-content: center;
   }
   .fsi-item {
-    opacity: 0; transform: translateY(36px);
-    transition: opacity 0.7s ease, transform 0.7s ease;
+    opacity: 0; transform: translateX(80px);
+    transition: opacity 0.55s ease, transform 0.55s ease;
   }
-  .fsi-item.visible { opacity: 1; transform: translateY(0); }
+  .fsi-item.visible { opacity: 1; transform: translateX(0); }
   .fsi-num {
     font-family: 'Cormorant Garamond', serif;
     font-size: 11px; color: var(--gold-light); font-weight: 600;
@@ -652,29 +653,46 @@ const observer = new IntersectionObserver((entries) => {
 }, { threshold: 0.1 });
 document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
 
-/* ── FSI items: reveal as they enter viewport ── */
-const fsiObserver = new IntersectionObserver((entries) => {
-  entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); fsiObserver.unobserve(e.target); } });
-}, { threshold: 0.25 });
-document.querySelectorAll('.fsi-item').forEach(el => fsiObserver.observe(el));
-
-/* ── Features title: scroll-driven reveal from bottom ── */
-(function() {
+/* ── Features: título desde izquierda + ítems desde derecha con scroll bloqueado ── */
+(function () {
   const inner = document.querySelector('.features-left-inner');
   const sec   = document.querySelector('.features-section');
-  if (!inner || !sec) return;
+  const items = Array.from(document.querySelectorAll('.fsi-item'));
+  if (!inner || !sec || !items.length) return;
   inner.classList.add('animating');
 
-  function update() {
-    const vh = window.innerHeight;
+  let titleFixed  = false;
+  let nextItem    = 0;
+  let accumDelta  = 0;
+  const TICK      = 120; // delta acumulado para revelar cada ítem
+
+  /* Animación título scroll-driven */
+  function updateTitle() {
+    const vh  = window.innerHeight;
     const top = sec.getBoundingClientRect().top;
-    // progress 0→1 as section enters: starts when top hits viewport bottom, ends 45vh in
     const progress = Math.max(0, Math.min(1, (vh - top) / (vh * 1.1)));
     inner.style.opacity   = progress;
     inner.style.transform = `translateX(${(1 - progress) * -120}px)`;
+    titleFixed = progress >= 1;
   }
-  window.addEventListener('scroll', update, { passive: true });
-  update();
+  window.addEventListener('scroll', updateTitle, { passive: true });
+  updateTitle();
+
+  /* Bloqueo de scroll + revelado de ítems */
+  window.addEventListener('wheel', function (e) {
+    if (!titleFixed) return;                  // aún animando el título → scroll libre
+    if (nextItem >= items.length) return;     // todos revelados → scroll libre
+
+    e.preventDefault();
+    if (e.deltaY <= 0) return;               // ignorar scroll hacia arriba
+
+    accumDelta += e.deltaY;
+    if (accumDelta >= TICK) {
+      items[nextItem].classList.add('visible');
+      nextItem++;
+      accumDelta = 0;
+    }
+  }, { passive: false });
 })();
 
 window.scrollToSection = function(id) {
