@@ -439,19 +439,59 @@
   .hero-actions { animation-delay: 0.42s; }
 
   @media (max-width: 768px) {
-    .hero { padding: 100px 6vw 60px; }
-    .hero-inner { grid-template-columns: 1fr; gap: 40px; }
+    /* Nav */
+    .nav-socios { display: none; }
 
-    .module-tabs { overflow-x: auto; }
-    .module-tab { padding: 12px 14px; font-size: 10px; }
-    .module-panel.active { grid-template-columns: 1fr; }
+    /* Hero */
+    .hero { padding: 100px 6vw 60px; }
+    .hero-inner { grid-template-columns: 1fr; gap: 32px; }
+    .hero-features { padding-left: 0; }
+
+    /* Stats */
+    .stats-inner { grid-template-columns: 1fr; gap: 0; }
+    .stat-item { padding: 24px 0; }
+    .stat-item + .stat-item { border-left: none; border-top: 1px solid rgba(184,134,11,0.15); }
+
+    /* Features: deshabilitar sticky, mostrar tarjetas estáticas */
+    .features-section { min-height: auto; }
+    .features-sticky-wrap {
+      position: static;
+      height: auto;
+      grid-template-columns: 1fr;
+      gap: 40px;
+      padding: 60px 6vw;
+    }
+    .features-right {
+      position: static;
+      height: auto;
+      overflow: visible;
+      display: flex;
+      flex-direction: column;
+      gap: 32px;
+    }
+    .fsi-title { font-size: 30px; }
+
+    /* Mockup */
+    .mockup-grid { grid-template-columns: 1fr !important; gap: 40px !important; min-height: auto !important; }
+    .mockup-images { display: none; }
+    .mockup-section { padding: 60px 6vw; }
+
+    /* Dashboard mock KPIs */
     .mock-kpis { grid-template-columns: repeat(2,1fr); }
     .mock-charts { grid-template-columns: 1fr; }
-    .features-grid { grid-template-columns: 1fr; }
-    .stats-inner { grid-template-columns: 1fr; gap: 28px; }
-    .stat-item + .stat-item { border-left: none; border-top: 1px solid rgba(184,134,11,0.15); padding-top: 28px; }
-    .nav-socios { display: none; }
+
+    /* Secciones */
+    .pricing-section { padding: 72px 6vw; }
+    .contact-section { padding: 72px 6vw; }
+    .cta-section { padding: 72px 6vw; }
+    .section-sub { margin-bottom: 40px; }
+
+    /* Precio */
     .price-card { padding: 36px 28px; }
+
+    /* Footer */
+    footer { flex-direction: column; align-items: flex-start; gap: 12px; }
+    .footer-links { flex-wrap: wrap; gap: 12px; }
   }
 
   /* ── SCROLL REVEAL ── */
@@ -540,7 +580,7 @@
 
 <!-- MOCKUP -->
 <section class="mockup-section reveal" id="producto">
-  <div style="max-width:1100px; margin:0 auto; display:grid; grid-template-columns:1fr 1fr; gap:64px; align-items:center; min-height:calc(100vh - 72px);">
+  <div class="mockup-grid" style="max-width:1100px; margin:0 auto; display:grid; grid-template-columns:1fr 1fr; gap:64px; align-items:center; min-height:calc(100vh - 72px);">
 
     <!-- Texto izquierda -->
     <div>
@@ -553,7 +593,7 @@
     </div>
 
     <!-- Capturas derecha -->
-    <div style="position:relative; height:320px;">
+    <div class="mockup-images" style="position:relative; height:320px;">
 
       <!-- captura principal — dashboard -->
       <div style="position:absolute; left:0; top:0; width:68%; border-radius:10px; overflow:hidden;
@@ -658,6 +698,19 @@ document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
   const sec   = document.querySelector('.features-section');
   const items = Array.from(document.querySelectorAll('.fsi-item'));
   if (!inner || !sec || !items.length) return;
+
+  if (window.innerWidth <= 768) {
+    inner.style.opacity = '1';
+    inner.style.transform = 'none';
+    items.forEach(item => {
+      item.style.position = 'static';
+      item.style.opacity = '1';
+      item.style.transform = 'none';
+      item.style.pointerEvents = 'auto';
+    });
+    return;
+  }
+
   inner.classList.add('animating');
 
   let titleFixed = false;
