@@ -255,8 +255,23 @@
   .mock-bar.hi { background: rgba(0,75,135,0.7); }
   .mock-bar.peak { background: var(--accent); }
 
+  /* ── HERO DIVIDER ── */
+  .hero-divider {
+    height: 10px;
+    background: var(--navy);
+    position: relative; z-index: 3;
+  }
+
   /* ── FEATURES STICKY SCROLL ── */
   .features-section { background: var(--off); position: relative; z-index: 1; }
+  .features-left-inner {
+    opacity: 0;
+    transform: translateY(70px);
+    transition: none;
+  }
+  .features-left-inner.animating {
+    transition: opacity 0.01s linear, transform 0.01s linear;
+  }
   .features-sticky-wrap {
     max-width: 1100px; margin: 0 auto;
     display: grid; grid-template-columns: 1fr 1fr;
@@ -486,12 +501,16 @@
 </section>
 
 
+<div class="hero-divider"></div>
+
 <!-- FEATURES -->
 <section class="features-section" id="funciones">
   <div class="features-sticky-wrap">
     <div class="features-left">
-      <div class="section-eyebrow" style="justify-content:flex-start;">Gestión inteligente</div>
-      <h2 class="section-title" style="text-align:left; color:var(--navy);">La herramienta de revenue perfecta para tu hotel</h2>
+      <div class="features-left-inner">
+        <div class="section-eyebrow" style="justify-content:flex-start;">Gestión inteligente</div>
+        <h2 class="section-title" style="text-align:left; color:var(--navy);">La herramienta de revenue perfecta para tu hotel</h2>
+      </div>
     </div>
     <div class="features-right">
       <div class="fsi-item">
@@ -635,8 +654,27 @@ document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
 /* ── FSI items: reveal as they enter viewport ── */
 const fsiObserver = new IntersectionObserver((entries) => {
   entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); fsiObserver.unobserve(e.target); } });
-}, { threshold: 0.35 });
+}, { threshold: 0.25 });
 document.querySelectorAll('.fsi-item').forEach(el => fsiObserver.observe(el));
+
+/* ── Features title: scroll-driven reveal from bottom ── */
+(function() {
+  const inner = document.querySelector('.features-left-inner');
+  const sec   = document.querySelector('.features-section');
+  if (!inner || !sec) return;
+  inner.classList.add('animating');
+
+  function update() {
+    const vh = window.innerHeight;
+    const top = sec.getBoundingClientRect().top;
+    // progress 0→1 as section enters: starts when top hits viewport bottom, ends 45vh in
+    const progress = Math.max(0, Math.min(1, (vh - top) / (vh * 0.55)));
+    inner.style.opacity   = progress;
+    inner.style.transform = `translateY(${(1 - progress) * 70}px)`;
+  }
+  window.addEventListener('scroll', update, { passive: true });
+  update();
+})();
 
 /* ── FULL-PAGE SCROLL ── */
 (function () {
