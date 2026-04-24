@@ -290,19 +290,9 @@
     position: absolute; top: 0; left: 0; right: 0;
     opacity: 0;
     transform: translateX(110%);
-    transition: opacity 0.5s ease, transform 0.5s ease;
     pointer-events: none;
   }
-  .fsi-item.active {
-    opacity: 1;
-    transform: translateX(0);
-    pointer-events: auto;
-  }
-  .fsi-item.exit {
-    opacity: 0;
-    transform: translateY(90px);
-    transition: opacity 0.4s ease, transform 0.4s ease;
-  }
+  .fsi-item.ptr-on { pointer-events: auto; }
   .fsi-num {
     font-family: 'Cormorant Garamond', serif;
     font-size: 11px; color: var(--gold-light); font-weight: 600;
@@ -662,7 +652,7 @@ const observer = new IntersectionObserver((entries) => {
 }, { threshold: 0.1 });
 document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
 
-/* ── Features: título desde izquierda + tarjetas secuenciales desde derecha ── */
+/* ── Features: título izquierda + tarjetas bidireccionales ── */
 (function () {
   const inner = document.querySelector('.features-left-inner');
   const sec   = document.querySelector('.features-section');
@@ -671,62 +661,126 @@ document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
   inner.classList.add('animating');
 
   let titleFixed = false;
-  let current    = -1;   // tarjeta activa (-1 = ninguna)
+  let current    = -1;     // -1=ninguna … N-1=última … N=todas mostradas
   let animating  = false;
-  let accumDelta = 0;
+  let accum      = 0;
+  let lastDir    = 0;      // 1 abajo, -1 arriba
   const TICK     = 80;
-  const EXIT_MS  = 420;
-  const ENTER_MS = 500;
+  const EXIT_MS  = 380;
+  const ENTER_MS = 480;
+  const N        = items.length;
 
-  /* Animación título scroll-driven (desde izquierda) */
+  /* ── Animación título ── */
   function updateTitle() {
     const vh  = window.innerHeight;
     const top = sec.getBoundingClientRect().top;
-    const progress = Math.max(0, Math.min(1, (vh - top) / (vh * 1.1)));
-    inner.style.opacity   = progress;
-    inner.style.transform = `translateX(${(1 - progress) * -120}px)`;
-    titleFixed = progress >= 1;
+    const p   = Math.max(0, Math.min(1, (vh - top) / (vh * 1.1)));
+    inner.style.opacity   = p;
+    inner.style.transform = `translateX(${(1 - p) * -120}px)`;
+    titleFixed = p >= 1;
   }
   window.addEventListener('scroll', updateTitle, { passive: true });
   updateTitle();
 
-  /* Avanzar a la siguiente tarjeta */
-  function advance() {
+  /* ── Helpers de estilo ── */
+  function snap(el, state) {       // sin transición
+    el.style.transition = 'none';
+    apply(el, state);
+    el.getBoundingClientRect();    // reflow
+  }
+  function anim(el, state, ms) {  // con transición
+    el.style.transition = `opacity ${ms}ms ease, transform ${ms}ms ease`;
+    apply(el, state);
+  }
+  function apply(el, state) {
+    if (state === 'right')  { el.style.opacity = '0'; el.style.transform = 'translateX(110%)'; el.classList.remove('ptr-on'); }
+    if (state === 'bottom') { el.style.opacity = '0'; el.style.transform = 'translateY(90px)';  el.classList.remove('ptr-on'); }
+    if (state === 'active') { el.style.opacity = '1'; el.style.transform = 'translateX(0)';     el.classList.add('ptr-on'); }
+  }
+
+  /* ── Avanzar (abajo) ── */
+  function goForward() {
     if (animating) return;
-    animating = true;
-    accumDelta = 0;
+    animating = true; accum = 0;
+    const prev = current++;
 
-    const prev = current;
-    current++;
-
-    /* Salida tarjeta anterior (hacia abajo) */
-    if (prev >= 0) {
-      items[prev].classList.remove('active');
-      items[prev].classList.add('exit');
-      setTimeout(() => items[prev].classList.remove('exit'), EXIT_MS);
-    }
-
-    /* Entrada tarjeta siguiente (desde derecha), tras esperar la salida */
+    if (prev >= 0) anim(items[prev], 'bottom', EXIT_MS);         // sale abajo
     const delay = prev >= 0 ? EXIT_MS : 0;
-    if (current < items.length) {
+
+    if (current < N) {
       setTimeout(() => {
-        items[current].classList.add('active');
-        setTimeout(() => { animating = false; }, ENTER_MS);
+        snap(items[current], 'right');
+        requestAnimationFrame(() => {
+          anim(items[current], 'active', ENTER_MS);
+          setTimeout(() => { animating = false; }, ENTER_MS);
+        });
       }, delay);
     } else {
-      /* Todas mostradas: desbloquear scroll */
       setTimeout(() => { animating = false; }, EXIT_MS);
     }
   }
 
-  /* Captura de rueda */
+  /* ── Retroceder (arriba) ── */
+  function goBackward() {
+    if (animating || current <= -1) return;
+    animating = true; accum = 0;
+    const prev = current--;
+
+    // salida a la derecha de la tarjeta actual (si existe)
+    if (prev < N && prev >= 0) anim(items[prev], 'right', EXIT_MS);
+    const delay = (prev < N && prev >= 0) ? EXIT_MS : 0;
+
+    if (current >= 0) {
+      setTimeout(() => {
+        snap(items[current], 'bottom');
+        requestAnimationFrame(() => {
+          anim(items[current], 'active', ENTER_MS);
+          setTimeout(() => { animating = false; }, ENTER_MS);
+        });
+      }, delay);
+    } else {
+      setTimeout(() => { animating = false; }, EXIT_MS);
+    }
+  }
+
+  /* ── Captura de rueda ── */
   window.addEventListener('wheel', function (e) {
-    if (!titleFixed) return;              // título aún entrando → scroll libre
-    if (current >= items.length) return; // todas mostradas → scroll libre
-    e.preventDefault();
-    if (e.deltaY <= 0) return;
-    accumDelta += e.deltaY;
-    if (accumDelta >= TICK) advance();
+    if (!titleFixed) return;
+
+    const dir = e.deltaY > 0 ? 1 : -1;
+    if (dir !== lastDir) { accum = 0; lastDir = dir; }
+
+    if (dir > 0) {
+      // ── Bajando ──
+      if (current >= N) return;                       // todas vistas → libre
+
+      // última tarjeta activa: salida simultánea con scroll de página
+      if (current === N - 1) {
+        accum += e.deltaY;
+        if (accum >= TICK && !animating) {
+          animating = true; accum = 0;
+          anim(items[current], 'bottom', EXIT_MS);
+          current++;
+          setTimeout(() => { animating = false; }, EXIT_MS);
+        }
+        return;                                       // NO preventDefault → página baja ya
+      }
+
+      e.preventDefault();
+      accum += e.deltaY;
+      if (accum >= TICK) goForward();
+
+    } else {
+      // ── Subiendo ──
+      if (current <= -1) return;                      // ninguna → libre
+
+      // si ya pasamos todas y la sección salió del viewport → libre
+      if (current >= N && sec.getBoundingClientRect().bottom < 50) return;
+
+      e.preventDefault();
+      accum += Math.abs(e.deltaY);
+      if (accum >= TICK) goBackward();
+    }
   }, { passive: false });
 })();
 
