@@ -257,16 +257,16 @@
 
   /* ── HERO DIVIDER ── */
   .hero-divider {
-    height: 10px;
+    height: 24px;
     background: var(--navy);
     position: relative; z-index: 3;
   }
 
   /* ── FEATURES STICKY SCROLL ── */
-  .features-section { background: var(--off); position: relative; z-index: 1; }
+  .features-section { background: var(--navy-mid); position: relative; z-index: 1; }
   .features-left-inner {
     opacity: 0;
-    transform: translateY(70px);
+    transform: translateX(-80px);
     transition: none;
   }
   .features-left-inner.animating {
@@ -277,6 +277,7 @@
     display: grid; grid-template-columns: 1fr 1fr;
     gap: 80px; align-items: start;
     padding: 0 6vw;
+    overflow: hidden;
   }
   .features-left {
     position: sticky; top: 50vh;
@@ -294,15 +295,15 @@
   .fsi-item.visible { opacity: 1; transform: translateY(0); }
   .fsi-num {
     font-family: 'Cormorant Garamond', serif;
-    font-size: 11px; color: var(--accent); font-weight: 600;
-    letter-spacing: 2px; margin-bottom: 14px; opacity: 0.6;
+    font-size: 11px; color: var(--gold-light); font-weight: 600;
+    letter-spacing: 2px; margin-bottom: 14px; opacity: 0.7;
   }
   .fsi-title {
     font-family: 'Cormorant Garamond', serif;
     font-size: 40px; font-weight: 700;
-    color: var(--navy); margin-bottom: 16px; line-height: 1.05;
+    color: #ffffff; margin-bottom: 16px; line-height: 1.05;
   }
-  .fsi-desc { font-size: 15px; color: var(--gray); line-height: 1.75; max-width: 400px; }
+  .fsi-desc { font-size: 15px; color: rgba(255,255,255,0.65); line-height: 1.75; max-width: 400px; }
 
   /* ── PRICING ── */
   .pricing-section { padding: 110px 6vw; background: var(--white); }
@@ -508,8 +509,8 @@
   <div class="features-sticky-wrap">
     <div class="features-left">
       <div class="features-left-inner">
-        <div class="section-eyebrow" style="justify-content:flex-start;">Gestión inteligente</div>
-        <h2 class="section-title" style="text-align:left; color:var(--navy);">La herramienta de revenue perfecta para tu hotel</h2>
+        <div class="section-eyebrow" style="justify-content:flex-start; color:rgba(255,255,255,0.5);">Gestión inteligente</div>
+        <h2 class="section-title" style="text-align:left; color:#ffffff;">La herramienta de revenue perfecta para tu hotel</h2>
       </div>
     </div>
     <div class="features-right">
@@ -670,7 +671,7 @@ document.querySelectorAll('.fsi-item').forEach(el => fsiObserver.observe(el));
     // progress 0→1 as section enters: starts when top hits viewport bottom, ends 45vh in
     const progress = Math.max(0, Math.min(1, (vh - top) / (vh * 0.55)));
     inner.style.opacity   = progress;
-    inner.style.transform = `translateY(${(1 - progress) * 70}px)`;
+    inner.style.transform = `translateX(${(1 - progress) * -80}px)`;
   }
   window.addEventListener('scroll', update, { passive: true });
   update();
