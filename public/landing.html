@@ -60,10 +60,8 @@
     height: 100vh;
     display: flex;
     align-items: center;
-    justify-content: center;
     padding: 110px 6vw 80px;
     position: relative; overflow: hidden;
-    text-align: center;
     color: white;
   }
   .hero-video {
@@ -78,39 +76,41 @@
     background: linear-gradient(to bottom, rgba(5,12,30,0.58) 0%, rgba(5,12,30,0.45) 70%, rgba(5,12,30,0.92) 100%);
     pointer-events: none;
   }
-  .hero-content { position: relative; max-width: 720px; }
-  .hero-badge {
-    display: inline-flex; align-items: center; gap: 8px;
-    border: 1px solid rgba(255,255,255,0.25);
-    padding: 5px 16px; border-radius: 20px; margin-bottom: 28px;
-    font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
-    color: rgba(255,255,255,0.85); font-weight: 600;
-    background: rgba(255,255,255,0.08);
-    backdrop-filter: blur(8px);
-  }
-  .hero-badge::before {
-    content: ''; width: 5px; height: 5px; border-radius: 50%;
-    background: #34D399;
-    animation: pulse 2s ease-in-out infinite;
-  }
-  @keyframes pulse {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.4; transform: scale(0.6); }
+  .hero-inner {
+    position: relative;
+    width: 100%; max-width: 1100px; margin: 0 auto;
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 72px; align-items: center;
   }
   .hero h1 {
     font-family: 'Cormorant Garamond', serif;
-    font-size: clamp(48px, 6vw, 76px);
+    font-size: clamp(44px, 5.5vw, 72px);
     font-weight: 700; line-height: 1.05;
     color: #ffffff; letter-spacing: -1.5px;
     margin-bottom: 20px;
   }
   .hero h1 em { font-style: italic; color: white; }
   .hero-sub {
-    font-size: 19px; color: rgba(255,255,255,0.92);
-    line-height: 1.65; max-width: 520px; margin: 0 auto 40px;
+    font-size: 17px; color: rgba(255,255,255,0.82);
+    line-height: 1.65; margin-bottom: 36px;
     font-weight: 400;
   }
-  .hero-actions { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+  .hero-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+  .hero-features {
+    list-style: none;
+    display: flex; flex-direction: column; gap: 14px;
+  }
+  .hero-features li {
+    display: flex; align-items: center; gap: 14px;
+    font-size: 15px; color: rgba(255,255,255,0.88);
+    font-weight: 400;
+  }
+  .hero-features li::before {
+    content: ''; width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0;
+    background: rgba(52,211,153,0.18);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 22 22'%3E%3Cpath d='M5 11l4.5 4.5L17 7' stroke='%2334D399' stroke-width='1.8' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: center;
+  }
   .btn-gold {
     background: white; color: var(--navy);
     padding: 14px 32px; border-radius: 50px; border: none;
@@ -477,15 +477,16 @@
     from { opacity: 0; transform: translateY(18px); }
     to { opacity: 1; transform: translateY(0); }
   }
-  .hero-content > * { animation: fadeUp 0.65s ease both; }
-  .hero-badge { animation-delay: 0.05s; }
+  .hero-inner > * { animation: fadeUp 0.65s ease both; }
+  .hero-inner > *:first-child { animation-delay: 0.1s; }
+  .hero-inner > *:last-child { animation-delay: 0.28s; }
   .hero h1 { animation-delay: 0.18s; }
   .hero-sub { animation-delay: 0.30s; }
   .hero-actions { animation-delay: 0.42s; }
-  .hero-visual { animation: fadeUp 0.8s ease 0.3s both; }
 
   @media (max-width: 768px) {
     .hero { padding: 100px 6vw 60px; }
+    .hero-inner { grid-template-columns: 1fr; gap: 40px; }
 
     .module-tabs { overflow-x: auto; }
     .module-tab { padding: 12px 14px; font-size: 10px; }
@@ -530,10 +531,23 @@
   <video class="hero-video" autoplay muted loop playsinline preload="auto" poster="/hero-video-poster.jpg">
     <source src="/hero-video.mp4" type="video/mp4">
   </video>
-  <div class="hero-content">
-    <div class="hero-badge">Revenue Management para hoteles independientes</div>
-    <h1>Tu hotel, en pleno<br><em>control.</em></h1>
-    <p class="hero-sub">Paneles interactivos, gestión de KPIs, ocupación y gestión de grupos en una única plataforma.</p>
+  <div class="hero-inner">
+    <div>
+      <h1>Con FastRevenue,<br>tu hotel <em>bajo control.</em></h1>
+      <p class="hero-sub">Centraliza todos los datos de tu hotel en una única plataforma. Sin hojas sueltas, sin dispersión.</p>
+      <div class="hero-actions">
+        <a href="#consulta" class="btn-gold" onclick="event.preventDefault(); window.scrollToSection('consulta');">Solicitar demo →</a>
+      </div>
+    </div>
+    <ul class="hero-features">
+      <li>Dashboard de KPIs en tiempo real</li>
+      <li>Heatmap anual de ocupación</li>
+      <li>Pickup y forecast de cierre</li>
+      <li>Presupuesto vs. producción real</li>
+      <li>Gestión de grupos y eventos</li>
+      <li>Planning de salas de reunión</li>
+      <li>Informes PDF y email diario automático</li>
+    </ul>
   </div>
 </section>
 
