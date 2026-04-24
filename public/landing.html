@@ -275,25 +275,34 @@
   .features-sticky-wrap {
     max-width: 1100px; margin: 0 auto;
     display: grid; grid-template-columns: 1fr 1fr;
-    gap: 80px; align-items: start;
+    gap: 80px; align-items: center;
     padding: 0 6vw;
+    position: sticky; top: 0;
+    height: 100vh;
+  }
+  .features-left { padding: 0; }
+  .features-right {
+    position: relative;
+    height: 280px;
     overflow: hidden;
   }
-  .features-left {
-    position: sticky; top: 50vh;
-    transform: translateY(-50%);
-    padding: 0;
-  }
-  .features-right {
-    padding: 60px 0 60px;
-    display: flex; flex-direction: column; gap: 52px;
-    justify-content: center;
-  }
   .fsi-item {
-    opacity: 0; transform: translateX(80px);
-    transition: opacity 0.55s ease, transform 0.55s ease;
+    position: absolute; top: 0; left: 0; right: 0;
+    opacity: 0;
+    transform: translateX(110%);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+    pointer-events: none;
   }
-  .fsi-item.visible { opacity: 1; transform: translateX(0); }
+  .fsi-item.active {
+    opacity: 1;
+    transform: translateX(0);
+    pointer-events: auto;
+  }
+  .fsi-item.exit {
+    opacity: 0;
+    transform: translateY(90px);
+    transition: opacity 0.4s ease, transform 0.4s ease;
+  }
   .fsi-num {
     font-family: 'Cormorant Garamond', serif;
     font-size: 11px; color: var(--gold-light); font-weight: 600;
@@ -653,7 +662,7 @@ const observer = new IntersectionObserver((entries) => {
 }, { threshold: 0.1 });
 document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
 
-/* ── Features: título desde izquierda + ítems desde derecha con scroll bloqueado ── */
+/* ── Features: título desde izquierda + tarjetas secuenciales desde derecha ── */
 (function () {
   const inner = document.querySelector('.features-left-inner');
   const sec   = document.querySelector('.features-section');
@@ -661,12 +670,15 @@ document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
   if (!inner || !sec || !items.length) return;
   inner.classList.add('animating');
 
-  let titleFixed  = false;
-  let nextItem    = 0;
-  let accumDelta  = 0;
-  const TICK      = 120; // delta acumulado para revelar cada ítem
+  let titleFixed = false;
+  let current    = -1;   // tarjeta activa (-1 = ninguna)
+  let animating  = false;
+  let accumDelta = 0;
+  const TICK     = 80;
+  const EXIT_MS  = 420;
+  const ENTER_MS = 500;
 
-  /* Animación título scroll-driven */
+  /* Animación título scroll-driven (desde izquierda) */
   function updateTitle() {
     const vh  = window.innerHeight;
     const top = sec.getBoundingClientRect().top;
@@ -678,20 +690,43 @@ document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
   window.addEventListener('scroll', updateTitle, { passive: true });
   updateTitle();
 
-  /* Bloqueo de scroll + revelado de ítems */
-  window.addEventListener('wheel', function (e) {
-    if (!titleFixed) return;                  // aún animando el título → scroll libre
-    if (nextItem >= items.length) return;     // todos revelados → scroll libre
+  /* Avanzar a la siguiente tarjeta */
+  function advance() {
+    if (animating) return;
+    animating = true;
+    accumDelta = 0;
 
-    e.preventDefault();
-    if (e.deltaY <= 0) return;               // ignorar scroll hacia arriba
+    const prev = current;
+    current++;
 
-    accumDelta += e.deltaY;
-    if (accumDelta >= TICK) {
-      items[nextItem].classList.add('visible');
-      nextItem++;
-      accumDelta = 0;
+    /* Salida tarjeta anterior (hacia abajo) */
+    if (prev >= 0) {
+      items[prev].classList.remove('active');
+      items[prev].classList.add('exit');
+      setTimeout(() => items[prev].classList.remove('exit'), EXIT_MS);
     }
+
+    /* Entrada tarjeta siguiente (desde derecha), tras esperar la salida */
+    const delay = prev >= 0 ? EXIT_MS : 0;
+    if (current < items.length) {
+      setTimeout(() => {
+        items[current].classList.add('active');
+        setTimeout(() => { animating = false; }, ENTER_MS);
+      }, delay);
+    } else {
+      /* Todas mostradas: desbloquear scroll */
+      setTimeout(() => { animating = false; }, EXIT_MS);
+    }
+  }
+
+  /* Captura de rueda */
+  window.addEventListener('wheel', function (e) {
+    if (!titleFixed) return;              // título aún entrando → scroll libre
+    if (current >= items.length) return; // todas mostradas → scroll libre
+    e.preventDefault();
+    if (e.deltaY <= 0) return;
+    accumDelta += e.deltaY;
+    if (accumDelta >= TICK) advance();
   }, { passive: false });
 })();
 
