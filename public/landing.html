@@ -1021,7 +1021,27 @@ document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
     titleFixed = p >= 1;
     if (titleFixed && !autoShown) { autoShown = true; goForward(); }
   }
-  window.addEventListener('scroll', updateTitle, { passive: true });
+  let lockY    = -1;
+  let snapping = false;
+
+  window.addEventListener('scroll', function () {
+    if (snapping) return;
+    updateTitle();
+
+    const r2  = sec.getBoundingClientRect();
+    const vh2 = window.innerHeight;
+
+    if (r2.top <= 0 && r2.bottom > vh2) {
+      if (lockY < 0) lockY = window.scrollY;          // fija el punto de bloqueo
+      if (current < N && window.scrollY > lockY + 2) { // scroll rápido hacia abajo
+        snapping = true;
+        window.scrollTo({ top: lockY, behavior: 'instant' });
+        requestAnimationFrame(() => { snapping = false; });
+      }
+    } else if (r2.top > 0) {
+      lockY = -1; // salimos por arriba → reinicia
+    }
+  }, { passive: true });
   updateTitle();
 
   /* ── Helpers de estilo ── */
@@ -1087,7 +1107,15 @@ document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
 
   /* ── Captura de rueda ── */
   window.addEventListener('wheel', function (e) {
-    if (!titleFixed) return;
+    if (!titleFixed) {
+      // Live check: evita race condition con scroll rápido
+      const vh2  = window.innerHeight;
+      const top2 = sec.getBoundingClientRect().top;
+      const p2   = Math.max(0, Math.min(1, (vh2 - top2) / (vh2 * 1.1)));
+      if (p2 < 1) return;
+      titleFixed = true;
+      if (!autoShown) { autoShown = true; goForward(); }
+    }
 
     const dir = e.deltaY > 0 ? 1 : -1;
     if (dir !== lastDir) { accum = 0; lastDir = dir; }
