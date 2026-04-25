@@ -309,37 +309,37 @@
     opacity: 0;
     transform: translateX(110%);
     pointer-events: none;
-    background: rgba(6, 11, 26, 0.80);
-    border: 1px solid rgba(255,255,255,0.10);
+    background: rgba(255,255,255,0.93);
+    border: 1px solid rgba(255,255,255,0.5);
     border-radius: 16px;
     padding: 28px 32px;
-    box-shadow: 0 4px 32px rgba(0,0,0,0.40);
+    box-shadow: 0 8px 40px rgba(0,0,0,0.25);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
   }
   .fsi-item.ptr-on { pointer-events: auto; }
-  .fsi-num {
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    font-size: 10px; color: rgba(255,255,255,0.38); font-weight: 600;
-    letter-spacing: 2.5px; margin-bottom: 20px; text-transform: uppercase;
-  }
   .fsi-title {
     font-family: 'Cormorant Garamond', serif;
     font-size: 36px; font-weight: 700;
-    color: #ffffff; line-height: 1.05;
+    color: var(--navy); line-height: 1.05;
   }
   .fsi-divider {
     height: 1px;
-    background: rgba(255,255,255,0.12);
+    background: rgba(0,0,0,0.10);
     margin: 16px 0;
   }
-  .fsi-stat {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 20px; font-weight: 600;
-    color: var(--gold-light); line-height: 1.2;
-    margin-bottom: 12px;
+  .fsi-desc {
+    list-style: none; padding: 0; margin: 0;
+    display: flex; flex-direction: column; gap: 8px;
   }
-  .fsi-desc { font-size: 14px; color: rgba(255,255,255,0.58); line-height: 1.70; }
+  .fsi-desc li {
+    font-size: 14px; color: #374151; line-height: 1.5;
+    display: flex; align-items: flex-start; gap: 10px;
+  }
+  .fsi-desc li::before {
+    content: '·'; font-size: 20px; color: var(--accent);
+    line-height: 1.1; flex-shrink: 0;
+  }
 
   /* ── PRICING ── */
   .pricing-section { padding: 110px 6vw; background: var(--white); }
@@ -506,7 +506,6 @@
       gap: 16px;
     }
     .fsi-title { font-size: 28px; }
-    .fsi-stat { font-size: 18px; }
 
     /* Mockup */
     .mockup-grid { grid-template-columns: 1fr !important; gap: 40px !important; min-height: auto !important; }
@@ -597,22 +596,37 @@
       <div class="fsi-item">
         <div class="fsi-title">Dashboard</div>
         <div class="fsi-divider"></div>
-        <p class="fsi-desc">Ocupación, ADR, RevPAR y TRevPAR siempre a la vista, comparados con el año anterior y el presupuesto del mes.</p>
+        <ul class="fsi-desc">
+          <li>Panel principal donde se visualiza el progreso de KPIs</li>
+          <li>Ocupación y resumen anual</li>
+        </ul>
       </div>
       <div class="fsi-item">
         <div class="fsi-title">Reservas</div>
         <div class="fsi-divider"></div>
-        <p class="fsi-desc">Heatmap anual y ritmo de entrada en un solo clic. Del año completo al día concreto: OTB, cancelaciones y forecast.</p>
+        <ul class="fsi-desc">
+          <li>Control de reservas pasadas</li>
+          <li>Pick up y pace de reservas</li>
+          <li>Aviso de ocupación de fechas futuras</li>
+        </ul>
       </div>
       <div class="fsi-item">
         <div class="fsi-title">Presupuesto</div>
         <div class="fsi-divider"></div>
-        <p class="fsi-desc">Detecta desviaciones de ADR y RevPAR, y proyecta el cierre anual con los datos acumulados.</p>
+        <ul class="fsi-desc">
+          <li>Detecta desviaciones de ADR y RevPAR</li>
+          <li>Proyecta el cierre anual con los datos acumulados</li>
+          <li>Forecast anual</li>
+        </ul>
       </div>
       <div class="fsi-item">
         <div class="fsi-title">Grupos</div>
         <div class="fsi-divider"></div>
-        <p class="fsi-desc">Confirmados, tentativos y perdidos. Revenue de habitaciones, F&B y salas consolidado en una sola vista.</p>
+        <ul class="fsi-desc">
+          <li>Visión de grupos y eventos segmentados</li>
+          <li>Calendario de eventos</li>
+          <li>Gestión de espacios del hotel</li>
+        </ul>
       </div>
     </div>
   </div>
