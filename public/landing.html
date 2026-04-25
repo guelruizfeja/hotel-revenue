@@ -540,7 +540,7 @@
 
   @media (max-width: 768px) {
     /* Nav */
-    .nav-socios { display: none; }
+    .nav-socios { font-size: 11px; padding: 6px 13px; }
 
     /* Hero */
     .hero { padding: 100px 6vw 60px; }
@@ -572,9 +572,32 @@
     .fsi-title { font-size: 28px; }
 
     /* Mockup */
-    .mockup-inner { grid-template-columns: 1fr !important; gap: 40px !important; }
-    .mockup-shots { display: none; }
+    .mockup-inner { grid-template-columns: 1fr !important; gap: 32px !important; }
     .mockup-section { padding: 60px 6vw; min-height: auto; }
+    .mockup-shots {
+      display: grid;
+      max-width: 100%;
+      margin: 0;
+      aspect-ratio: unset;
+      gap: 8px;
+    }
+    .mockup-shot {
+      opacity: 1 !important;
+      transform: none !important;
+      aspect-ratio: 16/9;
+    }
+    .mockup-shots-cta {
+      position: static;
+      transform: none !important;
+      opacity: 1 !important;
+      pointer-events: auto !important;
+      margin-top: 4px;
+      display: block;
+      width: 100%;
+      white-space: normal;
+      text-align: center;
+      grid-column: 1 / -1;
+    }
 
     /* Dashboard mock KPIs */
     .mock-kpis { grid-template-columns: repeat(2,1fr); }
