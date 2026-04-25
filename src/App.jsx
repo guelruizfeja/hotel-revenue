@@ -491,7 +491,7 @@ const CustomTooltip = ({ active, payload, label, unit }) => {
   );
 };
 
-function WeatherBar({ ciudad, datos, lang, occDeTicker }) {
+function WeatherBar({ ciudad, datos, lang, occDeTicker, stickyTop = 52 }) {
   const [weather, setWeather] = useState(null);
   const [ahora, setAhora] = useState(new Date());
   useEffect(() => { const id = setInterval(() => setAhora(new Date()), 1000); return () => clearInterval(id); }, []);
@@ -630,7 +630,7 @@ function WeatherBar({ ciudad, datos, lang, occDeTicker }) {
   if (!ciudad) return null;
 
   return (
-    <div style={{ background:"#1a1a1a", borderBottom:`1px solid #2e2e2e`, position:"sticky", top:52, zIndex:99, height:40, display:"flex", alignItems:"center", overflow:"hidden" }}>
+    <div style={{ background:"#1a1a1a", borderBottom:`1px solid #2e2e2e`, position:"sticky", top:stickyTop, zIndex:99, height:40, display:"flex", alignItems:"center", overflow:"hidden" }}>
 
       {/* Ticker */}
       <div style={{ flex:1, overflow:"hidden", padding:"0 16px 0 clamp(12px,4vw,32px)" }}>
@@ -5895,7 +5895,7 @@ function BudgetView({ datos, anio: anioProp }) {
 
 
 // ─── GRUPOS & EVENTOS VIEW ────────────────────────────────────────
-function GruposView({ datos, onRecargar, onVolverHeatmap }) {
+function GruposView({ datos, onRecargar, onVolverHeatmap, subVistaExt, onCambiarSubVista }) {
   const t = useT();
   const grupos = datos.grupos || [];
   const session = datos.session;
@@ -6103,8 +6103,9 @@ function GruposView({ datos, onRecargar, onVolverHeatmap }) {
   const setDetalleGrupo = (g) => { setDetalleGrupoRaw(g); try { if (g?.id) localStorage.setItem("fr_grupos_detalle_id", g.id); else localStorage.removeItem("fr_grupos_detalle_id"); } catch {} };
   const [guardando, setGuardando] = useState(false);
   const [menuNuevo, setMenuNuevo] = useState(false);
-  const [subVista, setSubVista] = useState(() => localStorage.getItem("fr_grupos_subvista") || "grupos");
-  const cambiarSubVista = (v) => { setSubVista(v); localStorage.setItem("fr_grupos_subvista", v); };
+  const [_subVistaInt, _setSubVistaInt] = useState(() => localStorage.getItem("fr_grupos_subvista") || "grupos");
+  const subVista = subVistaExt ?? _subVistaInt;
+  const cambiarSubVista = onCambiarSubVista ?? ((v) => { _setSubVistaInt(v); localStorage.setItem("fr_grupos_subvista", v); });
   const [salaDetalle, setSalaDetalle] = useState(() => localStorage.getItem("fr_sala_detalle") || null);
   const cambiarSalaDetalle = (v) => { setSalaDetalle(v); if (v) localStorage.setItem("fr_sala_detalle", v); else localStorage.removeItem("fr_sala_detalle"); };
   useEffect(() => {
@@ -6290,72 +6291,40 @@ function GruposView({ datos, onRecargar, onVolverHeatmap }) {
   return (
     <div style={{ display:"flex", flexDirection:"column", gap:20 }}>
 
-      {/* ── Sub-navegación ── */}
-      <div style={{ display:"flex", flexDirection:"column", margin:"0 -20px", borderBottom:`1px solid ${C.border}` }}>
-        {/* Fila 1: pestañas */}
-        <div style={{ display:"flex", gap:6, alignItems:"center", padding:"10px 20px", flexWrap:"wrap" }}>
-          {fromHeatmap && (
-            <button onClick={()=>{ setFromHeatmap(false); onVolverHeatmap&&onVolverHeatmap(); }}
-              style={{ padding:"7px 14px", fontSize:13, fontWeight:600, cursor:"pointer", border:`1.5px solid ${C.border}`, borderRadius:8, background:C.bg, color:C.textMid, fontFamily:"'Plus Jakarta Sans',sans-serif", display:"flex", alignItems:"center", gap:5, marginRight:4 }}>
-              ← Heatmap
-            </button>
-          )}
-          {[
-            { key:"semana",   label:"Calendario" },
-            { key:"pipeline", label:"Resumen" },
-            { key:"grupos",   label:"Grupos" },
-            { key:"eventos",  label:"Eventos" },
-            { key:"revenue",  label:"Revenue" },
-            { key:"salas",    label:"Gestión de salas" },
-          ].map(({ key, label }) => {
-            const activo = subVista === key;
-            return (
-              <button key={key} onClick={()=>cambiarSubVista(key)}
-                style={{ padding:"7px 18px", fontSize:13, fontWeight:activo?700:500, cursor:"pointer", border:`1.5px solid ${activo ? C.text : C.border}`, borderRadius:8, background: activo ? C.text : "transparent", color: activo ? C.bgCard : C.textMid, fontFamily:"'Plus Jakarta Sans',sans-serif", transition:"all 0.15s" }}>
-                {label}
-              </button>
-            );
-          })}
-        </div>
-        {/* Fila 2: botones de acción */}
-        <div style={{ display:"flex", gap:8, alignItems:"center", justifyContent:"flex-end", padding:"8px 20px", background:"#F2F3F5", borderTop:`1px solid ${C.border}` }}>
-          <button onClick={seedDemoData} disabled={seedando || borrandoDemo}
-            style={{ background:"#E0F0FF", color:"#2B7EC1", border:"1.5px dashed #2B7EC1", borderRadius:8, padding:"7px 14px", fontSize:12, fontWeight:600, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", opacity:(seedando||borrandoDemo)?0.6:1 }}>
-            {seedando ? "Cargando..." : "Datos demo"}
+      {/* ── Acciones superiores ── */}
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"flex-end", gap:8 }}>
+        {fromHeatmap && (
+          <button onClick={()=>{ setFromHeatmap(false); onVolverHeatmap&&onVolverHeatmap(); }}
+            style={{ padding:"7px 14px", fontSize:12, fontWeight:600, cursor:"pointer", border:`1.5px solid ${C.border}`, borderRadius:8, background:C.bg, color:C.textMid, fontFamily:"'Plus Jakarta Sans',sans-serif", display:"flex", alignItems:"center", gap:5, marginRight:"auto" }}>
+            ← Heatmap
           </button>
-          {grupos.length > 0 && (
-            <button onClick={borrarTodosGrupos} disabled={seedando || borrandoDemo}
-              style={{ background:"none", color:"rgba(211,47,47,0.7)", border:"1.5px solid rgba(211,47,47,0.3)", borderRadius:8, padding:"7px 14px", fontSize:12, fontWeight:600, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", opacity:(seedando||borrandoDemo)?0.6:1 }}>
-              {borrandoDemo ? "Borrando..." : "Borrar todo"}
-            </button>
+        )}
+        <div style={{ position:"relative" }}>
+          <button onClick={()=>setMenuNuevo(v=>!v)}
+            style={{ background:"#0A2540", color:"#fff", border:"none", borderRadius:8, padding:"7px 16px", fontSize:13, fontWeight:600, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", display:"flex", alignItems:"center", gap:6 }}>
+            + Nueva reserva
+            <span style={{ fontSize:10, opacity:0.7 }}>▾</span>
+          </button>
+          {menuNuevo && (
+            <>
+              <div style={{ position:"fixed", inset:0, zIndex:999 }} onClick={()=>setMenuNuevo(false)}/>
+              <div style={{ position:"absolute", right:0, top:"calc(100% + 6px)", background:C.bgCard, border:`1px solid ${C.border}`, borderRadius:10, boxShadow:"0 8px 24px rgba(0,0,0,0.12)", zIndex:1000, minWidth:160, overflow:"hidden" }}>
+                <button onClick={()=>{ setMenuNuevo(false); abrirNuevo(); }}
+                  style={{ width:"100%", padding:"11px 16px", background:"none", border:"none", textAlign:"left", cursor:"pointer", fontSize:13, fontWeight:600, color:C.text, fontFamily:"'Plus Jakarta Sans',sans-serif" }}
+                  onMouseEnter={e=>e.currentTarget.style.background=C.bg}
+                  onMouseLeave={e=>e.currentTarget.style.background="none"}>
+                  Grupo
+                </button>
+                <div style={{ height:1, background:C.border, margin:"0 12px" }}/>
+                <button onClick={()=>{ setMenuNuevo(false); abrirNuevo("", "evento"); }}
+                  style={{ width:"100%", padding:"11px 16px", background:"none", border:"none", textAlign:"left", cursor:"pointer", fontSize:13, fontWeight:600, color:C.text, fontFamily:"'Plus Jakarta Sans',sans-serif" }}
+                  onMouseEnter={e=>e.currentTarget.style.background=C.bg}
+                  onMouseLeave={e=>e.currentTarget.style.background="none"}>
+                  Evento
+                </button>
+              </div>
+            </>
           )}
-          <div style={{ position:"relative" }}>
-            <button onClick={()=>setMenuNuevo(v=>!v)}
-              style={{ background:"#0A2540", color:"#fff", border:"none", borderRadius:8, padding:"7px 16px", fontSize:13, fontWeight:600, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", display:"flex", alignItems:"center", gap:6 }}>
-              + Nueva reserva
-              <span style={{ fontSize:10, opacity:0.7 }}>▾</span>
-            </button>
-            {menuNuevo && (
-              <>
-                <div style={{ position:"fixed", inset:0, zIndex:999 }} onClick={()=>setMenuNuevo(false)}/>
-                <div style={{ position:"absolute", right:0, top:"calc(100% + 6px)", background:C.bgCard, border:`1px solid ${C.border}`, borderRadius:10, boxShadow:"0 8px 24px rgba(0,0,0,0.12)", zIndex:1000, minWidth:160, overflow:"hidden" }}>
-                  <button onClick={()=>{ setMenuNuevo(false); abrirNuevo(); }}
-                    style={{ width:"100%", padding:"11px 16px", background:"none", border:"none", textAlign:"left", cursor:"pointer", fontSize:13, fontWeight:600, color:C.text, fontFamily:"'Plus Jakarta Sans',sans-serif" }}
-                    onMouseEnter={e=>e.currentTarget.style.background=C.bg}
-                    onMouseLeave={e=>e.currentTarget.style.background="none"}>
-                    Grupo
-                  </button>
-                  <div style={{ height:1, background:C.border, margin:"0 12px" }}/>
-                  <button onClick={()=>{ setMenuNuevo(false); abrirNuevo("", "evento"); }}
-                    style={{ width:"100%", padding:"11px 16px", background:"none", border:"none", textAlign:"left", cursor:"pointer", fontSize:13, fontWeight:600, color:C.text, fontFamily:"'Plus Jakarta Sans',sans-serif" }}
-                    onMouseEnter={e=>e.currentTarget.style.background=C.bg}
-                    onMouseLeave={e=>e.currentTarget.style.background="none"}>
-                    Evento
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
         </div>
       </div>
 
@@ -7977,6 +7946,8 @@ export default function App() {
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState(() => localStorage.getItem("fr_view") || "dashboard");
+  const [gruposSubVista, setGruposSubVista] = useState(() => localStorage.getItem("fr_grupos_subvista") || "grupos");
+  const cambiarGruposSubVista = (v) => { setGruposSubVista(v); localStorage.setItem("fr_grupos_subvista", v); };
 
   const hoy = new Date();
   const [mesSel,  setMesSel]  = useState(() => { const v = localStorage.getItem("rm_mes");  return v !== null ? parseInt(v) : hoy.getMonth(); });
@@ -8228,7 +8199,7 @@ export default function App() {
     dashboard: (props) => <DashboardView {...props} onMesDetalle={(m, a) => setMesDetalle({ mes: m, anio: a })} onDesgloseMovimiento={tipo => setDesgloseMovimiento(tipo)} kpiModal={kpiModal} setKpiModal={setKpiModal} kpiModalExterno={kpiModalApp} onKpiModalExternoHandled={() => setKpiModalApp(null)} onNavigarGrupos={(subvista, fechaInicio, fechaFin, id) => { localStorage.setItem("fr_grupos_subvista", subvista); sessionStorage.setItem("fr_pending_nuevo", JSON.stringify({ tipo: subvista === "eventos" ? "evento" : "grupo", fecha_inicio: fechaInicio, fecha_fin: fechaFin, highlightId: id||null })); sessionStorage.setItem("fr_from_heatmap", "1"); setView("grupos"); localStorage.setItem("fr_view", "grupos"); }} />,
     pickup:    (props) => <PickupView    {...props} />,
     budget:    (props) => <BudgetView    {...props} />,
-    grupos:    (props) => <GruposView    {...props} onRecargar={() => cargarDatos(true)} onVolverHeatmap={() => { setView("dashboard"); localStorage.setItem("fr_view", "dashboard"); }} />,
+    grupos:    (props) => <GruposView    {...props} onRecargar={() => cargarDatos(true)} onVolverHeatmap={() => { setView("dashboard"); localStorage.setItem("fr_view", "dashboard"); }} subVistaExt={gruposSubVista} onCambiarSubVista={cambiarGruposSubVista} />,
   };
   const View = views[view] || views["dashboard"];
 
@@ -8403,7 +8374,30 @@ export default function App() {
       </header>
 
       <div style={{ height: "0.5px", background: "#fff", width: "100%", position:"sticky", top:52, zIndex:100 }} />
-      <WeatherBar ciudad={datos.hotel?.ciudad} datos={datos} lang={lang} occDeTicker={_occDeTicker} />
+
+      {/* Barra de sub-navegación de Grupos — visible solo en vista grupos */}
+      {view === "grupos" && (
+        <div style={{ position:"sticky", top:52.5, zIndex:99, background:"#F2F3F5", borderBottom:"1px solid #e2e4e8", display:"flex", alignItems:"center", gap:4, padding:"0 clamp(12px,4vw,32px)", height:40, overflow:"hidden" }}>
+          {[
+            { key:"semana",   label:"Calendario" },
+            { key:"pipeline", label:"Resumen" },
+            { key:"grupos",   label:"Grupos" },
+            { key:"eventos",  label:"Eventos" },
+            { key:"revenue",  label:"Revenue" },
+            { key:"salas",    label:"Gestión de salas" },
+          ].map(({ key, label }) => {
+            const activo = gruposSubVista === key;
+            return (
+              <button key={key} onClick={() => cambiarGruposSubVista(key)}
+                style={{ padding:"5px 14px", fontSize:12, fontWeight:activo?700:500, cursor:"pointer", border:`1.5px solid ${activo ? "#0A2540" : "#c8ccd4"}`, borderRadius:7, background: activo ? "#0A2540" : "transparent", color: activo ? "#fff" : "#4a5568", fontFamily:"'Plus Jakarta Sans',sans-serif", transition:"all 0.15s", whiteSpace:"nowrap" }}>
+                {label}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      <WeatherBar ciudad={datos.hotel?.ciudad} datos={datos} lang={lang} occDeTicker={_occDeTicker} stickyTop={view === "grupos" ? 92.5 : 52} />
       <div style={{ height: 8, background: "#fff", width: "100%" }} />
 
       {/* Main */}
