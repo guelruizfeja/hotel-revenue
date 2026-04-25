@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Control de Facturación — FastRevenue</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Arial', sans-serif;
+    font-size: 10pt;
+    background: #f4f7fb;
+    color: #111;
+  }
+  .page { max-width: 1100px; margin: 0 auto; padding: 40px 32px 60px; }
+
+  /* Cabecera */
+  .header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 32px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid #0A2540;
+  }
+  .header .logo-text {
+    font-size: 18pt; font-weight: 800; letter-spacing: 2px; color: #0A2540;
+  }
+  .header .header-sub { font-size: 9.5pt; color: #777; margin-top: 4px; }
+  .año-selector { display: flex; gap: 8px; align-items: center; }
+  .año-selector label { font-size: 9.5pt; color: #555; font-weight: 600; }
+  .año-selector select {
+    padding: 5px 10px; border: 1px solid #d0dbe8; border-radius: 5px;
+    font-size: 10pt; color: #0A2540; font-weight: 700; background: #fff;
+    cursor: pointer;
+  }
+
+  /* Resumen trimestral */
+  .resumen-trim {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 14px; margin-bottom: 28px;
+  }
+  .trim-card {
+    background: #fff; border: 1px solid #d8e4f0; border-radius: 8px;
+    padding: 14px 16px;
+    border-top: 3px solid #0A2540;
+  }
+  .trim-card.activo { border-top-color: #059669; }
+  .trim-card .trim-label {
+    font-size: 8.5pt; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 1px; color: #888; margin-bottom: 10px;
+  }
+  .trim-card .trim-dato {
+    display: flex; justify-content: space-between;
+    font-size: 9.5pt; margin-bottom: 5px; color: #444;
+  }
+  .trim-card .trim-dato strong { color: #0A2540; }
+  .trim-card .trim-total {
+    margin-top: 10px; padding-top: 8px;
+    border-top: 1px solid #e8edf2;
+    display: flex; justify-content: space-between;
+    font-size: 10.5pt; font-weight: 700; color: #0A2540;
+  }
+  .trim-card .badge {
+    display: inline-block; margin-top: 8px;
+    padding: 2px 10px; border-radius: 20px; font-size: 8pt; font-weight: 700;
+  }
+  .badge.pendiente { background: #FEF3C7; color: #92400E; }
+  .badge.presentado { background: #D1FAE5; color: #065F46; }
+  .badge.proximo { background: #EDE9FE; color: #5B21B6; }
+
+  /* Tabla de facturas */
+  .tabla-wrap {
+    background: #fff; border: 1px solid #d8e4f0; border-radius: 8px;
+    overflow: hidden; margin-bottom: 24px;
+  }
+  .tabla-header {
+    background: #0A2540; color: #fff;
+    padding: 12px 16px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .tabla-header span { font-size: 10pt; font-weight: 700; letter-spacing: 0.3px; }
+  .btn-add {
+    background: rgba(255,255,255,0.15); color: #fff;
+    border: 1px solid rgba(255,255,255,0.3);
+    padding: 5px 14px; border-radius: 5px; font-size: 9pt;
+    cursor: pointer; font-family: 'Arial', sans-serif;
+    transition: background 0.2s;
+  }
+  .btn-add:hover { background: rgba(255,255,255,0.25); }
+
+  table {
+    width: 100%; border-collapse: collapse;
+  }
+  thead th {
+    background: #f0f4f9;
+    padding: 9px 10px;
+    font-size: 8.5pt; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.5px; color: #0A2540;
+    text-align: left; border-bottom: 1px solid #d8e4f0;
+    white-space: nowrap;
+  }
+  thead th.right { text-align: right; }
+  tbody td {
+    padding: 9px 10px;
+    border-bottom: 1px solid #edf1f7;
+    font-size: 10pt; color: #333;
+    vertical-align: middle;
+  }
+  tbody td.right { text-align: right; font-variant-numeric: tabular-nums; }
+  tbody td[contenteditable="true"] {
+    outline: none; cursor: text;
+    transition: background 0.15s;
+  }
+  tbody td[contenteditable="true"]:focus {
+    background: #fffbe6;
+    box-shadow: inset 0 0 0 2px #f0c040;
+  }
+  tbody tr:hover td { background: #f7f9fc; }
+  tbody tr:hover td[contenteditable="true"]:focus { background: #fffbe6; }
+
+  .estado-badge {
+    display: inline-block; padding: 2px 10px; border-radius: 20px;
+    font-size: 8.5pt; font-weight: 700; cursor: pointer;
+    user-select: none;
+  }
+  .estado-badge.cobrada { background: #D1FAE5; color: #065F46; }
+  .estado-badge.pendiente { background: #FEF3C7; color: #92400E; }
+  .estado-badge.anulada { background: #FEE2E2; color: #991B1B; }
+
+  tfoot td {
+    padding: 10px 10px;
+    font-size: 10pt; font-weight: 700;
+    background: #f0f4f9; color: #0A2540;
+    border-top: 2px solid #0A2540;
+  }
+  tfoot td.right { text-align: right; }
+
+  /* Sección Hacienda */
+  .hacienda {
+    background: #fff; border: 1px solid #d8e4f0; border-radius: 8px;
+    overflow: hidden;
+  }
+  .hacienda-header {
+    background: #1e3a5f; color: #fff;
+    padding: 12px 16px;
+    font-size: 10pt; font-weight: 700;
+  }
+  .hacienda-body { padding: 16px; }
+  .modelos-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .modelo-box {
+    border: 1px solid #d8e4f0; border-radius: 6px; padding: 14px 16px;
+    background: #f9fbfd;
+  }
+  .modelo-box .modelo-num {
+    font-size: 11pt; font-weight: 800; color: #0A2540; margin-bottom: 4px;
+  }
+  .modelo-box .modelo-desc {
+    font-size: 9pt; color: #666; margin-bottom: 10px;
+  }
+  .modelo-box .modelo-dato {
+    display: flex; justify-content: space-between;
+    font-size: 9.5pt; margin-bottom: 5px; color: #444;
+    padding-bottom: 5px; border-bottom: 1px solid #edf1f7;
+  }
+  .modelo-box .modelo-dato:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+  .modelo-box .modelo-dato strong { color: #0A2540; }
+  .plazo-nota {
+    margin-top: 14px; padding: 10px 14px;
+    background: #fff8e7; border: 1px solid #e0c96a;
+    border-radius: 5px; font-size: 9pt; color: #6b4f00;
+  }
+
+  .footer-doc {
+    margin-top: 36px; padding-top: 12px;
+    border-top: 1px solid #ddd;
+    font-size: 8.5pt; color: #aaa; text-align: center;
+  }
+
+  @media print {
+    body { background: #fff; }
+    .page { padding: 24px 28px 40px; max-width: 100%; }
+    .btn-add { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- Cabecera -->
+  <div class="header">
+    <div>
+      <div class="logo-text">FASTREVENUE</div>
+      <div class="header-sub">Control de facturación — Miguel Ruiz Feja</div>
+    </div>
+    <div class="año-selector">
+      <label>Año fiscal:</label>
+      <select id="añoSelect" onchange="cambiarAño(this.value)">
+        <option value="2026" selected>2026</option>
+        <option value="2027">2027</option>
+        <option value="2028">2028</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Resumen trimestral -->
+  <div class="resumen-trim" id="resumenTrim">
+    <!-- Se genera con JS -->
+  </div>
+
+  <!-- Tabla de facturas -->
+  <div class="tabla-wrap">
+    <div class="tabla-header">
+      <span>Registro de facturas emitidas</span>
+      <button class="btn-add" onclick="añadirFila()">+ Nueva fila</button>
+    </div>
+    <table id="tablaFacturas">
+      <thead>
+        <tr>
+          <th style="width:80px">Nº Factura</th>
+          <th style="width:90px">Fecha</th>
+          <th style="width:90px">Cobro</th>
+          <th>Hotel / Cliente</th>
+          <th>Concepto</th>
+          <th class="right" style="width:90px">Base (€)</th>
+          <th class="right" style="width:75px">IVA 21%</th>
+          <th class="right" style="width:80px">IRPF 15%</th>
+          <th class="right" style="width:90px">Total (€)</th>
+          <th style="width:90px">Estado</th>
+          <th style="width:32px"></th>
+        </tr>
+      </thead>
+      <tbody id="tbodyFacturas">
+        <!-- Fila de ejemplo -->
+        <tr>
+          <td contenteditable="true">FR-001</td>
+          <td contenteditable="true">01/04/2026</td>
+          <td contenteditable="true">05/04/2026</td>
+          <td contenteditable="true">Hotel Ejemplo</td>
+          <td contenteditable="true">Suscripción abril + instalación</td>
+          <td class="right" contenteditable="true" oninput="recalcularFila(this)">189,00</td>
+          <td class="right base-iva">39,69</td>
+          <td class="right base-irpf">28,35</td>
+          <td class="right base-total">200,34</td>
+          <td><span class="estado-badge cobrada" onclick="toggleEstado(this)">Cobrada</span></td>
+          <td style="text-align:center"><span onclick="borrarFila(this)" style="cursor:pointer; color:#ccc; font-size:14pt; line-height:1;" title="Eliminar">×</span></td>
+        </tr>
+      </tbody>
+      <tfoot>
+        <tr id="filaTotales">
+          <td colspan="5">TOTAL AÑO</td>
+          <td class="right" id="totalBase">189,00 €</td>
+          <td class="right" id="totalIva">39,69 €</td>
+          <td class="right" id="totalIrpf">28,35 €</td>
+          <td class="right" id="totalTotal">200,34 €</td>
+          <td colspan="2"></td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+
+  <!-- Hacienda -->
+  <div class="hacienda">
+    <div class="hacienda-header">Modelos trimestrales — Hacienda</div>
+    <div class="hacienda-body">
+      <div class="modelos-grid">
+        <div class="modelo-box">
+          <div class="modelo-num">Modelo 303 — IVA</div>
+          <div class="modelo-desc">Declaración trimestral de IVA. Ingresas el IVA cobrado a los hoteles.</div>
+          <div class="modelo-dato"><span>IVA repercutido (cobrado)</span><strong id="m303-iva">—</strong></div>
+          <div class="modelo-dato"><span>IVA soportado (gastos)*</span><strong contenteditable="true" style="cursor:text; outline:none; min-width:60px; display:inline-block; border-bottom:1px dotted #888;">0,00 €</strong></div>
+          <div class="modelo-dato"><span>A ingresar (diferencia)</span><strong id="m303-total">—</strong></div>
+        </div>
+        <div class="modelo-box">
+          <div class="modelo-num">Modelo 130 — IRPF</div>
+          <div class="modelo-desc">Pago fraccionado trimestral. Si tus clientes ya te retienen el 15%, no pagas este modelo (resultado 0).</div>
+          <div class="modelo-dato"><span>Ingresos acumulados año</span><strong id="m130-base">—</strong></div>
+          <div class="modelo-dato"><span>IRPF retenido por clientes</span><strong id="m130-irpf">—</strong></div>
+          <div class="modelo-dato"><span>Resultado (suele ser 0 €)</span><strong>0,00 €</strong></div>
+        </div>
+      </div>
+      <div class="plazo-nota">
+        <strong>Plazos de presentación:</strong> T1 (ene–mar) → hasta 20 abril &nbsp;·&nbsp; T2 (abr–jun) → hasta 20 julio &nbsp;·&nbsp; T3 (jul–sep) → hasta 20 octubre &nbsp;·&nbsp; T4 (oct–dic) → hasta 30 enero del año siguiente.<br>
+        <strong style="margin-top:4px; display:block;">* IVA soportado:</strong> anota aquí el IVA de tus gastos deducibles (Holded, dominios, software, etc.) para restarlo del IVA cobrado.
+      </div>
+    </div>
+  </div>
+
+  <div class="footer-doc">
+    FastRevenue · Miguel Ruiz Feja · Documento interno de gestión fiscal
+  </div>
+</div>
+
+<script>
+  // ── Recalcular IVA/IRPF/Total de una fila al editar la base ──
+  function recalcularFila(cell) {
+    const tr = cell.closest('tr');
+    const base = parsearEuro(cell.textContent);
+    const iva  = base * 0.21;
+    const irpf = base * 0.15;
+    const total = base + iva - irpf;
+    tr.querySelector('.base-iva').textContent   = formatEuro(iva);
+    tr.querySelector('.base-irpf').textContent  = formatEuro(irpf);
+    tr.querySelector('.base-total').textContent = formatEuro(total);
+    recalcularTotales();
+  }
+
+  // ── Recalcular totales de la tabla ──
+  function recalcularTotales() {
+    let base = 0, iva = 0, irpf = 0, total = 0;
+    document.querySelectorAll('#tbodyFacturas tr').forEach(tr => {
+      const cells = tr.querySelectorAll('td');
+      base  += parsearEuro(cells[5].textContent);
+      iva   += parsearEuro(cells[6].textContent);
+      irpf  += parsearEuro(cells[7].textContent);
+      total += parsearEuro(cells[8].textContent);
+    });
+    document.getElementById('totalBase').textContent  = formatEuro(base)  + ' €';
+    document.getElementById('totalIva').textContent   = formatEuro(iva)   + ' €';
+    document.getElementById('totalIrpf').textContent  = formatEuro(irpf)  + ' €';
+    document.getElementById('totalTotal').textContent = formatEuro(total) + ' €';
+
+    document.getElementById('m303-iva').textContent   = formatEuro(iva)  + ' €';
+    document.getElementById('m303-total').textContent = formatEuro(iva)  + ' €';
+    document.getElementById('m130-base').textContent  = formatEuro(base) + ' €';
+    document.getElementById('m130-irpf').textContent  = formatEuro(irpf) + ' €';
+
+    actualizarResumenTrim();
+  }
+
+  // ── Toggle estado cobrada/pendiente/anulada ──
+  function toggleEstado(badge) {
+    const estados = ['cobrada','pendiente','anulada'];
+    const actual = estados.find(e => badge.classList.contains(e));
+    const siguiente = estados[(estados.indexOf(actual) + 1) % estados.length];
+    badge.classList.remove(...estados);
+    badge.classList.add(siguiente);
+    const textos = { cobrada: 'Cobrada', pendiente: 'Pendiente', anulada: 'Anulada' };
+    badge.textContent = textos[siguiente];
+  }
+
+  // ── Añadir fila ──
+  function añadirFila() {
+    const tbody = document.getElementById('tbodyFacturas');
+    const num = tbody.querySelectorAll('tr').length + 1;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td contenteditable="true">FR-${String(num).padStart(3,'0')}</td>
+      <td contenteditable="true"></td>
+      <td contenteditable="true"></td>
+      <td contenteditable="true"></td>
+      <td contenteditable="true">Suscripción FastRevenue</td>
+      <td class="right" contenteditable="true" oninput="recalcularFila(this)">59,00</td>
+      <td class="right base-iva">12,39</td>
+      <td class="right base-irpf">8,85</td>
+      <td class="right base-total">62,54</td>
+      <td><span class="estado-badge pendiente" onclick="toggleEstado(this)">Pendiente</span></td>
+      <td style="text-align:center"><span onclick="borrarFila(this)" style="cursor:pointer; color:#ccc; font-size:14pt; line-height:1;" title="Eliminar">×</span></td>
+    `;
+    tbody.appendChild(tr);
+    recalcularTotales();
+    tr.querySelector('td').focus();
+  }
+
+  // ── Borrar fila ──
+  function borrarFila(btn) {
+    if (!confirm('¿Eliminar esta factura del registro?')) return;
+    btn.closest('tr').remove();
+    recalcularTotales();
+  }
+
+  // ── Resumen trimestral ──
+  function actualizarResumenTrim() {
+    const trimestres = [
+      { label: '1er Trimestre', meses: [1,2,3],  plazo: '20 abril' },
+      { label: '2º Trimestre',  meses: [4,5,6],  plazo: '20 julio' },
+      { label: '3er Trimestre', meses: [7,8,9],  plazo: '20 octubre' },
+      { label: '4º Trimestre',  meses: [10,11,12], plazo: '30 enero' },
+    ];
+    const rows = Array.from(document.querySelectorAll('#tbodyFacturas tr'));
+    const hoy = new Date();
+    const mesActual = hoy.getMonth() + 1;
+
+    const wrap = document.getElementById('resumenTrim');
+    wrap.innerHTML = '';
+
+    trimestres.forEach((t, idx) => {
+      let base = 0, iva = 0, irpf = 0;
+      rows.forEach(tr => {
+        const fechaTxt = tr.querySelectorAll('td')[1].textContent.trim();
+        if (!fechaTxt) return;
+        const partes = fechaTxt.split('/');
+        if (partes.length < 2) return;
+        const mes = parseInt(partes[1], 10);
+        if (t.meses.includes(mes)) {
+          const cells = tr.querySelectorAll('td');
+          base  += parsearEuro(cells[5].textContent);
+          iva   += parsearEuro(cells[6].textContent);
+          irpf  += parsearEuro(cells[7].textContent);
+        }
+      });
+
+      const trimFinalizado = Math.max(...t.meses) < mesActual;
+      const trimActivo = t.meses.includes(mesActual);
+      const badgeTexto = trimFinalizado ? 'Presentar' : trimActivo ? 'En curso' : 'Próximo';
+      const badgeClase = trimFinalizado ? 'pendiente' : trimActivo ? 'activo' : 'proximo';
+
+      const card = document.createElement('div');
+      card.className = `trim-card ${trimActivo ? 'activo' : ''}`;
+      card.innerHTML = `
+        <div class="trim-label">${t.label} <span class="badge ${badgeClase}">${badgeTexto}</span></div>
+        <div class="trim-dato"><span>Base imponible</span><strong>${formatEuro(base)} €</strong></div>
+        <div class="trim-dato"><span>IVA a ingresar</span><strong>${formatEuro(iva)} €</strong></div>
+        <div class="trim-dato"><span>IRPF retenido</span><strong>${formatEuro(irpf)} €</strong></div>
+        <div class="trim-total"><span>Plazo: ${t.plazo}</span></div>
+      `;
+      wrap.appendChild(card);
+    });
+  }
+
+  // ── Helpers ──
+  function parsearEuro(txt) {
+    return parseFloat((txt || '0').replace(/[^\d,.-]/g,'').replace(',','.')) || 0;
+  }
+  function formatEuro(n) {
+    return n.toFixed(2).replace('.',',');
+  }
+  function cambiarAño(v) {
+    document.querySelector('.header-sub').textContent = `Control de facturación — Miguel Ruiz Feja — ${v}`;
+  }
+
+  // Init
+  recalcularTotales();
+</script>
+</body>
+</html>
