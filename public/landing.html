@@ -827,9 +827,8 @@ document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
 
       // última tarjeta activa: salida simultánea con scroll de página
       if (current === N - 1) {
-        accum += e.deltaY;
-        if (accum >= TICK && !animating) {
-          animating = true; accum = 0;
+        if (!animating) {
+          animating = true;
           anim(items[current], 'bottom', EXIT_MS);
           current++;
           setTimeout(() => { animating = false; }, EXIT_MS);
@@ -845,14 +844,41 @@ document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
       // ── Subiendo ──
       if (current <= -1) return;                      // ninguna → libre
 
-      // si ya pasamos todas y la sección salió del viewport → libre
-      if (current >= N && sec.getBoundingClientRect().bottom < 50) return;
+      // si ya pasamos todas y el sticky todavía no es visible → libre
+      if (current >= N && sec.getBoundingClientRect().bottom < window.innerHeight) return;
 
       e.preventDefault();
       accum += Math.abs(e.deltaY);
       if (accum >= TICK) goBackward();
     }
   }, { passive: false });
+
+  /* ── Flechas del teclado: mismo efecto que la rueda ── */
+  window.addEventListener('keydown', function (e) {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+    if (!titleFixed) return;
+
+    if (e.key === 'ArrowDown') {
+      if (current >= N) return;
+      if (current === N - 1) {
+        if (!animating) {
+          animating = true;
+          anim(items[current], 'bottom', EXIT_MS);
+          current++;
+          setTimeout(() => { animating = false; }, EXIT_MS);
+        }
+        return; // no preventDefault → página baja también
+      }
+      e.preventDefault();
+      if (!animating) goForward();
+
+    } else if (e.key === 'ArrowUp') {
+      if (current <= -1) return;
+      if (current >= N && sec.getBoundingClientRect().bottom < window.innerHeight) return;
+      e.preventDefault();
+      if (!animating) goBackward();
+    }
+  });
 })();
 
 window.scrollToSection = function(id) {
