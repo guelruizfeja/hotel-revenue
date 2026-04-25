@@ -4758,7 +4758,7 @@ function PickupView({ datos, onGuardado }) {
   const ayerPorMes = {};
   const ayerPorCanal = {};
   let ayerTotal = 0;
-  reservasAyer.forEach(e => {
+  reservasAyer.filter(e => (e.estado||"confirmada") !== "cancelada" && normCanal(e.canal) !== "Grupos/Eventos").forEach(e => {
     const fl = String(e.fecha_llegada||"").slice(0,7); // YYYY-MM
     const mes = parseInt(fl.slice(5,7)) - 1;
     const nr = e.num_reservas || 1;
