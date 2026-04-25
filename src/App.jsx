@@ -4592,7 +4592,8 @@ function PickupView({ datos, onGuardado }) {
     return p.length > 0 ? Math.round(p.reduce((a,r)=>a+(r.hab_disponibles||0),0)/p.length) : 30;
   }, [datos.hotel, datos.produccion]);
 
-  const hoyISO = new Date().toISOString().slice(0,10);
+  const _hoyISOd = new Date();
+  const hoyISO = `${_hoyISOd.getFullYear()}-${String(_hoyISOd.getMonth()+1).padStart(2,"0")}-${String(_hoyISOd.getDate()).padStart(2,"0")}`;
   const [modalNR, setModalNR] = useState(() => { try { return localStorage.getItem("fr_nr_modal") === "1"; } catch { return false; } });
   const setModalNRPersist = (v) => { setModalNR(v); try { localStorage.setItem("fr_nr_modal", v ? "1" : "0"); } catch {} };
   const [nrForm, setNrForm] = useState(() => {
@@ -4946,24 +4947,32 @@ function PickupView({ datos, onGuardado }) {
           </div>
         </div>
 
-        {showPickupDetalle && ultDiaTotal > 0 && (
-          <div style={{ marginBottom:16, borderRadius:8, border:`1px solid ${C.border}`, overflow:"hidden" }}>
-            {reservasUltDia.map((e, i) => {
-              const canal = normCanal(e.canal);
-              const color = CANAL_COLORS[canal] || C.accent;
-              const adr = e.noches > 0 ? Math.round((e.precio_total||0) / e.noches) : null;
-              return (
-                <div key={i} style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 14px", borderBottom: i < reservasUltDia.length-1 ? `1px solid ${C.border}` : "none", background: i%2===0 ? C.bg : "transparent" }}>
-                  <div style={{ width:8, height:8, borderRadius:"50%", background:color, flexShrink:0 }}/>
-                  <span style={{ fontSize:12, color:C.textMid, flex:1 }}>{e.canal || canal}</span>
-                  <span style={{ fontSize:11, color:C.text }}>llegada {fmtDatePU(String(e.fecha_llegada||"").slice(0,10))}</span>
-                  <span style={{ fontSize:11, color:C.textMid }}>{e.noches || "—"}n</span>
-                  {adr != null && <span style={{ fontSize:11, fontWeight:700, color:C.text }}>€{adr}/n</span>}
-                </div>
-              );
-            })}
-          </div>
-        )}
+        {showPickupDetalle && (() => {
+          const detalleEntries = pickupEntries.filter(e =>
+            !esGrupoEvento(e) &&
+            (e.estado||"confirmada") !== "cancelada" &&
+            [hoyISO, ayerStr].includes(String(e.fecha_pickup||"").slice(0,10))
+          ).sort((a,b) => (b.fecha_pickup||"").localeCompare(a.fecha_pickup||"") || (a.fecha_llegada||"").localeCompare(b.fecha_llegada||""));
+          if (detalleEntries.length === 0) return null;
+          return (
+            <div style={{ marginBottom:16, borderRadius:8, border:`1px solid ${C.border}`, overflow:"hidden" }}>
+              {detalleEntries.map((e, i) => {
+                const canal = normCanal(e.canal);
+                const color = CANAL_COLORS[canal] || C.accent;
+                const adr = e.noches > 0 ? Math.round((e.precio_total||0) / e.noches) : null;
+                return (
+                  <div key={i} style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 14px", borderBottom: i < detalleEntries.length-1 ? `1px solid ${C.border}` : "none", background: i%2===0 ? C.bg : "transparent" }}>
+                    <div style={{ width:8, height:8, borderRadius:"50%", background:color, flexShrink:0 }}/>
+                    <span style={{ fontSize:12, color:C.textMid, flex:1 }}>{e.canal || canal}</span>
+                    <span style={{ fontSize:11, color:C.text }}>llegada {fmtDatePU(String(e.fecha_llegada||"").slice(0,10))}</span>
+                    <span style={{ fontSize:11, color:C.textMid }}>{e.noches || "—"}n</span>
+                    {adr != null && <span style={{ fontSize:11, fontWeight:700, color:C.text }}>€{adr}/n</span>}
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })()}
 
         {ultDiaTotal === 0 ? (
           <p style={{ color:C.textLight, fontSize:13, textAlign:"center", padding:"20px 0" }}>{t("no_reservas_ayer")}</p>
