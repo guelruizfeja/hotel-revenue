@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Contrato de Encargado del Tratamiento — FastRevenue</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Georgia', serif;
+    font-size: 11pt;
+    line-height: 1.65;
+    color: #111;
+    background: #fff;
+  }
+  .page {
+    max-width: 740px;
+    margin: 0 auto;
+    padding: 60px 60px 80px;
+  }
+
+  /* Cabecera */
+  .contract-header {
+    text-align: center;
+    border-bottom: 2px solid #0A2540;
+    padding-bottom: 28px;
+    margin-bottom: 36px;
+  }
+  .contract-header .logo-text {
+    font-family: 'Arial', sans-serif;
+    font-size: 22pt;
+    font-weight: 800;
+    letter-spacing: 2px;
+    color: #0A2540;
+    margin-bottom: 6px;
+  }
+  .contract-header h1 {
+    font-size: 13pt;
+    font-weight: normal;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #444;
+    margin-top: 10px;
+  }
+  .contract-header .subtitulo {
+    font-size: 10pt;
+    color: #666;
+    margin-top: 6px;
+    font-style: italic;
+  }
+  .contract-header .ref {
+    font-size: 9pt;
+    color: #888;
+    margin-top: 10px;
+  }
+
+  /* Secciones */
+  .section-title {
+    font-family: 'Arial', sans-serif;
+    font-size: 9.5pt;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: #0A2540;
+    border-left: 3px solid #0A2540;
+    padding-left: 10px;
+    margin-bottom: 14px;
+    margin-top: 28px;
+  }
+
+  p { margin-bottom: 10px; text-align: justify; }
+  ul { margin: 8px 0 10px 20px; }
+  ul li { margin-bottom: 6px; }
+
+  /* Partes */
+  .partes-box {
+    background: #f7f9fc;
+    border: 1px solid #d0dbe8;
+    border-radius: 6px;
+    padding: 18px 22px;
+    margin-bottom: 20px;
+  }
+  .partes-box p { margin-bottom: 8px; }
+  .partes-box strong { color: #0A2540; }
+
+  /* Tabla de datos tratados */
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0 14px;
+    font-size: 10pt;
+  }
+  .data-table th {
+    background: #0A2540;
+    color: #fff;
+    padding: 8px 12px;
+    text-align: left;
+    font-family: 'Arial', sans-serif;
+    font-size: 9pt;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+  }
+  .data-table td {
+    padding: 8px 12px;
+    border-bottom: 1px solid #e4e8ed;
+    vertical-align: top;
+  }
+  .data-table tr:nth-child(even) td { background: #f7f9fc; }
+
+  /* Cláusulas */
+  .clausula {
+    margin-bottom: 22px;
+    padding-bottom: 22px;
+    border-bottom: 1px solid #e8edf2;
+  }
+  .clausula:last-of-type { border-bottom: none; }
+  .clausula-num {
+    font-family: 'Arial', sans-serif;
+    font-size: 10pt;
+    font-weight: 700;
+    color: #0A2540;
+    margin-bottom: 8px;
+  }
+
+  /* Subprocesadores */
+  .subproc-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 10px 0;
+    font-size: 10pt;
+  }
+  .subproc-table th {
+    background: #0A2540;
+    color: #fff;
+    padding: 7px 12px;
+    text-align: left;
+    font-family: 'Arial', sans-serif;
+    font-size: 9pt;
+    font-weight: 600;
+  }
+  .subproc-table td {
+    padding: 7px 12px;
+    border-bottom: 1px solid #e4e8ed;
+    font-size: 10pt;
+  }
+  .subproc-table tr:nth-child(even) td { background: #f7f9fc; }
+
+  /* Firma */
+  .firma-section {
+    margin-top: 48px;
+    page-break-inside: avoid;
+  }
+  .firma-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+    margin-top: 20px;
+  }
+  .firma-box { border-top: 1px solid #0A2540; padding-top: 12px; }
+  .firma-box .firma-label {
+    font-family: 'Arial', sans-serif;
+    font-size: 9pt;
+    font-weight: 700;
+    color: #0A2540;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-bottom: 6px;
+  }
+  .firma-box .firma-linea {
+    height: 54px;
+    border-bottom: 1px solid #aaa;
+    margin-bottom: 8px;
+  }
+  .firma-box .firma-dato { font-size: 9pt; color: #555; margin-bottom: 4px; }
+
+  /* Footer */
+  .footer-doc {
+    margin-top: 48px;
+    padding-top: 14px;
+    border-top: 1px solid #ddd;
+    font-size: 8.5pt;
+    color: #aaa;
+    text-align: center;
+  }
+
+  /* Campos */
+  .field {
+    display: inline-block;
+    min-width: 110px;
+    border-bottom: 1px solid #888;
+    color: #0A2540;
+    font-style: italic;
+  }
+  .field-long {
+    display: inline-block;
+    min-width: 200px;
+    border-bottom: 1px solid #888;
+    color: #0A2540;
+    font-style: italic;
+  }
+
+  /* Nota legal */
+  .nota-legal {
+    background: #fff8e7;
+    border: 1px solid #e0c96a;
+    border-radius: 5px;
+    padding: 12px 16px;
+    font-size: 9.5pt;
+    color: #6b4f00;
+    margin: 16px 0;
+  }
+
+  @media print {
+    body { padding: 0; }
+    .page { padding: 40px 50px 60px; max-width: 100%; }
+    .clausula { page-break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- Cabecera -->
+  <div class="contract-header">
+    <div class="logo-text">FASTREVENUE</div>
+    <h1>Contrato de Encargado del Tratamiento</h1>
+    <div class="subtitulo">Acuerdo de Protección de Datos (DPA) — Art. 28 Reglamento (UE) 2016/679</div>
+    <div class="ref">Ref.: FR-DPA-<span class="field">____</span> &nbsp;·&nbsp; Fecha: <span class="field">_____ / _____ / _______</span></div>
+  </div>
+
+  <!-- Partes -->
+  <div class="section-title">Partes</div>
+  <div class="partes-box">
+    <p><strong>ENCARGADO DEL TRATAMIENTO — FastRevenue:</strong><br>
+    Miguel Ruiz Feja, con NIF <span class="field">___________</span>, domicilio en <span class="field-long">______________________________</span>, titular del servicio FastRevenue (fastrevenue.app). Correo: info@fastrevenue.app.</p>
+
+    <p style="margin-top:12px;"><strong>RESPONSABLE DEL TRATAMIENTO — El Hotel:</strong><br>
+    <span class="field-long">Nombre / Razón social: _________________________</span><br>
+    NIF/CIF: <span class="field">___________</span><br>
+    Representante legal: <span class="field-long">_________________________</span><br>
+    Domicilio: <span class="field-long">________________________________</span><br>
+    Email: <span class="field-long">_________________________</span></p>
+  </div>
+
+  <p>Ambas partes suscriben el presente Contrato de Encargado del Tratamiento (en adelante, <strong>«CET»</strong>) como anexo al Contrato de Prestación de Servicios FastRevenue (ref. <span class="field">FR-____</span>), de conformidad con el artículo 28 del Reglamento (UE) 2016/679 (RGPD) y la Ley Orgánica 3/2018 (LOPDGDD).</p>
+
+  <!-- Cláusulas -->
+
+  <div class="clausula">
+    <div class="clausula-num">PRIMERA — OBJETO Y ÁMBITO DEL TRATAMIENTO</div>
+    <p>FastRevenue, en su condición de encargado del tratamiento, tratará datos personales por cuenta del Hotel (responsable del tratamiento) con el único fin de prestar el servicio de plataforma SaaS de revenue management contratado.</p>
+
+    <p>Las características del tratamiento son las siguientes:</p>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Elemento</th>
+          <th>Detalle</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Finalidad</strong></td>
+          <td>Gestión y análisis de datos de revenue, ocupación, reservas y presupuesto del hotel</td>
+        </tr>
+        <tr>
+          <td><strong>Naturaleza</strong></td>
+          <td>Almacenamiento, visualización, agregación y análisis estadístico</td>
+        </tr>
+        <tr>
+          <td><strong>Categorías de datos</strong></td>
+          <td>Datos de reservas (fechas, importes, segmento, canal), KPIs operativos del hotel; en ningún caso datos especialmente protegidos</td>
+        </tr>
+        <tr>
+          <td><strong>Interesados</strong></td>
+          <td>Huéspedes y clientes del hotel en la medida en que sus datos de reserva sean introducidos en la plataforma por el Hotel</td>
+        </tr>
+        <tr>
+          <td><strong>Duración</strong></td>
+          <td>Mientras esté vigente el Contrato de Prestación de Servicios</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="clausula">
+    <div class="clausula-num">SEGUNDA — INSTRUCCIONES DEL RESPONSABLE</div>
+    <p>FastRevenue tratará los datos personales exclusivamente siguiendo las instrucciones documentadas del Hotel. El tratamiento queda limitado a las operaciones necesarias para la prestación del servicio descrito en la cláusula anterior.</p>
+    <p>Si FastRevenue considera que alguna instrucción infringe el RGPD u otra normativa aplicable, lo comunicará de inmediato al Hotel por escrito antes de proceder.</p>
+  </div>
+
+  <div class="clausula">
+    <div class="clausula-num">TERCERA — CONFIDENCIALIDAD</div>
+    <p>FastRevenue garantiza que las personas autorizadas para tratar los datos personales se han comprometido a respetar la confidencialidad o están sujetas a una obligación legal de confidencialidad.</p>
+    <p>Esta obligación de confidencialidad subsistirá incluso después de la finalización del presente contrato.</p>
+  </div>
+
+  <div class="clausula">
+    <div class="clausula-num">CUARTA — MEDIDAS DE SEGURIDAD</div>
+    <p>FastRevenue aplicará las medidas técnicas y organizativas apropiadas para garantizar un nivel de seguridad adecuado al riesgo, de conformidad con el artículo 32 del RGPD, que incluyen entre otras:</p>
+    <ul>
+      <li>Cifrado de las comunicaciones mediante TLS/HTTPS.</li>
+      <li>Control de acceso mediante autenticación con credenciales individuales.</li>
+      <li>Almacenamiento de datos en infraestructura con certificación de seguridad (Supabase / AWS).</li>
+      <li>Copias de seguridad periódicas de la base de datos.</li>
+      <li>Acceso a los datos restringido al personal estrictamente necesario.</li>
+    </ul>
+  </div>
+
+  <div class="clausula">
+    <div class="clausula-num">QUINTA — SUBENCARGADOS DEL TRATAMIENTO</div>
+    <p>El Hotel autoriza a FastRevenue a contratar los siguientes subencargados del tratamiento, necesarios para la prestación del servicio:</p>
+    <table class="subproc-table">
+      <thead>
+        <tr>
+          <th>Proveedor</th>
+          <th>Función</th>
+          <th>Ubicación</th>
+          <th>Garantías</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Supabase</strong></td>
+          <td>Base de datos y autenticación</td>
+          <td>UE (AWS Frankfurt)</td>
+          <td>RGPD — DPA disponible</td>
+        </tr>
+        <tr>
+          <td><strong>Vercel</strong></td>
+          <td>Alojamiento y despliegue de la aplicación</td>
+          <td>UE / EE.UU.</td>
+          <td>SCCs — DPA disponible</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>FastRevenue notificará al Hotel con antelación razonable cualquier cambio en los subencargados, otorgando al Hotel la posibilidad de oponerse fundadamente a dicho cambio.</p>
+    <p>FastRevenue impondrá a cada subencargado obligaciones de protección de datos equivalentes a las establecidas en el presente contrato.</p>
+  </div>
+
+  <div class="clausula">
+    <div class="clausula-num">SEXTA — ASISTENCIA AL RESPONSABLE</div>
+    <p>FastRevenue asistirá al Hotel, en la medida de lo posible y atendiendo a la naturaleza del tratamiento, para que pueda cumplir con sus obligaciones en materia de:</p>
+    <ul>
+      <li>Atención de solicitudes de ejercicio de derechos de los interesados (acceso, rectificación, supresión, portabilidad, limitación, oposición).</li>
+      <li>Notificación de violaciones de seguridad a la autoridad de control (AEPD) y a los interesados.</li>
+      <li>Realización de evaluaciones de impacto relativas a la protección de datos (EIPD), cuando proceda.</li>
+    </ul>
+  </div>
+
+  <div class="clausula">
+    <div class="clausula-num">SÉPTIMA — NOTIFICACIÓN DE BRECHAS DE SEGURIDAD</div>
+    <p>En caso de que FastRevenue tenga conocimiento de una violación de seguridad que afecte a datos personales del Hotel, lo notificará al Hotel <strong>sin dilación indebida y, en cualquier caso, en un plazo máximo de 72 horas</strong> desde que tenga constancia de ella, facilitando la información necesaria para que el Hotel pueda cumplir con su obligación de notificación a la AEPD.</p>
+  </div>
+
+  <div class="clausula">
+    <div class="clausula-num">OCTAVA — DESTINO DE LOS DATOS AL TÉRMINO DEL CONTRATO</div>
+    <p>A la finalización del Contrato de Prestación de Servicios, FastRevenue, a elección del Hotel:</p>
+    <ul>
+      <li><strong>Devolverá</strong> al Hotel todos los datos personales en formato exportable (CSV/Excel) dentro de los treinta (30) días siguientes a la solicitud; o</li>
+      <li><strong>Suprimirá</strong> de forma segura e irreversible todos los datos personales y sus copias existentes en los sistemas de FastRevenue.</li>
+    </ul>
+    <p>FastRevenue conservará los datos exclusivamente durante el plazo necesario para cumplir obligaciones legales que pudieran exigirlo.</p>
+  </div>
+
+  <div class="clausula">
+    <div class="clausula-num">NOVENA — TRANSFERENCIAS INTERNACIONALES</div>
+    <p>Los datos alojados en Supabase se almacenan en la región de la UE (AWS Frankfurt), por lo que no se producen transferencias internacionales en ese servicio. En el caso de Vercel, las transferencias a EE.UU. se amparan en las Cláusulas Contractuales Tipo (CCT) aprobadas por la Comisión Europea.</p>
+    <p>FastRevenue no realizará ninguna transferencia internacional de datos no contemplada en el presente contrato sin autorización previa y por escrito del Hotel.</p>
+  </div>
+
+  <div class="clausula">
+    <div class="clausula-num">DÉCIMA — OBLIGACIONES DEL RESPONSABLE (EL HOTEL)</div>
+    <p>El Hotel, en su condición de responsable del tratamiento, se compromete a:</p>
+    <ul>
+      <li>Introducir en la plataforma únicamente datos sobre los que tenga base jurídica legítima para tratar.</li>
+      <li>Informar a sus huéspedes y empleados del tratamiento de sus datos en la medida en que sus datos sean introducidos en FastRevenue.</li>
+      <li>Notificar a FastRevenue cualquier rectificación, limitación o supresión de datos que deba aplicarse.</li>
+      <li>Garantizar que las instrucciones impartidas a FastRevenue son conformes con la normativa aplicable.</li>
+    </ul>
+  </div>
+
+  <div class="clausula">
+    <div class="clausula-num">UNDÉCIMA — AUDITORÍA Y DEMOSTRACIÓN DE CUMPLIMIENTO</div>
+    <p>FastRevenue pondrá a disposición del Hotel toda la información necesaria para demostrar el cumplimiento de las obligaciones establecidas en el artículo 28 del RGPD y permitirá y contribuirá a la realización de auditorías o inspecciones llevadas a cabo por el Hotel o por un auditor autorizado por él, con un preaviso mínimo de treinta (30) días y sin interrumpir la prestación del servicio.</p>
+  </div>
+
+  <div class="clausula">
+    <div class="clausula-num">DUODÉCIMA — NORMATIVA APLICABLE Y JURISDICCIÓN</div>
+    <p>El presente contrato se rige por el Reglamento (UE) 2016/679 (RGPD), la Ley Orgánica 3/2018 (LOPDGDD) y la legislación española. Para la resolución de cualquier controversia, las partes se someten a los Juzgados y Tribunales indicados en el Contrato de Prestación de Servicios.</p>
+    <p>El Hotel podrá presentar reclamación ante la <strong>Agencia Española de Protección de Datos (AEPD)</strong> — www.aepd.es — si considera que el tratamiento de sus datos no se ajusta a la normativa.</p>
+  </div>
+
+  <div class="nota-legal">
+    <strong>Nota:</strong> Este documento es un anexo al Contrato de Prestación de Servicios FastRevenue (ref. indicada en el encabezado) y forma parte inseparable del mismo. En caso de contradicción entre ambos documentos en materia de protección de datos, prevalecerá lo dispuesto en el presente CET.
+  </div>
+
+  <!-- Firmas -->
+  <div class="firma-section">
+    <div class="section-title">Conformidad y firma</div>
+    <p>En prueba de conformidad con lo anterior, ambas partes suscriben el presente Contrato de Encargado del Tratamiento en el lugar y fecha indicados en el encabezado.</p>
+    <div class="firma-grid">
+      <div class="firma-box">
+        <div class="firma-label">FastRevenue (Encargado del Tratamiento)</div>
+        <div class="firma-linea"></div>
+        <div class="firma-dato">Miguel Ruiz Feja</div>
+        <div class="firma-dato">NIF: <span class="field">___________</span></div>
+        <div class="firma-dato">info@fastrevenue.app</div>
+      </div>
+      <div class="firma-box">
+        <div class="firma-label">El Hotel (Responsable del Tratamiento)</div>
+        <div class="firma-linea"></div>
+        <div class="firma-dato">Nombre: <span class="field-long">___________________</span></div>
+        <div class="firma-dato">Cargo: <span class="field-long">____________________</span></div>
+        <div class="firma-dato">En representación de: <span class="field-long">___________</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer-doc">
+    FastRevenue · info@fastrevenue.app · fastrevenue.app &nbsp;·&nbsp; Contrato de Encargado del Tratamiento — Art. 28 RGPD
+  </div>
+
+</div>
+</body>
+</html>
