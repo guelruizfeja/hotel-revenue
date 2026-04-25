@@ -176,10 +176,6 @@
   }
   .mockup-text-inner {
     opacity: 0; transform: translateX(60px);
-    transition: opacity 0.75s ease, transform 0.75s ease;
-  }
-  .mockup-text-inner.mk-visible {
-    opacity: 1; transform: translateX(0);
   }
   .mockup-p {
     font-size: 19px; color: rgba(255,255,255,0.88);
@@ -193,7 +189,6 @@
   .mockup-shot {
     border-radius: 10px; overflow: hidden; line-height: 0;
     opacity: 0; transform: translateX(90px);
-    transition: opacity 0.55s ease, transform 0.55s ease;
     box-shadow: 0 16px 40px rgba(0,0,0,0.55);
     border: 1px solid rgba(255,255,255,0.08);
     position: relative;
@@ -722,50 +717,44 @@ document.querySelectorAll('.module-tab').forEach(tab => {
 (function () {
   const textEl  = document.querySelector('.mockup-text-inner');
   const shotsEl = document.querySelector('.mockup-shots');
-  if (!textEl || !shotsEl) return;
+  const section = document.getElementById('producto');
+  if (!textEl || !shotsEl || !section) return;
 
   const shots = Array.from(shotsEl.querySelectorAll('.mockup-shot'));
-  let shown = false;
+  const N = shots.length;
 
-  function showShots() {
-    if (shown) return;
-    shown = true;
-    textEl.classList.add('mk-visible');
-    shotsEl.classList.add('mk-visible');
+  function update() {
+    const vh   = window.innerHeight;
+    const rect = section.getBoundingClientRect();
+    const centerY = rect.top + rect.height / 2;
+
+    // p=0 cuando el centro del bloque está en el borde del viewport
+    // p=1 cuando el centro del bloque coincide con el centro del viewport
+    const raw = 1 - Math.abs(centerY - vh / 2) / (vh * 0.5);
+    const p   = Math.max(0, Math.min(1, raw));
+
+    // Texto — entra/sale por la derecha
+    textEl.style.opacity   = p;
+    textEl.style.transform = `translateX(${(1 - p) * 60}px)`;
+
+    // Capturas — escalonadas: cada imagen va un poco por detrás de la anterior
     shots.forEach((s, i) => {
-      s.style.transitionDelay = (0.05 + i * 0.1) + 's';
-      s.style.opacity = '1';
-      s.style.transform = 'translateX(0)';
+      const delay = (i / N) * 0.3;   // 0 → 0.225 de retraso según el índice
+      const sp    = Math.max(0, Math.min(1, (p - delay) / (1 - delay)));
+      s.style.opacity   = sp;
+      s.style.transform = `translateX(${(1 - sp) * 90}px)`;
     });
+
+    // CTA y hover del candado solo cuando las imágenes están colocadas
+    if (p >= 0.92) {
+      shotsEl.classList.add('mk-visible');
+    } else {
+      shotsEl.classList.remove('mk-visible');
+    }
   }
 
-  function hideShots() {
-    if (!shown) return;
-    shown = false;
-    textEl.classList.remove('mk-visible');
-    shotsEl.classList.remove('mk-visible');
-    // Salida en orden inverso
-    shots.forEach((s, i) => {
-      s.style.transitionDelay = (0.05 + (shots.length - 1 - i) * 0.1) + 's';
-      s.style.opacity = '0';
-      s.style.transform = 'translateX(90px)';
-    });
-  }
-
-  const obs = new IntersectionObserver((entries) => {
-    entries.forEach(e => {
-      if (e.isIntersecting) {
-        showShots();
-      } else if (e.boundingClientRect.top > 0) {
-        // Elemento volvió a estar por debajo del viewport (scroll hacia arriba)
-        hideShots();
-      }
-    });
-  }, { threshold: 0.15 });
-
-  requestAnimationFrame(() => requestAnimationFrame(() => {
-    obs.observe(shotsEl);
-  }));
+  window.addEventListener('scroll', update, { passive: true });
+  update(); // estado inicial correcto sin esperar al primer scroll
 })();
 </script>
 
