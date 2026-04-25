@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Contrato de Prestación de Servicios — FastRevenue</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Georgia', serif;
+    font-size: 11pt;
+    line-height: 1.65;
+    color: #111;
+    background: #fff;
+    padding: 0;
+  }
+  .page {
+    max-width: 740px;
+    margin: 0 auto;
+    padding: 60px 60px 80px;
+  }
+
+  /* Cabecera */
+  .contract-header {
+    text-align: center;
+    border-bottom: 2px solid #0A2540;
+    padding-bottom: 28px;
+    margin-bottom: 36px;
+  }
+  .contract-header .logo-text {
+    font-family: 'Arial', sans-serif;
+    font-size: 22pt;
+    font-weight: 800;
+    letter-spacing: 2px;
+    color: #0A2540;
+    margin-bottom: 6px;
+  }
+  .contract-header h1 {
+    font-size: 13pt;
+    font-weight: normal;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #444;
+    margin-top: 10px;
+  }
+  .contract-header .ref {
+    font-size: 9pt;
+    color: #888;
+    margin-top: 8px;
+  }
+
+  /* Secciones */
+  .section {
+    margin-bottom: 28px;
+  }
+  .section-title {
+    font-family: 'Arial', sans-serif;
+    font-size: 9.5pt;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: #0A2540;
+    border-left: 3px solid #0A2540;
+    padding-left: 10px;
+    margin-bottom: 12px;
+  }
+  p {
+    margin-bottom: 10px;
+    text-align: justify;
+  }
+  ul {
+    margin: 8px 0 10px 20px;
+  }
+  ul li {
+    margin-bottom: 6px;
+  }
+
+  /* Partes */
+  .partes-box {
+    background: #f7f9fc;
+    border: 1px solid #d0dbe8;
+    border-radius: 6px;
+    padding: 18px 22px;
+    margin-bottom: 24px;
+  }
+  .partes-box p { margin-bottom: 8px; }
+  .partes-box strong { color: #0A2540; }
+
+  /* Cláusulas */
+  .clausula {
+    margin-bottom: 22px;
+    padding-bottom: 22px;
+    border-bottom: 1px solid #e8edf2;
+  }
+  .clausula:last-of-type { border-bottom: none; }
+  .clausula-num {
+    font-family: 'Arial', sans-serif;
+    font-size: 10pt;
+    font-weight: 700;
+    color: #0A2540;
+    margin-bottom: 8px;
+  }
+
+  /* Cuadro condiciones económicas */
+  .precio-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0 14px;
+    font-size: 10.5pt;
+  }
+  .precio-table th {
+    background: #0A2540;
+    color: #fff;
+    padding: 8px 14px;
+    text-align: left;
+    font-family: 'Arial', sans-serif;
+    font-size: 9pt;
+    font-weight: 600;
+    letter-spacing: 0.4px;
+  }
+  .precio-table td {
+    padding: 9px 14px;
+    border-bottom: 1px solid #e4e8ed;
+  }
+  .precio-table tr:nth-child(even) td { background: #f7f9fc; }
+  .precio-table .nota {
+    font-size: 9pt;
+    color: #666;
+    font-style: italic;
+  }
+
+  /* Firma */
+  .firma-section {
+    margin-top: 48px;
+    page-break-inside: avoid;
+  }
+  .firma-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+    margin-top: 20px;
+  }
+  .firma-box {
+    border-top: 1px solid #0A2540;
+    padding-top: 12px;
+  }
+  .firma-box .firma-label {
+    font-family: 'Arial', sans-serif;
+    font-size: 9pt;
+    font-weight: 700;
+    color: #0A2540;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-bottom: 6px;
+  }
+  .firma-box .firma-linea {
+    height: 54px;
+    border-bottom: 1px solid #aaa;
+    margin-bottom: 8px;
+  }
+  .firma-box .firma-dato {
+    font-size: 9pt;
+    color: #555;
+    margin-bottom: 4px;
+  }
+
+  /* Footer de página */
+  .footer-doc {
+    margin-top: 48px;
+    padding-top: 14px;
+    border-top: 1px solid #ddd;
+    font-size: 8.5pt;
+    color: #aaa;
+    text-align: center;
+  }
+
+  /* Campos rellenables */
+  .field {
+    display: inline-block;
+    min-width: 120px;
+    border-bottom: 1px solid #888;
+    color: #0A2540;
+    font-style: italic;
+  }
+  .field-long {
+    display: inline-block;
+    min-width: 220px;
+    border-bottom: 1px solid #888;
+    color: #0A2540;
+    font-style: italic;
+  }
+
+  @media print {
+    body { padding: 0; }
+    .page { padding: 40px 50px 60px; max-width: 100%; }
+    .clausula { page-break-inside: avoid; }
+    .firma-section { page-break-before: auto; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- Cabecera -->
+  <div class="contract-header">
+    <div class="logo-text">FASTREVENUE</div>
+    <h1>Contrato de Prestación de Servicios</h1>
+    <div class="ref">Ref.: FR-<span class="field">____</span> &nbsp;·&nbsp; Fecha: <span class="field">_____ / _____ / _______</span></div>
+  </div>
+
+  <!-- Partes -->
+  <div class="section">
+    <div class="section-title">Partes contratantes</div>
+    <div class="partes-box">
+      <p><strong>PRESTADOR DEL SERVICIO (en adelante, FastRevenue):</strong><br>
+      Miguel Ángel Ruiz Feja, con NIF <span class="field">___________</span>, domicilio en <span class="field-long">_________________________</span>, titular del servicio FastRevenue, con correo electrónico de contacto info@fastrevenue.app.</p>
+
+      <p style="margin-top:12px;"><strong>CLIENTE (en adelante, el Hotel):</strong><br>
+      <span class="field-long">Nombre / Razón social: ________________________</span><br>
+      NIF/CIF: <span class="field">___________</span><br>
+      Representante legal: <span class="field-long">_________________________</span><br>
+      Domicilio: <span class="field-long">__________________________________</span><br>
+      Email de contacto: <span class="field-long">_________________________</span></p>
+    </div>
+    <p>Ambas partes se reconocen mutuamente capacidad legal suficiente para suscribir el presente contrato y, de mutuo acuerdo, establecen las siguientes cláusulas:</p>
+  </div>
+
+  <!-- Cláusulas -->
+
+  <div class="clausula">
+    <div class="clausula-num">CLÁUSULA 1 — OBJETO DEL CONTRATO</div>
+    <p>FastRevenue se compromete a prestar al Hotel el acceso y uso de la plataforma SaaS de revenue management <strong>FastRevenue</strong>, disponible en <em>fastrevenue.app</em>, que comprende los módulos de Dashboard, Reservas, Presupuesto y Grupos.</p>
+    <p>El servicio se presta a través de internet en modalidad de suscripción mensual, con acceso mediante credenciales personales e intransferibles.</p>
+  </div>
+
+  <div class="clausula">
+    <div class="clausula-num">CLÁUSULA 2 — PERÍODO DE PRUEBA</div>
+    <p>El Hotel dispondrá de un período de prueba gratuito de <strong>un (1) mes</strong> desde la fecha de activación del acceso. Durante este período podrá evaluar la plataforma sin coste ni compromiso alguno.</p>
+    <p>Transcurrido el período de prueba, el Hotel podrá:</p>
+    <ul>
+      <li>Comunicar su decisión de no continuar, sin penalización ni cargo de ningún tipo.</li>
+      <li>Confirmar la contratación del servicio recurrente, momento en el cual se activará la facturación mensual conforme a lo indicado en la Cláusula 3.</li>
+    </ul>
+  </div>
+
+  <div class="clausula">
+    <div class="clausula-num">CLÁUSULA 3 — CONDICIONES ECONÓMICAS</div>
+    <p>Las condiciones económicas aplicables al presente contrato son las siguientes:</p>
+
+    <table class="precio-table">
+      <thead>
+        <tr>
+          <th>Concepto</th>
+          <th>Importe</th>
+          <th>Periodicidad</th>
+          <th>Condición</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Suscripción FastRevenue<br><span class="nota">Precio fundador — vitalicio</span></td>
+          <td><strong>59 € + IVA</strong></td>
+          <td>Mensual</td>
+          <td>A partir del mes 2</td>
+        </tr>
+        <tr>
+          <td>Instalación y carga histórica<br><span class="nota">Datos del último año natural</span></td>
+          <td><strong>130 € + IVA</strong></td>
+          <td>Único</td>
+          <td>Solo si se contrata la suscripción recurrente</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p><strong>Precio fundador vitalicio:</strong> El precio de 59 €/mes + IVA queda garantizado de forma vitalicia para el Hotel como cliente fundador, siendo únicamente revisable a los cinco (5) años desde la firma de este contrato, previo aviso con tres (3) meses de antelación y acuerdo entre las partes.</p>
+
+    <p><strong>Instalación y carga histórica (opcional):</strong> Si el Hotel solicita el servicio de instalación con carga de datos históricos del último año, el coste es de 130 € + IVA, abonados en factura única. Este importe <u>únicamente se facturará si el Hotel confirma la contratación del servicio recurrente</u> una vez finalizado el período de prueba. En caso de no continuidad, este servicio no generará coste alguno.</p>
+
+    <p>El pago de la suscripción mensual se realizará mediante <span class="field">___________________________</span> (tarjeta / transferencia / domiciliación), dentro de los primeros cinco (5) días de cada mes.</p>
+  </div>
+
+  <div class="clausula">
+    <div class="clausula-num">CLÁUSULA 4 — DURACIÓN Y RENOVACIÓN</div>
+    <p>El contrato tendrá vigencia indefinida, renovándose automáticamente de mes en mes tras la confirmación de la suscripción recurrente al término del período de prueba.</p>
+    <p>Cualquiera de las partes podrá resolver el contrato notificando su voluntad con un mínimo de <strong>treinta (30) días naturales</strong> de antelación mediante comunicación escrita al correo electrónico de la otra parte. Durante el período de preaviso, el servicio permanecerá activo y se facturará el mes completo en curso.</p>
+  </div>
+
+  <div class="clausula">
+    <div class="clausula-num">CLÁUSULA 5 — OBLIGACIONES DE FASTREVENUE</div>
+    <ul>
+      <li>Garantizar la disponibilidad de la plataforma con un objetivo de uptime del 99 % mensual, excluidos mantenimientos programados comunicados con antelación.</li>
+      <li>Mantener el precio pactado en la Cláusula 3 en las condiciones descritas.</li>
+      <li>Proporcionar soporte técnico básico por correo electrónico en días laborables.</li>
+      <li>Notificar al Hotel con suficiente antelación cualquier cambio relevante en el servicio.</li>
+    </ul>
+  </div>
+
+  <div class="clausula">
+    <div class="clausula-num">CLÁUSULA 6 — OBLIGACIONES DEL HOTEL</div>
+    <ul>
+      <li>Abonar puntualmente las facturas correspondientes al servicio contratado.</li>
+      <li>Utilizar la plataforma conforme a su finalidad y no ceder las credenciales de acceso a terceros no autorizados.</li>
+      <li>Facilitar la información y datos necesarios para la prestación del servicio, garantizando que cuenta con las autorizaciones pertinentes sobre dichos datos.</li>
+      <li>Comunicar a FastRevenue cualquier incidencia o error detectado en el menor tiempo posible.</li>
+    </ul>
+  </div>
+
+  <div class="clausula">
+    <div class="clausula-num">CLÁUSULA 7 — PROTECCIÓN DE DATOS</div>
+    <p>De conformidad con el Reglamento (UE) 2016/679 (RGPD) y la Ley Orgánica 3/2018 (LOPDGDD), FastRevenue actúa como <strong>encargado del tratamiento</strong> de los datos alojados en la plataforma por el Hotel, quien ostenta la condición de <strong>responsable del tratamiento</strong>.</p>
+    <p>FastRevenue se compromete a:</p>
+    <ul>
+      <li>Tratar los datos únicamente para la prestación del servicio contratado.</li>
+      <li>No comunicar los datos a terceros salvo obligación legal.</li>
+      <li>Aplicar las medidas técnicas y organizativas adecuadas para garantizar la seguridad de los datos.</li>
+      <li>Suprimir o devolver los datos al Hotel a la finalización del contrato, conforme a su instrucción.</li>
+    </ul>
+    <p>El Hotel garantiza que los datos aportados a la plataforma cumplen con la normativa de protección de datos aplicable.</p>
+  </div>
+
+  <div class="clausula">
+    <div class="clausula-num">CLÁUSULA 8 — PROPIEDAD INTELECTUAL</div>
+    <p>La plataforma FastRevenue, su código, diseño, marca y contenidos son propiedad exclusiva de Miguel Ángel Ruiz Feja. El presente contrato no otorga al Hotel ningún derecho de propiedad sobre la plataforma, sino únicamente una licencia de uso personal, no exclusiva e intransferible durante la vigencia del contrato.</p>
+    <p>Los datos introducidos por el Hotel en la plataforma son y permanecen de su exclusiva propiedad.</p>
+  </div>
+
+  <div class="clausula">
+    <div class="clausula-num">CLÁUSULA 9 — LIMITACIÓN DE RESPONSABILIDAD</div>
+    <p>FastRevenue no será responsable de los perjuicios derivados de decisiones comerciales o de pricing adoptadas por el Hotel en base a la información mostrada en la plataforma. La plataforma es una herramienta de apoyo a la toma de decisiones y no sustituye el criterio profesional del equipo de dirección del Hotel.</p>
+    <p>La responsabilidad máxima de FastRevenue frente al Hotel por cualquier causa quedará limitada al importe abonado por el Hotel en los últimos tres (3) meses de servicio.</p>
+  </div>
+
+  <div class="clausula">
+    <div class="clausula-num">CLÁUSULA 10 — LEY APLICABLE Y JURISDICCIÓN</div>
+    <p>El presente contrato se rige por la legislación española. Para la resolución de cualquier controversia derivada de su interpretación o cumplimiento, las partes se someten, con renuncia expresa a cualquier otro fuero, a los Juzgados y Tribunales de <span class="field">___________</span>.</p>
+  </div>
+
+  <!-- Firma -->
+  <div class="firma-section">
+    <div class="section-title">Conformidad y firma</div>
+    <p>En prueba de conformidad con todo lo anterior, ambas partes suscriben el presente contrato en el lugar y fecha indicados en el encabezado, en dos ejemplares de igual valor.</p>
+
+    <div class="firma-grid">
+      <div class="firma-box">
+        <div class="firma-label">Por FastRevenue (Prestador)</div>
+        <div class="firma-linea"></div>
+        <div class="firma-dato">Miguel Ángel Ruiz Feja</div>
+        <div class="firma-dato">NIF: <span class="field">___________</span></div>
+        <div class="firma-dato">info@fastrevenue.app</div>
+      </div>
+      <div class="firma-box">
+        <div class="firma-label">Por el Hotel (Cliente)</div>
+        <div class="firma-linea"></div>
+        <div class="firma-dato">Nombre: <span class="field-long">___________________</span></div>
+        <div class="firma-dato">Cargo: <span class="field-long">____________________</span></div>
+        <div class="firma-dato">En representación de: <span class="field-long">______________</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer-doc">
+    FastRevenue · info@fastrevenue.app · fastrevenue.app &nbsp;·&nbsp; Documento generado para uso contractual privado.
+  </div>
+
+</div>
+</body>
+</html>
