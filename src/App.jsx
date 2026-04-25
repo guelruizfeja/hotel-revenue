@@ -6290,9 +6290,10 @@ function GruposView({ datos, onRecargar, onVolverHeatmap }) {
   return (
     <div style={{ display:"flex", flexDirection:"column", gap:20 }}>
 
-      {/* ── Sub-navegación + botones ── */}
-      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", gap:8, flexWrap:"wrap" }}>
-        <div style={{ display:"flex", gap:6, alignItems:"center" }}>
+      {/* ── Sub-navegación ── */}
+      <div style={{ display:"flex", flexDirection:"column", margin:"0 -20px", borderBottom:`1px solid ${C.border}` }}>
+        {/* Fila 1: pestañas */}
+        <div style={{ display:"flex", gap:6, alignItems:"center", padding:"10px 20px", flexWrap:"wrap" }}>
           {fromHeatmap && (
             <button onClick={()=>{ setFromHeatmap(false); onVolverHeatmap&&onVolverHeatmap(); }}
               style={{ padding:"7px 14px", fontSize:13, fontWeight:600, cursor:"pointer", border:`1.5px solid ${C.border}`, borderRadius:8, background:C.bg, color:C.textMid, fontFamily:"'Plus Jakarta Sans',sans-serif", display:"flex", alignItems:"center", gap:5, marginRight:4 }}>
@@ -6316,7 +6317,8 @@ function GruposView({ datos, onRecargar, onVolverHeatmap }) {
             );
           })}
         </div>
-        <div style={{ display:"flex", gap:8, alignItems:"center" }}>
+        {/* Fila 2: botones de acción */}
+        <div style={{ display:"flex", gap:8, alignItems:"center", justifyContent:"flex-end", padding:"8px 20px", background:"#F2F3F5", borderTop:`1px solid ${C.border}` }}>
           <button onClick={seedDemoData} disabled={seedando || borrandoDemo}
             style={{ background:"#E0F0FF", color:"#2B7EC1", border:"1.5px dashed #2B7EC1", borderRadius:8, padding:"7px 14px", fontSize:12, fontWeight:600, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", opacity:(seedando||borrandoDemo)?0.6:1 }}>
             {seedando ? "Cargando..." : "Datos demo"}
