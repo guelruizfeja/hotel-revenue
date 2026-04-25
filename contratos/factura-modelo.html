@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Factura — FastRevenue</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Arial', sans-serif;
+    font-size: 10.5pt;
+    line-height: 1.55;
+    color: #111;
+    background: #fff;
+  }
+  .page {
+    max-width: 740px;
+    margin: 0 auto;
+    padding: 52px 56px 64px;
+  }
+
+  /* Cabecera */
+  .header {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: flex-start;
+    gap: 32px;
+    margin-bottom: 40px;
+    padding-bottom: 28px;
+    border-bottom: 2px solid #0A2540;
+  }
+  .header-logo .logo-text {
+    font-size: 22pt;
+    font-weight: 800;
+    letter-spacing: 2px;
+    color: #0A2540;
+    line-height: 1;
+    margin-bottom: 8px;
+  }
+  .header-logo .emisor-dato {
+    font-size: 9.5pt;
+    color: #555;
+    line-height: 1.6;
+  }
+  .header-factura { text-align: right; }
+  .header-factura .factura-label {
+    font-size: 9pt;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: #888;
+    margin-bottom: 4px;
+  }
+  .header-factura .factura-num {
+    font-size: 20pt;
+    font-weight: 800;
+    color: #0A2540;
+    line-height: 1;
+    margin-bottom: 10px;
+  }
+  .header-factura .factura-fecha {
+    font-size: 9.5pt;
+    color: #555;
+    line-height: 1.7;
+  }
+
+  /* Datos cliente */
+  .partes {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-bottom: 36px;
+  }
+  .parte-box {
+    background: #f7f9fc;
+    border: 1px solid #d8e4f0;
+    border-radius: 6px;
+    padding: 14px 16px;
+  }
+  .parte-box .parte-label {
+    font-size: 8.5pt;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: #0A2540;
+    margin-bottom: 8px;
+  }
+  .parte-box .parte-dato {
+    font-size: 10pt;
+    color: #333;
+    line-height: 1.65;
+  }
+  .parte-box .parte-dato strong { color: #0A2540; }
+
+  /* Tabla de conceptos */
+  .conceptos-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 0;
+  }
+  .conceptos-table thead tr {
+    background: #0A2540;
+    color: #fff;
+  }
+  .conceptos-table thead th {
+    padding: 10px 12px;
+    font-size: 9pt;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    text-align: left;
+  }
+  .conceptos-table thead th.right { text-align: right; }
+  .conceptos-table tbody td {
+    padding: 11px 12px;
+    border-bottom: 1px solid #e8edf2;
+    font-size: 10.5pt;
+    vertical-align: top;
+  }
+  .conceptos-table tbody td.right { text-align: right; }
+  .conceptos-table tbody tr:nth-child(even) td { background: #f9fafb; }
+  .concepto-desc { font-weight: 600; color: #0A2540; }
+  .concepto-sub { font-size: 9.5pt; color: #777; margin-top: 3px; }
+
+  /* Totales */
+  .totales-wrap {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 0;
+    border-top: 2px solid #0A2540;
+  }
+  .totales {
+    width: 260px;
+  }
+  .total-fila {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 12px;
+    border-bottom: 1px solid #e8edf2;
+    font-size: 10.5pt;
+  }
+  .total-fila:last-child { border-bottom: none; }
+  .total-fila.destacado {
+    background: #0A2540;
+    color: #fff;
+    font-weight: 700;
+    font-size: 12pt;
+    border-radius: 0 0 6px 6px;
+    padding: 11px 12px;
+  }
+  .total-fila .label { color: #555; }
+  .total-fila.destacado .label { color: rgba(255,255,255,0.75); }
+
+  /* Notas y condiciones */
+  .notas {
+    margin-top: 36px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+  .nota-box { font-size: 9.5pt; color: #555; }
+  .nota-box .nota-titulo {
+    font-size: 8.5pt;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #0A2540;
+    margin-bottom: 6px;
+  }
+  .nota-box p { margin-bottom: 4px; text-align: left; }
+
+  /* Estado */
+  .estado {
+    display: inline-block;
+    padding: 3px 12px;
+    border-radius: 20px;
+    font-size: 9pt;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .estado.pendiente { background: #FEF3C7; color: #92400E; }
+  .estado.pagada { background: #D1FAE5; color: #065F46; }
+
+  /* Footer */
+  .footer-doc {
+    margin-top: 48px;
+    padding-top: 14px;
+    border-top: 1px solid #ddd;
+    font-size: 8.5pt;
+    color: #aaa;
+    text-align: center;
+  }
+
+  /* Campos rellenables */
+  .field {
+    display: inline-block;
+    min-width: 100px;
+    border-bottom: 1px dotted #888;
+    color: #0A2540;
+  }
+  .field-long {
+    display: inline-block;
+    min-width: 180px;
+    border-bottom: 1px dotted #888;
+    color: #0A2540;
+  }
+
+  @media print {
+    .page { padding: 36px 44px 52px; max-width: 100%; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- Cabecera -->
+  <div class="header">
+    <div class="header-logo">
+      <div class="logo-text">FASTREVENUE</div>
+      <div class="emisor-dato">
+        Miguel Ruiz Feja<br>
+        NIF: <span class="field">___________</span><br>
+        <span class="field-long">Dirección fiscal _______________</span><br>
+        info@fastrevenue.app · fastrevenue.app
+      </div>
+    </div>
+    <div class="header-factura">
+      <div class="factura-label">Factura</div>
+      <div class="factura-num">FR-<span class="field" style="min-width:60px;">____</span></div>
+      <div class="factura-fecha">
+        <span class="estado pendiente">Pendiente</span><br>
+        Fecha de emisión: <strong><span class="field">__ / __ / ____</span></strong><br>
+        Fecha de vencimiento: <strong><span class="field">__ / __ / ____</span></strong>
+      </div>
+    </div>
+  </div>
+
+  <!-- Emisor / Cliente -->
+  <div class="partes">
+    <div class="parte-box">
+      <div class="parte-label">Facturado por</div>
+      <div class="parte-dato">
+        <strong>FastRevenue</strong><br>
+        Miguel Ruiz Feja<br>
+        NIF: <span class="field">___________</span><br>
+        <span class="field-long">Dirección fiscal</span><br>
+        info@fastrevenue.app
+      </div>
+    </div>
+    <div class="parte-box">
+      <div class="parte-label">Facturado a</div>
+      <div class="parte-dato">
+        <strong><span class="field-long">Nombre / Razón social</span></strong><br>
+        NIF/CIF: <span class="field">___________</span><br>
+        <span class="field-long">Dirección fiscal</span><br>
+        <span class="field-long">CP, Ciudad</span><br>
+        <span class="field-long">Email</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Conceptos -->
+  <table class="conceptos-table">
+    <thead>
+      <tr>
+        <th style="width:50%">Concepto</th>
+        <th style="width:12%" class="right">Cant.</th>
+        <th style="width:18%" class="right">Precio unit.</th>
+        <th style="width:20%" class="right">Importe</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- Línea 1: suscripción mensual -->
+      <tr>
+        <td>
+          <div class="concepto-desc">Suscripción FastRevenue</div>
+          <div class="concepto-sub">Período: <span class="field">_______________ 2026</span> — Precio fundador</div>
+        </td>
+        <td class="right">1</td>
+        <td class="right">59,00 €</td>
+        <td class="right">59,00 €</td>
+      </tr>
+      <!-- Línea 2: instalación (opcional, comentar si no aplica) -->
+      <tr>
+        <td>
+          <div class="concepto-desc">Instalación y carga histórica de datos</div>
+          <div class="concepto-sub">Servicio único — datos del último año proporcionados por el hotel</div>
+        </td>
+        <td class="right">1</td>
+        <td class="right">130,00 €</td>
+        <td class="right">130,00 €</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Totales -->
+  <div class="totales-wrap">
+    <div class="totales">
+      <div class="total-fila">
+        <span class="label">Base imponible</span>
+        <span><span class="field">189,00 €</span></span>
+      </div>
+      <div class="total-fila">
+        <span class="label">IVA (21 %)</span>
+        <span><span class="field">39,69 €</span></span>
+      </div>
+      <div class="total-fila">
+        <span class="label">IRPF (−15 %)*</span>
+        <span>−<span class="field">28,35 €</span></span>
+      </div>
+      <div class="total-fila destacado">
+        <span class="label">Total a pagar</span>
+        <span><span class="field">200,34 €</span></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notas -->
+  <div class="notas">
+    <div class="nota-box">
+      <div class="nota-titulo">Datos de pago</div>
+      <p>Titular: Miguel Ruiz Feja</p>
+      <p>IBAN: <span class="field-long">ES__ ____ ____ ____</span></p>
+      <p>Concepto: FR-<span class="field" style="min-width:40px;">____</span></p>
+    </div>
+    <div class="nota-box">
+      <div class="nota-titulo">Notas</div>
+      <p>* Retención IRPF 15 % aplicable si el pagador es empresa o profesional. Si el hotel es persona física sin actividad empresarial, eliminar esta línea.</p>
+      <p style="margin-top:6px;">Eliminar la línea de instalación si no aplica en esta factura.</p>
+    </div>
+  </div>
+
+  <div class="footer-doc">
+    FastRevenue · Miguel Ruiz Feja · info@fastrevenue.app · fastrevenue.app
+  </div>
+
+</div>
+</body>
+</html>
