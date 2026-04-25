@@ -593,6 +593,108 @@
     .footer-links { flex-wrap: wrap; gap: 12px; }
   }
 
+  /* ── LAUNCH POPUP ── */
+  .launch-backdrop {
+    position: fixed; inset: 0; z-index: 9000;
+    background: rgba(5,12,30,0.72);
+    backdrop-filter: blur(4px);
+    display: flex; align-items: center; justify-content: center;
+    padding: 24px;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.35s ease;
+  }
+  .launch-backdrop.open {
+    opacity: 1; pointer-events: auto;
+  }
+  .launch-modal {
+    position: relative;
+    background: #0A1E36;
+    border: 1px solid rgba(201,168,76,0.35);
+    border-radius: 20px;
+    padding: 48px 44px 40px;
+    max-width: 480px; width: 100%;
+    box-shadow: 0 40px 80px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.06);
+    transform: translateY(20px);
+    transition: transform 0.35s ease;
+    text-align: center;
+  }
+  .launch-backdrop.open .launch-modal {
+    transform: translateY(0);
+  }
+  .launch-close {
+    position: absolute; top: 16px; right: 16px;
+    background: rgba(255,255,255,0.08); border: none; cursor: pointer;
+    width: 32px; height: 32px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    color: rgba(255,255,255,0.5); font-size: 16px; line-height: 1;
+    transition: background 0.2s, color 0.2s;
+  }
+  .launch-close:hover { background: rgba(255,255,255,0.16); color: white; }
+  .launch-badge {
+    display: inline-flex; align-items: center; gap: 7px;
+    background: rgba(201,168,76,0.12);
+    border: 1px solid rgba(201,168,76,0.35);
+    color: #C9A84C; font-size: 10px; font-weight: 700;
+    letter-spacing: 2.5px; text-transform: uppercase;
+    padding: 5px 14px; border-radius: 20px; margin-bottom: 24px;
+  }
+  .launch-badge::before {
+    content: ''; width: 6px; height: 6px; border-radius: 50%;
+    background: #C9A84C;
+    box-shadow: 0 0 6px #C9A84C;
+    flex-shrink: 0;
+  }
+  .launch-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(28px, 4vw, 38px); font-weight: 700;
+    color: #ffffff; line-height: 1.1; letter-spacing: -0.5px;
+    margin-bottom: 16px;
+  }
+  .launch-title em { color: #C9A84C; font-style: italic; }
+  .launch-desc {
+    font-size: 14px; color: rgba(255,255,255,0.72);
+    line-height: 1.65; margin-bottom: 28px;
+  }
+  .launch-spots {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    margin-bottom: 32px;
+  }
+  .launch-spot {
+    width: 34px; height: 8px; border-radius: 4px;
+    background: rgba(201,168,76,0.25);
+    border: 1px solid rgba(201,168,76,0.3);
+    transition: background 0.2s;
+  }
+  .launch-spot.taken { background: #C9A84C; border-color: #C9A84C; }
+  .launch-spots-label {
+    font-size: 11px; color: rgba(255,255,255,0.45);
+    letter-spacing: 0.3px; text-align: center; margin-bottom: 28px;
+  }
+  .launch-spots-label strong { color: rgba(255,255,255,0.75); }
+  .launch-cta {
+    display: block; width: 100%; padding: 14px;
+    background: linear-gradient(135deg, #B8860B, #D4A017);
+    color: #0A2540; font-size: 15px; font-weight: 700;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    border: none; border-radius: 10px; cursor: pointer;
+    text-decoration: none; text-align: center;
+    transition: transform 0.2s, box-shadow 0.2s;
+    box-shadow: 0 4px 20px rgba(184,134,11,0.35);
+    letter-spacing: 0.1px;
+  }
+  .launch-cta:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(184,134,11,0.45); }
+  .launch-dismiss {
+    display: block; margin-top: 14px; font-size: 12px;
+    color: rgba(255,255,255,0.28); cursor: pointer;
+    background: none; border: none;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    transition: color 0.2s;
+  }
+  .launch-dismiss:hover { color: rgba(255,255,255,0.5); }
+  @media (max-width: 480px) {
+    .launch-modal { padding: 40px 28px 32px; }
+  }
+
   /* ── SCROLL REVEAL ── */
   .reveal {
     opacity: 0;
@@ -610,6 +712,26 @@
 </style>
 </head>
 <body>
+
+<!-- LAUNCH OFFER POPUP -->
+<div class="launch-backdrop" id="launchBackdrop" role="dialog" aria-modal="true" aria-labelledby="launchTitle">
+  <div class="launch-modal">
+    <button class="launch-close" id="launchClose" aria-label="Cerrar">✕</button>
+    <div class="launch-badge">Oferta de lanzamiento</div>
+    <h2 class="launch-title" id="launchTitle">Solo para los <em>5 primeros</em> hoteles</h2>
+    <p class="launch-desc">Sé de los primeros en acceder a FastRevenue con condiciones exclusivas de lanzamiento: precio especial y onboarding personalizado.</p>
+    <div class="launch-spots">
+      <div class="launch-spot taken"></div>
+      <div class="launch-spot taken"></div>
+      <div class="launch-spot"></div>
+      <div class="launch-spot"></div>
+      <div class="launch-spot"></div>
+    </div>
+    <p class="launch-spots-label"><strong>2 de 5 plazas</strong> ya reservadas</p>
+    <a href="#consulta" class="launch-cta" id="launchCta">Reservar mi plaza →</a>
+    <button class="launch-dismiss" id="launchDismiss">No me interesa</button>
+  </div>
+</div>
 
 <nav>
   <a class="nav-logo" href="#" onclick="event.preventDefault(); window.scrollTo({top:0, behavior:'smooth'});" style="text-decoration:none;">
@@ -1052,6 +1174,44 @@ window.scrollToSection = function(id) {
   const el = document.getElementById(id) || document.querySelector('.' + id);
   if (el) el.scrollIntoView({ behavior: 'smooth' });
 };
+
+/* ── Launch offer popup ── */
+(function () {
+  const STORAGE_KEY = 'fr_launch_dismissed';
+  if (sessionStorage.getItem(STORAGE_KEY)) return;
+
+  const backdrop = document.getElementById('launchBackdrop');
+  const closeBtn = document.getElementById('launchClose');
+  const dismissBtn = document.getElementById('launchDismiss');
+  const ctaBtn = document.getElementById('launchCta');
+  if (!backdrop) return;
+
+  function open() { backdrop.classList.add('open'); }
+
+  function close() {
+    backdrop.classList.remove('open');
+    sessionStorage.setItem(STORAGE_KEY, '1');
+  }
+
+  setTimeout(open, 4000);
+
+  closeBtn.addEventListener('click', close);
+  dismissBtn.addEventListener('click', close);
+  backdrop.addEventListener('click', function (e) {
+    if (e.target === backdrop) close();
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && backdrop.classList.contains('open')) close();
+  });
+  ctaBtn.addEventListener('click', function (e) {
+    e.preventDefault();
+    close();
+    setTimeout(function () {
+      const el = document.getElementById('consulta');
+      if (el) el.scrollIntoView({ behavior: 'smooth' });
+    }, 300);
+  });
+})();
 </script>
 </body>
 </html>
