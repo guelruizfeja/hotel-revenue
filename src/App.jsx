@@ -4740,8 +4740,8 @@ function PickupView({ datos, onGuardado }) {
   const esGrupoEvento = e => { const c = (e.canal||"").toLowerCase(); return c.includes("grupo") || c.includes("evento"); };
   const ultDia = [...pickupEntries].filter(e => !esGrupoEvento(e)).map(e=>String(e.fecha_pickup||"").slice(0,10)).filter(f=>f.length===10).sort().pop() || "";
   const hayHoy = pickupEntries.some(e => !esGrupoEvento(e) && String(e.fecha_pickup||"").slice(0,10) === hoyISO);
-  const refDia = hayHoy ? hoyISO : ultDia;
-  const reservasUltDia = pickupEntries.filter(e => !esGrupoEvento(e) && String(e.fecha_pickup||"").slice(0,10) === refDia && (e.estado||"confirmada") !== "cancelada").sort((a,b)=>(a.fecha_llegada||"").localeCompare(b.fecha_llegada||""));
+  const refDia = hayHoy ? hoyISO : (ultDia >= ayerStr ? ultDia : "");
+  const reservasUltDia = refDia ? pickupEntries.filter(e => !esGrupoEvento(e) && String(e.fecha_pickup||"").slice(0,10) === refDia && (e.estado||"confirmada") !== "cancelada").sort((a,b)=>(a.fecha_llegada||"").localeCompare(b.fecha_llegada||"")) : [];
   const ultDiaTotal = reservasUltDia.reduce((a,e) => a + (e.num_reservas||1), 0);
   const tituloBloque = refDia === hoyISO ? "Reservas captadas hoy" : "Reservas captadas ayer";
   const fmtDatePU = d => { if (!d) return "—"; const p=d.split("-"); return p.length===3?`${p[2]}/${p[1]}/${p[0]}`:d; };
