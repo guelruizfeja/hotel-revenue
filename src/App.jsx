@@ -4639,6 +4639,7 @@ function PickupView({ datos, onGuardado }) {
   const [reservasVentana, setReservasVentana] = useState("30d"); // "ayer" | "7d" | "30d" | "year"
   const [reservasVista, setReservasVista]     = useState("count"); // "count"|"adr"|"noches"|"antelacion"
   const [otaDetalle, setOtaDetalle]           = useState(false);
+  const [showPickupDetalle, setShowPickupDetalle] = useState(false);
 
   const hoy     = new Date();
   const padL    = n => String(n).padStart(2,"0");
@@ -4933,14 +4934,36 @@ function PickupView({ datos, onGuardado }) {
       {/* ── PICKUP HOY / AYER ── */}
       <Card>
         <div style={{ display:"flex", alignItems:"flex-start", gap:16, marginBottom:20 }}>
-          <div style={{ background:"#111", borderRadius:10, padding:"10px 18px", textAlign:"center", flexShrink:0 }}>
+          <div
+            onClick={() => ultDiaTotal > 0 && setShowPickupDetalle(v => !v)}
+            style={{ background:"#111", borderRadius:10, padding:"10px 18px", textAlign:"center", flexShrink:0, cursor: ultDiaTotal > 0 ? "pointer" : "default", position:"relative" }}>
             <p style={{ fontSize:30, fontWeight:800, color:"#fff", fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1 }}>{ultDiaTotal}</p>
             <p style={{ fontSize:9, color:"#ffffff", fontWeight:700, textTransform:"uppercase", letterSpacing:1, marginTop:4 }}>Nuevas reservas</p>
+            {ultDiaTotal > 0 && <span style={{ fontSize:8, color:"#aaa", display:"block", marginTop:2 }}>{showPickupDetalle ? "▲" : "▼"}</span>}
           </div>
           <div>
             <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:18, color:C.text }}>{tituloBloque}</p>
           </div>
         </div>
+
+        {showPickupDetalle && ultDiaTotal > 0 && (
+          <div style={{ marginBottom:16, borderRadius:8, border:`1px solid ${C.border}`, overflow:"hidden" }}>
+            {reservasUltDia.map((e, i) => {
+              const canal = normCanal(e.canal);
+              const color = CANAL_COLORS[canal] || C.accent;
+              const adr = e.noches > 0 ? Math.round((e.precio_total||0) / e.noches) : null;
+              return (
+                <div key={i} style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 14px", borderBottom: i < reservasUltDia.length-1 ? `1px solid ${C.border}` : "none", background: i%2===0 ? C.bg : "transparent" }}>
+                  <div style={{ width:8, height:8, borderRadius:"50%", background:color, flexShrink:0 }}/>
+                  <span style={{ fontSize:12, color:C.textMid, flex:1 }}>{e.canal || canal}</span>
+                  <span style={{ fontSize:11, color:C.text }}>llegada {fmtDatePU(String(e.fecha_llegada||"").slice(0,10))}</span>
+                  <span style={{ fontSize:11, color:C.textMid }}>{e.noches || "—"}n</span>
+                  {adr != null && <span style={{ fontSize:11, fontWeight:700, color:C.text }}>€{adr}/n</span>}
+                </div>
+              );
+            })}
+          </div>
+        )}
 
         {ultDiaTotal === 0 ? (
           <p style={{ color:C.textLight, fontSize:13, textAlign:"center", padding:"20px 0" }}>{t("no_reservas_ayer")}</p>
