@@ -8377,7 +8377,7 @@ export default function App() {
 
       {/* Barra de sub-navegación de Grupos — visible solo en vista grupos */}
       {view === "grupos" && (
-        <div style={{ position:"sticky", top:52.5, zIndex:99, background:"#F2F3F5", borderBottom:"1px solid #e2e4e8", display:"flex", alignItems:"center", gap:4, padding:"0 clamp(12px,4vw,32px)", height:40, overflow:"hidden" }}>
+        <div style={{ position:"sticky", top:52.5, zIndex:99, background:"#111111", display:"flex", alignItems:"center", gap:2, padding:"0 clamp(12px,4vw,32px)", height:40, overflow:"hidden" }}>
           {[
             { key:"semana",   label:"Calendario" },
             { key:"pipeline", label:"Resumen" },
@@ -8389,15 +8389,16 @@ export default function App() {
             const activo = gruposSubVista === key;
             return (
               <button key={key} onClick={() => cambiarGruposSubVista(key)}
-                style={{ padding:"5px 14px", fontSize:12, fontWeight:activo?700:500, cursor:"pointer", border:`1.5px solid ${activo ? "#0A2540" : "#c8ccd4"}`, borderRadius:7, background: activo ? "#0A2540" : "transparent", color: activo ? "#fff" : "#4a5568", fontFamily:"'Plus Jakarta Sans',sans-serif", transition:"all 0.15s", whiteSpace:"nowrap" }}>
+                style={{ padding:"6px clamp(6px,2vw,16px)", borderRadius:7, border:"none", cursor:"pointer", background: activo ? "rgba(255,255,255,0.12)" : "transparent", color:"#fff", fontSize:"clamp(11px,2.5vw,13px)", fontWeight: activo ? 700 : 400, fontFamily:"'Plus Jakarta Sans',sans-serif", transition:"all 0.15s", whiteSpace:"nowrap", outline: activo ? "1.5px solid rgba(255,255,255,0.3)" : "1.5px solid transparent" }}>
                 {label}
               </button>
             );
           })}
         </div>
       )}
+      {view === "grupos" && <div style={{ height: "0.5px", background: "#fff", width: "100%", position:"sticky", top:92.5, zIndex:100 }} />}
 
-      <WeatherBar ciudad={datos.hotel?.ciudad} datos={datos} lang={lang} occDeTicker={_occDeTicker} stickyTop={view === "grupos" ? 92.5 : 52} />
+      <WeatherBar ciudad={datos.hotel?.ciudad} datos={datos} lang={lang} occDeTicker={_occDeTicker} stickyTop={view === "grupos" ? 93 : 52} />
       <div style={{ height: 8, background: "#fff", width: "100%" }} />
 
       {/* Main */}
