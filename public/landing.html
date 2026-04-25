@@ -6,7 +6,7 @@
 <title>FastRevenue</title>
 <link rel="icon" type="image/png" sizes="64x64" href="/fastrev-favicon.png?v=3" />
 <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-<meta name="theme-color" content="#0A2540" />
+<meta name="theme-color" content="#000000" />
 <link rel="preload" as="video" href="/features-video.mp4" type="video/mp4">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;0,800;1,400;1,600&family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -553,31 +553,35 @@
     .stat-item + .stat-item { border-left: none; border-top: 1px solid rgba(184,134,11,0.15); }
 
     /* Features: deshabilitar sticky, mostrar tarjetas estáticas */
-    .features-section { min-height: auto; }
+    .features-section { min-height: auto; overflow: hidden; }
     .features-sticky-wrap {
       position: static;
+      width: 100%;
       height: auto;
       grid-template-columns: 1fr;
       gap: 24px;
       padding: 90px 6vw 60px;
     }
+    .features-left-inner { opacity: 1 !important; transform: none !important; }
     .features-right {
       position: static;
       height: auto;
       overflow: visible;
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 12px;
+      gap: 10px;
       margin-top: 0;
       padding-left: 0;
     }
     .fsi-item {
-      position: static;
-      opacity: 1;
-      transform: none;
+      position: static !important;
+      opacity: 1 !important;
+      transform: none !important;
       pointer-events: auto;
+      padding: 18px 16px;
     }
-    .fsi-title { font-size: 28px; }
+    .fsi-title { font-size: 20px; }
+    .fsi-desc li { font-size: 12px; }
 
     /* Mockup */
     .mockup-inner { grid-template-columns: 1fr !important; gap: 32px !important; }
