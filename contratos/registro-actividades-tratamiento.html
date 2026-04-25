@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Registro de Actividades de Tratamiento — FastRevenue</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Georgia', serif;
+    font-size: 11pt;
+    line-height: 1.65;
+    color: #111;
+    background: #fff;
+  }
+  .page {
+    max-width: 740px;
+    margin: 0 auto;
+    padding: 60px 60px 80px;
+  }
+
+  /* Cabecera */
+  .contract-header {
+    text-align: center;
+    border-bottom: 2px solid #0A2540;
+    padding-bottom: 28px;
+    margin-bottom: 36px;
+  }
+  .contract-header .logo-text {
+    font-family: 'Arial', sans-serif;
+    font-size: 22pt;
+    font-weight: 800;
+    letter-spacing: 2px;
+    color: #0A2540;
+    margin-bottom: 6px;
+  }
+  .contract-header h1 {
+    font-size: 13pt;
+    font-weight: normal;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #444;
+    margin-top: 10px;
+  }
+  .contract-header .subtitulo {
+    font-size: 10pt;
+    color: #666;
+    margin-top: 6px;
+    font-style: italic;
+  }
+  .contract-header .ref {
+    font-size: 9pt;
+    color: #888;
+    margin-top: 10px;
+  }
+
+  .section-title {
+    font-family: 'Arial', sans-serif;
+    font-size: 9.5pt;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: #0A2540;
+    border-left: 3px solid #0A2540;
+    padding-left: 10px;
+    margin: 32px 0 14px;
+  }
+
+  p { margin-bottom: 10px; text-align: justify; }
+
+  /* Ficha de actividad */
+  .actividad {
+    border: 1px solid #d0dbe8;
+    border-radius: 8px;
+    margin-bottom: 32px;
+    overflow: hidden;
+  }
+  .actividad-header {
+    background: #0A2540;
+    color: #fff;
+    padding: 12px 18px;
+    font-family: 'Arial', sans-serif;
+    font-size: 10.5pt;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+  }
+  .actividad-header span {
+    font-size: 9pt;
+    font-weight: 400;
+    opacity: 0.65;
+    margin-left: 10px;
+  }
+  .actividad-body { padding: 0; }
+  .fila {
+    display: grid;
+    grid-template-columns: 200px 1fr;
+    border-bottom: 1px solid #e8edf2;
+  }
+  .fila:last-child { border-bottom: none; }
+  .fila-label {
+    background: #f7f9fc;
+    padding: 10px 14px;
+    font-family: 'Arial', sans-serif;
+    font-size: 9.5pt;
+    font-weight: 600;
+    color: #0A2540;
+    border-right: 1px solid #e0e8f0;
+  }
+  .fila-valor {
+    padding: 10px 14px;
+    font-size: 10.5pt;
+    color: #222;
+  }
+  .fila-valor ul { margin: 4px 0 0 16px; }
+  .fila-valor ul li { margin-bottom: 3px; font-size: 10.5pt; }
+
+  /* Responsable */
+  .responsable-box {
+    background: #f7f9fc;
+    border: 1px solid #d0dbe8;
+    border-radius: 6px;
+    padding: 16px 20px;
+    margin-bottom: 28px;
+    font-size: 10.5pt;
+  }
+  .responsable-box p { margin-bottom: 6px; }
+  .responsable-box strong { color: #0A2540; }
+
+  /* Historial de versiones */
+  .version-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 10pt;
+    margin-top: 10px;
+  }
+  .version-table th {
+    background: #0A2540;
+    color: #fff;
+    padding: 8px 12px;
+    text-align: left;
+    font-family: 'Arial', sans-serif;
+    font-size: 9pt;
+    font-weight: 600;
+  }
+  .version-table td {
+    padding: 8px 12px;
+    border-bottom: 1px solid #e4e8ed;
+  }
+  .version-table tr:nth-child(even) td { background: #f7f9fc; }
+
+  .nota-legal {
+    background: #fff8e7;
+    border: 1px solid #e0c96a;
+    border-radius: 5px;
+    padding: 12px 16px;
+    font-size: 9.5pt;
+    color: #6b4f00;
+    margin: 24px 0 0;
+  }
+
+  .footer-doc {
+    margin-top: 48px;
+    padding-top: 14px;
+    border-top: 1px solid #ddd;
+    font-size: 8.5pt;
+    color: #aaa;
+    text-align: center;
+  }
+
+  @media print {
+    .page { padding: 40px 50px 60px; max-width: 100%; }
+    .actividad { page-break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- Cabecera -->
+  <div class="contract-header">
+    <div class="logo-text">FASTREVENUE</div>
+    <h1>Registro de Actividades de Tratamiento</h1>
+    <div class="subtitulo">Documento interno — Art. 30 Reglamento (UE) 2016/679 (RGPD)</div>
+    <div class="ref">Última actualización: Abril 2026 &nbsp;·&nbsp; Versión 1.0</div>
+  </div>
+
+  <!-- Responsable -->
+  <div class="section-title">Responsable del Registro</div>
+  <div class="responsable-box">
+    <p><strong>Nombre:</strong> Miguel Ruiz Feja</p>
+    <p><strong>Actividad:</strong> Titular del servicio SaaS FastRevenue (fastrevenue.app)</p>
+    <p><strong>Email de contacto:</strong> info@fastrevenue.app</p>
+    <p><strong>Rol:</strong> Encargado del tratamiento (respecto a los datos de los hoteles clientes) y Responsable del tratamiento (respecto a los datos de contacto de clientes potenciales)</p>
+  </div>
+
+  <!-- Actividad 1 -->
+  <div class="section-title">Actividades de Tratamiento</div>
+
+  <div class="actividad">
+    <div class="actividad-header">Actividad 1 — Prestación del servicio SaaS a hoteles clientes <span>Rol: Encargado del tratamiento</span></div>
+    <div class="actividad-body">
+      <div class="fila">
+        <div class="fila-label">Finalidad</div>
+        <div class="fila-valor">Almacenamiento, visualización y análisis de datos de revenue, reservas, ocupación y presupuesto del hotel para la prestación del servicio FastRevenue</div>
+      </div>
+      <div class="fila">
+        <div class="fila-label">Base jurídica</div>
+        <div class="fila-valor">Ejecución del contrato de prestación de servicios suscrito con el hotel cliente (Art. 6.1.b RGPD)</div>
+      </div>
+      <div class="fila">
+        <div class="fila-label">Categorías de datos</div>
+        <div class="fila-valor">
+          <ul>
+            <li>Datos de reservas: fechas de entrada/salida, importe, segmento, canal, antelación</li>
+            <li>KPIs operativos: ocupación, ADR, RevPAR, pick-up, pace</li>
+            <li>Datos de grupos: número de habitaciones, ingresos, segmento</li>
+            <li>Datos presupuestarios: objetivos y desviaciones de revenue</li>
+          </ul>
+          <p style="margin-top:6px; font-size:9.5pt; color:#555;">No se tratan categorías especiales de datos (Art. 9 RGPD).</p>
+        </div>
+      </div>
+      <div class="fila">
+        <div class="fila-label">Interesados</div>
+        <div class="fila-valor">Huéspedes y clientes del hotel en la medida en que sus datos de reserva sean introducidos en la plataforma por el hotel responsable</div>
+      </div>
+      <div class="fila">
+        <div class="fila-label">Destinatarios</div>
+        <div class="fila-valor">No se ceden datos a terceros. Subencargados autorizados: Supabase (base de datos, AWS Frankfurt UE) y Vercel (alojamiento de la aplicación)</div>
+      </div>
+      <div class="fila">
+        <div class="fila-label">Transferencias internacionales</div>
+        <div class="fila-valor">Vercel puede procesar datos en EE.UU. bajo Cláusulas Contractuales Tipo (CCT) aprobadas por la Comisión Europea. Supabase opera en la UE (Frankfurt).</div>
+      </div>
+      <div class="fila">
+        <div class="fila-label">Plazos de conservación</div>
+        <div class="fila-valor">Durante la vigencia del contrato de servicios. A su finalización, los datos se devuelven o suprimen en un plazo máximo de 30 días según instrucción del hotel</div>
+      </div>
+      <div class="fila">
+        <div class="fila-label">Medidas de seguridad</div>
+        <div class="fila-valor">
+          <ul>
+            <li>Cifrado en tránsito mediante TLS/HTTPS</li>
+            <li>Cifrado en reposo en la base de datos (Supabase/AWS)</li>
+            <li>Autenticación con credenciales individuales por hotel</li>
+            <li>Acceso restringido al personal necesario</li>
+            <li>Copias de seguridad automáticas periódicas</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Actividad 2 -->
+  <div class="actividad">
+    <div class="actividad-header">Actividad 2 — Gestión de contactos y clientes potenciales <span>Rol: Responsable del tratamiento</span></div>
+    <div class="actividad-body">
+      <div class="fila">
+        <div class="fila-label">Finalidad</div>
+        <div class="fila-valor">Atender solicitudes de información y consultas recibidas a través del formulario de la web (fastrevenue.app) y gestionar la relación comercial con hoteles interesados</div>
+      </div>
+      <div class="fila">
+        <div class="fila-label">Base jurídica</div>
+        <div class="fila-valor">Consentimiento del interesado al enviar el formulario de contacto (Art. 6.1.a RGPD) y, una vez establecida la relación contractual, ejecución del contrato (Art. 6.1.b RGPD)</div>
+      </div>
+      <div class="fila">
+        <div class="fila-label">Categorías de datos</div>
+        <div class="fila-valor">Nombre, email, nombre del hotel y mensaje libre introducido en el formulario de contacto</div>
+      </div>
+      <div class="fila">
+        <div class="fila-label">Interesados</div>
+        <div class="fila-valor">Personas de contacto de hoteles que solicitan información sobre el servicio</div>
+      </div>
+      <div class="fila">
+        <div class="fila-label">Destinatarios</div>
+        <div class="fila-valor">No se ceden datos a terceros. Los mensajes del formulario se reciben en info@fastrevenue.app (Supabase como subencargado)</div>
+      </div>
+      <div class="fila">
+        <div class="fila-label">Transferencias internacionales</div>
+        <div class="fila-valor">No se realizan transferencias internacionales para esta actividad</div>
+      </div>
+      <div class="fila">
+        <div class="fila-label">Plazos de conservación</div>
+        <div class="fila-valor">Mientras exista interés comercial activo o relación contractual. Si no se contrata el servicio, los datos se suprimirán en un plazo máximo de 12 meses desde el último contacto</div>
+      </div>
+      <div class="fila">
+        <div class="fila-label">Medidas de seguridad</div>
+        <div class="fila-valor">Acceso restringido al titular (Miguel Ruiz Feja), comunicaciones cifradas TLS, almacenamiento en Supabase con cifrado en reposo</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Historial -->
+  <div class="section-title">Historial de Revisiones</div>
+  <table class="version-table">
+    <thead>
+      <tr>
+        <th>Versión</th>
+        <th>Fecha</th>
+        <th>Cambio</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>1.0</td>
+        <td>Abril 2026</td>
+        <td>Creación inicial del registro</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="nota-legal">
+    <strong>Nota (Art. 30.5 RGPD):</strong> Este registro es obligatorio para todo responsable o encargado del tratamiento. Debe mantenerse actualizado y estar disponible para la Agencia Española de Protección de Datos (AEPD) cuando lo solicite. Actualizar este documento ante cualquier cambio en las actividades de tratamiento, incorporación de nuevos subencargados o modificación de los plazos de conservación.
+  </div>
+
+  <div class="footer-doc">
+    FastRevenue · Miguel Ruiz Feja · info@fastrevenue.app &nbsp;·&nbsp; Documento interno — No divulgar
+  </div>
+
+</div>
+</body>
+</html>
