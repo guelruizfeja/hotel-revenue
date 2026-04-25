@@ -7333,7 +7333,7 @@ function AuthScreen() {
   const inp = { width: "100%", padding: "11px 14px", borderRadius: 8, border: "1.5px solid #E0E0E0", fontSize: 14, fontFamily: "'Plus Jakarta Sans', sans-serif", color: "#1A1A1A", background: "#FDFDFD", outline: "none", boxSizing: "border-box" };
 
   return (
-    <div style={{ minHeight: "100vh", background: "#0A2540", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", fontFamily: "'Plus Jakarta Sans', sans-serif", padding: "24px" }}>
+    <div style={{ minHeight: "100vh", backgroundImage: "url('/login-bg.jpg')", backgroundSize: "cover", backgroundPosition: "center", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", fontFamily: "'Plus Jakarta Sans', sans-serif", padding: "24px" }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
         * { box-sizing: border-box; }
