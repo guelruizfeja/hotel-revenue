@@ -153,11 +153,14 @@
 
   /* ── MOCKUP ── */
   .mockup-section {
-    padding: 72px 6vw 72px;
+    padding: 72px 6vw;
     background-image: url('/hero-bg.jpg');
     background-size: cover;
     background-position: center center;
     position: relative;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
   }
   .mockup-section::before {
     content: '';
@@ -166,12 +169,47 @@
     pointer-events: none;
   }
   .mockup-section > * { position: relative; }
-  .mockup-section .section-eyebrow { color: rgba(255,255,255,0.7); }
-  .mockup-section .section-eyebrow::before,
-  .mockup-section .section-eyebrow::after { background: rgba(255,255,255,0.4); }
-  .mockup-section .section-title { color: #ffffff; }
-  .mockup-section .section-title em { color: #7EC8F5; }
-  .mockup-section .section-sub { color: rgba(255,255,255,0.75); }
+  .mockup-inner {
+    max-width: 1200px; margin: 0 auto; width: 100%;
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 72px; align-items: center;
+  }
+  .mockup-text-inner {
+    opacity: 0; transform: translateX(60px);
+    transition: opacity 0.75s ease, transform 0.75s ease;
+  }
+  .mockup-text-inner.mk-visible {
+    opacity: 1; transform: translateX(0);
+  }
+  .mockup-p {
+    font-size: 19px; color: rgba(255,255,255,0.88);
+    line-height: 1.75; font-weight: 400;
+  }
+  .mockup-shots {
+    position: relative;
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 10px; aspect-ratio: 1;
+  }
+  .mockup-shot {
+    border-radius: 10px; overflow: hidden; line-height: 0;
+    opacity: 0; transform: translateX(90px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+    box-shadow: 0 16px 40px rgba(0,0,0,0.55);
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+  .mockup-shot img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .mockup-shots.mk-visible .mockup-shot:nth-child(1) { opacity:1; transform:translateX(0); transition-delay:0.05s; }
+  .mockup-shots.mk-visible .mockup-shot:nth-child(2) { opacity:1; transform:translateX(0); transition-delay:0.15s; }
+  .mockup-shots.mk-visible .mockup-shot:nth-child(3) { opacity:1; transform:translateX(0); transition-delay:0.25s; }
+  .mockup-shots.mk-visible .mockup-shot:nth-child(4) { opacity:1; transform:translateX(0); transition-delay:0.35s; }
+  .mockup-shots-cta {
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 10;
+    opacity: 0; transition: opacity 0.5s ease 0.5s;
+    white-space: nowrap;
+  }
+  .mockup-shots.mk-visible .mockup-shots-cta { opacity: 1; }
   .section-eyebrow {
     text-align: center; font-size: 10px;
     letter-spacing: 3px; text-transform: uppercase;
@@ -510,9 +548,9 @@
     .fsi-title { font-size: 28px; }
 
     /* Mockup */
-    .mockup-grid { grid-template-columns: 1fr !important; gap: 40px !important; min-height: auto !important; }
-    .mockup-images { display: none; }
-    .mockup-section { padding: 60px 6vw; }
+    .mockup-inner { grid-template-columns: 1fr !important; gap: 40px !important; }
+    .mockup-shots { display: none; }
+    .mockup-section { padding: 60px 6vw; min-height: auto; }
 
     /* Dashboard mock KPIs */
     .mock-kpis { grid-template-columns: repeat(2,1fr); }
@@ -637,50 +675,25 @@
 </section>
 
 <!-- MOCKUP -->
-<section class="mockup-section reveal" id="producto">
-  <div class="mockup-grid" style="max-width:1100px; margin:0 auto; display:grid; grid-template-columns:1fr 1fr; gap:64px; align-items:center; min-height:calc(100vh - 72px);">
+<section class="mockup-section" id="producto">
+  <div class="mockup-inner">
 
-    <!-- Texto izquierda -->
-    <div>
-      <div class="section-eyebrow" style="justify-content:flex-start; text-align:left;">El producto</div>
-      <h2 class="section-title" style="text-align:left;">Una herramienta que centraliza todos los datos de tu hotel</h2>
-      <p class="section-sub" style="text-align:left; margin:0 0 40px; max-width:none;">Con FastRevenue controlas los datos históricos y el forecast del ejercicio, comprobando en todo momento si se cumplen los objetivos.</p>
-      <a href="#consulta" class="btn-gold" onclick="event.preventDefault(); window.scrollToSection('consulta');">
-        Solicitar consulta para ver demo →
-      </a>
+    <!-- Texto izquierda — entra por la derecha -->
+    <div class="mockup-text">
+      <div class="mockup-text-inner">
+        <p class="mockup-p">Con FastRevenue controlas los datos históricos y el forecast del ejercicio, comprobando en todo momento si se cumplen los objetivos.</p>
+      </div>
     </div>
 
-    <!-- Capturas derecha -->
-    <div class="mockup-images" style="position:relative; height:460px;">
-
-      <!-- Dashboard — arriba izquierda -->
-      <div style="position:absolute; left:0; top:0; width:62%; border-radius:10px; overflow:hidden;
-                  box-shadow:0 20px 50px rgba(0,0,0,0.55); transform:perspective(900px) rotateY(4deg) rotateX(1deg);
-                  border:1px solid rgba(255,255,255,0.08); line-height:0; z-index:2;">
-        <img src="/dashboard-preview.png" alt="Dashboard" style="width:100%; display:block; filter:blur(1px);">
-      </div>
-
-      <!-- Reservas — arriba derecha -->
-      <div style="position:absolute; right:0; top:20px; width:52%; border-radius:10px; overflow:hidden;
-                  box-shadow:0 20px 50px rgba(0,0,0,0.55); transform:perspective(900px) rotateY(-3deg) rotateX(1deg);
-                  border:1px solid rgba(255,255,255,0.08); line-height:0; z-index:3;">
-        <img src="/reservas-preview.png" alt="Reservas" style="width:100%; display:block; filter:blur(1px);">
-      </div>
-
-      <!-- Grupos — abajo izquierda -->
-      <div style="position:absolute; left:6%; bottom:0; width:54%; border-radius:10px; overflow:hidden;
-                  box-shadow:0 20px 50px rgba(0,0,0,0.6); transform:perspective(900px) rotateY(3deg) rotateX(-1deg);
-                  border:1px solid rgba(255,255,255,0.08); line-height:0; z-index:1;">
-        <img src="/grupos-preview.png" alt="Grupos" style="width:100%; display:block; filter:blur(1px);">
-      </div>
-
-      <!-- Presupuesto — abajo derecha -->
-      <div style="position:absolute; right:2%; bottom:10px; width:50%; border-radius:10px; overflow:hidden;
-                  box-shadow:0 20px 50px rgba(0,0,0,0.6); transform:perspective(900px) rotateY(-4deg) rotateX(-1deg);
-                  border:1px solid rgba(255,255,255,0.08); line-height:0; z-index:4;">
-        <img src="/budget-preview.png" alt="Presupuesto" style="width:100%; display:block; filter:blur(1px);">
-      </div>
-
+    <!-- 2×2 capturas con CTA en el centro -->
+    <div class="mockup-shots">
+      <div class="mockup-shot"><img src="/dashboard-preview.png" alt="Dashboard"></div>
+      <div class="mockup-shot"><img src="/reservas-preview.png" alt="Reservas"></div>
+      <div class="mockup-shot"><img src="/grupos-preview.png" alt="Grupos"></div>
+      <div class="mockup-shot"><img src="/budget-preview.png" alt="Presupuesto"></div>
+      <a href="#consulta" class="mockup-shots-cta btn-gold" onclick="event.preventDefault(); window.scrollToSection('consulta');">
+        Solicitar consulta para ver demo →
+      </a>
     </div>
 
   </div>
@@ -696,6 +709,22 @@ document.querySelectorAll('.module-tab').forEach(tab => {
     if (panel) panel.classList.add('active');
   });
 });
+
+/* ── Mockup section: animación entrada por la derecha ── */
+(function () {
+  const textEl  = document.querySelector('.mockup-text-inner');
+  const shotsEl = document.querySelector('.mockup-shots');
+  if (!textEl || !shotsEl) return;
+  const obs = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (!e.isIntersecting) return;
+      e.target.classList.add('mk-visible');
+      obs.unobserve(e.target);
+    });
+  }, { threshold: 0.25 });
+  obs.observe(textEl);
+  obs.observe(shotsEl);
+})();
 </script>
 
 
