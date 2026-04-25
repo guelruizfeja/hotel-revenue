@@ -1158,6 +1158,9 @@ window.scrollToSection = function(id) {
 
 /* ── Launch offer popup ── */
 (function () {
+  const STORAGE_KEY = 'fr_launch_v2';
+  if (sessionStorage.getItem(STORAGE_KEY)) return;
+
   const backdrop = document.getElementById('launchBackdrop');
   const closeBtn = document.getElementById('launchClose');
   const dismissBtn = document.getElementById('launchDismiss');
@@ -1165,7 +1168,7 @@ window.scrollToSection = function(id) {
   if (!backdrop) return;
 
   function open() { backdrop.classList.add('open'); }
-  function close() { backdrop.classList.remove('open'); }
+  function close() { backdrop.classList.remove('open'); sessionStorage.setItem(STORAGE_KEY, '1'); }
 
   setTimeout(open, 4000);
 
