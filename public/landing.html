@@ -565,9 +565,15 @@
       position: static;
       height: auto;
       overflow: visible;
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .fsi-item {
+      position: static;
+      opacity: 1;
+      transform: none;
+      pointer-events: auto;
     }
     .fsi-title { font-size: 28px; }
 
