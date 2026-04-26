@@ -4658,6 +4658,12 @@ function PickupView({ datos, onGuardado }) {
       const fechaLlegada = nrForm.fecha_llegada || hoyISO;
       let fechaSalida = nrForm.fecha_salida || null;
       if (!fechaSalida) { const d = new Date(fechaLlegada+"T00:00:00"); d.setDate(d.getDate()+noches); fechaSalida = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; }
+      const numero_reserva = nrForm.numero_reserva ? parseInt(nrForm.numero_reserva) : null;
+      if (numero_reserva) {
+        const { data: dup } = await supabase.from("pickup_entries")
+          .select("id").eq("hotel_id", session.user.id).eq("numero_reserva", numero_reserva).limit(1);
+        if (dup && dup.length > 0) throw new Error(`La reserva #${numero_reserva} ya existe`);
+      }
       const row = {
         hotel_id: session.user.id, fecha_pickup: hoyISO, fecha_llegada: fechaLlegada,
         canal: nrForm.canal || null, num_reservas: parseInt(nrForm.num_reservas)||1,
@@ -4665,7 +4671,7 @@ function PickupView({ datos, onGuardado }) {
         precio_total: nrForm.precio_total ? parseFloat(nrForm.precio_total) : null,
         estado: "confirmada",
         es_individual: true,
-        numero_reserva: nrForm.numero_reserva ? parseInt(nrForm.numero_reserva) : null,
+        numero_reserva,
       };
       const { error } = await supabase.from("pickup_entries").insert(row);
       if (error) throw new Error(error.message);
