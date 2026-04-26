@@ -16,6 +16,8 @@ const C = {
   red: "#D32F2F", redLight: "#FDECEA", blue: "#004B87",
 };
 
+const dmy = iso => { if (!iso) return "—"; const s = String(iso).slice(0,10); const [y,m,d] = s.split("-"); return `${d}/${m}/${y}`; };
+
 const LangContext = createContext("es");
 const useT = () => { const lang = useContext(LangContext); return (k) => (TRANSLATIONS[lang] || TRANSLATIONS.es)[k] ?? k; };
 const TRANSLATIONS = {
@@ -536,7 +538,7 @@ function WeatherBar({ ciudad, datos, lang, occDeTicker, stickyTop = 52 }) {
     const anioActual = hoy.getFullYear();
     const mesPad = String(mesActual).padStart(2, "0");
     const mesPrefijo = `${anioActual}-${mesPad}`;
-    const fmtFecha = iso => { const [y,m,d]=iso.split("-"); return `${d}/${m}/${y.slice(2)}`; };
+    const fmtFecha = dmy;
     const getFechaSalida = e => {
       if (e.fecha_salida) return String(e.fecha_salida).slice(0,10);
       if (e.noches && e.fecha_llegada) { const d=new Date(String(e.fecha_llegada).slice(0,10)+"T00:00:00"); d.setDate(d.getDate()+Number(e.noches)); return d.toISOString().slice(0,10); }
@@ -2507,7 +2509,7 @@ function ImportarExcel({ onClose, session, onImportado, onProduccionDirecta, hot
                       const adr = ho > 0 && r.revenue_hab ? Math.round(r.revenue_hab/ho) : "—";
                       return (
                         <div key={i} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"8px 12px", borderBottom: i < prodRecientes.length-1 ? `1px solid ${H.border}` : "none", fontSize:12 }}>
-                          <span style={{ color:H.text, fontWeight:600, minWidth:90 }}>{r.fecha}</span>
+                          <span style={{ color:H.text, fontWeight:600, minWidth:90 }}>{dmy(r.fecha)}</span>
                           <span style={{ color:H.textMid }}>{ho} hab.</span>
                           <span style={{ color:H.accent, fontWeight:600 }}>{occ !== "—" ? `${occ}%` : "—"}</span>
                           <span style={{ color:H.textMid }}>ADR {adr !== "—" ? `€${adr}` : "—"}</span>
@@ -2684,7 +2686,7 @@ function ImportarExcel({ onClose, session, onImportado, onProduccionDirecta, hot
                   <div style={{ background:H.card2, border:`1px solid ${H.border}`, borderRadius:8, overflow:"hidden" }}>
                     {pickupRecientes.map((r, i) => (
                       <div key={i} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"8px 12px", borderBottom: i < pickupRecientes.length-1 ? `1px solid ${H.border}` : "none", fontSize:12 }}>
-                        <span style={{ color:H.text, minWidth:80 }}>{r.fecha_llegada}</span>
+                        <span style={{ color:H.text, minWidth:80 }}>{dmy(r.fecha_llegada)}</span>
                         <span style={{ color:H.textMid, flex:1, paddingLeft:8 }}>{r.canal || "—"}</span>
                         <span style={{ color:H.textMid, marginRight:10 }}>{r.num_reservas} hab.</span>
                         <span style={{ color: r.estado==="cancelada" ? H.red : H.green, fontSize:11, fontWeight:600 }}>{r.estado}</span>
@@ -3234,12 +3236,100 @@ async function generarReportePDF(datos, mes, anio, hotelNombre, returnData = fal
 
 // ─── DASHBOARD VIEW ───────────────────────────────────────────────
 // ─── DESGLOSE MOVIMIENTO VIEW ────────────────────────────────────────────────
+function ModalEditarReserva({ entry, onClose, onGuardado }) {
+  const canales = ["Booking.com","Expedia","Directo","Web","Teléfono","Agencia","Corporativo","Grupo","Evento","Otro"];
+  const [form, setForm] = useState({
+    fecha_llegada:  String(entry.fecha_llegada||"").slice(0,10),
+    canal:          entry.canal || "",
+    num_reservas:   String(entry.num_reservas || 1),
+    noches:         String(entry.noches || ""),
+    fecha_salida:   String(entry.fecha_salida||"").slice(0,10),
+    estado:         entry.estado || "confirmada",
+    precio_total:   entry.precio_total != null ? String(entry.precio_total) : "",
+    numero_reserva: entry.numero_reserva != null ? String(entry.numero_reserva) : "",
+  });
+  const [guardando, setGuardando] = useState(false);
+  const [error, setError]         = useState("");
+  const [ok, setOk]               = useState(false);
+  const f = k => e => setForm(p => ({ ...p, [k]: e.target.value }));
+  const inp = { width:"100%", padding:"8px 10px", borderRadius:7, border:`1px solid ${C.border}`, fontSize:13, background:C.bgCard, color:C.text, fontFamily:"inherit", boxSizing:"border-box" };
+  const lbl = { fontSize:10, color:C.textLight, fontWeight:600, textTransform:"uppercase", letterSpacing:"0.8px", marginBottom:4 };
+
+  const guardar = async () => {
+    if (!entry?.id) return;
+    setGuardando(true); setError("");
+    try {
+      const { error: err } = await supabase.from("pickup_entries").update({
+        canal:          form.canal || null,
+        num_reservas:   parseInt(form.num_reservas) || 1,
+        fecha_llegada:  form.fecha_llegada || null,
+        fecha_salida:   form.fecha_salida || null,
+        noches:         form.noches ? parseInt(form.noches) : null,
+        precio_total:   form.precio_total ? parseFloat(form.precio_total) : null,
+        estado:         form.estado || "confirmada",
+        numero_reserva: form.numero_reserva ? parseInt(form.numero_reserva) : null,
+      }).eq("id", entry.id);
+      if (err) throw new Error(err.message);
+      setOk(true);
+      setTimeout(() => { onClose(); onGuardado && onGuardado(); }, 1000);
+    } catch(e) { setError(e.message); }
+    finally { setGuardando(false); }
+  };
+
+  return (
+    <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.55)", zIndex:2000, display:"flex", alignItems:"center", justifyContent:"center", padding:24 }}
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div style={{ background:C.bgCard, borderRadius:14, padding:"28px 32px", width:"100%", maxWidth:460, boxShadow:"0 20px 60px rgba(0,0,0,0.25)" }}
+        onClick={e => e.stopPropagation()}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:18 }}>
+          <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:20, color:C.text }}>Gestión de reserva</p>
+          <button onClick={onClose} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, width:28, height:28, cursor:"pointer", fontSize:14, color:C.textLight }}>✕</button>
+        </div>
+        <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:16, color:C.text, marginBottom:14 }}>
+          Editar reserva{entry.numero_reserva ? ` #${entry.numero_reserva}` : ""}
+        </p>
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
+          <div><p style={lbl}>Fecha llegada</p>
+            <input type="date" value={form.fecha_llegada} onChange={f("fecha_llegada")} style={inp}/></div>
+          <div><p style={lbl}>Canal</p>
+            <select value={form.canal} onChange={f("canal")} style={inp}>
+              <option value="">—</option>
+              {canales.map(c => <option key={c} value={c}>{c}</option>)}
+            </select></div>
+          <div><p style={lbl}>Habitaciones</p>
+            <input type="number" min="1" value={form.num_reservas} onChange={f("num_reservas")} style={inp}/></div>
+          <div><p style={lbl}>Noches</p>
+            <input type="number" min="1" value={form.noches} onChange={f("noches")} style={inp}/></div>
+          <div><p style={lbl}>Fecha salida</p>
+            <input type="date" value={form.fecha_salida} onChange={f("fecha_salida")} style={inp}/></div>
+          <div><p style={lbl}>Estado</p>
+            <select value={form.estado} onChange={f("estado")} style={inp}>
+              <option value="confirmada">Confirmada</option>
+              <option value="cancelada">Cancelada</option>
+            </select></div>
+          <div><p style={lbl}>Precio total €</p>
+            <input type="number" min="0" step="0.01" value={form.precio_total} onChange={f("precio_total")} style={inp}/></div>
+          <div><p style={lbl}>Nº reserva</p>
+            <input type="number" min="1" value={form.numero_reserva} onChange={f("numero_reserva")} style={inp}/></div>
+        </div>
+        {error && <p style={{ fontSize:12, color:C.red, marginTop:10 }}>{error}</p>}
+        {ok    && <p style={{ fontSize:12, color:C.green, marginTop:10, fontWeight:600 }}>✓ Reserva actualizada</p>}
+        <button onClick={guardar} disabled={guardando}
+          style={{ marginTop:16, width:"100%", padding:"10px 0", borderRadius:8, background:guardando?C.border:C.text, color:"#fff", border:"none", cursor:guardando?"default":"pointer", fontSize:13, fontWeight:700, fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+          {guardando ? "Guardando..." : "Guardar cambios"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function DesgloseMovimientoView({ datos, tipo, onBack }) {
   const pickupEntries = datos.pickupEntries || [];
   const _p = n => String(n).padStart(2,"0");
+  const [editEntry, setEditEntry] = useState(null);
   const hoy = new Date();
   const hoyStr = `${hoy.getFullYear()}-${_p(hoy.getMonth()+1)}-${_p(hoy.getDate())}`;
-  const TITULOS = { entradas:"Entradas hoy", salidas:"Salidas hoy" };
+  const TITULOS = { entradas:"Entradas hoy", salidas:"Salidas hoy", estancias:"En casa hoy" };
 
   const getFechaSalida = e => {
     if (e.fecha_salida) return String(e.fecha_salida).slice(0,10);
@@ -3265,7 +3355,7 @@ function DesgloseMovimientoView({ datos, tipo, onBack }) {
     const fs = getFechaSalida(e);
     if (tipo === "entradas")  return fl === hoyStr;
     if (tipo === "salidas")   return fs === hoyStr;
-    if (tipo === "estancias") return fl < hoyStr && fs > hoyStr;
+    if (tipo === "estancias") return fl <= hoyStr && fs > hoyStr;
     return false;
   }).sort((a,b) => (a.canal||"").localeCompare(b.canal||""));
 
@@ -3288,17 +3378,22 @@ function DesgloseMovimientoView({ datos, tipo, onBack }) {
               <table style={{ width:"100%", borderCollapse:"collapse", fontSize:13 }}>
                 <thead>
                   <tr>
-                    {["Canal","Llegada","Salida","Noches","Habitaciones","Precio total"].map(h => (
+                    {["Nº Reserva","Canal","Llegada","Salida","Noches","Habitaciones","Precio total"].map(h => (
                       <th key={h} style={{ padding:"10px 16px", textAlign:"left", fontSize:10, fontWeight:600, color:C.textLight, textTransform:"uppercase", letterSpacing:"1px", borderBottom:`2px solid ${C.border}`, whiteSpace:"nowrap" }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {reservas.map((e, i) => (
-                    <tr key={i} style={{ borderBottom:`1px solid ${C.border}`, background: i%2===0 ? C.bg : C.bgCard }}>
+                    <tr key={i}
+                      onClick={() => setEditEntry(e)}
+                      style={{ borderBottom:`1px solid ${C.border}`, background: i%2===0 ? C.bg : C.bgCard, cursor:"pointer", transition:"background 0.1s" }}
+                      onMouseEnter={ev => ev.currentTarget.style.background = C.accentLight}
+                      onMouseLeave={ev => ev.currentTarget.style.background = i%2===0 ? C.bg : C.bgCard}>
+                      <td style={{ padding:"11px 16px", color:C.textMid, fontVariantNumeric:"tabular-nums" }}>{e.numero_reserva || "—"}</td>
                       <td style={{ padding:"11px 16px", fontWeight:600, color:C.text }}>{e.canal || "—"}</td>
-                      <td style={{ padding:"11px 16px", color:C.textMid }}>{String(e.fecha_llegada||"").slice(0,10)}</td>
-                      <td style={{ padding:"11px 16px", color:C.textMid }}>{getFechaSalida(e) || "—"}</td>
+                      <td style={{ padding:"11px 16px", color:C.textMid }}>{dmy(e.fecha_llegada)}</td>
+                      <td style={{ padding:"11px 16px", color:C.textMid }}>{dmy(getFechaSalida(e))}</td>
                       <td style={{ padding:"11px 16px", color:C.textMid, textAlign:"center" }}>{e.noches || "—"}</td>
                       <td style={{ padding:"11px 16px", color:C.textMid, textAlign:"center" }}>{e.num_reservas || 1}</td>
                       <td style={{ padding:"11px 16px", fontWeight:700, color:"#1A7A3C", textAlign:"right" }}>{e.precio_total ? `€${Number(e.precio_total).toLocaleString("es-ES")}` : "—"}</td>
@@ -3309,6 +3404,7 @@ function DesgloseMovimientoView({ datos, tipo, onBack }) {
             </div>
         }
       </Card>
+      {editEntry && <ModalEditarReserva entry={editEntry} onClose={() => setEditEntry(null)} />}
     </div>
   );
 }
@@ -3401,6 +3497,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
   const borrarHmEvent  = (idx) => { const a=hmEvents.filter((_,i)=>i!==idx); setHmEvents(a); localStorage.setItem("fr_hm_events",JSON.stringify(a)); };
   const [hmModoCrear, setHmModoCrear] = useState(false);
   const [hmDayModal, setHmDayModal] = useState(null); // iso string
+  const [hmEditEntry, setHmEditEntry] = useState(null);
   useEffect(() => { localStorage.setItem("fr_hmMesSel", JSON.stringify(hmMesSel)); }, [hmMesSel]);
   useEffect(() => { setHmDragStart(null); setHmDragEnd(null); setHmIsDragging(false); setHmModoCrear(false); setHmDayModal(null); }, [hmMesSel]);
   useEffect(() => {
@@ -3899,8 +3996,8 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
                               <p style={{ fontSize:12, fontWeight:700, color:C.text, marginBottom:2, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{g.nombre||"(sin nombre)"}</p>
                               <div style={{ display:"flex", gap:6, flexWrap:"wrap", alignItems:"center" }}>
                                 <span style={{ fontSize:10, color:C.textLight }}>
-                                  {(g.fecha_inicio||"").slice(8,10)}/{(g.fecha_inicio||"").slice(5,7)}
-                                  {!esEvento && g.fecha_fin && g.fecha_fin!==g.fecha_inicio && ` – ${g.fecha_fin.slice(8,10)}/${g.fecha_fin.slice(5,7)}`}
+                                  {dmy(g.fecha_inicio)}
+                                  {!esEvento && g.fecha_fin && g.fecha_fin!==g.fecha_inicio && ` – ${dmy(g.fecha_fin)}`}
                                 </span>
                                 {!esEvento && g.habitaciones>0 && (
                                   <span style={{ fontSize:10, color:C.textLight }}>{g.habitaciones} hab · {noches} noche{noches!==1?"s":""}</span>
@@ -3947,7 +4044,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
                             {evMes.map(ev=>(
                               <div key={ev.idx} style={{ display:"flex", alignItems:"center", gap:8, marginBottom:6, background:C.bgCard, borderRadius:7, padding:"7px 10px", borderLeft:`3px solid ${COL_EVENTO}` }}>
                                 <span style={{ fontSize:12, fontWeight:600, color:C.text, flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{ev.title||"(sin título)"}</span>
-                                <span style={{ fontSize:10, color:C.textLight, flexShrink:0 }}>{ev.from.slice(8,10)}/{ev.from.slice(5,7)} – {ev.to.slice(8,10)}/{ev.to.slice(5,7)}</span>
+                                <span style={{ fontSize:10, color:C.textLight, flexShrink:0 }}>{dmy(ev.from)} – {dmy(ev.to)}</span>
                                 <button onClick={()=>borrarHmEvent(ev.idx)} style={{ background:"none", border:"none", cursor:"pointer", color:C.red, fontSize:13, padding:"0 2px", lineHeight:1, flexShrink:0 }}>×</button>
                               </div>
                             ))}
@@ -4118,6 +4215,39 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
                       )}
                     </div>
 
+                    {/* Listado de reservas con número */}
+                    {activasIso.filter(e => !e._grupo).length > 0 && (
+                      <div style={{ marginTop:20 }}>
+                        <p style={{ fontSize:11, fontWeight:700, color:C.textMid, textTransform:"uppercase", letterSpacing:"1.5px", marginBottom:12 }}>Reservas en casa</p>
+                        <div style={{ overflowX:"auto" }}>
+                          <table style={{ width:"100%", borderCollapse:"collapse", fontSize:12 }}>
+                            <thead>
+                              <tr>
+                                {["Nº Reserva","Canal","Llegada","Salida","Habs"].map(h => (
+                                  <th key={h} style={{ padding:"7px 12px", textAlign:"left", fontSize:10, fontWeight:600, color:C.textLight, textTransform:"uppercase", letterSpacing:"0.8px", borderBottom:`2px solid ${C.border}`, whiteSpace:"nowrap" }}>{h}</th>
+                                ))}
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {activasIso.filter(e => !e._grupo).sort((a,b)=>(a.numero_reserva||0)-(b.numero_reserva||0)).map((e, i) => (
+                                <tr key={i}
+                                  onClick={() => setHmEditEntry(e)}
+                                  style={{ borderBottom:`1px solid ${C.border}`, background: i%2===0 ? C.bg : C.bgCard, cursor:"pointer", transition:"background 0.1s" }}
+                                  onMouseEnter={ev => ev.currentTarget.style.background = C.accentLight}
+                                  onMouseLeave={ev => ev.currentTarget.style.background = i%2===0 ? C.bg : C.bgCard}>
+                                  <td style={{ padding:"8px 12px", color:C.textMid, fontVariantNumeric:"tabular-nums" }}>{e.numero_reserva || "—"}</td>
+                                  <td style={{ padding:"8px 12px", fontWeight:600, color:C.text }}>{e.canal || "—"}</td>
+                                  <td style={{ padding:"8px 12px", color:C.textMid }}>{dmy(e.fecha_llegada)}</td>
+                                  <td style={{ padding:"8px 12px", color:C.textMid }}>{getFechaSalidaD(e) || "—"}</td>
+                                  <td style={{ padding:"8px 12px", color:C.textMid, textAlign:"center" }}>{e.num_reservas || 1}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    )}
+
                     {canales.length===0 && gruposDia.length===0 && antelMediaDias==null && (
                       <p style={{ fontSize:13, color:C.textLight, textAlign:"center", padding:"24px 0" }}>Sin datos de reservas para este día</p>
                     )}
@@ -4125,6 +4255,8 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
                 </div>
               );
             })()}
+
+            {hmEditEntry && <ModalEditarReserva entry={hmEditEntry} onClose={() => setHmEditEntry(null)} />}
 
             {/* ── FORM EVENTO HEATMAP ── */}
             {hmSelRango && (
@@ -4198,7 +4330,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
                       {esCaliente && (
                         <span title={`${resUltDia} reservas captadas el ${ultimoDiaImportado}`} style={{ position:"absolute", top:4, right:5, fontSize:14, lineHeight:1, animation:"pulse-rayo 1.5s ease-in-out infinite" }}>⚡</span>
                       )}
-                      <p style={{ fontSize:9, fontWeight:700, color:C.textLight, textTransform:"uppercase", letterSpacing:0.5, marginBottom:3 }}>{label}</p>
+                      <p style={{ fontSize:12, fontWeight:700, color:C.textLight, textTransform:"uppercase", letterSpacing:0.5, marginBottom:3 }}>{label}</p>
                       {occ!=null
                         ? <p style={{ fontSize:17, fontWeight:800, color:C.text, fontFamily:"'Plus Jakarta Sans',sans-serif" }}>{occ.toFixed(0)}%</p>
                         : <p style={{ fontSize:12, color:C.border }}>—</p>
@@ -4338,14 +4470,19 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
 
                     {occHoy !== null && <>
                       <div style={sep}/>
-                      <svg width="22" height="22" viewBox="0 0 32 32" fill="none">
-                        <path d="M4 28V14L16 4l12 10v14" stroke={C.text} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                        <rect x="11" y="18" width="10" height="10" rx="1" stroke={C.text} strokeWidth="1.8"/>
-                        <circle cx="16" cy="13" r="2" stroke={C.text} strokeWidth="1.5"/>
-                      </svg>
-                      <span style={lbl()}>Ocupación hoy</span>
-                      <span style={num()}>{occHoy}%</span>
-                      {occAyer !== null ? <Delta hoy={occHoy} ayer={occAyer} unit="%"/> : <span/>}
+                      <div style={{ gridColumn:"1 / -1", display:"grid", gridTemplateColumns:"22px 1fr auto auto", alignItems:"center", columnGap:8, padding:"6px 8px", borderRadius:8, cursor:"pointer", transition:"background 0.12s" }}
+                        onClick={() => abrirDesglose("estancias")}
+                        onMouseEnter={e => e.currentTarget.style.background = C.accentLight}
+                        onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                        <svg width="22" height="22" viewBox="0 0 32 32" fill="none">
+                          <path d="M4 28V14L16 4l12 10v14" stroke={C.text} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                          <rect x="11" y="18" width="10" height="10" rx="1" stroke={C.text} strokeWidth="1.8"/>
+                          <circle cx="16" cy="13" r="2" stroke={C.text} strokeWidth="1.5"/>
+                        </svg>
+                        <span style={lbl()}>Ocupación hoy</span>
+                        <span style={num()}>{occHoy}%</span>
+                        {occAyer !== null ? <Delta hoy={occHoy} ayer={occAyer} unit="%"/> : <span/>}
+                      </div>
                     </>}
                   </div>
 
@@ -5041,7 +5178,7 @@ function PickupView({ datos, onGuardado }) {
                               </div>
                               <div>
                                 <p style={{ fontSize:12, fontWeight:600, color:cancelada?C.textLight:C.text, margin:0, textDecoration:cancelada?"line-through":"none" }}>{e.canal || "—"}</p>
-                                <p style={{ fontSize:11, color:C.textMid, margin:0 }}>Llegada {String(e.fecha_llegada||"").slice(0,10)} · {e.noches||"—"}n{adr!=null?` · €${adr}/n`:""}</p>
+                                <p style={{ fontSize:11, color:C.textMid, margin:0 }}>Llegada {dmy(e.fecha_llegada)} · {e.noches||"—"}n{adr!=null?` · €${adr}/n`:""}</p>
                               </div>
                               <span style={{ fontSize:10, color:C.textLight }}>✏️</span>
                             </div>
@@ -5414,12 +5551,7 @@ function PickupView({ datos, onGuardado }) {
           {cancelTotal === 0 ? (
             <p style={{ color:C.green, fontSize:12, textAlign:"center", padding:"8px 0" }}>✅ {t("sin_cancelaciones")}</p>
           ) : (() => {
-            const fmtFecha = (iso) => {
-              if (!iso) return "—";
-              const [y,m,d] = String(iso).slice(0,10).split("-");
-              const dt = new Date(Number(y), Number(m)-1, Number(d));
-              return `${t("dias_abrev")[dt.getDay()]} ${Number(d)} ${t("meses_corto")[Number(m)-1]} ${y}`;
-            };
+            const fmtFecha = dmy;
             const thS = { fontSize:9, fontWeight:700, color:C.textLight, textTransform:"uppercase", letterSpacing:0.7, padding:"0 6px 6px", textAlign:"left", borderBottom:`1px solid ${C.border}` };
             const tdS = { fontSize:10, padding:"6px 6px", verticalAlign:"middle" };
             return (
@@ -6682,7 +6814,7 @@ function GruposView({ datos, onRecargar, onVolverHeatmap, subVistaExt, onCambiar
           .filter(g => g.fecha_inicio >= hoy)
           .sort((a,b)=>a.fecha_inicio.localeCompare(b.fecha_inicio));
 
-        const fmtFecha = iso => { if(!iso)return"—"; const [y,m,d]=iso.split("-"); return `${d}/${m}/${y.slice(2)}`; };
+        const fmtFecha = dmy;
         const fmtEur = n => `€${Math.round(n).toLocaleString("es-ES")}`;
 
         const FUNNEL = [
@@ -6862,9 +6994,9 @@ function GruposView({ datos, onRecargar, onVolverHeatmap, subVistaExt, onCambiar
                               <td style={{ padding:"8px 12px", fontWeight:600, color:C.text, whiteSpace:"nowrap" }}>{g.nombre}</td>
                               <td style={{ padding:"8px 12px", color:C.textMid, whiteSpace:"nowrap" }}>{g.segmento ? t("seg_"+g.segmento) : "—"}</td>
                               <td style={{ padding:"8px 12px" }}><span style={{ fontSize:10, fontWeight:700, padding:"2px 8px", borderRadius:10, background:ESTADOS[normEstado(g.estado)]?.bg, color:ESTADOS[normEstado(g.estado)]?.color, whiteSpace:"nowrap" }}>{ESTADOS[normEstado(g.estado)]?.label}</span></td>
-                              <td style={{ padding:"8px 12px", color:C.textMid, whiteSpace:"nowrap" }}>{g.fecha_confirmacion||"—"}</td>
-                              <td style={{ padding:"8px 12px", color:C.textMid, whiteSpace:"nowrap" }}>{g.fecha_inicio||"—"}</td>
-                              <td style={{ padding:"8px 12px", color:C.textMid, whiteSpace:"nowrap" }}>{g.fecha_fin||"—"}</td>
+                              <td style={{ padding:"8px 12px", color:C.textMid, whiteSpace:"nowrap" }}>{dmy(g.fecha_confirmacion)}</td>
+                              <td style={{ padding:"8px 12px", color:C.textMid, whiteSpace:"nowrap" }}>{dmy(g.fecha_inicio)}</td>
+                              <td style={{ padding:"8px 12px", color:C.textMid, whiteSpace:"nowrap" }}>{dmy(g.fecha_fin)}</td>
                               <td style={{ padding:"8px 12px", color:C.textMid, textAlign:"center" }}>{noches}</td>
                               <td style={{ padding:"8px 12px", color:C.textMid, textAlign:"center" }}>{g.habitaciones||0}</td>
                               <td style={{ padding:"8px 12px", color:C.textMid, textAlign:"right" }}>€{(g.adr_grupo||0).toLocaleString("es-ES")}</td>
@@ -6944,8 +7076,8 @@ function GruposView({ datos, onRecargar, onVolverHeatmap, subVistaExt, onCambiar
                               <td style={{ padding:"8px 12px", fontWeight:600, color:C.text, whiteSpace:"nowrap" }}>{g.nombre}</td>
                               <td style={{ padding:"8px 12px", color:C.textMid, whiteSpace:"nowrap" }}>{g.segmento ? t("seg_"+g.segmento) : "—"}</td>
                               <td style={{ padding:"8px 12px" }}><span style={{ fontSize:10, fontWeight:700, padding:"2px 8px", borderRadius:10, background:ESTADOS[normEstado(g.estado)]?.bg, color:ESTADOS[normEstado(g.estado)]?.color, whiteSpace:"nowrap" }}>{ESTADOS[normEstado(g.estado)]?.label}</span></td>
-                              <td style={{ padding:"8px 12px", color:C.textMid, whiteSpace:"nowrap" }}>{g.fecha_confirmacion||"—"}</td>
-                              <td style={{ padding:"8px 12px", color:C.textMid, whiteSpace:"nowrap" }}>{g.fecha_inicio||"—"}</td>
+                              <td style={{ padding:"8px 12px", color:C.textMid, whiteSpace:"nowrap" }}>{dmy(g.fecha_confirmacion)}</td>
+                              <td style={{ padding:"8px 12px", color:C.textMid, whiteSpace:"nowrap" }}>{dmy(g.fecha_inicio)}</td>
                               <td style={{ padding:"8px 12px", color:C.textMid, whiteSpace:"nowrap" }}>{hora}</td>
                               <td style={{ padding:"8px 12px", color:C.textMid, whiteSpace:"nowrap" }}>{ev.sala_nombre||"—"}</td>
                               <td style={{ padding:"8px 12px", color:C.textMid, textAlign:"right" }}>€{(g.revenue_fnb||0).toLocaleString("es-ES")}</td>
@@ -7123,9 +7255,9 @@ function GruposView({ datos, onRecargar, onVolverHeatmap, subVistaExt, onCambiar
                             {ESTADOS[normEstado(g.estado)]?.label || g.estado || "—"}
                           </span>
                         </td>
-                        <td style={{ padding:"9px 14px", color:C.textMid, whiteSpace:"nowrap" }}>{g.fecha_confirmacion||"—"}</td>
-                        <td style={{ padding:"9px 14px", color:C.textMid, whiteSpace:"nowrap" }}>{g.fecha_inicio||"—"}</td>
-                        <td style={{ padding:"9px 14px", color:C.textMid, whiteSpace:"nowrap" }}>{g.fecha_fin||"—"}</td>
+                        <td style={{ padding:"9px 14px", color:C.textMid, whiteSpace:"nowrap" }}>{dmy(g.fecha_confirmacion)}</td>
+                        <td style={{ padding:"9px 14px", color:C.textMid, whiteSpace:"nowrap" }}>{dmy(g.fecha_inicio)}</td>
+                        <td style={{ padding:"9px 14px", color:C.textMid, whiteSpace:"nowrap" }}>{dmy(g.fecha_fin)}</td>
                         <td style={{ padding:"9px 14px", color:C.textMid, textAlign:"center" }}>{noches}</td>
                         <td style={{ padding:"9px 14px", color:C.textMid, textAlign:"center" }}>{g.habitaciones||0}</td>
                         <td style={{ padding:"9px 14px", color:C.textMid, textAlign:"center" }}>{g.pax||0}</td>
@@ -7912,7 +8044,7 @@ function SalasView({ datos, onRecargar, onVolver, onVerEventos, salaDetalle, set
                   : <>
                       <p style={{ fontSize:11, color:"#92600A", fontWeight:600, margin:"0 0 4px" }}>{MESES_FULL[planningMes]}: {stats.eventosMes.length} evento{stats.eventosMes.length !== 1 ? "s" : ""}</p>
                       {stats.eventosMes.slice(0,2).map(g => (
-                        <p key={g.id} style={{ fontSize:11, color:"#92600A", margin:"2px 0 0" }}>· {g.nombre} ({g.fecha_inicio})</p>
+                        <p key={g.id} style={{ fontSize:11, color:"#92600A", margin:"2px 0 0" }}>· {g.nombre} ({dmy(g.fecha_inicio)})</p>
                       ))}
                       {stats.eventosMes.length > 2 && <p style={{ fontSize:11, color:"#92600A", margin:"2px 0 0" }}>· +{stats.eventosMes.length - 2} más</p>}
                     </>
@@ -7921,7 +8053,7 @@ function SalasView({ datos, onRecargar, onVolver, onVerEventos, salaDetalle, set
 
               {stats.proximoEv && (
                 <div style={{ background:C.bg, borderRadius:7, padding:"8px 10px", fontSize:11, color:C.textMid }}>
-                  Próximo: <span style={{ fontWeight:600, color:C.text }}>{stats.proximoEv.nombre}</span> · {stats.proximoEv.fecha_inicio}
+                  Próximo: <span style={{ fontWeight:600, color:C.text }}>{stats.proximoEv.nombre}</span> · {dmy(stats.proximoEv.fecha_inicio)}
                 </div>
               )}
 
@@ -8675,19 +8807,19 @@ export default function App() {
               {suscripcion?.trial_end && suscripcion.estado === "trial" && (
                 <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
                   <span style={{ fontSize:12, color:C.textMid }}>Prueba hasta</span>
-                  <span style={{ fontSize:12, fontWeight:700, color:C.text }}>{new Date(suscripcion.trial_end).toLocaleDateString("es-ES")}</span>
+                  <span style={{ fontSize:12, fontWeight:700, color:C.text }}>{new Date(suscripcion.trial_end).toLocaleDateString("es-ES",{day:"2-digit",month:"2-digit",year:"numeric"})}</span>
                 </div>
               )}
               {suscripcion?.periodo_fin && suscripcion.estado === "activa" && (
                 <div style={{ display:"flex", justifyContent:"space-between" }}>
                   <span style={{ fontSize:12, color:C.textMid }}>Próxima renovación</span>
-                  <span style={{ fontSize:12, fontWeight:700, color:C.text }}>{new Date(suscripcion.periodo_fin).toLocaleDateString("es-ES")}</span>
+                  <span style={{ fontSize:12, fontWeight:700, color:C.text }}>{new Date(suscripcion.periodo_fin).toLocaleDateString("es-ES",{day:"2-digit",month:"2-digit",year:"numeric"})}</span>
                 </div>
               )}
               {suscripcion?.periodo_fin && suscripcion.estado === "cancelando" && (
                 <div style={{ display:"flex", justifyContent:"space-between" }}>
                   <span style={{ fontSize:12, color:C.textMid }}>Acceso hasta</span>
-                  <span style={{ fontSize:12, fontWeight:700, color:C.text }}>{new Date(suscripcion.periodo_fin).toLocaleDateString("es-ES")}</span>
+                  <span style={{ fontSize:12, fontWeight:700, color:C.text }}>{new Date(suscripcion.periodo_fin).toLocaleDateString("es-ES",{day:"2-digit",month:"2-digit",year:"numeric"})}</span>
                 </div>
               )}
             </div>
