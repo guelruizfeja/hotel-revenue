@@ -4600,7 +4600,7 @@ function PickupView({ datos, onGuardado }) {
   const setModalNRPersist = (v) => { setModalNR(v); try { localStorage.setItem("fr_nr_modal", v ? "1" : "0"); } catch {} };
   const [nrForm, setNrForm] = useState(() => {
     const hoy0 = new Date(); const _p0=n=>String(n).padStart(2,"0"); const hoyD=`${hoy0.getFullYear()}-${_p0(hoy0.getMonth()+1)}-${_p0(hoy0.getDate())}`;
-    try { const s = localStorage.getItem("fr_nr_form"); return s ? JSON.parse(s) : { canal:"", num_reservas:"1", fecha_llegada:hoyD, fecha_salida:"", noches:"", precio_total:"" }; } catch { return { canal:"", num_reservas:"1", fecha_llegada:hoyD, fecha_salida:"", noches:"", precio_total:"" }; }
+    try { const s = localStorage.getItem("fr_nr_form"); return s ? JSON.parse(s) : { canal:"", num_reservas:"1", fecha_llegada:hoyD, fecha_salida:"", noches:"", precio_total:"", numero_reserva:"" }; } catch { return { canal:"", num_reservas:"1", fecha_llegada:hoyD, fecha_salida:"", noches:"", precio_total:"", numero_reserva:"" }; }
   });
   const setNrFormPersist = (fn) => setNrForm(prev => { const next = typeof fn === "function" ? fn(prev) : fn; try { localStorage.setItem("fr_nr_form", JSON.stringify(next)); } catch {} return next; });
   const [nrGuardando, setNrGuardando] = useState(false);
@@ -4665,6 +4665,7 @@ function PickupView({ datos, onGuardado }) {
         precio_total: nrForm.precio_total ? parseFloat(nrForm.precio_total) : null,
         estado: "confirmada",
         es_individual: true,
+        numero_reserva: nrForm.numero_reserva ? parseInt(nrForm.numero_reserva) : null,
       };
       const { error } = await supabase.from("pickup_entries").insert(row);
       if (error) throw new Error(error.message);
@@ -5080,9 +5081,14 @@ function PickupView({ datos, onGuardado }) {
                       <input type="date" value={nrForm.fecha_salida} onChange={e=>{ const v=e.target.value; const fl=nrForm.fecha_llegada||hoyISO; const n=v?Math.round((new Date(v+"T00:00:00")-new Date(fl+"T00:00:00"))/86400000):0; setNrFormPersist(f=>({...f,fecha_salida:v,noches:n>0?String(n):""})); }}
                         style={{ width:"100%", padding:"8px 10px", borderRadius:7, border:`1px solid ${C.border}`, fontSize:13, background:C.bgCard, color:C.text, fontFamily:"inherit", boxSizing:"border-box" }}/>
                     </div>
-                    <div style={{ gridColumn:"1/-1" }}>
+                    <div>
                       <p style={{ fontSize:10, color:C.textLight, fontWeight:600, textTransform:"uppercase", letterSpacing:"0.8px", marginBottom:4 }}>Precio total €</p>
                       <input type="number" min="0" step="0.01" value={nrForm.precio_total} onChange={e=>setNrFormPersist(f=>({...f,precio_total:e.target.value}))}
+                        style={{ width:"100%", padding:"8px 10px", borderRadius:7, border:`1px solid ${C.border}`, fontSize:13, background:C.bgCard, color:C.text, fontFamily:"inherit", boxSizing:"border-box" }}/>
+                    </div>
+                    <div>
+                      <p style={{ fontSize:10, color:C.textLight, fontWeight:600, textTransform:"uppercase", letterSpacing:"0.8px", marginBottom:4 }}>Nº de reserva</p>
+                      <input type="number" min="1" value={nrForm.numero_reserva} placeholder="—" onChange={e=>setNrFormPersist(f=>({...f,numero_reserva:e.target.value}))}
                         style={{ width:"100%", padding:"8px 10px", borderRadius:7, border:`1px solid ${C.border}`, fontSize:13, background:C.bgCard, color:C.text, fontFamily:"inherit", boxSizing:"border-box" }}/>
                     </div>
                   </div>
