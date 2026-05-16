@@ -6984,37 +6984,47 @@ function GruposView({ datos, onRecargar, onVolverHeatmap, subVistaExt, onCambiar
                       </div>
                     );
                   })}
-                  {/* Carriles de grupos */}
+                  {/* Carriles de grupos — bloque único por evento abarcando todas sus columnas */}
                   {Array.from({length:numFilas},(_,fi) => {
                     const gsEnFila = gs.filter(g=>filaDeGrupo[g.id]===fi);
-                    return semDias.map((d,ci) => {
-                      const g = gsEnFila.find(g=>g.fecha_inicio<=d && g.fecha_fin>=d);
-                      const esInicio = g && (g.fecha_inicio===d || ci===0);
-                      const esFin    = g && (g.fecha_fin===d   || ci===6);
-                      const col = g ? colEstado[normEstado(g.estado)]||"#888" : null;
-                      const bg  = g ? bgEstado[normEstado(g.estado)] ||"#eee" : null;
-                      return (
-                        <div key={d} style={{ borderRight:`1px solid ${C.border}`, borderBottom:`1px solid ${C.border}`, padding:"2px 1px", gridRow:fi+2 }}>
-                          {g && (
-                            <div onClick={e=>{e.stopPropagation();setDetalleGrupo(g);}}
+                    return (
+                      <React.Fragment key={fi}>
+                        {/* Celdas de fondo para bordes */}
+                        {semDias.map((d,ci) => (
+                          <div key={d} style={{ gridRow:fi+2, gridColumn:ci+1, borderRight:`1px solid ${C.border}`, borderBottom:`1px solid ${C.border}` }} />
+                        ))}
+                        {/* Bloque del evento que abarca su duración completa en la semana */}
+                        {gsEnFila.map(g => {
+                          const ini = g.fecha_inicio.slice(0,10);
+                          const fin = g.fecha_fin.slice(0,10);
+                          const sCI = ini >= semDias[0] ? Math.max(0, semDias.findIndex(d=>d===ini)) : 0;
+                          const eCIraw = semDias.findIndex(d=>d===fin);
+                          const eCI = fin <= semDias[6] ? (eCIraw>=0 ? eCIraw : 6) : 6;
+                          const esInicio = ini >= semDias[0];
+                          const esFin    = fin <= semDias[6];
+                          const col = colEstado[normEstado(g.estado)]||"#888";
+                          const bg  = bgEstado[normEstado(g.estado)] ||"#eee";
+                          return (
+                            <div key={g.id} onClick={e=>{e.stopPropagation();setDetalleGrupo(g);}}
                               style={{
-                                height:"100%", borderRadius: esInicio&&esFin?"4px": esInicio?"4px 0 0 4px": esFin?"0 4px 4px 0":"0",
-                                background:bg, borderLeft:esInicio?`3px solid ${col}`:"none",
+                                gridRow: fi+2, gridColumn:`${sCI+1} / ${eCI+2}`, zIndex:1,
+                                margin:"3px 1px",
+                                borderRadius: esInicio&&esFin?"4px": esInicio?"4px 0 0 4px": esFin?"0 4px 4px 0":"0",
+                                background:bg,
+                                borderLeft: esInicio?`3px solid ${col}`:"none",
                                 borderTop:`1px solid ${col}40`, borderBottom:`1px solid ${col}40`,
-                                borderRight:esFin?`1px solid ${col}40`:"none",
-                                padding:"2px 5px", cursor:"pointer", overflow:"hidden",
-                                display:"flex", alignItems:"center",
+                                borderRight: esFin?`1px solid ${col}40`:"none",
+                                cursor:"pointer", overflow:"hidden",
+                                display:"flex", alignItems:"center", justifyContent:"center", padding:"0 6px",
                               }}>
-                              {esInicio && (
-                                <span style={{ fontSize:10, fontWeight:700, color:col, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>
-                                  {g.nombre}
-                                </span>
-                              )}
+                              <span style={{ fontSize:10, fontWeight:700, color:col, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>
+                                {g.nombre}
+                              </span>
                             </div>
-                          )}
-                        </div>
-                      );
-                    });
+                          );
+                        })}
+                      </React.Fragment>
+                    );
                   })}
                 </div>
               );
