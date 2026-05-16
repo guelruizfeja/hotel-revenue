@@ -1146,6 +1146,7 @@ function ImportarExcel({ onClose, session, onImportado, onProduccionDirecta, hot
   const [prodRecientes, setProdRecientes] = useState([]);
   const [generandoProdMock, setGenerandoProdMock] = useState(false);
   const [okProdMock, setOkProdMock] = useState(false);
+  const [resultadoRelleno, setResultadoRelleno] = useState(null);
   // Vaciar
   const [vaciando, setVaciando] = useState(false);
   const [confirmVaciar, setConfirmVaciar] = useState(false);
@@ -1602,61 +1603,162 @@ function ImportarExcel({ onClose, session, onImportado, onProduccionDirecta, hot
     setGuardandoProd(false);
   };
 
-  // ── Generar producción mock de ayer ──
-  const generarProduccionMock = async () => {
-    setGenerandoProdMock(true);
+  // ── Rellenar días faltantes de producción y pickup basado en histórico ──
+  const rellenarDiasFaltantes = async () => {
+    setGenerandoProdMock(true); setErrorProd(""); setOkProdMock(false); setResultadoRelleno(null);
     try {
-      const ayer = new Date(); ayer.setDate(ayer.getDate() - 1);
-      const ayerStr = `${ayer.getFullYear()}-${String(ayer.getMonth()+1).padStart(2,"0")}-${String(ayer.getDate()).padStart(2,"0")}`;
+      const pad = n => String(n).padStart(2, "0");
+      const isoDate = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+      const hoy = new Date();
+      const ayer = new Date(hoy); ayer.setDate(hoy.getDate() - 1);
+      const ayerStr = isoDate(ayer);
 
-      // Leer histórico para calcular patrones reales
-      const { data: historico } = await supabase.from("produccion_diaria")
-        .select("hab_ocupadas,hab_disponibles,revenue_hab,revenue_fnb,revenue_total")
-        .eq("hotel_id", session.user.id)
-        .limit(90);
+      // 1. Leer toda la producción existente
+      const { data: existingProd } = await supabase.from("produccion_diaria")
+        .select("fecha,hab_ocupadas,hab_disponibles,revenue_hab,revenue_fnb,revenue_total")
+        .eq("hotel_id", session.user.id).order("fecha", { ascending: true });
 
-      let habDis, mediaOcc, mediaADR, mediaFnbRatio;
-      if (historico && historico.length > 10) {
-        const conHab = historico.filter(d => d.hab_disponibles > 0);
-        habDis = Math.round(conHab.reduce((a, d) => a + d.hab_disponibles, 0) / conHab.length);
-        mediaOcc = conHab.reduce((a, d) => a + d.hab_ocupadas / d.hab_disponibles, 0) / conHab.length;
-        const conADR = historico.filter(d => d.hab_ocupadas > 0 && d.revenue_hab > 0);
-        mediaADR = conADR.length ? conADR.reduce((a, d) => a + d.revenue_hab / d.hab_ocupadas, 0) / conADR.length : 110;
-        const conFnb = historico.filter(d => d.revenue_hab > 0);
-        mediaFnbRatio = conFnb.length ? conFnb.reduce((a, d) => a + (d.revenue_fnb || 0) / d.revenue_hab, 0) / conFnb.length : 0.15;
+      const existingDates = new Set((existingProd || []).map(r => r.fecha));
+
+      // Rango: desde primera fecha registrada (o hace 1 año si no hay datos) hasta ayer
+      let startDate;
+      if (existingProd && existingProd.length > 0) {
+        startDate = new Date(existingProd[0].fecha + 'T00:00:00');
       } else {
-        habDis = 80; mediaOcc = 0.72; mediaADR = 110; mediaFnbRatio = 0.15;
+        startDate = new Date(hoy); startDate.setFullYear(startDate.getFullYear() - 1);
       }
 
-      const occ = Math.min(1, Math.max(0.3, mediaOcc + (Math.random() - 0.5) * 0.15));
-      const hab_ocupadas = Math.round(habDis * occ);
-      const adr = Math.round(mediaADR * (0.92 + Math.random() * 0.16) * 100) / 100;
-      const revenue_hab = Math.round(hab_ocupadas * adr * 100) / 100;
-      const revenue_fnb = Math.round(revenue_hab * mediaFnbRatio * (0.8 + Math.random() * 0.4) * 100) / 100;
-      const revenue_total = Math.round((revenue_hab + revenue_fnb) * 100) / 100;
-      const revpar = Math.round(revenue_hab / habDis * 100) / 100;
-      const trevpar = Math.round(revenue_total / habDis * 100) / 100;
+      // 2. Fechas faltantes
+      const missingDates = [];
+      let cur = new Date(startDate);
+      const ayerDate = new Date(ayerStr + 'T00:00:00');
+      while (cur <= ayerDate) {
+        const iso = isoDate(cur);
+        if (!existingDates.has(iso)) missingDates.push(iso);
+        cur.setDate(cur.getDate() + 1);
+      }
 
-      const row = {
-        hotel_id: session.user.id, fecha: ayerStr,
-        hab_ocupadas, hab_disponibles: habDis,
-        revenue_hab, revenue_fnb, revenue_total,
-        adr, revpar, trevpar,
-      };
+      if (missingDates.length === 0) {
+        setResultadoRelleno(0); setOkProdMock(true);
+        setTimeout(() => setOkProdMock(false), 3000);
+        setGenerandoProdMock(false); return;
+      }
 
-      const { data: existing } = await supabase.from("produccion_diaria")
-        .select("id").eq("hotel_id", session.user.id).eq("fecha", ayerStr).maybeSingle();
-      const { error } = existing
-        ? await supabase.from("produccion_diaria").update(row).eq("hotel_id", session.user.id).eq("fecha", ayerStr)
-        : await supabase.from("produccion_diaria").insert(row);
-      if (error) throw new Error(error.message);
+      // 3. Patrones del histórico
+      const hist = existingProd || [];
+      let habDis = 30, baseOcc = 0.68, baseADR = 110, fnbRatio = 0.12;
+      if (hist.length > 5) {
+        const conHab = hist.filter(d => d.hab_disponibles > 0);
+        if (conHab.length) habDis = Math.round(conHab.reduce((a, d) => a + d.hab_disponibles, 0) / conHab.length);
+        if (conHab.length) baseOcc = conHab.reduce((a, d) => a + d.hab_ocupadas / d.hab_disponibles, 0) / conHab.length;
+        const conADR = hist.filter(d => d.hab_ocupadas > 0 && d.revenue_hab > 0);
+        if (conADR.length) baseADR = conADR.reduce((a, d) => a + d.revenue_hab / d.hab_ocupadas, 0) / conADR.length;
+        const conFnb = hist.filter(d => d.revenue_hab > 0);
+        if (conFnb.length) fnbRatio = conFnb.reduce((a, d) => a + (d.revenue_fnb || 0) / d.revenue_hab, 0) / conFnb.length;
+      }
 
-      setProdRecientes(prev => [row, ...prev.filter(r => r.fecha !== ayerStr)].slice(0, 8));
-      if (onProduccionDirecta) onProduccionDirecta(row);
-      setOkProdMock(true);
-      setTimeout(() => setOkProdMock(false), 4000);
+      // Factores día de semana (0=dom … 6=sáb)
+      const dowFactors = [0.88, 0.78, 0.80, 0.85, 0.95, 1.12, 1.08];
+      if (hist.length > 20) {
+        const sums = Array(7).fill(0); const counts = Array(7).fill(0);
+        hist.forEach(d => {
+          if (d.hab_disponibles > 0) {
+            const dow = new Date(d.fecha + 'T00:00:00').getDay();
+            sums[dow] += d.hab_ocupadas / d.hab_disponibles; counts[dow]++;
+          }
+        });
+        const avgs = sums.map((s, i) => counts[i] > 0 ? s / counts[i] : baseOcc);
+        const global = avgs.reduce((a, v) => a + v, 0) / 7;
+        if (global > 0) avgs.forEach((v, i) => { dowFactors[i] = v / global; });
+      }
+
+      // Factores mes (estacionalidad típica hotelera)
+      const monthFactors = [0.62, 0.68, 0.78, 0.88, 0.92, 1.08, 1.20, 1.25, 1.05, 0.92, 0.75, 0.82];
+      if (hist.length > 30) {
+        const sums = Array(12).fill(0); const counts = Array(12).fill(0);
+        hist.forEach(d => {
+          if (d.hab_disponibles > 0) {
+            const m = parseInt(d.fecha.slice(5, 7)) - 1;
+            sums[m] += d.hab_ocupadas / d.hab_disponibles; counts[m]++;
+          }
+        });
+        const validAvgs = sums.map((s, i) => counts[i] > 2 ? s / counts[i] : null);
+        const validVals = validAvgs.filter(v => v !== null);
+        const global = validVals.length ? validVals.reduce((a, v) => a + v, 0) / validVals.length : baseOcc;
+        if (global > 0) validAvgs.forEach((v, i) => { if (v !== null) monthFactors[i] = v / global; });
+      }
+
+      // 4. Generar filas de producción
+      const prodRows = missingDates.map(fecha => {
+        const d = new Date(fecha + 'T00:00:00');
+        const rawOcc = baseOcc * dowFactors[d.getDay()] * monthFactors[d.getMonth()];
+        const occ = Math.min(1, Math.max(0.15, rawOcc + (Math.random() - 0.5) * 0.08));
+        const hab_ocupadas = Math.round(habDis * occ);
+        const adr = Math.round(baseADR * (0.92 + Math.random() * 0.16) * 100) / 100;
+        const revenue_hab = Math.round(hab_ocupadas * adr * 100) / 100;
+        const revenue_fnb = Math.round(revenue_hab * fnbRatio * (0.7 + Math.random() * 0.6) * 100) / 100;
+        const revenue_total = Math.round((revenue_hab + revenue_fnb) * 100) / 100;
+        return {
+          hotel_id: session.user.id, fecha,
+          hab_ocupadas, hab_disponibles: habDis,
+          revenue_hab, revenue_fnb, revenue_total,
+          adr,
+          revpar: Math.round(revenue_hab / habDis * 100) / 100,
+          trevpar: Math.round(revenue_total / habDis * 100) / 100,
+        };
+      });
+
+      // 5. Insertar producción en lotes
+      const BATCH = 200;
+      for (let i = 0; i < prodRows.length; i += BATCH) {
+        const { error } = await supabase.from("produccion_diaria").insert(prodRows.slice(i, i + BATCH));
+        if (error) throw new Error(error.message);
+      }
+
+      // 6. Pickup para los días faltantes (solo los que no tienen ya entradas)
+      const { data: existingPickup } = await supabase.from("pickup_entries")
+        .select("fecha_pickup").eq("hotel_id", session.user.id);
+      const pickupDates = new Set((existingPickup || []).map(r => r.fecha_pickup ? String(r.fecha_pickup).slice(0, 10) : null));
+
+      const CANALES = ["Booking.com", "Expedia", "Directo", "Web Propia", "Teléfono", "Booking.com", "Directo", "Booking.com"];
+      const pickupRows = [];
+      missingDates.forEach(fecha => {
+        if (pickupDates.has(fecha)) return;
+        const d = new Date(fecha + 'T00:00:00');
+        const dow = d.getDay();
+        // Más reservas jueves/viernes; menos lunes/martes
+        const n = dow === 4 || dow === 5 ? Math.floor(Math.random() * 3) + 1
+          : dow === 0 || dow === 1     ? Math.floor(Math.random() * 2)
+          :                              Math.floor(Math.random() * 2) + 1;
+        for (let e = 0; e < n; e++) {
+          const antelacion = Math.floor(Math.random() * 85) + 5;
+          const llegada = new Date(d); llegada.setDate(d.getDate() + antelacion);
+          const noches = Math.floor(Math.random() * 4) + 1;
+          const salida = new Date(llegada); salida.setDate(llegada.getDate() + noches);
+          const precio = Math.round(baseADR * noches * (0.88 + Math.random() * 0.24) * 100) / 100;
+          pickupRows.push({
+            hotel_id: session.user.id,
+            fecha_pickup: fecha,
+            fecha_llegada: isoDate(llegada),
+            fecha_salida: isoDate(salida),
+            canal: CANALES[Math.floor(Math.random() * CANALES.length)],
+            num_reservas: 1, noches,
+            precio_total: precio > 0 ? precio : null,
+            estado: "confirmada",
+          });
+        }
+      });
+
+      for (let i = 0; i < pickupRows.length; i += BATCH) {
+        await supabase.from("pickup_entries").insert(pickupRows.slice(i, i + BATCH));
+      }
+
+      setProdRecientes(prev => [...prodRows.slice(-8), ...prev].slice(0, 8));
       if (onImportado) onImportado();
-    } catch(e) { setErrorProd("Error generando datos: " + e.message); }
+      setResultadoRelleno(missingDates.length);
+      setOkProdMock(true);
+      setTimeout(() => { setOkProdMock(false); setResultadoRelleno(null); }, 6000);
+    } catch(e) { setErrorProd("Error: " + e.message); }
     setGenerandoProdMock(false);
   };
 
@@ -2432,10 +2534,10 @@ function ImportarExcel({ onClose, session, onImportado, onProduccionDirecta, hot
               <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16, flexWrap:"wrap", gap:8 }}>
                 <p style={{ fontSize:12, color:H.textMid, lineHeight:1.5, margin:0 }}>Introduce la producción del día. Si ya existe registro para esa fecha, se actualizará.</p>
                 <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                  {okProdMock && <span style={{ fontSize:11, color:H.green, fontWeight:600 }}>✓ Producción de ayer generada</span>}
-                  <button onClick={generarProduccionMock} disabled={generandoProdMock}
+                  {okProdMock && <span style={{ fontSize:11, color:H.green, fontWeight:600 }}>{resultadoRelleno === 0 ? "✓ Sin días faltantes" : `✓ ${resultadoRelleno} día${resultadoRelleno !== 1 ? "s" : ""} completado${resultadoRelleno !== 1 ? "s" : ""}`}</span>}
+                  <button onClick={rellenarDiasFaltantes} disabled={generandoProdMock}
                     style={{ padding:"6px 13px", borderRadius:6, border:`1px solid ${H.border}`, background:H.card, color:H.textMid, fontSize:11, fontWeight:600, cursor:generandoProdMock?"not-allowed":"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", whiteSpace:"nowrap" }}>
-                    {generandoProdMock ? "Generando…" : "⚡ Generar producción de ayer"}
+                    {generandoProdMock ? "Calculando…" : "⚡ Rellenar días faltantes"}
                   </button>
                 </div>
               </div>
