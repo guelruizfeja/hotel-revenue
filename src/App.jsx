@@ -988,6 +988,10 @@ function KpiModal({ kpi, datos, mes, anio, onClose }) {
 
 function KpiCard({ label, subtitle, value, changeLm, upLm, changeLy, upLy, i, onClick, accentColor }) {
   const kpiAccent = accentColor || C.accent;
+  const pct = changeLm && changeLm !== "—" ? parseFloat(changeLm) : null;
+  const isFlat = pct !== null && Math.abs(pct) < 1;
+  const indicatorColor = pct === null ? null : isFlat ? "#B8860B" : upLm ? "#16a34a" : "#D32F2F";
+  const indicatorIcon  = pct === null ? null : isFlat ? "—" : upLm ? "↑" : "↓";
   return (
     <div onClick={onClick} style={{
       background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: 8,
@@ -1013,6 +1017,13 @@ function KpiCard({ label, subtitle, value, changeLm, upLm, changeLy, upLy, i, on
       <p style={{ fontSize: 11, color: C.text, textTransform: "uppercase", letterSpacing: "1.5px", fontWeight: 700 }}>{label}</p>
       {subtitle && <p style={{ fontSize: 9, color: C.textMid, marginTop: 1, letterSpacing: "0.5px", opacity: 0.7 }}>{subtitle}</p>}
       <p style={{ fontSize: "clamp(18px,4vw,24px)", fontWeight: 700, fontFamily: "'Plus Jakarta Sans', sans-serif", color: C.text, margin: "5px 0 4px", letterSpacing: "-1px", lineHeight: 1 }}>{value}</p>
+      {indicatorColor && (
+        <div style={{ display:"flex", alignItems:"center", gap:3 }}>
+          <span style={{ fontSize:11, fontWeight:800, color:indicatorColor, lineHeight:1 }}>{indicatorIcon}</span>
+          <span style={{ fontSize:10, fontWeight:600, color:indicatorColor, lineHeight:1 }}>{changeLm}</span>
+          <span style={{ fontSize:9, color:C.textLight, lineHeight:1 }}>LM</span>
+        </div>
+      )}
     </div>
   );
 }
