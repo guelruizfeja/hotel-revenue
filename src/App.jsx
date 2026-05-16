@@ -4421,7 +4421,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
           <Card style={{ display:"flex", padding:0, overflow:"hidden", marginBottom:16 }}>
 
             {/* ── HEATMAP (izquierda) ── */}
-            <div style={{ flex: hmVista === "diario" ? 1 : 2, padding:"20px 22px", display:"flex", flexDirection:"column" }}>
+            <div style={{ flex: hmVista === "diario" ? 3 : 2, padding:"20px 22px", display:"flex", flexDirection:"column" }}>
               {/* Header con toggle */}
               <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
                 <p style={{ fontSize:11, fontWeight:700, color:C.textMid, textTransform:"uppercase", letterSpacing:"1.5px" }}>
@@ -4552,11 +4552,11 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
               })()}
             </div>
 
-            {/* ── SEPARADOR VERTICAL (solo vista mensual) ── */}
-            {hmVista === "mensual" && <div style={{ width:1, background:C.border, flexShrink:0, margin:"16px 0" }}/>}
+            {/* ── SEPARADOR VERTICAL ── */}
+            <div style={{ width:1, background:C.border, flexShrink:0, margin:"16px 0" }}/>
 
-            {/* ── MOVIMIENTO OPERATIVO DIARIO (derecha, solo vista mensual) ── */}
-            {hmVista === "mensual" && (() => {
+            {/* ── MOVIMIENTO OPERATIVO DIARIO (derecha) ── */}
+            {(() => {
               const _p = n => String(n).padStart(2,"0");
               const hoy = new Date();
               const hoyStr = `${hoy.getFullYear()}-${_p(hoy.getMonth()+1)}-${_p(hoy.getDate())}`;
