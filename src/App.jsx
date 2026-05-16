@@ -8644,8 +8644,9 @@ export default function App() {
     return NAV.map(n => n.key);
   });
   const dragNavKey = useRef(null);
-  const [dragNavOver, setDragNavOver] = useState(null);
+  const [navPreview, setNavPreview] = useState(null);
   const navSorted = navOrder.map(k => NAV.find(n => n.key === k)).filter(Boolean);
+  const navDisplay = navPreview ? navPreview.map(k => NAV.find(n => n.key === k)).filter(Boolean) : navSorted;
 
   const CACHE_KEY = "fr_datos_cache_v4";
   const CACHE_TS_KEY = "fr_datos_ts_v4";
@@ -8932,30 +8933,35 @@ export default function App() {
 
           {/* Nav links — arrastrables para reordenar */}
           <nav style={{ display: "flex", alignItems: "center", gap: 2 }}>
-            {navSorted.map(n => {
-              const navColor = n.key==="budget" ? "#4ade80" : n.key==="pickup" ? "#fbbf24" : n.key==="grupos" ? "#a78bfa" : "#60a5fa";
+            {navDisplay.map(n => {
               const isActive = view===n.key;
-              const isDragOver = dragNavOver === n.key;
+              const isDragging = dragNavKey.current === n.key;
               return (
                 <button key={n.key} id={`ob-nav-${n.key}`}
                   draggable
-                  onDragStart={() => { dragNavKey.current = n.key; }}
-                  onDragEnd={() => { dragNavKey.current = null; setDragNavOver(null); }}
-                  onDragOver={e => { e.preventDefault(); setDragNavOver(n.key); }}
-                  onDragLeave={() => setDragNavOver(null)}
-                  onDrop={e => {
+                  onDragStart={e => { dragNavKey.current = n.key; e.dataTransfer.effectAllowed = "move"; }}
+                  onDragEnd={() => { dragNavKey.current = null; setNavPreview(null); }}
+                  onDragOver={e => {
                     e.preventDefault();
                     const from = dragNavKey.current;
                     if (!from || from === n.key) return;
-                    const next = [...navOrder];
-                    const fi = next.indexOf(from), ti = next.indexOf(n.key);
+                    const base = navPreview || navOrder;
+                    const fi = base.indexOf(from), ti = base.indexOf(n.key);
+                    if (fi === -1 || ti === -1 || fi === ti) return;
+                    const next = [...base];
                     next.splice(fi, 1); next.splice(ti, 0, from);
-                    setNavOrder(next);
-                    localStorage.setItem("fr_nav_order", JSON.stringify(next));
-                    setDragNavOver(null);
+                    setNavPreview(next);
+                  }}
+                  onDrop={e => {
+                    e.preventDefault();
+                    const committed = navPreview || navOrder;
+                    setNavOrder(committed);
+                    localStorage.setItem("fr_nav_order", JSON.stringify(committed));
+                    setNavPreview(null);
+                    dragNavKey.current = null;
                   }}
                   onClick={() => { setView(n.key); setMesDetalle(null); localStorage.setItem("fr_view", n.key); }}
-                  style={{ padding: "6px clamp(6px,2vw,16px)", borderRadius: 7, border: "none", cursor: "grab", background: isDragOver ? "rgba(255,255,255,0.2)" : isActive ? "rgba(255,255,255,0.12)" : "transparent", color: "#fff", fontSize: "clamp(11px,2.5vw,13px)", fontWeight: isActive ? 700 : 400, fontFamily: "'Plus Jakarta Sans', sans-serif", transition: "all 0.15s", whiteSpace: "nowrap", outline: isActive ? `1.5px solid rgba(255,255,255,0.3)` : isDragOver ? "1.5px solid rgba(255,255,255,0.5)" : "1.5px solid transparent" }}>
+                  style={{ padding: "6px clamp(6px,2vw,16px)", borderRadius: 7, border: "none", cursor: "grab", background: isActive ? "rgba(255,255,255,0.12)" : "transparent", color: "#fff", fontSize: "clamp(11px,2.5vw,13px)", fontWeight: isActive ? 700 : 400, fontFamily: "'Plus Jakarta Sans', sans-serif", transition: "background 0.1s, opacity 0.1s", whiteSpace: "nowrap", outline: isActive ? `1.5px solid rgba(255,255,255,0.3)` : "1.5px solid transparent", opacity: isDragging ? 0.4 : 1 }}>
                   <span className="topbar-nav-label">{t(n.labelKey)}</span>
                   <span style={{ display:"none" }} className="topbar-nav-icon">{t(n.labelKey).slice(0,3)}</span>
                 </button>
