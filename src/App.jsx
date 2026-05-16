@@ -1016,14 +1016,15 @@ function KpiCard({ label, subtitle, value, changeLm, upLm, changeLy, upLy, i, on
     }}>
       <p style={{ fontSize: 11, color: C.text, textTransform: "uppercase", letterSpacing: "1.5px", fontWeight: 700 }}>{label}</p>
       {subtitle && <p style={{ fontSize: 9, color: C.textMid, marginTop: 1, letterSpacing: "0.5px", opacity: 0.7 }}>{subtitle}</p>}
-      <p style={{ fontSize: "clamp(18px,4vw,24px)", fontWeight: 700, fontFamily: "'Plus Jakarta Sans', sans-serif", color: C.text, margin: "5px 0 4px", letterSpacing: "-1px", lineHeight: 1 }}>{value}</p>
-      {indicatorColor && (
-        <div style={{ display:"flex", alignItems:"center", gap:3 }}>
-          <span style={{ fontSize:11, fontWeight:800, color:indicatorColor, lineHeight:1 }}>{indicatorIcon}</span>
-          <span style={{ fontSize:10, fontWeight:600, color:indicatorColor, lineHeight:1 }}>{changeLm}</span>
-          <span style={{ fontSize:9, color:C.textLight, lineHeight:1 }}>LM</span>
-        </div>
-      )}
+      <div style={{ position:"relative", margin:"5px 0 4px" }}>
+        <p style={{ textAlign:"center", fontSize:"clamp(18px,4vw,24px)", fontWeight:700, fontFamily:"'Plus Jakarta Sans', sans-serif", color:C.text, margin:0, letterSpacing:"-1px", lineHeight:1 }}>{value}</p>
+        {indicatorColor && (
+          <div style={{ position:"absolute", top:0, bottom:0, left:"calc(50% + 46px)", display:"flex", flexDirection:"column", justifyContent:"center", alignItems:"flex-start", gap:2 }}>
+            <span style={{ fontSize:13, fontWeight:800, color:indicatorColor, lineHeight:1, whiteSpace:"nowrap" }}>{indicatorIcon} <span style={{ fontSize:11, fontWeight:600 }}>{changeLm}</span></span>
+            <span style={{ fontSize:9, color:C.textLight, lineHeight:1 }}>vs LM</span>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -3651,7 +3652,44 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
     return () => window.removeEventListener("keydown", handler);
   }, [modalDiario, hmMesSel, hmEventForm, hmSelRango, hmDayModal, hmModoCrear]);
 
-  if (!produccion || produccion.length === 0) return <EmptyState />;
+  const kpiCacheKey = `fr_kpis_${mes}_${anio}`;
+  const kpisComputed = useMemo(() => {
+    if (!produccion || produccion.length === 0) return null;
+    const dM=produccion.filter(d=>{const f=new Date(d.fecha+"T00:00:00");return f.getMonth()===mes&&f.getFullYear()===anio;});
+    const tHO=dM.reduce((a,d)=>a+(d.hab_ocupadas||0),0), tHD=dM.reduce((a,d)=>a+(d.hab_disponibles||0),0), tRH=dM.reduce((a,d)=>a+(d.revenue_hab||0),0), tRF=dM.reduce((a,d)=>a+(d.revenue_fnb||0),0);
+    const _occ=tHD>0?(tHO/tHD*100).toFixed(1):0, _adr=tHO>0?(tRH/tHO).toFixed(0):0, _rvp=tHD>0?(tRH/tHD).toFixed(0):0, _trv=tHD>0?((tRH+tRF)/tHD).toFixed(0):0;
+    const mPI=mes===0?11:mes-1, aP=mes===0?anio-1:anio;
+    const dP=produccion.filter(d=>{const f=new Date(d.fecha+"T00:00:00");return f.getMonth()===mPI&&f.getFullYear()===aP;});
+    const pH=dP.reduce((a,d)=>a+(d.hab_ocupadas||0),0),pD=dP.reduce((a,d)=>a+(d.hab_disponibles||0),0),pRH=dP.reduce((a,d)=>a+(d.revenue_hab||0),0),pRF=dP.reduce((a,d)=>a+(d.revenue_fnb||0),0);
+    const pOcc=pD>0?(pH/pD*100):null,pAdr=pH>0?(pRH/pH):null,pRvp=pD>0?(pRH/pD):null,pTrv=pD>0?((pRH+pRF)/pD):null;
+    const dLY=produccion.filter(d=>{const f=new Date(d.fecha+"T00:00:00");return f.getMonth()===mes&&f.getFullYear()===anio-1;});
+    const lH=dLY.reduce((a,d)=>a+(d.hab_ocupadas||0),0),lD=dLY.reduce((a,d)=>a+(d.hab_disponibles||0),0),lRH=dLY.reduce((a,d)=>a+(d.revenue_hab||0),0),lRF=dLY.reduce((a,d)=>a+(d.revenue_fnb||0),0);
+    const lOcc=lD>0?(lH/lD*100):null,lAdr=lH>0?(lRH/lH):null,lRvp=lD>0?(lRH/lD):null,lTrv=lD>0?((lRH+lRF)/lD):null;
+    const _diff=(c,lm,ly)=>{const b=(p)=>p==null||p===0?{ch:"—",up:true}:{ch:`${c-p>=0?"+":""}${((c-p)/p*100).toFixed(1)}%`,up:c-p>=0};return{changeLm:b(lm).ch,upLm:b(lm).up,changeLy:b(ly).ch,upLy:b(ly).up};};
+    return [
+      {label:"Ocupación",kpiKey:"Ocupación",value:`${_occ}%`,..._diff(parseFloat(_occ),pOcc,lOcc)},
+      {label:"ADR",kpiKey:"ADR",value:`€${_adr}`,subtitle:"Precio medio",..._diff(parseFloat(_adr),pAdr,lAdr)},
+      {label:"RevPAR",kpiKey:"RevPAR",value:`€${_rvp}`,subtitle:"Revenue por hab. disponible",..._diff(parseFloat(_rvp),pRvp,lRvp)},
+      {label:"TRevPAR",kpiKey:"TRevPAR",value:`€${_trv}`,subtitle:"Revenue total por hab.",..._diff(parseFloat(_trv),pTrv,lTrv)},
+    ];
+  }, [produccion, mes, anio]);
+  const [kpisCached, setKpisCached] = useState(() => { try { return JSON.parse(localStorage.getItem(`fr_kpis_${mes}_${anio}`) || "null"); } catch { return null; } });
+  useEffect(() => {
+    if (kpisComputed) { localStorage.setItem(kpiCacheKey, JSON.stringify(kpisComputed)); setKpisCached(kpisComputed); }
+    else { try { const c=JSON.parse(localStorage.getItem(kpiCacheKey)||"null"); if(c) setKpisCached(c); } catch {} }
+  }, [kpisComputed, kpiCacheKey]);
+
+  if (!produccion || produccion.length === 0) {
+    if (!kpisCached) return <EmptyState />;
+    return (
+      <div>
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(clamp(140px,40vw,200px),1fr))", gap:10, marginBottom:8 }}>
+          {kpisCached.map((k,i) => <KpiCard key={i} {...k} i={i} onClick={()=>{}} />)}
+        </div>
+        <p style={{ fontSize:11, color:C.textLight, textAlign:"center", marginTop:32 }}>Cargando datos…</p>
+      </div>
+    );
+  }
 
   const datosMes = produccion.filter(d => {
     const f = new Date(d.fecha + "T00:00:00");
@@ -8463,6 +8501,47 @@ function LiveClock({ lang }) {
   );
 }
 
+function ModalConfigHotel({ datos, session, onClose, onGuardado }) {
+  const [hForm, setHForm] = React.useState({ nombre: datos.hotel?.nombre||"", ciudad: datos.hotel?.ciudad||"", habitaciones: datos.hotel?.habitaciones||"" });
+  const [hGuardando, setHGuardando] = React.useState(false);
+  const [hOk, setHOk] = React.useState(false);
+  const inp = { width:"100%", padding:"9px 12px", borderRadius:8, border:`1px solid ${C.border}`, background:C.bg, color:C.text, fontSize:13, fontFamily:"'Plus Jakarta Sans',sans-serif", boxSizing:"border-box", outline:"none" };
+  return (
+    <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:1000 }}>
+      <div style={{ background:C.bgCard, borderRadius:16, padding:"32px 36px", width:400, boxShadow:"0 24px 60px rgba(0,0,0,0.2)", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:24 }}>
+          <h2 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:20, fontWeight:700, color:C.text }}>Configuración del hotel</h2>
+          <button onClick={onClose} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, width:28, height:28, cursor:"pointer", fontSize:15, color:C.textLight, display:"flex", alignItems:"center", justifyContent:"center", padding:0 }}>✕</button>
+        </div>
+        <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
+          <div>
+            <p style={{ fontSize:11, color:C.textLight, fontWeight:600, marginBottom:5 }}>NOMBRE DEL HOTEL</p>
+            <input style={inp} value={hForm.nombre} onChange={e=>setHForm(f=>({...f,nombre:e.target.value}))} placeholder="Nombre del hotel" />
+          </div>
+          <div>
+            <p style={{ fontSize:11, color:C.textLight, fontWeight:600, marginBottom:5 }}>CIUDAD</p>
+            <input style={inp} value={hForm.ciudad} onChange={e=>setHForm(f=>({...f,ciudad:e.target.value}))} placeholder="Ciudad" />
+          </div>
+          <div>
+            <p style={{ fontSize:11, color:C.textLight, fontWeight:600, marginBottom:5 }}>NÚMERO DE HABITACIONES</p>
+            <input style={inp} type="number" min="1" value={hForm.habitaciones} onChange={e=>setHForm(f=>({...f,habitaciones:e.target.value}))} placeholder="Ej: 110" />
+            <p style={{ fontSize:10, color:C.textLight, marginTop:4 }}>Usado para calcular la ocupación en el heatmap y previsiones futuras.</p>
+          </div>
+        </div>
+        <button disabled={hGuardando||hOk} onClick={async()=>{
+          setHGuardando(true);
+          await supabase.from("hoteles").update({ nombre:hForm.nombre||null, ciudad:hForm.ciudad||null, habitaciones:parseInt(hForm.habitaciones)||null }).eq("id",session.user.id);
+          setHGuardando(false); setHOk(true);
+          onGuardado(true);
+          setTimeout(()=>{ setHOk(false); onClose(); }, 1500);
+        }} style={{ marginTop:24, width:"100%", padding:"11px", borderRadius:9, border:"none", background:hOk?"#059669":C.accent, color:"#fff", fontSize:14, fontWeight:700, cursor:hGuardando||hOk?"not-allowed":"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", transition:"background 0.2s" }}>
+          {hGuardando ? "Guardando..." : hOk ? "✓ Guardado" : "Guardar cambios"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -8946,49 +9025,8 @@ export default function App() {
       </main>
 
 
-      {/* Modal Suscripción */}
-      {perfilSeccion === "hotel" && (() => {
-        const [hForm, setHForm] = React.useState({ nombre: datos.hotel?.nombre||"", ciudad: datos.hotel?.ciudad||"", habitaciones: datos.hotel?.habitaciones||"" });
-        const [hGuardando, setHGuardando] = React.useState(false);
-        const [hOk, setHOk] = React.useState(false);
-        const inp = { width:"100%", padding:"9px 12px", borderRadius:8, border:`1px solid ${C.border}`, background:C.bg, color:C.text, fontSize:13, fontFamily:"'Plus Jakarta Sans',sans-serif", boxSizing:"border-box", outline:"none" };
-        return (
-          <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:1000 }}>
-            <div style={{ background:C.bgCard, borderRadius:16, padding:"32px 36px", width:400, boxShadow:"0 24px 60px rgba(0,0,0,0.2)", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
-              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:24 }}>
-                <h2 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:20, fontWeight:700, color:C.text }}>Configuración del hotel</h2>
-                <button onClick={()=>setPerfilSeccion(null)} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, width:28, height:28, cursor:"pointer", fontSize:15, color:C.textLight, display:"flex", alignItems:"center", justifyContent:"center", padding:0 }}>✕</button>
-              </div>
-
-              <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
-                <div>
-                  <p style={{ fontSize:11, color:C.textLight, fontWeight:600, marginBottom:5 }}>NOMBRE DEL HOTEL</p>
-                  <input style={inp} value={hForm.nombre} onChange={e=>setHForm(f=>({...f,nombre:e.target.value}))} placeholder="Nombre del hotel" />
-                </div>
-                <div>
-                  <p style={{ fontSize:11, color:C.textLight, fontWeight:600, marginBottom:5 }}>CIUDAD</p>
-                  <input style={inp} value={hForm.ciudad} onChange={e=>setHForm(f=>({...f,ciudad:e.target.value}))} placeholder="Ciudad" />
-                </div>
-                <div>
-                  <p style={{ fontSize:11, color:C.textLight, fontWeight:600, marginBottom:5 }}>NÚMERO DE HABITACIONES</p>
-                  <input style={inp} type="number" min="1" value={hForm.habitaciones} onChange={e=>setHForm(f=>({...f,habitaciones:e.target.value}))} placeholder="Ej: 110" />
-                  <p style={{ fontSize:10, color:C.textLight, marginTop:4 }}>Usado para calcular la ocupación en el heatmap y previsiones futuras.</p>
-                </div>
-              </div>
-
-              <button disabled={hGuardando||hOk} onClick={async()=>{
-                setHGuardando(true);
-                await supabase.from("hoteles").update({ nombre:hForm.nombre||null, ciudad:hForm.ciudad||null, habitaciones:parseInt(hForm.habitaciones)||null }).eq("id",session.user.id);
-                setHGuardando(false); setHOk(true);
-                cargarDatos(true);
-                setTimeout(()=>{ setHOk(false); setPerfilSeccion(null); }, 1500);
-              }} style={{ marginTop:24, width:"100%", padding:"11px", borderRadius:9, border:"none", background:hOk?"#059669":C.accent, color:"#fff", fontSize:14, fontWeight:700, cursor:hGuardando||hOk?"not-allowed":"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", transition:"background 0.2s" }}>
-                {hGuardando ? "Guardando..." : hOk ? "✓ Guardado" : "Guardar cambios"}
-              </button>
-            </div>
-          </div>
-        );
-      })()}
+      {/* Modal Configuración Hotel */}
+      {perfilSeccion === "hotel" && <ModalConfigHotel datos={datos} session={session} onClose={()=>setPerfilSeccion(null)} onGuardado={cargarDatos} />}
 
       {perfilSeccion === "suscripcion" && (
         <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:1000 }}>
