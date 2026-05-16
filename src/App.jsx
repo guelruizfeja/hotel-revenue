@@ -8645,6 +8645,7 @@ export default function App() {
   });
   const dragNavKey = useRef(null);
   const [navPreview, setNavPreview] = useState(null);
+  const [draggingNavKey, setDraggingNavKey] = useState(null);
   const navSorted = navOrder.map(k => NAV.find(n => n.key === k)).filter(Boolean);
   const navDisplay = navPreview ? navPreview.map(k => NAV.find(n => n.key === k)).filter(Boolean) : navSorted;
 
@@ -8935,12 +8936,11 @@ export default function App() {
           <nav style={{ display: "flex", alignItems: "center", gap: 2 }}>
             {navDisplay.map(n => {
               const isActive = view===n.key;
-              const isDragging = dragNavKey.current === n.key;
               return (
                 <button key={n.key} id={`ob-nav-${n.key}`}
                   draggable
-                  onDragStart={e => { dragNavKey.current = n.key; e.dataTransfer.effectAllowed = "move"; }}
-                  onDragEnd={() => { dragNavKey.current = null; setNavPreview(null); }}
+                  onDragStart={e => { dragNavKey.current = n.key; e.dataTransfer.effectAllowed = "move"; setTimeout(() => setDraggingNavKey(n.key), 0); }}
+                  onDragEnd={() => { dragNavKey.current = null; setNavPreview(null); setDraggingNavKey(null); }}
                   onDragOver={e => {
                     e.preventDefault();
                     const from = dragNavKey.current;
@@ -8961,7 +8961,7 @@ export default function App() {
                     dragNavKey.current = null;
                   }}
                   onClick={() => { setView(n.key); setMesDetalle(null); localStorage.setItem("fr_view", n.key); }}
-                  style={{ padding: "6px clamp(6px,2vw,16px)", borderRadius: 7, border: "none", cursor: "grab", background: isActive ? "rgba(255,255,255,0.12)" : "transparent", color: "#fff", fontSize: "clamp(11px,2.5vw,13px)", fontWeight: isActive ? 700 : 400, fontFamily: "'Plus Jakarta Sans', sans-serif", transition: "background 0.1s, opacity 0.1s", whiteSpace: "nowrap", outline: isActive ? `1.5px solid rgba(255,255,255,0.3)` : "1.5px solid transparent", opacity: isDragging ? 0.4 : 1 }}>
+                  style={{ padding: "6px clamp(6px,2vw,16px)", borderRadius: 7, border: "none", cursor: "grab", background: isActive ? "rgba(255,255,255,0.12)" : "transparent", color: "#fff", fontSize: "clamp(11px,2.5vw,13px)", fontWeight: isActive ? 700 : 400, fontFamily: "'Plus Jakarta Sans', sans-serif", transition: "background 0.1s", whiteSpace: "nowrap", outline: isActive ? `1.5px solid rgba(255,255,255,0.3)` : "1.5px solid transparent", visibility: draggingNavKey === n.key ? "hidden" : "visible" }}>
                   <span className="topbar-nav-label">{t(n.labelKey)}</span>
                   <span style={{ display:"none" }} className="topbar-nav-icon">{t(n.labelKey).slice(0,3)}</span>
                 </button>
