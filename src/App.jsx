@@ -355,6 +355,9 @@ const MESES = ["Enero","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","No
 const MESES_CORTO = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
 const MESES_FULL = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 
+const NET_HAB_FNB = 1 / 1.10; // Deduce IVA 10% (alojamiento y F&B)
+const NET_SALA    = 1 / 1.21; // Deduce IVA 21% (salas)
+
 const AnimatedBar = (props) => {
   const { x, y, width, height, fill, onClick } = props;
   const [animKey, setAnimKey] = useState(0);
@@ -1276,9 +1279,11 @@ function ImportarExcel({ onClose, session, onImportado, onProduccionDirecta, hot
         const fecha = row[0];
         const hab_ocupadas = parseFloat(row[1]) || null;
         const hab_disponibles = parseFloat(row[2]) || totalHab;
-        const revenue_hab = parseFloat(row[3]) || null;
-        const revenue_total = parseFloat(row[4]) || null;
-        const revenue_fnb = parseFloat(row[5]) || null;
+        const _rh_csv = parseFloat(row[3]) || null;
+        const _rf_csv = parseFloat(row[5]) || null;
+        const revenue_hab = _rh_csv != null ? Math.round(_rh_csv * NET_HAB_FNB * 100) / 100 : null;
+        const revenue_fnb = _rf_csv != null ? Math.round(_rf_csv * NET_HAB_FNB * 100) / 100 : null;
+        const revenue_total = revenue_hab != null || revenue_fnb != null ? Math.round(((revenue_hab||0)+(revenue_fnb||0)) * 100) / 100 : null;
         if (!hab_ocupadas && !revenue_hab) continue;
 
         let fechaISO;
@@ -1458,8 +1463,8 @@ function ImportarExcel({ onClose, session, onImportado, onProduccionDirecta, hot
         mes:            pptoEditMes,
         occ_ppto:       parseFloat(pptoEditValues.occ_ppto)       || null,
         adr_ppto:       parseFloat(pptoEditValues.adr_ppto)       || null,
-        revpar_ppto:    parseFloat(pptoEditValues.revpar_ppto)     || null,
-        rev_total_ppto: parseFloat(pptoEditValues.rev_total_ppto)  || null,
+        revpar_ppto:    parseFloat(pptoEditValues.revpar_ppto)    || null,
+        rev_total_ppto: parseFloat(pptoEditValues.rev_total_ppto) || null,
       };
       const { data: existing } = await supabase.from("presupuesto")
         .select("id").eq("hotel_id", session.user.id).eq("anio", pptoEditAnio).eq("mes", pptoEditMes).maybeSingle();
@@ -1563,9 +1568,12 @@ function ImportarExcel({ onClose, session, onImportado, onProduccionDirecta, hot
       if (!prodForm.fecha) throw new Error("La fecha es obligatoria");
       const hab_ocupadas    = parseFloat(prodForm.hab_ocupadas)    || null;
       const hab_disponibles = parseFloat(prodForm.hab_disponibles) || null;
-      const revenue_hab     = parseFloat(prodForm.revenue_hab)     || null;
-      const revenue_fnb     = parseFloat(prodForm.revenue_fnb)     || null;
-      const revenue_salas   = parseFloat(prodForm.revenue_salas)   || null;
+      const _rh_raw     = parseFloat(prodForm.revenue_hab)     || null;
+      const _rf_raw     = parseFloat(prodForm.revenue_fnb)     || null;
+      const _rs_raw     = parseFloat(prodForm.revenue_salas)   || null;
+      const revenue_hab   = _rh_raw != null ? Math.round(_rh_raw * NET_HAB_FNB * 100) / 100 : null;
+      const revenue_fnb   = _rf_raw != null ? Math.round(_rf_raw * NET_HAB_FNB * 100) / 100 : null;
+      const revenue_salas = _rs_raw != null ? Math.round(_rs_raw * NET_SALA    * 100) / 100 : null;
       const revenue_total   = Math.round(((revenue_hab||0) + (revenue_fnb||0) + (revenue_salas||0)) * 100) / 100 || null;
       if (!hab_ocupadas && !revenue_hab) throw new Error("Introduce al menos Hab. Ocupadas o Rev. Habitaciones");
       const adr    = hab_ocupadas > 0 && revenue_hab ? Math.round(revenue_hab / hab_ocupadas * 100) / 100 : null;
@@ -1864,9 +1872,11 @@ function ImportarExcel({ onClose, session, onImportado, onProduccionDirecta, hot
     setGuardandoEdit(true); setErrorEdit(""); setOkEdit(false);
     const hab_ocupadas    = parseFloat(editValues.hab_ocupadas)    || null;
     const hab_disponibles = parseFloat(editValues.hab_disponibles) || null;
-    const revenue_hab     = parseFloat(editValues.revenue_hab)     || null;
-    const revenue_total   = parseFloat(editValues.revenue_total)   || null;
-    const revenue_fnb     = parseFloat(editValues.revenue_fnb)     || null;
+    const _rh_e = parseFloat(editValues.revenue_hab) || null;
+    const _rf_e = parseFloat(editValues.revenue_fnb) || null;
+    const revenue_hab   = _rh_e != null ? Math.round(_rh_e * NET_HAB_FNB * 100) / 100 : null;
+    const revenue_fnb   = _rf_e != null ? Math.round(_rf_e * NET_HAB_FNB * 100) / 100 : null;
+    const revenue_total = revenue_hab != null || revenue_fnb != null ? Math.round(((revenue_hab||0)+(revenue_fnb||0)) * 100) / 100 : null;
     const adr    = hab_ocupadas > 0 && revenue_hab ? Math.round(revenue_hab / hab_ocupadas * 100) / 100 : null;
     const revpar = hab_disponibles > 0 && revenue_hab ? Math.round(revenue_hab / hab_disponibles * 100) / 100 : null;
     const trevpar = hab_disponibles > 0 ? Math.round(((revenue_hab||0)+(revenue_fnb||0)) / hab_disponibles * 100) / 100 : null;
@@ -1902,12 +1912,12 @@ function ImportarExcel({ onClose, session, onImportado, onProduccionDirecta, hot
         precio_total:  (() => {
           if (preciosDiferentes && preciosPorNoche.length > 0) {
             const suma = preciosPorNoche.reduce((a, v) => a + (parseFloat(v) || 0), 0);
-            return suma > 0 ? Math.round(suma * 100) / 100 : null;
+            return suma > 0 ? Math.round(suma * NET_HAB_FNB * 100) / 100 : null;
           }
-          return pickupForm.precio_total ? parseFloat(pickupForm.precio_total) : null;
+          return pickupForm.precio_total ? Math.round(parseFloat(pickupForm.precio_total) * NET_HAB_FNB * 100) / 100 : null;
         })(),
         precios_por_noche: preciosDiferentes && preciosPorNoche.length > 0
-          ? preciosPorNoche.map(v => parseFloat(v) || 0)
+          ? preciosPorNoche.map(v => Math.round((parseFloat(v) || 0) * NET_HAB_FNB * 100) / 100)
           : null,
         estado:        pickupForm.estado || "confirmada",
       };
@@ -2492,6 +2502,7 @@ function ImportarExcel({ onClose, session, onImportado, onProduccionDirecta, hot
                     );
                   })()}
                 </div>
+                <p style={{ fontSize:10, color:"#004B87", marginBottom:8, lineHeight:1.5 }}>ⓘ Al guardar se deduce el IVA automáticamente: alojamiento/F&B ÷1,10 · salas ÷1,21</p>
                 {errorProd && <p style={{ fontSize:11, color:H.red, marginBottom:8 }}>{errorProd}</p>}
                 {okProd && <p style={{ fontSize:11, color:H.green, marginBottom:8 }}>✓ Producción guardada</p>}
                 <button onClick={guardarProduccion} disabled={guardandoProd}
@@ -2673,6 +2684,7 @@ function ImportarExcel({ onClose, session, onImportado, onProduccionDirecta, hot
                     </select>
                   </div>
                 </div>
+                <p style={{ fontSize:10, color:"#004B87", marginBottom:8, lineHeight:1.5 }}>ⓘ Al guardar se deduce el IVA automáticamente: precio ÷1,10 (IVA 10%)</p>
                 {errorPickup && <p style={{ fontSize:11, color:H.red, marginBottom:8 }}>{errorPickup}</p>}
                 {okPickup && <p style={{ fontSize:11, color:H.green, marginBottom:8 }}>✓ Reserva añadida</p>}
                 <button onClick={guardarPickup} disabled={guardandoPickup}
@@ -5061,7 +5073,7 @@ function PickupView({ datos, onGuardado }) {
         <button onClick={abrirNuevaReserva}
           style={{ display:"inline-flex", alignItems:"center", gap:7, background:C.text, color:"#fff", border:"none", borderRadius:8, padding:"9px 18px", cursor:"pointer", fontSize:12, fontWeight:700, fontFamily:"'Plus Jakarta Sans',sans-serif", letterSpacing:"0.3px" }}>
           <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><rect x="1" y="1" width="11" height="11" rx="2" stroke="#fff" strokeWidth="1.8"/><line x1="4" y1="4.5" x2="9" y2="4.5" stroke="#fff" strokeWidth="1.5" strokeLinecap="round"/><line x1="4" y1="7" x2="7" y2="7" stroke="#fff" strokeWidth="1.5" strokeLinecap="round"/></svg>
-          Gestión de reserva
+          Gestión de reservas
         </button>
         <button onClick={generarPickupMock} disabled={generandoMock}
           style={{ display:"inline-flex", alignItems:"center", gap:6, background:"none", color:C.textMid, border:`1px solid ${C.border}`, borderRadius:8, padding:"8px 14px", cursor:generandoMock?"not-allowed":"pointer", fontSize:11, fontWeight:600, fontFamily:"'Plus Jakarta Sans',sans-serif", opacity:generandoMock?0.6:1 }}>
@@ -5591,7 +5603,7 @@ function PickupView({ datos, onGuardado }) {
               <p style={{ fontSize:9, color:"#ffffff", fontWeight:700, textTransform:"uppercase", letterSpacing:1, marginTop:4 }}>reservas</p>
             </div>
             <div style={{ flex:1 }}>
-              <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:18, color:C.text, marginBottom:8 }}>Reservas obtenidas</p>
+              <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:18, color:C.text, marginBottom:8 }}>Resumen de reservas</p>
               {/* Toggle ventana */}
               <div style={{ display:"flex", borderRadius:8, overflow:"hidden", border:`1px solid ${C.border}`, width:"fit-content" }}>
                 {[["ayer","Ayer"], ["7d","7 días"], ["30d","30 días"], ["year","1 año"]].map(([key, label]) => (
@@ -5755,13 +5767,13 @@ function PickupView({ datos, onGuardado }) {
               <table style={{ width:"100%", borderCollapse:"collapse", fontSize:12 }}>
                 <thead>
                   <tr style={{ background:C.bg }}>
-                    <th style={{ padding:"9px 16px", textAlign:"left",   color:C.textLight, fontWeight:600, fontSize:11, textTransform:"uppercase", letterSpacing:0.8, whiteSpace:"nowrap" }}>Mes</th>
-                    <th style={{ padding:"9px 12px", textAlign:"right",  color:C.textLight, fontWeight:600, fontSize:11, textTransform:"uppercase", letterSpacing:0.8 }}>OTB Res.</th>
-                    <th style={{ padding:"9px 12px", textAlign:"right",  color:"#B8860B",   fontWeight:700, fontSize:11, textTransform:"uppercase", letterSpacing:0.8 }}>OCC OTB</th>
-                    <th style={{ padding:"9px 12px", textAlign:"right",  color:C.textLight, fontWeight:600, fontSize:11, textTransform:"uppercase", letterSpacing:0.8 }}>OCC LY</th>
-                    <th style={{ padding:"9px 12px", textAlign:"right",  color:C.textLight, fontWeight:600, fontSize:11, textTransform:"uppercase", letterSpacing:0.8 }}>OCC Ppto</th>
-                    <th style={{ padding:"9px 12px", textAlign:"right",  color:C.textLight, fontWeight:600, fontSize:11, textTransform:"uppercase", letterSpacing:0.8 }}>vs LY</th>
-                    <th style={{ padding:"9px 16px", textAlign:"right",  color:C.textLight, fontWeight:600, fontSize:11, textTransform:"uppercase", letterSpacing:0.8 }}>vs Ppto</th>
+                    <th style={{ padding:"9px 16px", textAlign:"left",   color:C.text, fontWeight:600, fontSize:11, textTransform:"uppercase", letterSpacing:0.8, whiteSpace:"nowrap" }}>Mes</th>
+                    <th style={{ padding:"9px 12px", textAlign:"right",  color:C.text, fontWeight:600, fontSize:11, textTransform:"uppercase", letterSpacing:0.8 }}>OTB Res.</th>
+                    <th style={{ padding:"9px 12px", textAlign:"right",  color:C.text, fontWeight:700, fontSize:11, textTransform:"uppercase", letterSpacing:0.8 }}>OCC OTB</th>
+                    <th style={{ padding:"9px 12px", textAlign:"right",  color:C.text, fontWeight:600, fontSize:11, textTransform:"uppercase", letterSpacing:0.8 }}>OCC LY</th>
+                    <th style={{ padding:"9px 12px", textAlign:"right",  color:C.text, fontWeight:600, fontSize:11, textTransform:"uppercase", letterSpacing:0.8 }}>OCC Ppto</th>
+                    <th style={{ padding:"9px 12px", textAlign:"right",  color:C.text, fontWeight:600, fontSize:11, textTransform:"uppercase", letterSpacing:0.8 }}>vs LY</th>
+                    <th style={{ padding:"9px 16px", textAlign:"right",  color:C.text, fontWeight:600, fontSize:11, textTransform:"uppercase", letterSpacing:0.8 }}>vs Ppto</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -5771,10 +5783,10 @@ function PickupView({ datos, onGuardado }) {
                         {f.label}
                         {f.esFuturo && <span style={{ marginLeft:6, fontSize:9, background:"#2C3E7A22", color:"#7A9CC8", borderRadius:3, padding:"1px 5px", fontWeight:700 }}>OTB</span>}
                       </td>
-                      <td style={{ padding:"10px 12px", textAlign:"right", color:C.textMid }}>{f.otb > 0 ? f.otb : "—"}</td>
-                      <td style={{ padding:"10px 12px", textAlign:"right", fontWeight:700, color:"#B8860B" }}>{f.otbOcc != null ? `${f.otbOcc}%` : "—"}</td>
-                      <td style={{ padding:"10px 12px", textAlign:"right", color:C.textMid }}>{f.lyOcc  != null ? `${f.lyOcc}%`  : "—"}</td>
-                      <td style={{ padding:"10px 12px", textAlign:"right", color:C.textMid }}>{f.ppOcc  != null ? `${f.ppOcc}%`  : "—"}</td>
+                      <td style={{ padding:"10px 12px", textAlign:"right", color:C.text }}>{f.otb > 0 ? f.otb : "—"}</td>
+                      <td style={{ padding:"10px 12px", textAlign:"right", fontWeight:700, color:C.text }}>{f.otbOcc != null ? `${f.otbOcc}%` : "—"}</td>
+                      <td style={{ padding:"10px 12px", textAlign:"right", color:C.text }}>{f.lyOcc  != null ? `${f.lyOcc}%`  : "—"}</td>
+                      <td style={{ padding:"10px 12px", textAlign:"right", color:C.text }}>{f.ppOcc  != null ? `${f.ppOcc}%`  : "—"}</td>
                       <td style={{ padding:"10px 12px", textAlign:"right", fontWeight:700, color:colorDiff(f.diffLY)   }}>{fmtDiff(f.diffLY)}</td>
                       <td style={{ padding:"10px 16px", textAlign:"right", fontWeight:700, color:colorDiff(f.diffPpto) }}>{fmtDiff(f.diffPpto)}</td>
                     </tr>
@@ -6527,9 +6539,9 @@ function GruposView({ datos, onRecargar, onVolverHeatmap, subVistaExt, onCambiar
       fecha_inicio: form.fecha_inicio,
       fecha_fin: esEvento ? form.fecha_inicio : (form.fecha_fin || form.fecha_inicio),
       habitaciones: esEvento ? 0 : (parseInt(form.habitaciones)||0),
-      adr_grupo: esEvento ? 0 : (parseFloat(form.adr_grupo)||0),
-      revenue_fnb: parseFloat(form.revenue_fnb)||0,
-      revenue_sala: parseFloat(form.revenue_sala)||0,
+      adr_grupo: esEvento ? 0 : Math.round((parseFloat(form.adr_grupo)||0) * NET_HAB_FNB * 100) / 100,
+      revenue_fnb: Math.round((parseFloat(form.revenue_fnb)||0) * NET_HAB_FNB * 100) / 100,
+      revenue_sala: Math.round((parseFloat(form.revenue_sala)||0) * NET_SALA * 100) / 100,
       fecha_confirmacion: form.fecha_confirmacion||null,
       notas: esEvento ? packNotasEvento(form) : (form.notas||null),
       motivo_perdida: form.motivo_perdida||null,
@@ -7430,6 +7442,7 @@ function GruposView({ datos, onRecargar, onVolverHeatmap, subVistaExt, onCambiar
                   <input style={inp} type="number" placeholder="800" value={form.revenue_sala} onChange={e=>setForm(f=>({...f,revenue_sala:e.target.value}))}/>
                 </div>
               </div>
+              <p style={{ fontSize:10, color:"#004B87", lineHeight:1.5 }}>ⓘ Al guardar se deduce el IVA: ADR/F&B ÷1,10 · sala ÷1,21</p>
 
               {form.estado === "cancelado" && (
                 <div>

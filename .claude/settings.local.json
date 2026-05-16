@@ -35,7 +35,34 @@
       "Bash(ls \"/c/Users/guelr/Downloads/\"*Dise*)",
       "Bash(curl -s http://localhost:5173)",
       "Bash(awk -F: '$1 >= 4280 && $1 <= 4400')",
-      "Bash(awk -F: '$1 >= 4280 && $1 <= 4500')"
+      "Bash(awk -F: '$1 >= 4280 && $1 <= 4500')",
+      "Bash(curl *)",
+      "Skill(update-config)",
+      "Bash(sed -i '544,616d' C:/Users/guelr/hotel-revenue/public/landing.html)",
+      "Bash(sed -n '540,548p' C:/Users/guelr/hotel-revenue/public/landing.html)",
+      "Bash(ffmpeg -version)",
+      "PowerShell(Get-Command *)",
+      "Bash(git fetch *)",
+      "Bash(winget install *)",
+      "Bash(git -C /c/Users/guelr/hotel-revenue ls-files dist/landing.html)",
+      "Bash(git -C /c/Users/guelr/hotel-revenue log --oneline -3 -- dist/landing.html)",
+      "Bash(git -C /c/Users/guelr/hotel-revenue add public/landing.html)",
+      "Bash(git -C /c/Users/guelr/hotel-revenue commit -m ' *)",
+      "Bash(git -C /c/Users/guelr/hotel-revenue push origin main)",
+      "Bash(git restore *)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.command' | grep -q 'git commit' && git -C /c/Users/guelr/hotel-revenue push 2>/dev/null || true"
+          }
+        ]
+      }
     ]
   }
 }
