@@ -7542,7 +7542,7 @@ function GruposView({ datos, onRecargar, onVolverHeatmap, subVistaExt, onCambiar
             <div style={{ display:"flex", justifyContent:"flex-end", marginTop:20 }}>
               <button onClick={()=>{ setDetalleGrupo(null); abrirEditar(detalleGrupo); }}
                 style={{ background:"#1F1F1F", color:"#fff", border:"none", borderRadius:7, padding:"9px 22px", fontSize:13, fontWeight:600, cursor:"pointer" }}>
-                ✏️ {detalleGrupo?.categoria === "evento" ? t("editar_evento") : t("editar_grupo")}
+                {detalleGrupo?.categoria === "evento" ? t("editar_evento") : t("editar_grupo")}
               </button>
             </div>
           </div>
