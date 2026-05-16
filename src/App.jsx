@@ -8636,6 +8636,16 @@ export default function App() {
   }, [session]);
 
   const [refreshKey, setRefreshKey] = useState(0);
+  const [navOrder, setNavOrder] = useState(() => {
+    try {
+      const s = JSON.parse(localStorage.getItem("fr_nav_order") || "null");
+      if (s && Array.isArray(s) && s.length === NAV.length) return s;
+    } catch {}
+    return NAV.map(n => n.key);
+  });
+  const dragNavKey = useRef(null);
+  const [dragNavOver, setDragNavOver] = useState(null);
+  const navSorted = navOrder.map(k => NAV.find(n => n.key === k)).filter(Boolean);
 
   const CACHE_KEY = "fr_datos_cache_v4";
   const CACHE_TS_KEY = "fr_datos_ts_v4";
@@ -8920,14 +8930,32 @@ export default function App() {
             </span>
           </div>
 
-          {/* Nav links */}
+          {/* Nav links — arrastrables para reordenar */}
           <nav style={{ display: "flex", alignItems: "center", gap: 2 }}>
-            {NAV.map(n => {
+            {navSorted.map(n => {
               const navColor = n.key==="budget" ? "#4ade80" : n.key==="pickup" ? "#fbbf24" : n.key==="grupos" ? "#a78bfa" : "#60a5fa";
               const isActive = view===n.key;
+              const isDragOver = dragNavOver === n.key;
               return (
-                <button key={n.key} id={`ob-nav-${n.key}`} onClick={() => { setView(n.key); setMesDetalle(null); localStorage.setItem("fr_view", n.key); }}
-                  style={{ padding: "6px clamp(6px,2vw,16px)", borderRadius: 7, border: "none", cursor: "pointer", background: isActive ? "rgba(255,255,255,0.12)" : "transparent", color: "#fff", fontSize: "clamp(11px,2.5vw,13px)", fontWeight: isActive ? 700 : 400, fontFamily: "'Plus Jakarta Sans', sans-serif", transition: "all 0.15s", whiteSpace: "nowrap", outline: isActive ? `1.5px solid rgba(255,255,255,0.3)` : "1.5px solid transparent" }}>
+                <button key={n.key} id={`ob-nav-${n.key}`}
+                  draggable
+                  onDragStart={() => { dragNavKey.current = n.key; }}
+                  onDragEnd={() => { dragNavKey.current = null; setDragNavOver(null); }}
+                  onDragOver={e => { e.preventDefault(); setDragNavOver(n.key); }}
+                  onDragLeave={() => setDragNavOver(null)}
+                  onDrop={e => {
+                    e.preventDefault();
+                    const from = dragNavKey.current;
+                    if (!from || from === n.key) return;
+                    const next = [...navOrder];
+                    const fi = next.indexOf(from), ti = next.indexOf(n.key);
+                    next.splice(fi, 1); next.splice(ti, 0, from);
+                    setNavOrder(next);
+                    localStorage.setItem("fr_nav_order", JSON.stringify(next));
+                    setDragNavOver(null);
+                  }}
+                  onClick={() => { setView(n.key); setMesDetalle(null); localStorage.setItem("fr_view", n.key); }}
+                  style={{ padding: "6px clamp(6px,2vw,16px)", borderRadius: 7, border: "none", cursor: "grab", background: isDragOver ? "rgba(255,255,255,0.2)" : isActive ? "rgba(255,255,255,0.12)" : "transparent", color: "#fff", fontSize: "clamp(11px,2.5vw,13px)", fontWeight: isActive ? 700 : 400, fontFamily: "'Plus Jakarta Sans', sans-serif", transition: "all 0.15s", whiteSpace: "nowrap", outline: isActive ? `1.5px solid rgba(255,255,255,0.3)` : isDragOver ? "1.5px solid rgba(255,255,255,0.5)" : "1.5px solid transparent" }}>
                   <span className="topbar-nav-label">{t(n.labelKey)}</span>
                   <span style={{ display:"none" }} className="topbar-nav-icon">{t(n.labelKey).slice(0,3)}</span>
                 </button>
