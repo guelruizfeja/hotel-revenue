@@ -1347,9 +1347,10 @@ function ImportarExcel({ onClose, session, onImportado, onProduccionDirecta, hot
             if (typeof v === "number" && v >= 0) preciosNoche.push(Math.round(v * 100) / 100);
             else break;
           }
-          const preciosPorNocheVal = preciosNoche.length > 0 ? preciosNoche : null;
-          // Si hay precios por noche y no hay precio_total, calcularlo como suma
-          const precioTotalFinal = precioTotal ?? (preciosPorNocheVal ? Math.round(preciosPorNocheVal.reduce((a,v)=>a+v,0)*100)/100 : null);
+          const preciosPorNocheVal = preciosNoche.length > 0 ? preciosNoche.map(v => Math.round(v * NET_HAB_FNB * 100) / 100) : null;
+          // Si hay precios por noche y no hay precio_total, calcularlo como suma; aplicar IVA
+          const _precioBase = precioTotal ?? (preciosPorNocheVal ? Math.round(preciosPorNocheVal.reduce((a,v)=>a+v,0)*100)/100 : null);
+          const precioTotalFinal = _precioBase != null ? (preciosNoche.length > 0 ? _precioBase : Math.round(_precioBase * NET_HAB_FNB * 100) / 100) : null;
           pickupRows.push({
             hotel_id:          session.user.id,
             fecha_pickup:      fp,
@@ -3379,7 +3380,7 @@ function ModalEditarReserva({ entry, onClose, onGuardado }) {
         fecha_llegada:  form.fecha_llegada || null,
         fecha_salida:   form.fecha_salida || null,
         noches:         form.noches ? parseInt(form.noches) : null,
-        precio_total:   form.precio_total ? parseFloat(form.precio_total) : null,
+        precio_total:   form.precio_total ? Math.round(parseFloat(form.precio_total) * NET_HAB_FNB * 100) / 100 : null,
         estado:         form.estado || "confirmada",
         numero_reserva: form.numero_reserva ? parseInt(form.numero_reserva) : null,
       }).eq("id", entry.id);
@@ -3426,8 +3427,9 @@ function ModalEditarReserva({ entry, onClose, onGuardado }) {
           <div><p style={lbl}>Nº reserva</p>
             <input type="number" min="1" value={form.numero_reserva} onChange={f("numero_reserva")} style={inp}/></div>
         </div>
-        {error && <p style={{ fontSize:12, color:C.red, marginTop:10 }}>{error}</p>}
-        {ok    && <p style={{ fontSize:12, color:C.green, marginTop:10, fontWeight:600 }}>✓ Reserva actualizada</p>}
+        <p style={{ fontSize:10, color:"#004B87", marginTop:10, lineHeight:1.5 }}>ⓘ Al guardar se deduce el IVA automáticamente: precio ÷1,10 (IVA 10%)</p>
+        {error && <p style={{ fontSize:12, color:C.red, marginTop:6 }}>{error}</p>}
+        {ok    && <p style={{ fontSize:12, color:C.green, marginTop:6, fontWeight:600 }}>✓ Reserva actualizada</p>}
         <button onClick={guardar} disabled={guardando}
           style={{ marginTop:16, width:"100%", padding:"10px 0", borderRadius:8, background:guardando?C.border:C.text, color:"#fff", border:"none", cursor:guardando?"default":"pointer", fontSize:13, fontWeight:700, fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
           {guardando ? "Guardando..." : "Guardar cambios"}
