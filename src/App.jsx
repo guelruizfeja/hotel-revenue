@@ -1053,8 +1053,8 @@ function PeriodSelectorInline({ mes, anio, onChange, aniosDisponibles, allowFutu
               style={{
                 padding: "5px 4px",
                 borderRadius: 6,
-                border: esHoyMes && !activo ? `1.5px solid ${C.accent}66` : `1px solid ${activo?C.accent:C.border}`,
-                background: activo ? C.accent : "transparent",
+                border: esHoyMes && !activo ? `1.5px solid ${C.text}44` : `1px solid ${activo?C.text:C.border}`,
+                background: activo ? C.text : "transparent",
                 color: futuro ? C.textLight : activo ? "#fff" : C.text,
                 fontSize: 11, fontWeight: activo ? 700 : 500, opacity: futuro ? 0.3 : 1,
                 cursor: futuro ? "not-allowed" : "pointer",
@@ -4436,8 +4436,8 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
                   {[["mensual","Mensual"],["diario","Diario"]].map(([key, label]) => (
                     <button key={key} onClick={() => setHmVista(key)}
                       style={{ padding:"4px 11px", fontSize:11, fontWeight:600, border:"none", cursor:"pointer", fontFamily:"inherit",
-                        background: hmVista === key ? C.accent : "transparent",
-                        color:      hmVista === key ? "#fff"    : C.textMid,
+                        background: hmVista === key ? C.text : "transparent",
+                        color:      hmVista === key ? "#fff"  : C.textMid,
                         transition:"all 0.15s" }}>
                       {label}
                     </button>
