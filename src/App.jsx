@@ -1147,6 +1147,7 @@ function ImportarExcel({ onClose, session, onImportado, onProduccionDirecta, hot
   const [generandoProdMock, setGenerandoProdMock] = useState(false);
   const [okProdMock, setOkProdMock] = useState(false);
   const [resultadoRelleno, setResultadoRelleno] = useState(null);
+  const [hmVista, setHmVista] = useState(() => { try { return localStorage.getItem("fr_hmVista") || "mensual"; } catch { return "mensual"; } });
   // Vaciar
   const [vaciando, setVaciando] = useState(false);
   const [confirmVaciar, setConfirmVaciar] = useState(false);
@@ -3613,6 +3614,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
   const [hmDayModal, setHmDayModal] = useState(null); // iso string
   const [hmEditEntry, setHmEditEntry] = useState(null);
   useEffect(() => { localStorage.setItem("fr_hmMesSel", JSON.stringify(hmMesSel)); }, [hmMesSel]);
+  useEffect(() => { localStorage.setItem("fr_hmVista", hmVista); }, [hmVista]);
   useEffect(() => { setHmDragStart(null); setHmDragEnd(null); setHmIsDragging(false); setHmModoCrear(false); setHmDayModal(null); }, [hmMesSel]);
   useEffect(() => {
     const up = () => { if (hmIsDragging) setHmIsDragging(false); };
@@ -4419,56 +4421,142 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
           <Card style={{ display:"flex", padding:0, overflow:"hidden", marginBottom:16 }}>
 
             {/* ── HEATMAP (izquierda) ── */}
-            <div style={{ flex:2, padding:"20px 22px", display:"flex", flexDirection:"column" }}>
-              <div style={{ marginBottom:14 }}>
+            <div style={{ flex: hmVista === "diario" ? 1 : 2, padding:"20px 22px", display:"flex", flexDirection:"column" }}>
+              {/* Header con toggle */}
+              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
                 <p style={{ fontSize:11, fontWeight:700, color:C.textMid, textTransform:"uppercase", letterSpacing:"1.5px" }}>
-                  {t("ocup_mensual")} <span style={{ color:C.accent }}>| {t("meses_full")[mes].toUpperCase()} {anio}</span>
+                  {hmVista === "diario"
+                    ? <>{t("meses_full")[mes].toUpperCase()} {anio} <span style={{ color:C.accent }}>| DIARIO</span></>
+                    : <>{t("ocup_mensual")} <span style={{ color:C.accent }}>| {t("meses_full")[mes].toUpperCase()} {anio}</span></>
+                  }
                 </p>
+                <div style={{ display:"flex", borderRadius:6, overflow:"hidden", border:`1px solid ${C.border}`, flexShrink:0 }}>
+                  {[["mensual","Mensual"],["diario","Diario"]].map(([key, label]) => (
+                    <button key={key} onClick={() => setHmVista(key)}
+                      style={{ padding:"4px 11px", fontSize:11, fontWeight:600, border:"none", cursor:"pointer", fontFamily:"inherit",
+                        background: hmVista === key ? C.accent : "transparent",
+                        color:      hmVista === key ? "#fff"    : C.textMid,
+                        transition:"all 0.15s" }}>
+                      {label}
+                    </button>
+                  ))}
+                </div>
               </div>
-              <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gridTemplateRows:"repeat(3,1fr)", gap:8, flex:1 }}>
-                {occPorMes.map(({label, mi, occ, esOtb})=>{
-                  const mesKey = `${anio}-${String(mi+1).padStart(2,"0")}`;
-                  const resUltDia = pickupUltimoDiaPorMes[mesKey] || 0;
-                  const esCaliente = top2Meses.includes(mesKey) && resUltDia > 0;
-                  const esMesActual = mi === mes;
-                  return (
-                    <div key={mi} onClick={()=>setHmMesSel(mi)}
-                      title={occ!=null?`${label}: ${occ.toFixed(0)}%`:""}
-                      style={{
-                        borderRadius:8, padding:"10px 6px", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
-                        background: occ!=null ? heatBg(occ) : C.bg,
-                        border:`2px solid ${esMesActual ? C.accent : esCaliente?"#E85D04":occ!=null?heatColor(occ)+"CC":C.border}`,
-                        cursor:"pointer", textAlign:"center", transition:"all 0.15s", position:"relative"
-                      }}
-                      onMouseEnter={e=>e.currentTarget.style.opacity="0.8"} onMouseLeave={e=>e.currentTarget.style.opacity="1"}>
-                      {esCaliente && (
-                        <span title={`${resUltDia} reservas captadas el ${ultimoDiaImportado}`} style={{ position:"absolute", top:4, right:5, fontSize:14, lineHeight:1, animation:"pulse-rayo 1.5s ease-in-out infinite" }}>⚡</span>
-                      )}
-                      <p style={{ fontSize:12, fontWeight:700, color:C.textLight, textTransform:"uppercase", letterSpacing:0.5, marginBottom:3 }}>{label}</p>
-                      {occ!=null
-                        ? <p style={{ fontSize:17, fontWeight:800, color:C.text, fontFamily:"'Plus Jakarta Sans',sans-serif" }}>{occ.toFixed(0)}%</p>
-                        : <p style={{ fontSize:12, color:C.border }}>—</p>
-                      }
-                      {resUltDia !== 0
-                        ? <p style={{ fontSize:8, color:resUltDia>0?"#E85D04":C.red, fontWeight:700, marginTop:2 }}>{resUltDia>0?"+":""}{resUltDia} res.</p>
-                        : esOtb && occ!=null
-                          ? <p style={{ fontSize:8, color:"#7A9CC8", fontWeight:700, marginTop:2 }}>OTB</p>
-                          : null
-                      }
+
+              {/* ── Vista mensual (4×3 grid) ── */}
+              {hmVista === "mensual" && (<>
+                <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gridTemplateRows:"repeat(3,1fr)", gap:8, flex:1 }}>
+                  {occPorMes.map(({label, mi, occ, esOtb})=>{
+                    const mesKey = `${anio}-${String(mi+1).padStart(2,"0")}`;
+                    const resUltDia = pickupUltimoDiaPorMes[mesKey] || 0;
+                    const esCaliente = top2Meses.includes(mesKey) && resUltDia > 0;
+                    const esMesActual = mi === mes;
+                    return (
+                      <div key={mi} onClick={()=>setHmMesSel(mi)}
+                        title={occ!=null?`${label}: ${occ.toFixed(0)}%`:""}
+                        style={{
+                          borderRadius:8, padding:"10px 6px", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
+                          background: occ!=null ? heatBg(occ) : C.bg,
+                          border:`2px solid ${esMesActual ? C.accent : esCaliente?"#E85D04":occ!=null?heatColor(occ)+"CC":C.border}`,
+                          cursor:"pointer", textAlign:"center", transition:"all 0.15s", position:"relative"
+                        }}
+                        onMouseEnter={e=>e.currentTarget.style.opacity="0.8"} onMouseLeave={e=>e.currentTarget.style.opacity="1"}>
+                        {esCaliente && (
+                          <span title={`${resUltDia} reservas captadas el ${ultimoDiaImportado}`} style={{ position:"absolute", top:4, right:5, fontSize:14, lineHeight:1, animation:"pulse-rayo 1.5s ease-in-out infinite" }}>⚡</span>
+                        )}
+                        <p style={{ fontSize:12, fontWeight:700, color:C.textLight, textTransform:"uppercase", letterSpacing:0.5, marginBottom:3 }}>{label}</p>
+                        {occ!=null
+                          ? <p style={{ fontSize:17, fontWeight:800, color:C.text, fontFamily:"'Plus Jakarta Sans',sans-serif" }}>{occ.toFixed(0)}%</p>
+                          : <p style={{ fontSize:12, color:C.border }}>—</p>
+                        }
+                        {resUltDia !== 0
+                          ? <p style={{ fontSize:8, color:resUltDia>0?"#E85D04":C.red, fontWeight:700, marginTop:2 }}>{resUltDia>0?"+":""}{resUltDia} res.</p>
+                          : esOtb && occ!=null
+                            ? <p style={{ fontSize:8, color:"#7A9CC8", fontWeight:700, marginTop:2 }}>OTB</p>
+                            : null
+                        }
+                      </div>
+                    );
+                  })}
+                </div>
+                <p style={{ fontSize:10, color:C.textLight, marginTop:8, display:"flex", alignItems:"center", gap:4 }}>
+                  <span style={{ fontSize:12 }}>⚡</span> Meses con mayor captación en el último día &nbsp;·&nbsp; <span style={{ fontSize:10, color:"#7A9CC8", fontWeight:700 }}>OTB</span> Dato estimado por reservas en cartera
+                </p>
+              </>)}
+
+              {/* ── Vista diaria (calendario mes actual) ── */}
+              {hmVista === "diario" && (() => {
+                const p2 = n => String(n).padStart(2,"0");
+                const diasEnMes = new Date(anio, mes+1, 0).getDate();
+                const diasDiario = Array.from({length: diasEnMes}, (_, di) => {
+                  const dt = new Date(anio, mes, di+1);
+                  const iso = `${anio}-${p2(mes+1)}-${p2(di+1)}`;
+                  const prod = produccion.find(r => r.fecha === iso);
+                  const isHoy = iso === hoyStr2;
+                  const isFut = iso > hoyStr2;
+                  let occ = null;
+                  if (prod) {
+                    const habD = prod.hab_disponibles > 0 ? prod.hab_disponibles : habHotel;
+                    occ = habD > 0 ? Math.round(prod.hab_ocupadas / habD * 100) : null;
+                  } else if (isFut) {
+                    const neto = habEnCasaMap[iso] || 0;
+                    occ = neto > 0 ? Math.round(neto / habHotel * 100) : null;
+                  }
+                  return { iso, dia: di+1, diaSem: dt.getDay(), occ, isHoy, isFut };
+                });
+                // Primer día de semana del mes (lunes=0 … domingo=6)
+                const primerDow = new Date(anio, mes, 1).getDay();
+                const offsetLun = (primerDow + 6) % 7; // desplazamiento para empezar en lunes
+                const DIAS_LABEL = ["L","M","X","J","V","S","D"];
+                const celdas = [...Array(offsetLun).fill(null), ...diasDiario];
+                return (
+                  <div style={{ flex:1, display:"flex", flexDirection:"column" }}>
+                    {/* Cabecera días semana */}
+                    <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:3, marginBottom:3 }}>
+                      {DIAS_LABEL.map(d => (
+                        <div key={d} style={{ textAlign:"center", fontSize:9, fontWeight:700, color:C.textLight, textTransform:"uppercase", letterSpacing:"0.5px", padding:"2px 0" }}>{d}</div>
+                      ))}
                     </div>
-                  );
-                })}
-              </div>
-              <p style={{ fontSize:10, color:C.textLight, marginTop:8, display:"flex", alignItems:"center", gap:4 }}>
-                <span style={{ fontSize:12 }}>⚡</span> Meses con mayor captación en el último día &nbsp;·&nbsp; <span style={{ fontSize:10, color:"#7A9CC8", fontWeight:700 }}>OTB</span> Dato estimado por reservas en cartera
-              </p>
+                    {/* Días */}
+                    <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:3, flex:1 }}>
+                      {celdas.map((dia, idx) => {
+                        if (!dia) return <div key={`e${idx}`}/>;
+                        const { iso, dia: n, occ, isHoy, isFut, diaSem } = dia;
+                        const esFinde = diaSem === 0 || diaSem === 6;
+                        return (
+                          <div key={iso} onClick={() => setHmMesSel(mes)}
+                            title={occ!=null ? `${n} ${MESES_H[mes]}: ${occ}%` : "Sin datos"}
+                            style={{
+                              borderRadius:6, padding:"5px 3px", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
+                              background: occ!=null ? heatBg(occ) : esFinde ? `${C.border}55` : C.bg,
+                              border:`1.5px solid ${isHoy ? C.accent : occ!=null ? heatColor(occ)+"99" : C.border}`,
+                              cursor:"pointer", textAlign:"center", transition:"opacity 0.12s", minHeight:48,
+                            }}
+                            onMouseEnter={e=>e.currentTarget.style.opacity="0.75"}
+                            onMouseLeave={e=>e.currentTarget.style.opacity="1"}>
+                            <p style={{ fontSize:10, fontWeight: isHoy ? 800 : 600, color: isHoy ? C.accent : C.textLight, lineHeight:1, marginBottom:2 }}>{n}</p>
+                            {occ!=null
+                              ? <p style={{ fontSize:13, fontWeight:800, color:C.text, lineHeight:1 }}>{occ}%</p>
+                              : <p style={{ fontSize:10, color:C.border, lineHeight:1 }}>—</p>
+                            }
+                            {isFut && occ!=null && <p style={{ fontSize:7, color:"#7A9CC8", fontWeight:700, marginTop:1 }}>OTB</p>}
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <p style={{ fontSize:10, color:C.textLight, marginTop:6, display:"flex", alignItems:"center", gap:4 }}>
+                      <span style={{ fontSize:10, color:"#7A9CC8", fontWeight:700 }}>OTB</span> Estimado · Click en día para detalle
+                    </p>
+                  </div>
+                );
+              })()}
             </div>
 
-            {/* ── SEPARADOR VERTICAL ── */}
-            <div style={{ width:1, background:C.border, flexShrink:0, margin:"16px 0" }}/>
+            {/* ── SEPARADOR VERTICAL (solo vista mensual) ── */}
+            {hmVista === "mensual" && <div style={{ width:1, background:C.border, flexShrink:0, margin:"16px 0" }}/>}
 
-            {/* ── MOVIMIENTO OPERATIVO DIARIO (derecha) ── */}
-            {(() => {
+            {/* ── MOVIMIENTO OPERATIVO DIARIO (derecha, solo vista mensual) ── */}
+            {hmVista === "mensual" && (() => {
               const _p = n => String(n).padStart(2,"0");
               const hoy = new Date();
               const hoyStr = `${hoy.getFullYear()}-${_p(hoy.getMonth()+1)}-${_p(hoy.getDate())}`;
