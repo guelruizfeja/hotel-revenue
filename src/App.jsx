@@ -4491,18 +4491,13 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
                 const diasDiario = Array.from({length: diasEnMes}, (_, di) => {
                   const dt = new Date(anio, mes, di+1);
                   const iso = `${anio}-${p2(mes+1)}-${p2(di+1)}`;
-                  const prod = produccion.find(r => r.fecha === iso);
                   const isHoy = iso === hoyStr2;
                   const isFut = iso > hoyStr2;
-                  let occ = null;
-                  if (prod) {
-                    const habD = prod.hab_disponibles > 0 ? prod.hab_disponibles : habHotel;
-                    occ = habD > 0 ? Math.round(prod.hab_ocupadas / habD * 100) : null;
-                  } else if (isFut) {
-                    const neto = habEnCasaMap[iso] || 0;
-                    occ = neto > 0 ? Math.round(neto / habHotel * 100) : null;
-                  }
-                  return { iso, dia: di+1, diaSem: dt.getDay(), occ, isHoy, isFut };
+                  // Siempre pickup como fuente principal (incluye hoy y pasado)
+                  const neto = habEnCasaMap[iso] || 0;
+                  const occ = habHotel > 0 && neto > 0 ? Math.round(neto / habHotel * 100) : null;
+                  const adr = calcAdrPickup(iso);
+                  return { iso, dia: di+1, diaSem: dt.getDay(), occ, adr, isHoy, isFut };
                 });
                 // Primer día de semana del mes (lunes=0 … domingo=6)
                 const primerDow = new Date(anio, mes, 1).getDay();
@@ -4521,16 +4516,16 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
                     <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:3, flex:1 }}>
                       {celdas.map((dia, idx) => {
                         if (!dia) return <div key={`e${idx}`}/>;
-                        const { iso, dia: n, occ, isHoy, isFut, diaSem } = dia;
+                        const { iso, dia: n, occ, adr, isHoy, isFut, diaSem } = dia;
                         const esFinde = diaSem === 0 || diaSem === 6;
                         return (
                           <div key={iso} onClick={() => setHmMesSel(mes)}
-                            title={occ!=null ? `${n} ${MESES_H[mes]}: ${occ}%` : "Sin datos"}
+                            title={occ!=null ? `${n} ${MESES_H[mes]}: ${occ}%${adr!=null?` · ADR €${Math.round(adr)}`:""}` : "Sin datos"}
                             style={{
                               borderRadius:6, padding:"5px 3px", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
                               background: occ!=null ? heatBg(occ) : esFinde ? `${C.border}55` : C.bg,
                               border:`1.5px solid ${isHoy ? C.accent : occ!=null ? heatColor(occ)+"99" : C.border}`,
-                              cursor:"pointer", textAlign:"center", transition:"opacity 0.12s", minHeight:48,
+                              cursor:"pointer", textAlign:"center", transition:"opacity 0.12s", minHeight:52,
                             }}
                             onMouseEnter={e=>e.currentTarget.style.opacity="0.75"}
                             onMouseLeave={e=>e.currentTarget.style.opacity="1"}>
@@ -4539,7 +4534,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
                               ? <p style={{ fontSize:13, fontWeight:800, color:C.text, lineHeight:1 }}>{occ}%</p>
                               : <p style={{ fontSize:10, color:C.border, lineHeight:1 }}>—</p>
                             }
-                            {isFut && occ!=null && <p style={{ fontSize:7, color:"#7A9CC8", fontWeight:700, marginTop:1 }}>OTB</p>}
+                            {adr!=null && <p style={{ fontSize:8, color:C.textLight, fontWeight:600, marginTop:1, lineHeight:1 }}>€{Math.round(adr)}</p>}
                           </div>
                         );
                       })}
