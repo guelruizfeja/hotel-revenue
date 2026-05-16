@@ -3675,8 +3675,13 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
   }, [produccion, mes, anio]);
   const [kpisCached, setKpisCached] = useState(() => { try { return JSON.parse(localStorage.getItem(`fr_kpis_${mes}_${anio}`) || "null"); } catch { return null; } });
   useEffect(() => {
-    if (kpisComputed) { localStorage.setItem(kpiCacheKey, JSON.stringify(kpisComputed)); setKpisCached(kpisComputed); }
-    else { try { const c=JSON.parse(localStorage.getItem(kpiCacheKey)||"null"); if(c) setKpisCached(c); } catch {} }
+    if (kpisComputed) {
+      const json = JSON.stringify(kpisComputed);
+      localStorage.setItem(kpiCacheKey, json);
+      setKpisCached(prev => JSON.stringify(prev) === json ? prev : kpisComputed);
+    } else {
+      try { const c=JSON.parse(localStorage.getItem(kpiCacheKey)||"null"); if(c) setKpisCached(prev => JSON.stringify(prev)===JSON.stringify(c)?prev:c); } catch {}
+    }
   }, [kpisComputed, kpiCacheKey]);
 
   if (!produccion || produccion.length === 0) {
@@ -8560,7 +8565,13 @@ export default function App() {
   const [enviandoInformePrueba, setEnviandoInformePrueba] = useState(false);
   const [okInformePrueba, setOkInformePrueba] = useState(false);
   const [errorInformePrueba, setErrorInformePrueba] = useState("");
-  const [datos, setDatos] = useState({ produccion: [], presupuesto: [] });
+  const [datos, setDatos] = useState(() => {
+    try {
+      const cached = sessionStorage.getItem("fr_datos_cache_v4");
+      if (cached) return { ...JSON.parse(cached), session: null };
+    } catch(_) {}
+    return { produccion: [], presupuesto: [] };
+  });
   const [cargandoDatos, setCargandoDatos] = useState(false);
 
   // Restaurar scroll al montar
@@ -8628,7 +8639,8 @@ export default function App() {
         if (cached && ts) {
           const parsed = JSON.parse(cached);
           parsed.session = session;
-          setDatos(parsed);
+          // Solo actualizar si producción no estaba ya cargada (evita re-render y parpadeo)
+          setDatos(prev => (prev.produccion?.length > 0 ? { ...prev, session } : parsed));
           setCargandoDatos(false);
           // Restaurar scroll después de pintar
           setTimeout(() => {
