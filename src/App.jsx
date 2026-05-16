@@ -1147,7 +1147,6 @@ function ImportarExcel({ onClose, session, onImportado, onProduccionDirecta, hot
   const [generandoProdMock, setGenerandoProdMock] = useState(false);
   const [okProdMock, setOkProdMock] = useState(false);
   const [resultadoRelleno, setResultadoRelleno] = useState(null);
-  const [hmVista, setHmVista] = useState(() => { try { return localStorage.getItem("fr_hmVista") || "mensual"; } catch { return "mensual"; } });
   // Vaciar
   const [vaciando, setVaciando] = useState(false);
   const [confirmVaciar, setConfirmVaciar] = useState(false);
@@ -3530,6 +3529,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
   const pickupEntries = datos.pickupEntries || [];
   const presupuesto   = datos.presupuesto   || [];
   const [hmMesSel, setHmMesSel] = useState(() => { try { const v=localStorage.getItem("fr_hmMesSel"); return v!==null?JSON.parse(v):null; } catch { return null; } });
+  const [hmVista, setHmVista] = useState(() => { try { return localStorage.getItem("fr_hmVista") || "mensual"; } catch { return "mensual"; } });
   const [modalDiario, setModalDiario] = useState(null); // {mesIdx, anioIdx}
 
   // Mapa precalculado fecha→habitaciones (un solo paso, O(1) lookups en render)
