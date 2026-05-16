@@ -7017,7 +7017,7 @@ function GruposView({ datos, onRecargar, onVolverHeatmap, subVistaExt, onCambiar
                                 cursor:"pointer", overflow:"hidden",
                                 display:"flex", alignItems:"center", justifyContent:"center", padding:"0 6px",
                               }}>
-                              <span style={{ fontSize:10, fontWeight:700, color:col, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>
+                              <span style={{ fontSize:12, fontWeight:700, color:col, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>
                                 {g.nombre}
                               </span>
                             </div>
