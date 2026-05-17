@@ -8389,6 +8389,15 @@ const NAV = [
   { key: "gestion",    labelKey: "nav_gestion" },
 ];
 
+const GRUPOS_SUB = [
+  { key: "semana",   label: "Calendario" },
+  { key: "pipeline", label: "Resumen" },
+  { key: "grupos",   label: "Grupos" },
+  { key: "eventos",  label: "Eventos" },
+  { key: "revenue",  label: "Revenue" },
+  { key: "salas",    label: "Gestión de salas" },
+];
+
 
 function PantallaSubscripcion({ session, onPagar }) {
   const t = useT();
@@ -8638,16 +8647,40 @@ export default function App() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [navOrder, setNavOrder] = useState(() => {
     try {
+      const hidden = JSON.parse(localStorage.getItem("fr_nav_hidden") || "[]");
       const s = JSON.parse(localStorage.getItem("fr_nav_order") || "null");
-      if (s && Array.isArray(s) && s.length === NAV.length) return s;
+      if (s && Array.isArray(s) && s.every(k => NAV.some(n => n.key === k))) return s;
+      return NAV.filter(n => !hidden.includes(n.key)).map(n => n.key);
     } catch {}
     return NAV.map(n => n.key);
+  });
+  const [navHidden, setNavHidden] = useState(() => {
+    try {
+      const s = JSON.parse(localStorage.getItem("fr_nav_hidden") || "null");
+      if (s && Array.isArray(s)) return s;
+    } catch {}
+    return [];
   });
   const dragNavKey = useRef(null);
   const [navPreview, setNavPreview] = useState(null);
   const [draggingNavKey, setDraggingNavKey] = useState(null);
   const navSorted = navOrder.map(k => NAV.find(n => n.key === k)).filter(Boolean);
   const navDisplay = navPreview ? navPreview.map(k => NAV.find(n => n.key === k)).filter(Boolean) : navSorted;
+
+  const [gruposSubOrder, setGruposSubOrder] = useState(() => {
+    try {
+      const s = JSON.parse(localStorage.getItem("fr_grupos_sub_order") || "null");
+      if (s && Array.isArray(s) && s.length === GRUPOS_SUB.length) return s;
+    } catch {}
+    return GRUPOS_SUB.map(n => n.key);
+  });
+  const dragGruposSubKey = useRef(null);
+  const gruposSubPreviewRef = useRef(null);
+  const [gruposSubPreview, setGruposSubPreviewState] = useState(null);
+  const setGruposSubPreview = (val) => { gruposSubPreviewRef.current = val; setGruposSubPreviewState(val); };
+  const [draggingGruposSubKey, setDraggingGruposSubKey] = useState(null);
+  const gruposSubSorted = gruposSubOrder.map(k => GRUPOS_SUB.find(n => n.key === k)).filter(Boolean);
+  const gruposSubDisplay = gruposSubPreview ? gruposSubPreview.map(k => GRUPOS_SUB.find(n => n.key === k)).filter(Boolean) : gruposSubSorted;
 
   const CACHE_KEY = "fr_datos_cache_v4";
   const CACHE_TS_KEY = "fr_datos_ts_v4";
@@ -8761,6 +8794,31 @@ export default function App() {
   };
 
   const handleLogout = async () => { await supabase.auth.signOut(); };
+  const toggleNavHidden = (key) => {
+    const isHidden = navHidden.includes(key);
+    const visibleCount = NAV.length - navHidden.length;
+    if (!isHidden && visibleCount <= 1) return;
+    const newHidden = isHidden ? navHidden.filter(k => k !== key) : [...navHidden, key];
+    const newOrder = isHidden ? [...navOrder, key] : navOrder.filter(k => k !== key);
+    setNavHidden(newHidden);
+    setNavOrder(newOrder);
+    localStorage.setItem("fr_nav_hidden", JSON.stringify(newHidden));
+    localStorage.setItem("fr_nav_order", JSON.stringify(newOrder));
+    if (!isHidden && key === view) {
+      const firstVisible = newOrder[0];
+      if (firstVisible) { setView(firstVisible); localStorage.setItem("fr_view", firstVisible); }
+    }
+  };
+  const verificarPersonalizacionPin = async () => {
+    if (!personalizacionPin) return;
+    setPersonalizacionPinLoading(true);
+    setPersonalizacionPinError("");
+    const { error } = await supabase.auth.signInWithPassword({ email: session.user.email, password: personalizacionPin });
+    setPersonalizacionPinLoading(false);
+    if (error) { setPersonalizacionPinError("Contraseña incorrecta"); return; }
+    setPersonalizacionAuth("open");
+    setPersonalizacionPin("");
+  };
 
   // OCC de hoy/ayer para el ticker — misma fuente que el heatmap
   const _occDeTicker = useMemo(() => {
@@ -8801,6 +8859,10 @@ export default function App() {
     return () => document.removeEventListener("mousedown", handler);
   }, [mostrarPerfil]);
   const [perfilSeccion, setPerfilSeccion] = useState(null); // null | "suscripcion" | "extranets"
+  const [personalizacionAuth, setPersonalizacionAuth] = useState(null); // null | "pin" | "open"
+  const [personalizacionPin, setPersonalizacionPin] = useState("");
+  const [personalizacionPinError, setPersonalizacionPinError] = useState("");
+  const [personalizacionPinLoading, setPersonalizacionPinLoading] = useState(false);
   const [kpiModalApp, setKpiModalApp] = useState(null);
   const [kpiModal, setKpiModal] = useState(null);
 
@@ -8810,13 +8872,14 @@ export default function App() {
       if (e.key !== "Escape") return;
       if (kpiModal)        { setKpiModal(null); return; }
       if (importar)        { setImportar(false); return; }
+      if (personalizacionAuth) { setPersonalizacionAuth(null); setPersonalizacionPin(""); setPersonalizacionPinError(""); return; }
       if (perfilSeccion)   { setPerfilSeccion(null); setConfirmCancelar(false); return; }
       if (mesDetalle)           { setMesDetalle(null); return; }
       if (desgloseMovimiento)   { setDesgloseMovimiento(null); return; }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [kpiModal, importar, perfilSeccion, mesDetalle, desgloseMovimiento]);
+  }, [kpiModal, importar, personalizacionAuth, perfilSeccion, mesDetalle, desgloseMovimiento]);
   const [lang, setLang] = useState(() => localStorage.getItem("fr_lang") || "es");
   const t = useT();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -8940,7 +9003,7 @@ export default function App() {
                 <button key={n.key} id={`ob-nav-${n.key}`}
                   draggable
                   onDragStart={e => { dragNavKey.current = n.key; e.dataTransfer.effectAllowed = "move"; setTimeout(() => setDraggingNavKey(n.key), 0); }}
-                  onDragEnd={() => { dragNavKey.current = null; setNavPreview(null); setDraggingNavKey(null); }}
+                  onDragEnd={() => { if (dragNavKey.current !== null && navPreview) { setNavOrder(navPreview); localStorage.setItem("fr_nav_order", JSON.stringify(navPreview)); } dragNavKey.current = null; setNavPreview(null); setDraggingNavKey(null); }}
                   onDragOver={e => {
                     e.preventDefault();
                     const from = dragNavKey.current;
@@ -8989,6 +9052,7 @@ export default function App() {
                     { label:t("suscripcion"), key:"suscripcion" },
                     { label:t("extranets"), key:"extranets" },
                     { label:t("informe_mensual"), key:"informe" },
+                    { label:"Personalización", key:"personalizacion" },
                   ].map(op => (
                     <button key={op.key} onClick={async () => {
                         if (op.key === "informe") {
@@ -8996,6 +9060,11 @@ export default function App() {
                           setGenerandoPDF(true);
                           await generarReportePDF(datos, mesSel, anioSel, datos.hotel?.nombre||"Mi Hotel");
                           setGenerandoPDF(false);
+                        } else if (op.key === "personalizacion") {
+                          setPersonalizacionAuth("pin");
+                          setPersonalizacionPin("");
+                          setPersonalizacionPinError("");
+                          setMostrarPerfil(false);
                         } else {
                           setPerfilSeccion(op.key);
                           setMostrarPerfil(false);
@@ -9034,18 +9103,34 @@ export default function App() {
       {/* Barra de sub-navegación de Grupos — visible solo en vista grupos */}
       {view === "grupos" && (
         <div style={{ position:"sticky", top:52.5, zIndex:99, background:"#111111", display:"flex", alignItems:"center", gap:2, padding:"0 clamp(12px,4vw,32px)", height:40, overflow:"hidden" }}>
-          {[
-            { key:"semana",   label:"Calendario" },
-            { key:"pipeline", label:"Resumen" },
-            { key:"grupos",   label:"Grupos" },
-            { key:"eventos",  label:"Eventos" },
-            { key:"revenue",  label:"Revenue" },
-            { key:"salas",    label:"Gestión de salas" },
-          ].map(({ key, label }) => {
+          {gruposSubDisplay.map(({ key, label }) => {
             const activo = gruposSubVista === key;
             return (
-              <button key={key} onClick={() => cambiarGruposSubVista(key)}
-                style={{ padding:"6px clamp(6px,2vw,16px)", borderRadius:7, border:"none", cursor:"pointer", background: activo ? "rgba(255,255,255,0.12)" : "transparent", color:"#fff", fontSize:"clamp(11px,2.5vw,13px)", fontWeight: activo ? 700 : 400, fontFamily:"'Plus Jakarta Sans',sans-serif", transition:"all 0.15s", whiteSpace:"nowrap", outline: activo ? "1.5px solid rgba(255,255,255,0.3)" : "1.5px solid transparent" }}>
+              <button key={key}
+                draggable
+                onDragStart={e => { dragGruposSubKey.current = key; e.dataTransfer.effectAllowed = "move"; setTimeout(() => setDraggingGruposSubKey(key), 0); }}
+                onDragEnd={() => { if (dragGruposSubKey.current !== null && gruposSubPreviewRef.current) { setGruposSubOrder(gruposSubPreviewRef.current); localStorage.setItem("fr_grupos_sub_order", JSON.stringify(gruposSubPreviewRef.current)); } dragGruposSubKey.current = null; setGruposSubPreview(null); setDraggingGruposSubKey(null); }}
+                onDragOver={e => {
+                  e.preventDefault();
+                  const from = dragGruposSubKey.current;
+                  if (!from || from === key) return;
+                  const base = gruposSubPreviewRef.current || gruposSubOrder;
+                  const fi = base.indexOf(from), ti = base.indexOf(key);
+                  if (fi === -1 || ti === -1 || fi === ti) return;
+                  const next = [...base];
+                  next.splice(fi, 1); next.splice(ti, 0, from);
+                  setGruposSubPreview(next);
+                }}
+                onDrop={e => {
+                  e.preventDefault();
+                  const committed = gruposSubPreviewRef.current || gruposSubOrder;
+                  setGruposSubOrder(committed);
+                  localStorage.setItem("fr_grupos_sub_order", JSON.stringify(committed));
+                  setGruposSubPreview(null);
+                  dragGruposSubKey.current = null;
+                }}
+                onClick={() => cambiarGruposSubVista(key)}
+                style={{ padding:"6px clamp(6px,2vw,16px)", borderRadius:7, border:"none", cursor:"grab", background: activo ? "rgba(255,255,255,0.12)" : "transparent", color:"#fff", fontSize:"clamp(11px,2.5vw,13px)", fontWeight: activo ? 700 : 400, fontFamily:"'Plus Jakarta Sans',sans-serif", transition:"all 0.15s", whiteSpace:"nowrap", outline: activo ? "1.5px solid rgba(255,255,255,0.3)" : "1.5px solid transparent", visibility: draggingGruposSubKey === key ? "hidden" : "visible" }}>
                 {label}
               </button>
             );
@@ -9083,6 +9168,66 @@ export default function App() {
 
       {/* Modal Configuración Hotel */}
       {perfilSeccion === "hotel" && <ModalConfigHotel datos={datos} session={session} onClose={()=>setPerfilSeccion(null)} onGuardado={cargarDatos} />}
+
+      {/* Modal Personalización — verificación de contraseña */}
+      {personalizacionAuth === "pin" && (
+        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:1000 }}>
+          <div style={{ background:C.bgCard, borderRadius:16, padding:"36px 40px", width:380, boxShadow:"0 24px 60px rgba(0,0,0,0.2)", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20 }}>
+              <h2 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:20, fontWeight:700, color:C.text }}>Personalización</h2>
+              <button onClick={() => { setPersonalizacionAuth(null); setPersonalizacionPin(""); setPersonalizacionPinError(""); }} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, width:28, height:28, cursor:"pointer", fontSize:15, color:C.textLight, display:"flex", alignItems:"center", justifyContent:"center", padding:0 }}>✕</button>
+            </div>
+            <p style={{ fontSize:13, color:C.textMid, marginBottom:20 }}>Introduce tu contraseña de acceso para continuar.</p>
+            <input
+              type="password"
+              autoFocus
+              value={personalizacionPin}
+              onChange={e => { setPersonalizacionPin(e.target.value); setPersonalizacionPinError(""); }}
+              onKeyDown={e => { if (e.key === "Enter") verificarPersonalizacionPin(); }}
+              placeholder="Contraseña"
+              style={{ width:"100%", padding:"10px 14px", borderRadius:8, border:`1.5px solid ${personalizacionPinError ? C.red : C.border}`, background:C.bg, color:C.text, fontSize:13, fontFamily:"'Plus Jakarta Sans',sans-serif", outline:"none", boxSizing:"border-box", marginBottom: personalizacionPinError ? 6 : 16 }}
+            />
+            {personalizacionPinError && <p style={{ fontSize:11, color:C.red, marginBottom:12 }}>{personalizacionPinError}</p>}
+            <button
+              onClick={verificarPersonalizacionPin}
+              disabled={personalizacionPinLoading || !personalizacionPin}
+              style={{ width:"100%", padding:"10px 0", background:C.accent, color:"#fff", border:"none", borderRadius:8, fontSize:13, fontWeight:600, cursor: personalizacionPinLoading || !personalizacionPin ? "not-allowed" : "pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", opacity: personalizacionPinLoading || !personalizacionPin ? 0.6 : 1 }}>
+              {personalizacionPinLoading ? "Verificando…" : "Continuar"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Personalización — panel de pestañas */}
+      {personalizacionAuth === "open" && (
+        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:1000 }}>
+          <div style={{ background:C.bgCard, borderRadius:16, padding:"36px 40px", width:420, boxShadow:"0 24px 60px rgba(0,0,0,0.2)", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
+              <h2 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:20, fontWeight:700, color:C.text }}>Personalización</h2>
+              <button onClick={() => setPersonalizacionAuth(null)} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, width:28, height:28, cursor:"pointer", fontSize:15, color:C.textLight, display:"flex", alignItems:"center", justifyContent:"center", padding:0 }}>✕</button>
+            </div>
+            <p style={{ fontSize:12, color:C.textMid, marginBottom:24 }}>Activa o desactiva las pestañas que quieres ver en la barra de navegación.</p>
+            <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+              {NAV.map(n => {
+                const isVisible = !navHidden.includes(n.key);
+                const isLast = isVisible && NAV.filter(nav => !navHidden.includes(nav.key)).length === 1;
+                return (
+                  <label key={n.key} style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 14px", borderRadius:8, border:`1.5px solid ${isVisible ? C.accent : C.border}`, background: isVisible ? C.accentLight : C.bg, cursor: isLast ? "not-allowed" : "pointer", opacity: isLast ? 0.5 : 1, transition:"all 0.15s" }}>
+                    <input
+                      type="checkbox"
+                      checked={isVisible}
+                      disabled={isLast}
+                      onChange={() => toggleNavHidden(n.key)}
+                      style={{ width:15, height:15, accentColor:C.accent, cursor: isLast ? "not-allowed" : "pointer", flexShrink:0 }}
+                    />
+                    <span style={{ fontSize:13, fontWeight: isVisible ? 600 : 400, color: isVisible ? C.text : C.textMid }}>{t(n.labelKey)}</span>
+                  </label>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
 
       {perfilSeccion === "suscripcion" && (
         <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:1000 }}>
