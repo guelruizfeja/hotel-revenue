@@ -8536,6 +8536,8 @@ function ModalConfigUnificado({ datos, session, navHidden, toggleNavHidden, navR
   const [pinLoading, setPinLoading] = React.useState(false);
   const [pinInputs, setPinInputs] = React.useState({});
   const [savedKeys, setSavedKeys] = React.useState({});
+  const [showPin, setShowPin] = React.useState(false);
+  const [showPinKey, setShowPinKey] = React.useState(null);
 
   const inp = { width:"100%", padding:"9px 12px", borderRadius:8, border:`1px solid ${C.border}`, background:C.bg, color:C.text, fontSize:13, fontFamily:"'Plus Jakarta Sans',sans-serif", boxSizing:"border-box", outline:"none" };
 
@@ -8623,8 +8625,16 @@ function ModalConfigUnificado({ datos, session, navHidden, toggleNavHidden, navR
         {tab === "personalizacion" && !unlocked && (
           <div>
             <p style={{ fontSize:13, color:C.textMid, marginBottom:20 }}>Introduce tu contraseña de acceso para continuar.</p>
-            <input type="password" autoFocus value={pin} onChange={e => { setPin(e.target.value); setPinError(""); }} onKeyDown={e => { if (e.key === "Enter") verificarPin(); }} placeholder="Contraseña"
-              style={{ width:"100%", padding:"10px 14px", borderRadius:8, border:`1.5px solid ${pinError ? C.red : C.border}`, background:C.bg, color:C.text, fontSize:13, fontFamily:"'Plus Jakarta Sans',sans-serif", outline:"none", boxSizing:"border-box", marginBottom: pinError ? 6 : 16 }} />
+            <div style={{ position:"relative", marginBottom: pinError ? 6 : 16 }}>
+              <input type={showPin ? "text" : "password"} autoFocus value={pin} onChange={e => { setPin(e.target.value); setPinError(""); }} onKeyDown={e => { if (e.key === "Enter") verificarPin(); }} placeholder="Contraseña"
+                style={{ width:"100%", padding:"10px 40px 10px 14px", borderRadius:8, border:`1.5px solid ${pinError ? C.red : C.border}`, background:C.bg, color:C.text, fontSize:13, fontFamily:"'Plus Jakarta Sans',sans-serif", outline:"none", boxSizing:"border-box" }} />
+              <button onMouseDown={e=>{e.preventDefault();setShowPin(true);}} onMouseUp={()=>setShowPin(false)} onMouseLeave={()=>setShowPin(false)} onTouchStart={e=>{e.preventDefault();setShowPin(true);}} onTouchEnd={()=>setShowPin(false)}
+                style={{ position:"absolute", right:10, top:"50%", transform:"translateY(-50%)", background:"none", border:"none", cursor:"pointer", color:C.textLight, padding:4, display:"flex", alignItems:"center", userSelect:"none", WebkitUserSelect:"none" }}>
+                {showPin
+                  ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                  : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>}
+              </button>
+            </div>
             {pinError && <p style={{ fontSize:11, color:C.red, marginBottom:12 }}>{pinError}</p>}
             <button onClick={verificarPin} disabled={pinLoading||!pin}
               style={{ width:"100%", padding:"10px 0", background:C.accent, color:"#fff", border:"none", borderRadius:8, fontSize:13, fontWeight:600, cursor:pinLoading||!pin?"not-allowed":"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", opacity:pinLoading||!pin?0.6:1 }}>
@@ -8683,10 +8693,16 @@ function ModalConfigUnificado({ datos, session, navHidden, toggleNavHidden, navR
                           </label>
                         </div>
                         {restriction.type === "pin" && (
-                          <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-                            <input type="text" inputMode="numeric" maxLength={4} placeholder="····" value={pinVal}
+                          <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                            <input type={showPinKey === n.key ? "text" : "password"} inputMode="numeric" maxLength={4} placeholder="····" value={pinVal}
                               onChange={e => { const v = e.target.value.replace(/\D/g,"").slice(0,4); setPinInputs(p => ({...p, [n.key]: v})); }}
                               style={{ width:90, padding:"9px 0", borderRadius:8, border:`1.5px solid ${C.border}`, background:C.bg, color:C.text, fontSize:20, letterSpacing:10, fontFamily:"monospace", outline:"none", textAlign:"center" }} />
+                            <button onMouseDown={e=>{e.preventDefault();setShowPinKey(n.key);}} onMouseUp={()=>setShowPinKey(null)} onMouseLeave={()=>setShowPinKey(null)} onTouchStart={e=>{e.preventDefault();setShowPinKey(n.key);}} onTouchEnd={()=>setShowPinKey(null)}
+                              style={{ background:"none", border:"none", cursor:"pointer", color:C.textLight, padding:4, display:"flex", alignItems:"center", userSelect:"none", WebkitUserSelect:"none", flexShrink:0 }}>
+                              {showPinKey === n.key
+                                ? <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                                : <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>}
+                            </button>
                             <button disabled={pinVal.length!==4} onClick={() => saveRestriction(n.key)}
                               style={{ padding:"8px 14px", borderRadius:8, border:"none", background:pinVal.length===4?C.accent:"#ccc", color:"#fff", fontSize:12, fontWeight:600, cursor:pinVal.length===4?"pointer":"not-allowed", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
                               Guardar código
@@ -8977,7 +8993,7 @@ export default function App() {
     if (r.type === "pin") {
       if (restriccionInput === r.value) {
         const key = restriccionModal.key;
-        setRestriccionModal(null); setRestriccionInput("");
+        setRestriccionModal(null); setRestriccionInput(""); setShowRestriccionInput(false);
         setView(key); setMesDetalle(null); localStorage.setItem("fr_view", key);
       } else {
         setRestriccionError("Código incorrecto");
@@ -8988,7 +9004,7 @@ export default function App() {
       setRestriccionLoading(false);
       if (error) { setRestriccionError("Contraseña incorrecta"); return; }
       const key = restriccionModal.key;
-      setRestriccionModal(null); setRestriccionInput("");
+      setRestriccionModal(null); setRestriccionInput(""); setShowRestriccionInput(false);
       setView(key); setMesDetalle(null); localStorage.setItem("fr_view", key);
     }
   };
@@ -9044,6 +9060,7 @@ export default function App() {
   const [restriccionInput, setRestriccionInput] = useState("");
   const [restriccionError, setRestriccionError] = useState("");
   const [restriccionLoading, setRestriccionLoading] = useState(false);
+  const [showRestriccionInput, setShowRestriccionInput] = useState(false);
   const [kpiModalApp, setKpiModalApp] = useState(null);
   const [kpiModal, setKpiModal] = useState(null);
 
@@ -9053,7 +9070,7 @@ export default function App() {
       if (e.key !== "Escape") return;
       if (kpiModal)        { setKpiModal(null); return; }
       if (importar)        { setImportar(false); return; }
-      if (restriccionModal) { setRestriccionModal(null); setRestriccionInput(""); setRestriccionError(""); return; }
+      if (restriccionModal) { setRestriccionModal(null); setRestriccionInput(""); setShowRestriccionInput(false); setRestriccionError(""); return; }
       if (perfilSeccion)   { setPerfilSeccion(null); setConfirmCancelar(false); return; }
       if (mesDetalle)           { setMesDetalle(null); return; }
       if (desgloseMovimiento)   { setDesgloseMovimiento(null); return; }
@@ -9371,22 +9388,30 @@ export default function App() {
           <div style={{ background:C.bgCard, borderRadius:16, padding:"36px 40px", width:360, boxShadow:"0 24px 60px rgba(0,0,0,0.2)", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
               <h2 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:20, fontWeight:700, color:C.text }}>Sección restringida</h2>
-              <button onClick={() => { setRestriccionModal(null); setRestriccionInput(""); setRestriccionError(""); }} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, width:28, height:28, cursor:"pointer", fontSize:15, color:C.textLight, display:"flex", alignItems:"center", justifyContent:"center", padding:0 }}>✕</button>
+              <button onClick={() => { setRestriccionModal(null); setRestriccionInput(""); setShowRestriccionInput(false); setRestriccionError(""); }} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, width:28, height:28, cursor:"pointer", fontSize:15, color:C.textLight, display:"flex", alignItems:"center", justifyContent:"center", padding:0 }}>✕</button>
             </div>
             <p style={{ fontSize:13, color:C.textMid, marginBottom:20 }}>
               {restriccionModal.type === "pin" ? "Introduce el código de 4 dígitos para acceder." : "Introduce tu contraseña de acceso para continuar."}
             </p>
-            <input
-              autoFocus
-              type={restriccionModal.type === "pin" ? "text" : "password"}
-              inputMode={restriccionModal.type === "pin" ? "numeric" : undefined}
-              maxLength={restriccionModal.type === "pin" ? 4 : undefined}
-              value={restriccionInput}
-              onChange={e => { const v = restriccionModal.type === "pin" ? e.target.value.replace(/\D/g,"").slice(0,4) : e.target.value; setRestriccionInput(v); setRestriccionError(""); }}
-              onKeyDown={e => { if (e.key === "Enter") verificarRestriccion(); }}
-              placeholder={restriccionModal.type === "pin" ? "····" : "Contraseña"}
-              style={{ width:"100%", padding:"10px 14px", borderRadius:8, border:`1.5px solid ${restriccionError ? C.red : C.border}`, background:C.bg, color:C.text, fontSize: restriccionModal.type === "pin" ? 22 : 13, letterSpacing: restriccionModal.type === "pin" ? 12 : 0, fontFamily: restriccionModal.type === "pin" ? "monospace" : "'Plus Jakarta Sans',sans-serif", textAlign: restriccionModal.type === "pin" ? "center" : "left", outline:"none", boxSizing:"border-box", marginBottom: restriccionError ? 6 : 16 }}
-            />
+            <div style={{ position:"relative", marginBottom: restriccionError ? 6 : 16 }}>
+              <input
+                autoFocus
+                type={showRestriccionInput ? "text" : "password"}
+                inputMode={restriccionModal.type === "pin" ? "numeric" : undefined}
+                maxLength={restriccionModal.type === "pin" ? 4 : undefined}
+                value={restriccionInput}
+                onChange={e => { const v = restriccionModal.type === "pin" ? e.target.value.replace(/\D/g,"").slice(0,4) : e.target.value; setRestriccionInput(v); setRestriccionError(""); }}
+                onKeyDown={e => { if (e.key === "Enter") verificarRestriccion(); }}
+                placeholder={restriccionModal.type === "pin" ? "····" : "Contraseña"}
+                style={{ width:"100%", padding:"10px 40px 10px 14px", borderRadius:8, border:`1.5px solid ${restriccionError ? C.red : C.border}`, background:C.bg, color:C.text, fontSize: restriccionModal.type === "pin" ? 22 : 13, letterSpacing: restriccionModal.type === "pin" ? 12 : 0, fontFamily: restriccionModal.type === "pin" ? "monospace" : "'Plus Jakarta Sans',sans-serif", textAlign: restriccionModal.type === "pin" ? "center" : "left", outline:"none", boxSizing:"border-box" }}
+              />
+              <button onMouseDown={e=>{e.preventDefault();setShowRestriccionInput(true);}} onMouseUp={()=>setShowRestriccionInput(false)} onMouseLeave={()=>setShowRestriccionInput(false)} onTouchStart={e=>{e.preventDefault();setShowRestriccionInput(true);}} onTouchEnd={()=>setShowRestriccionInput(false)}
+                style={{ position:"absolute", right:10, top:"50%", transform:"translateY(-50%)", background:"none", border:"none", cursor:"pointer", color:C.textLight, padding:4, display:"flex", alignItems:"center", userSelect:"none", WebkitUserSelect:"none" }}>
+                {showRestriccionInput
+                  ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                  : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>}
+              </button>
+            </div>
             {restriccionError && <p style={{ fontSize:11, color:C.red, marginBottom:12 }}>{restriccionError}</p>}
             <button onClick={verificarRestriccion} disabled={restriccionLoading||!restriccionInput}
               style={{ width:"100%", padding:"10px 0", background:C.accent, color:"#fff", border:"none", borderRadius:8, fontSize:13, fontWeight:600, cursor:restriccionLoading||!restriccionInput?"not-allowed":"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", opacity:restriccionLoading||!restriccionInput?0.6:1 }}>
