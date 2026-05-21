@@ -9250,7 +9250,6 @@ export default function App() {
                     { label:t("suscripcion"), key:"suscripcion" },
                     { label:t("extranets"), key:"extranets" },
                     { label:t("informe_mensual"), key:"informe" },
-                    { label:"Personalización", key:"personalizacion" },
                   ].map(op => (
                     <button key={op.key} onClick={async () => {
                         if (op.key === "informe") {
