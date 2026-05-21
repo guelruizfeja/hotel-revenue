@@ -6425,7 +6425,6 @@ function BudgetView({ datos, anio: anioProp }) {
                               {f.forecast_dev>=0?"+":""}{(f.forecast_dev/1000).toFixed(1)}k {t("vs_ppto")}
                             </span>
                           )}
-                          <ConfianzaBadge pct={f.confianza} cerrado={f.mesCerrado}/>
                         </div>
                       ) : "—"}
                     </td>
