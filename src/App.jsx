@@ -8524,42 +8524,188 @@ function LiveClock({ lang }) {
   );
 }
 
-function ModalConfigHotel({ datos, session, onClose, onGuardado }) {
+function ModalConfigUnificado({ datos, session, navHidden, toggleNavHidden, navRestrictions, onSaveRestrictions, initialTab, onClose, onGuardado }) {
+  const t = useT();
+  const [tab, setTab] = React.useState(initialTab || "datos");
+  const [unlocked, setUnlocked] = React.useState(false);
   const [hForm, setHForm] = React.useState({ nombre: datos.hotel?.nombre||"", ciudad: datos.hotel?.ciudad||"", habitaciones: datos.hotel?.habitaciones||"" });
   const [hGuardando, setHGuardando] = React.useState(false);
   const [hOk, setHOk] = React.useState(false);
+  const [pin, setPin] = React.useState("");
+  const [pinError, setPinError] = React.useState("");
+  const [pinLoading, setPinLoading] = React.useState(false);
+  const [pinInputs, setPinInputs] = React.useState({});
+  const [savedKeys, setSavedKeys] = React.useState({});
+
   const inp = { width:"100%", padding:"9px 12px", borderRadius:8, border:`1px solid ${C.border}`, background:C.bg, color:C.text, fontSize:13, fontFamily:"'Plus Jakarta Sans',sans-serif", boxSizing:"border-box", outline:"none" };
+
+  const verificarPin = async () => {
+    if (!pin) return;
+    setPinLoading(true); setPinError("");
+    const { error } = await supabase.auth.signInWithPassword({ email: session.user.email, password: pin });
+    setPinLoading(false);
+    if (error) { setPinError("Contraseña incorrecta"); return; }
+    setUnlocked(true); setPin("");
+  };
+
+  const toggleRestriction = (key) => {
+    if (navRestrictions[key]) {
+      const newR = { ...navRestrictions };
+      delete newR[key];
+      onSaveRestrictions(newR);
+      setPinInputs(p => { const n={...p}; delete n[key]; return n; });
+      setSavedKeys(s => { const n={...s}; delete n[key]; return n; });
+    } else {
+      onSaveRestrictions({ ...navRestrictions, [key]: { type: "password" } });
+    }
+  };
+
+  const saveRestriction = (key) => {
+    const val = (pinInputs[key] || "").replace(/\D/g,"");
+    if (val.length !== 4) return;
+    onSaveRestrictions({ ...navRestrictions, [key]: { type: "pin", value: val } });
+    setSavedKeys(s => ({...s, [key]: true}));
+    setTimeout(() => setSavedKeys(s => { const n={...s}; delete n[key]; return n; }), 2000);
+  };
+
+  const TABS_CONFIG = [
+    { key: "datos", label: "Datos del hotel" },
+    { key: "personalizacion", label: "Personalización" },
+    { key: "restricciones", label: "Restricciones" },
+  ];
+
   return (
     <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:1000 }}>
-      <div style={{ background:C.bgCard, borderRadius:16, padding:"32px 36px", width:400, boxShadow:"0 24px 60px rgba(0,0,0,0.2)", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+      <div style={{ background:C.bgCard, borderRadius:16, padding:"32px 36px", width:480, maxHeight:"85vh", overflowY:"auto", boxShadow:"0 24px 60px rgba(0,0,0,0.2)", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:24 }}>
           <h2 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:20, fontWeight:700, color:C.text }}>Configuración del hotel</h2>
           <button onClick={onClose} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, width:28, height:28, cursor:"pointer", fontSize:15, color:C.textLight, display:"flex", alignItems:"center", justifyContent:"center", padding:0 }}>✕</button>
         </div>
-        <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
-          <div>
-            <p style={{ fontSize:11, color:C.textLight, fontWeight:600, marginBottom:5 }}>NOMBRE DEL HOTEL</p>
-            <input style={inp} value={hForm.nombre} onChange={e=>setHForm(f=>({...f,nombre:e.target.value}))} placeholder="Nombre del hotel" />
-          </div>
-          <div>
-            <p style={{ fontSize:11, color:C.textLight, fontWeight:600, marginBottom:5 }}>CIUDAD</p>
-            <input style={inp} value={hForm.ciudad} onChange={e=>setHForm(f=>({...f,ciudad:e.target.value}))} placeholder="Ciudad" />
-          </div>
-          <div>
-            <p style={{ fontSize:11, color:C.textLight, fontWeight:600, marginBottom:5 }}>NÚMERO DE HABITACIONES</p>
-            <input style={inp} type="number" min="1" value={hForm.habitaciones} onChange={e=>setHForm(f=>({...f,habitaciones:e.target.value}))} placeholder="Ej: 110" />
-            <p style={{ fontSize:10, color:C.textLight, marginTop:4 }}>Usado para calcular la ocupación en el heatmap y previsiones futuras.</p>
-          </div>
+        {/* Pestañas */}
+        <div style={{ display:"flex", gap:0, marginBottom:24, borderBottom:`1.5px solid ${C.border}` }}>
+          {TABS_CONFIG.map(tc => (
+            <button key={tc.key} onClick={() => { setTab(tc.key); if (tc.key !== "personalizacion") setUnlocked(false); }}
+              style={{ padding:"8px 16px", border:"none", borderBottom: tab===tc.key ? `2.5px solid ${C.accent}` : "2.5px solid transparent", background:"transparent", color: tab===tc.key ? C.accent : C.textMid, fontSize:12, fontWeight: tab===tc.key ? 700 : 400, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", transition:"all 0.15s", marginBottom:-1.5 }}>
+              {tc.label}
+            </button>
+          ))}
         </div>
-        <button disabled={hGuardando||hOk} onClick={async()=>{
-          setHGuardando(true);
-          await supabase.from("hoteles").update({ nombre:hForm.nombre||null, ciudad:hForm.ciudad||null, habitaciones:parseInt(hForm.habitaciones)||null }).eq("id",session.user.id);
-          setHGuardando(false); setHOk(true);
-          onGuardado(true);
-          setTimeout(()=>{ setHOk(false); onClose(); }, 1500);
-        }} style={{ marginTop:24, width:"100%", padding:"11px", borderRadius:9, border:"none", background:hOk?"#059669":C.accent, color:"#fff", fontSize:14, fontWeight:700, cursor:hGuardando||hOk?"not-allowed":"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", transition:"background 0.2s" }}>
-          {hGuardando ? "Guardando..." : hOk ? "✓ Guardado" : "Guardar cambios"}
-        </button>
+
+        {/* Pestaña: Datos del hotel */}
+        {tab === "datos" && (
+          <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
+            <div>
+              <p style={{ fontSize:11, color:C.textLight, fontWeight:600, marginBottom:5 }}>NOMBRE DEL HOTEL</p>
+              <input style={inp} value={hForm.nombre} onChange={e=>setHForm(f=>({...f,nombre:e.target.value}))} placeholder="Nombre del hotel" />
+            </div>
+            <div>
+              <p style={{ fontSize:11, color:C.textLight, fontWeight:600, marginBottom:5 }}>CIUDAD</p>
+              <input style={inp} value={hForm.ciudad} onChange={e=>setHForm(f=>({...f,ciudad:e.target.value}))} placeholder="Ciudad" />
+            </div>
+            <div>
+              <p style={{ fontSize:11, color:C.textLight, fontWeight:600, marginBottom:5 }}>NÚMERO DE HABITACIONES</p>
+              <input style={inp} type="number" min="1" value={hForm.habitaciones} onChange={e=>setHForm(f=>({...f,habitaciones:e.target.value}))} placeholder="Ej: 110" />
+              <p style={{ fontSize:10, color:C.textLight, marginTop:4 }}>Usado para calcular la ocupación en el heatmap y previsiones futuras.</p>
+            </div>
+            <button disabled={hGuardando||hOk} onClick={async()=>{
+              setHGuardando(true);
+              await supabase.from("hoteles").update({ nombre:hForm.nombre||null, ciudad:hForm.ciudad||null, habitaciones:parseInt(hForm.habitaciones)||null }).eq("id",session.user.id);
+              setHGuardando(false); setHOk(true);
+              onGuardado(true);
+              setTimeout(()=>{ setHOk(false); }, 1500);
+            }} style={{ marginTop:10, width:"100%", padding:"11px", borderRadius:9, border:"none", background:hOk?"#059669":C.accent, color:"#fff", fontSize:14, fontWeight:700, cursor:hGuardando||hOk?"not-allowed":"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", transition:"background 0.2s" }}>
+              {hGuardando ? "Guardando..." : hOk ? "✓ Guardado" : "Guardar cambios"}
+            </button>
+          </div>
+        )}
+
+        {/* Pestaña: Personalización — verificación */}
+        {tab === "personalizacion" && !unlocked && (
+          <div>
+            <p style={{ fontSize:13, color:C.textMid, marginBottom:20 }}>Introduce tu contraseña de acceso para continuar.</p>
+            <input type="password" autoFocus value={pin} onChange={e => { setPin(e.target.value); setPinError(""); }} onKeyDown={e => { if (e.key === "Enter") verificarPin(); }} placeholder="Contraseña"
+              style={{ width:"100%", padding:"10px 14px", borderRadius:8, border:`1.5px solid ${pinError ? C.red : C.border}`, background:C.bg, color:C.text, fontSize:13, fontFamily:"'Plus Jakarta Sans',sans-serif", outline:"none", boxSizing:"border-box", marginBottom: pinError ? 6 : 16 }} />
+            {pinError && <p style={{ fontSize:11, color:C.red, marginBottom:12 }}>{pinError}</p>}
+            <button onClick={verificarPin} disabled={pinLoading||!pin}
+              style={{ width:"100%", padding:"10px 0", background:C.accent, color:"#fff", border:"none", borderRadius:8, fontSize:13, fontWeight:600, cursor:pinLoading||!pin?"not-allowed":"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", opacity:pinLoading||!pin?0.6:1 }}>
+              {pinLoading ? "Verificando…" : "Continuar"}
+            </button>
+          </div>
+        )}
+
+        {/* Pestaña: Personalización — contenido */}
+        {tab === "personalizacion" && unlocked && (
+          <div>
+            <p style={{ fontSize:12, color:C.textMid, marginBottom:20 }}>Activa o desactiva las pestañas que quieres ver en la barra de navegación.</p>
+            <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+              {NAV.map(n => {
+                const isVisible = !navHidden.includes(n.key);
+                const isLast = isVisible && NAV.filter(nav => !navHidden.includes(nav.key)).length === 1;
+                return (
+                  <label key={n.key} style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 14px", borderRadius:8, border:`1.5px solid ${isVisible ? C.accent : C.border}`, background: isVisible ? C.accentLight : C.bg, cursor: isLast ? "not-allowed" : "pointer", opacity: isLast ? 0.5 : 1, transition:"all 0.15s" }}>
+                    <input type="checkbox" checked={isVisible} disabled={isLast} onChange={() => toggleNavHidden(n.key)} style={{ width:15, height:15, accentColor:C.accent, cursor: isLast ? "not-allowed" : "pointer", flexShrink:0 }} />
+                    <span style={{ fontSize:13, fontWeight: isVisible ? 600 : 400, color: isVisible ? C.text : C.textMid }}>{t(n.labelKey)}</span>
+                  </label>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Pestaña: Restricciones */}
+        {tab === "restricciones" && (
+          <div>
+            <p style={{ fontSize:12, color:C.textMid, marginBottom:20 }}>Protege el acceso a pestañas con contraseña o código de 4 dígitos.</p>
+            <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+              {NAV.map(n => {
+                const isRestricted = !!navRestrictions[n.key];
+                const restriction = navRestrictions[n.key];
+                const pinVal = pinInputs[n.key] || "";
+                return (
+                  <div key={n.key} style={{ borderRadius:10, border:`1.5px solid ${isRestricted ? C.accent : C.border}`, overflow:"hidden" }}>
+                    <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"11px 14px", background: isRestricted ? C.accentLight : C.bg, cursor:"pointer" }} onClick={() => toggleRestriction(n.key)}>
+                      <span style={{ fontSize:13, fontWeight: isRestricted ? 600 : 400, color: isRestricted ? C.text : C.textMid }}>{t(n.labelKey)}</span>
+                      <span style={{ fontSize:11, fontWeight:600, color: isRestricted ? C.accent : C.textLight, background: isRestricted ? "rgba(0,75,135,0.08)" : "transparent", padding:"3px 9px", borderRadius:20, border:`1px solid ${isRestricted ? C.accent : C.border}`, flexShrink:0 }}>
+                        {isRestricted ? "🔒 Restringida" : "🔓 Libre"}
+                      </span>
+                    </div>
+                    {isRestricted && (
+                      <div style={{ padding:"14px", borderTop:`1px solid ${C.border}`, background:C.bgCard }}>
+                        <p style={{ fontSize:11, color:C.textLight, fontWeight:600, marginBottom:10, letterSpacing:0.5 }}>MÉTODO DE ACCESO</p>
+                        <div style={{ display:"flex", flexDirection:"column", gap:8, marginBottom:12 }}>
+                          <label style={{ display:"flex", alignItems:"center", gap:8, cursor:"pointer" }}>
+                            <input type="radio" name={`rest-${n.key}`} checked={restriction.type === "password"} onChange={() => onSaveRestrictions({ ...navRestrictions, [n.key]: { type: "password" } })} style={{ accentColor:C.accent }} />
+                            <span style={{ fontSize:12, color:C.text }}>Contraseña de acceso</span>
+                          </label>
+                          <label style={{ display:"flex", alignItems:"center", gap:8, cursor:"pointer" }}>
+                            <input type="radio" name={`rest-${n.key}`} checked={restriction.type === "pin"} onChange={() => onSaveRestrictions({ ...navRestrictions, [n.key]: { type: "pin", value: restriction.value || "" } })} style={{ accentColor:C.accent }} />
+                            <span style={{ fontSize:12, color:C.text }}>Código de 4 dígitos</span>
+                          </label>
+                        </div>
+                        {restriction.type === "pin" && (
+                          <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                            <input type="text" inputMode="numeric" maxLength={4} placeholder="····" value={pinVal}
+                              onChange={e => { const v = e.target.value.replace(/\D/g,"").slice(0,4); setPinInputs(p => ({...p, [n.key]: v})); }}
+                              style={{ width:90, padding:"9px 0", borderRadius:8, border:`1.5px solid ${C.border}`, background:C.bg, color:C.text, fontSize:20, letterSpacing:10, fontFamily:"monospace", outline:"none", textAlign:"center" }} />
+                            <button disabled={pinVal.length!==4} onClick={() => saveRestriction(n.key)}
+                              style={{ padding:"8px 14px", borderRadius:8, border:"none", background:pinVal.length===4?C.accent:"#ccc", color:"#fff", fontSize:12, fontWeight:600, cursor:pinVal.length===4?"pointer":"not-allowed", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+                              Guardar código
+                            </button>
+                            {savedKeys[n.key] && <span style={{ fontSize:11, color:C.green, fontWeight:600 }}>✓ Guardado</span>}
+                            {!savedKeys[n.key] && restriction.value && <span style={{ fontSize:11, color:C.textLight }}>✓ Activo</span>}
+                          </div>
+                        )}
+                        {restriction.type === "password" && (
+                          <p style={{ fontSize:11, color:C.textMid, fontStyle:"italic" }}>Se usará la contraseña de tu cuenta para desbloquear esta pestaña.</p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -8808,15 +8954,43 @@ export default function App() {
       if (firstVisible) { setView(firstVisible); localStorage.setItem("fr_view", firstVisible); }
     }
   };
-  const verificarPersonalizacionPin = async () => {
-    if (!personalizacionPin) return;
-    setPersonalizacionPinLoading(true);
-    setPersonalizacionPinError("");
-    const { error } = await supabase.auth.signInWithPassword({ email: session.user.email, password: personalizacionPin });
-    setPersonalizacionPinLoading(false);
-    if (error) { setPersonalizacionPinError("Contraseña incorrecta"); return; }
-    setPersonalizacionAuth("open");
-    setPersonalizacionPin("");
+  const saveNavRestrictions = (newR) => {
+    setNavRestrictions(newR);
+    localStorage.setItem("fr_nav_restrictions", JSON.stringify(newR));
+  };
+  const navigateTo = (key) => {
+    const restriction = navRestrictions[key];
+    if (restriction) {
+      setRestriccionModal({ key, type: restriction.type });
+      setRestriccionInput("");
+      setRestriccionError("");
+    } else {
+      setView(key);
+      setMesDetalle(null);
+      localStorage.setItem("fr_view", key);
+    }
+  };
+  const verificarRestriccion = async () => {
+    if (!restriccionInput) return;
+    const r = navRestrictions[restriccionModal?.key];
+    if (!r) return;
+    if (r.type === "pin") {
+      if (restriccionInput === r.value) {
+        const key = restriccionModal.key;
+        setRestriccionModal(null); setRestriccionInput("");
+        setView(key); setMesDetalle(null); localStorage.setItem("fr_view", key);
+      } else {
+        setRestriccionError("Código incorrecto");
+      }
+    } else {
+      setRestriccionLoading(true); setRestriccionError("");
+      const { error } = await supabase.auth.signInWithPassword({ email: session.user.email, password: restriccionInput });
+      setRestriccionLoading(false);
+      if (error) { setRestriccionError("Contraseña incorrecta"); return; }
+      const key = restriccionModal.key;
+      setRestriccionModal(null); setRestriccionInput("");
+      setView(key); setMesDetalle(null); localStorage.setItem("fr_view", key);
+    }
   };
 
   // OCC de hoy/ayer para el ticker — misma fuente que el heatmap
@@ -8857,11 +9031,19 @@ export default function App() {
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, [mostrarPerfil]);
-  const [perfilSeccion, setPerfilSeccion] = useState(null); // null | "suscripcion" | "extranets"
-  const [personalizacionAuth, setPersonalizacionAuth] = useState(null); // null | "pin" | "open"
-  const [personalizacionPin, setPersonalizacionPin] = useState("");
-  const [personalizacionPinError, setPersonalizacionPinError] = useState("");
-  const [personalizacionPinLoading, setPersonalizacionPinLoading] = useState(false);
+  const [perfilSeccion, setPerfilSeccion] = useState(null);
+  const [configInitialTab, setConfigInitialTab] = useState("datos");
+  const [navRestrictions, setNavRestrictions] = useState(() => {
+    try {
+      const s = JSON.parse(localStorage.getItem("fr_nav_restrictions") || "null");
+      if (s && typeof s === "object") return s;
+    } catch {}
+    return {};
+  });
+  const [restriccionModal, setRestriccionModal] = useState(null);
+  const [restriccionInput, setRestriccionInput] = useState("");
+  const [restriccionError, setRestriccionError] = useState("");
+  const [restriccionLoading, setRestriccionLoading] = useState(false);
   const [kpiModalApp, setKpiModalApp] = useState(null);
   const [kpiModal, setKpiModal] = useState(null);
 
@@ -8871,14 +9053,14 @@ export default function App() {
       if (e.key !== "Escape") return;
       if (kpiModal)        { setKpiModal(null); return; }
       if (importar)        { setImportar(false); return; }
-      if (personalizacionAuth) { setPersonalizacionAuth(null); setPersonalizacionPin(""); setPersonalizacionPinError(""); return; }
+      if (restriccionModal) { setRestriccionModal(null); setRestriccionInput(""); setRestriccionError(""); return; }
       if (perfilSeccion)   { setPerfilSeccion(null); setConfirmCancelar(false); return; }
       if (mesDetalle)           { setMesDetalle(null); return; }
       if (desgloseMovimiento)   { setDesgloseMovimiento(null); return; }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [kpiModal, importar, personalizacionAuth, perfilSeccion, mesDetalle, desgloseMovimiento]);
+  }, [kpiModal, importar, restriccionModal, perfilSeccion, mesDetalle, desgloseMovimiento]);
   const [lang, setLang] = useState(() => localStorage.getItem("fr_lang") || "es");
   const t = useT();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -9022,7 +9204,7 @@ export default function App() {
                     setNavPreview(null);
                     dragNavKey.current = null;
                   }}
-                  onClick={() => { setView(n.key); setMesDetalle(null); localStorage.setItem("fr_view", n.key); }}
+                  onClick={() => { navigateTo(n.key); }}
                   style={{ padding: "6px clamp(6px,2vw,16px)", borderRadius: 7, border: "none", cursor: "grab", background: isActive ? "rgba(255,255,255,0.12)" : "transparent", color: "#fff", fontSize: "clamp(11px,2.5vw,13px)", fontWeight: isActive ? 700 : 400, fontFamily: "'Plus Jakarta Sans', sans-serif", transition: "background 0.1s", whiteSpace: "nowrap", outline: isActive ? `1.5px solid rgba(255,255,255,0.3)` : "1.5px solid transparent", visibility: draggingNavKey === n.key ? "hidden" : "visible" }}>
                   <span className="topbar-nav-label">{t(n.labelKey)}</span>
                   <span style={{ display:"none" }} className="topbar-nav-icon">{t(n.labelKey).slice(0,3)}</span>
@@ -9060,9 +9242,12 @@ export default function App() {
                           await generarReportePDF(datos, mesSel, anioSel, datos.hotel?.nombre||"Mi Hotel");
                           setGenerandoPDF(false);
                         } else if (op.key === "personalizacion") {
-                          setPersonalizacionAuth("pin");
-                          setPersonalizacionPin("");
-                          setPersonalizacionPinError("");
+                          setConfigInitialTab("personalizacion");
+                          setPerfilSeccion("config");
+                          setMostrarPerfil(false);
+                        } else if (op.key === "hotel") {
+                          setConfigInitialTab("datos");
+                          setPerfilSeccion("config");
                           setMostrarPerfil(false);
                         } else {
                           setPerfilSeccion(op.key);
@@ -9165,65 +9350,48 @@ export default function App() {
       </main>
 
 
-      {/* Modal Configuración Hotel */}
-      {perfilSeccion === "hotel" && <ModalConfigHotel datos={datos} session={session} onClose={()=>setPerfilSeccion(null)} onGuardado={cargarDatos} />}
-
-      {/* Modal Personalización — verificación de contraseña */}
-      {personalizacionAuth === "pin" && (
-        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:1000 }}>
-          <div style={{ background:C.bgCard, borderRadius:16, padding:"36px 40px", width:380, boxShadow:"0 24px 60px rgba(0,0,0,0.2)", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
-            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20 }}>
-              <h2 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:20, fontWeight:700, color:C.text }}>Personalización</h2>
-              <button onClick={() => { setPersonalizacionAuth(null); setPersonalizacionPin(""); setPersonalizacionPinError(""); }} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, width:28, height:28, cursor:"pointer", fontSize:15, color:C.textLight, display:"flex", alignItems:"center", justifyContent:"center", padding:0 }}>✕</button>
-            </div>
-            <p style={{ fontSize:13, color:C.textMid, marginBottom:20 }}>Introduce tu contraseña de acceso para continuar.</p>
-            <input
-              type="password"
-              autoFocus
-              value={personalizacionPin}
-              onChange={e => { setPersonalizacionPin(e.target.value); setPersonalizacionPinError(""); }}
-              onKeyDown={e => { if (e.key === "Enter") verificarPersonalizacionPin(); }}
-              placeholder="Contraseña"
-              style={{ width:"100%", padding:"10px 14px", borderRadius:8, border:`1.5px solid ${personalizacionPinError ? C.red : C.border}`, background:C.bg, color:C.text, fontSize:13, fontFamily:"'Plus Jakarta Sans',sans-serif", outline:"none", boxSizing:"border-box", marginBottom: personalizacionPinError ? 6 : 16 }}
-            />
-            {personalizacionPinError && <p style={{ fontSize:11, color:C.red, marginBottom:12 }}>{personalizacionPinError}</p>}
-            <button
-              onClick={verificarPersonalizacionPin}
-              disabled={personalizacionPinLoading || !personalizacionPin}
-              style={{ width:"100%", padding:"10px 0", background:C.accent, color:"#fff", border:"none", borderRadius:8, fontSize:13, fontWeight:600, cursor: personalizacionPinLoading || !personalizacionPin ? "not-allowed" : "pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", opacity: personalizacionPinLoading || !personalizacionPin ? 0.6 : 1 }}>
-              {personalizacionPinLoading ? "Verificando…" : "Continuar"}
-            </button>
-          </div>
-        </div>
+      {/* Modal Configuración Unificado */}
+      {perfilSeccion === "config" && (
+        <ModalConfigUnificado
+          datos={datos}
+          session={session}
+          navHidden={navHidden}
+          toggleNavHidden={toggleNavHidden}
+          navRestrictions={navRestrictions}
+          onSaveRestrictions={saveNavRestrictions}
+          initialTab={configInitialTab}
+          onClose={() => setPerfilSeccion(null)}
+          onGuardado={cargarDatos}
+        />
       )}
 
-      {/* Modal Personalización — panel de pestañas */}
-      {personalizacionAuth === "open" && (
+      {/* Modal bloqueo de pestaña restringida */}
+      {restriccionModal && (
         <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:1000 }}>
-          <div style={{ background:C.bgCard, borderRadius:16, padding:"36px 40px", width:420, boxShadow:"0 24px 60px rgba(0,0,0,0.2)", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
-            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
-              <h2 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:20, fontWeight:700, color:C.text }}>Personalización</h2>
-              <button onClick={() => setPersonalizacionAuth(null)} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, width:28, height:28, cursor:"pointer", fontSize:15, color:C.textLight, display:"flex", alignItems:"center", justifyContent:"center", padding:0 }}>✕</button>
+          <div style={{ background:C.bgCard, borderRadius:16, padding:"36px 40px", width:360, boxShadow:"0 24px 60px rgba(0,0,0,0.2)", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
+              <h2 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:20, fontWeight:700, color:C.text }}>Sección restringida</h2>
+              <button onClick={() => { setRestriccionModal(null); setRestriccionInput(""); setRestriccionError(""); }} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, width:28, height:28, cursor:"pointer", fontSize:15, color:C.textLight, display:"flex", alignItems:"center", justifyContent:"center", padding:0 }}>✕</button>
             </div>
-            <p style={{ fontSize:12, color:C.textMid, marginBottom:24 }}>Activa o desactiva las pestañas que quieres ver en la barra de navegación.</p>
-            <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
-              {NAV.map(n => {
-                const isVisible = !navHidden.includes(n.key);
-                const isLast = isVisible && NAV.filter(nav => !navHidden.includes(nav.key)).length === 1;
-                return (
-                  <label key={n.key} style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 14px", borderRadius:8, border:`1.5px solid ${isVisible ? C.accent : C.border}`, background: isVisible ? C.accentLight : C.bg, cursor: isLast ? "not-allowed" : "pointer", opacity: isLast ? 0.5 : 1, transition:"all 0.15s" }}>
-                    <input
-                      type="checkbox"
-                      checked={isVisible}
-                      disabled={isLast}
-                      onChange={() => toggleNavHidden(n.key)}
-                      style={{ width:15, height:15, accentColor:C.accent, cursor: isLast ? "not-allowed" : "pointer", flexShrink:0 }}
-                    />
-                    <span style={{ fontSize:13, fontWeight: isVisible ? 600 : 400, color: isVisible ? C.text : C.textMid }}>{t(n.labelKey)}</span>
-                  </label>
-                );
-              })}
-            </div>
+            <p style={{ fontSize:13, color:C.textMid, marginBottom:20 }}>
+              {restriccionModal.type === "pin" ? "Introduce el código de 4 dígitos para acceder." : "Introduce tu contraseña de acceso para continuar."}
+            </p>
+            <input
+              autoFocus
+              type={restriccionModal.type === "pin" ? "text" : "password"}
+              inputMode={restriccionModal.type === "pin" ? "numeric" : undefined}
+              maxLength={restriccionModal.type === "pin" ? 4 : undefined}
+              value={restriccionInput}
+              onChange={e => { const v = restriccionModal.type === "pin" ? e.target.value.replace(/\D/g,"").slice(0,4) : e.target.value; setRestriccionInput(v); setRestriccionError(""); }}
+              onKeyDown={e => { if (e.key === "Enter") verificarRestriccion(); }}
+              placeholder={restriccionModal.type === "pin" ? "····" : "Contraseña"}
+              style={{ width:"100%", padding:"10px 14px", borderRadius:8, border:`1.5px solid ${restriccionError ? C.red : C.border}`, background:C.bg, color:C.text, fontSize: restriccionModal.type === "pin" ? 22 : 13, letterSpacing: restriccionModal.type === "pin" ? 12 : 0, fontFamily: restriccionModal.type === "pin" ? "monospace" : "'Plus Jakarta Sans',sans-serif", textAlign: restriccionModal.type === "pin" ? "center" : "left", outline:"none", boxSizing:"border-box", marginBottom: restriccionError ? 6 : 16 }}
+            />
+            {restriccionError && <p style={{ fontSize:11, color:C.red, marginBottom:12 }}>{restriccionError}</p>}
+            <button onClick={verificarRestriccion} disabled={restriccionLoading||!restriccionInput}
+              style={{ width:"100%", padding:"10px 0", background:C.accent, color:"#fff", border:"none", borderRadius:8, fontSize:13, fontWeight:600, cursor:restriccionLoading||!restriccionInput?"not-allowed":"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", opacity:restriccionLoading||!restriccionInput?0.6:1 }}>
+              {restriccionLoading ? "Verificando…" : "Entrar"}
+            </button>
           </div>
         </div>
       )}
