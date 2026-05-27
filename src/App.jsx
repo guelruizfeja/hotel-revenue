@@ -4130,8 +4130,8 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
                                       <div key={dia} style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:2 }}>
                                         <p style={{ fontSize:13, fontWeight:700, color:isDaySelected?C.accent:C.text, lineHeight:1, textAlign:"center" }}>{dia}</p>
                                         <div
-                                          style={{ width:"100%", aspectRatio:"1", borderRadius:5, background:bg, border:`${inSel||isDaySelected?"2px":"1.5px"} solid ${borderColor}`, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:1, position:"relative", cursor:hmModoCrear?"crosshair":"pointer", userSelect:"none" }}
-                                          onClick={()=>{ if(!hmModoCrear){setHmDayModal(isoDay===hmDayModal?null:isoDay);} }}
+                                          style={{ width:"100%", aspectRatio:"1", borderRadius:5, background:bg, border:`${inSel||isDaySelected?"2px":"1.5px"} solid ${borderColor}`, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:1, position:"relative", cursor:hmModoCrear?"crosshair":esFut?"pointer":"default", userSelect:"none" }}
+                                          onClick={()=>{ if(!hmModoCrear && esFut){setHmDayModal(isoDay===hmDayModal?null:isoDay);} }}
                                           onMouseDown={(e)=>{ if(!hmModoCrear)return; e.preventDefault(); setHmDragStart(dia); setHmDragEnd(dia); setHmIsDragging(true); }}
                                           onMouseEnter={()=>{ if(hmModoCrear&&hmIsDragging)setHmDragEnd(dia); }}
                                           onMouseUp={()=>{
@@ -4356,7 +4356,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
               const habGruposConf = gruposDia.filter(g=>g.estado==="confirmado").reduce((a,g)=>a+(g.habitaciones||0),0);
               if (habGruposConf > 0) canalMap["Grupos / MICE"] = habGruposConf;
 
-              const canales = Object.entries(canalMap).filter(([c])=>!_isGrupoCanal(c)).sort((a,b)=>b[1]-a[1]);
+              const canales = Object.entries(canalMap).sort((a,b)=>b[1]-a[1]);
               const totalRes = canales.reduce((a,[,v])=>a+v,0);
               const habIndividual = totalRes;
 
@@ -4369,7 +4369,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
                 occ = habDenModal > 0 && prodDia.hab_ocupadas > 0 ? Math.round(prodDia.hab_ocupadas / habDenModal * 100) : null;
                 adr = prodDia.hab_ocupadas > 0 && prodDia.revenue_hab > 0 ? Math.round(prodDia.revenue_hab / prodDia.hab_ocupadas) : calcAdrPickup(iso);
               } else {
-                const totalHabOcup = habGruposConf + habIndividual;
+                const totalHabOcup = habIndividual;
                 occ = habHotelModal > 0 && totalHabOcup > 0 ? Math.round(totalHabOcup / habHotelModal * 100) : null;
                 adr = calcAdrPickup(iso);
               }
@@ -4478,45 +4478,64 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
                     </div>
 
                     {/* Listado de reservas con número */}
-                    {activasIso.filter(e => !e._grupo && !_isGrupoCanal(e.canal)).length > 0 && (
-                      <div style={{ marginTop:20 }}>
-                        <p style={{ fontSize:11, fontWeight:700, color:C.textMid, textTransform:"uppercase", letterSpacing:"1.5px", marginBottom:12 }}>Reservas en casa</p>
-                        <div style={{ overflowX:"auto" }}>
-                          <table style={{ width:"100%", borderCollapse:"collapse", fontSize:12 }}>
-                            <thead>
-                              <tr>
-                                {["Nº Reserva","Canal","Llegada","Salida","Habs"].map(h => (
-                                  <th key={h} style={{ padding:"7px 12px", textAlign:"left", fontSize:10, fontWeight:600, color:C.textLight, textTransform:"uppercase", letterSpacing:"0.8px", borderBottom:`2px solid ${C.border}`, whiteSpace:"nowrap" }}>{h}</th>
-                                ))}
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {activasIso.filter(e => !e._grupo && !_isGrupoCanal(e.canal)).sort((a,b)=>(a.numero_reserva||0)-(b.numero_reserva||0)).map((e, i) => (
-                                <tr key={i}
-                                  onClick={() => setHmEditEntry(e)}
-                                  style={{ borderBottom:`1px solid ${C.border}`, background: i%2===0 ? C.bg : C.bgCard, cursor:"pointer", transition:"background 0.1s" }}
-                                  onMouseEnter={ev => ev.currentTarget.style.background = C.accentLight}
-                                  onMouseLeave={ev => ev.currentTarget.style.background = i%2===0 ? C.bg : C.bgCard}>
-                                  <td style={{ padding:"8px 12px", color:C.textMid, fontVariantNumeric:"tabular-nums" }}>{e.numero_reserva || "—"}</td>
-                                  <td style={{ padding:"8px 12px", fontWeight:600, color:C.text }}>{e.canal || "—"}</td>
-                                  <td style={{ padding:"8px 12px", color:C.textMid }}>{dmy(e.fecha_llegada)}</td>
-                                  <td style={{ padding:"8px 12px", color:C.textMid }}>{getFechaSalidaD(e) || "—"}</td>
-                                  <td style={{ padding:"8px 12px", color:C.textMid, textAlign:"center" }}>{e.num_reservas || 1}</td>
+                    {(() => {
+                      const resIndiv = activasIso.filter(e => !e._grupo && !_isGrupoCanal(e.canal));
+                      const gruposEnCasa = gruposDia.filter(g => g.estado !== "cancelado");
+                      if (resIndiv.length === 0 && gruposEnCasa.length === 0) return null;
+                      const totalHabs = resIndiv.reduce((a,e) => a + (e.num_reservas||1), 0) + gruposEnCasa.reduce((a,g) => a + (g.habitaciones||0), 0);
+                      return (
+                        <div style={{ marginTop:20 }}>
+                          <p style={{ fontSize:11, fontWeight:700, color:C.textMid, textTransform:"uppercase", letterSpacing:"1.5px", marginBottom:12 }}>Reservas en casa</p>
+                          <div style={{ overflowX:"auto" }}>
+                            <table style={{ width:"100%", borderCollapse:"collapse", fontSize:12 }}>
+                              <thead>
+                                <tr>
+                                  {["Nº Reserva","Canal","Llegada","Salida","Habs"].map(h => (
+                                    <th key={h} style={{ padding:"7px 12px", textAlign:"left", fontSize:10, fontWeight:600, color:C.textLight, textTransform:"uppercase", letterSpacing:"0.8px", borderBottom:`2px solid ${C.border}`, whiteSpace:"nowrap" }}>{h}</th>
+                                  ))}
                                 </tr>
-                              ))}
-                            </tbody>
-                            <tfoot>
-                              <tr style={{ borderTop:`2px solid ${C.border}` }}>
-                                <td colSpan={4} style={{ padding:"8px 12px", fontSize:11, fontWeight:700, color:C.textMid, textTransform:"uppercase", letterSpacing:"0.8px" }}>Total</td>
-                                <td style={{ padding:"8px 12px", fontWeight:800, color:C.text, textAlign:"center" }}>
-                                  {activasIso.filter(e => !e._grupo && !_isGrupoCanal(e.canal)).reduce((a,e) => a + (e.num_reservas||1), 0)}
-                                </td>
-                              </tr>
-                            </tfoot>
-                          </table>
+                              </thead>
+                              <tbody>
+                                {resIndiv.sort((a,b)=>(a.numero_reserva||0)-(b.numero_reserva||0)).map((e, i) => (
+                                  <tr key={i}
+                                    onClick={() => setHmEditEntry(e)}
+                                    style={{ borderBottom:`1px solid ${C.border}`, background: i%2===0 ? C.bg : C.bgCard, cursor:"pointer", transition:"background 0.1s" }}
+                                    onMouseEnter={ev => ev.currentTarget.style.background = C.accentLight}
+                                    onMouseLeave={ev => ev.currentTarget.style.background = i%2===0 ? C.bg : C.bgCard}>
+                                    <td style={{ padding:"8px 12px", color:C.textMid, fontVariantNumeric:"tabular-nums" }}>{e.numero_reserva || "—"}</td>
+                                    <td style={{ padding:"8px 12px", fontWeight:600, color:C.text }}>{e.canal || "—"}</td>
+                                    <td style={{ padding:"8px 12px", color:C.textMid }}>{dmy(e.fecha_llegada)}</td>
+                                    <td style={{ padding:"8px 12px", color:C.textMid }}>{getFechaSalidaD(e) || "—"}</td>
+                                    <td style={{ padding:"8px 12px", color:C.textMid, textAlign:"center" }}>{e.num_reservas || 1}</td>
+                                  </tr>
+                                ))}
+                                {gruposEnCasa.map((g, i) => (
+                                  <tr key={"g"+i}
+                                    onClick={() => { setHmDayModal(null); setHmMesSel(null); onNavigarGrupos && onNavigarGrupos(g.tipo==="evento"?"eventos":"grupos", g.fecha_inicio, g.fecha_fin||g.fecha_inicio, g.id); }}
+                                    style={{ borderBottom:`1px solid ${C.border}`, background: (resIndiv.length+i)%2===0 ? C.bg : C.bgCard, cursor:"pointer", transition:"background 0.1s" }}
+                                    onMouseEnter={ev => ev.currentTarget.style.background = C.accentLight}
+                                    onMouseLeave={ev => ev.currentTarget.style.background = (resIndiv.length+i)%2===0 ? C.bg : C.bgCard}>
+                                    <td style={{ padding:"8px 12px", color:C.textMid }}>—</td>
+                                    <td style={{ padding:"8px 12px", fontWeight:600, color:C.text, display:"flex", alignItems:"center", gap:5 }}>
+                                      <span style={{ fontSize:12 }}>{g.tipo==="evento"?"📌":"🏨"}</span>{g.nombre}
+                                    </td>
+                                    <td style={{ padding:"8px 12px", color:C.textMid }}>{dmy(g.fecha_inicio)}</td>
+                                    <td style={{ padding:"8px 12px", color:C.textMid }}>{g.fecha_fin ? dmy(g.fecha_fin) : "—"}</td>
+                                    <td style={{ padding:"8px 12px", color:C.textMid, textAlign:"center" }}>{g.habitaciones || "—"}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                              <tfoot>
+                                <tr style={{ borderTop:`2px solid ${C.border}` }}>
+                                  <td colSpan={4} style={{ padding:"8px 12px", fontSize:11, fontWeight:700, color:C.textMid, textTransform:"uppercase", letterSpacing:"0.8px" }}>Total</td>
+                                  <td style={{ padding:"8px 12px", fontWeight:800, color:C.text, textAlign:"center" }}>{totalHabs}</td>
+                                </tr>
+                              </tfoot>
+                            </table>
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      );
+                    })()}
 
                     {canales.length===0 && gruposDia.length===0 && antelMediaDias==null && (
                       <p style={{ fontSize:13, color:C.textLight, textAlign:"center", padding:"24px 0" }}>Sin datos de reservas para este día</p>
