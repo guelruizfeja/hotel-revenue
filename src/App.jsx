@@ -4490,8 +4490,8 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
                             <table style={{ width:"100%", borderCollapse:"collapse", fontSize:12 }}>
                               <thead>
                                 <tr>
-                                  {["Nº Reserva","Canal","Llegada","Salida","Habs"].map(h => (
-                                    <th key={h} style={{ padding:"7px 12px", textAlign:"left", fontSize:10, fontWeight:600, color:C.textLight, textTransform:"uppercase", letterSpacing:"0.8px", borderBottom:`2px solid ${C.border}`, whiteSpace:"nowrap" }}>{h}</th>
+                                  {["Nº Reserva","Canal","Llegada","Salida","Habs","Precio"].map(h => (
+                                    <th key={h} style={{ padding:"7px 12px", textAlign: h==="Precio" ? "right" : "left", fontSize:10, fontWeight:600, color:C.textLight, textTransform:"uppercase", letterSpacing:"0.8px", borderBottom:`2px solid ${C.border}`, whiteSpace:"nowrap" }}>{h}</th>
                                   ))}
                                 </tr>
                               </thead>
@@ -4507,6 +4507,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
                                     <td style={{ padding:"8px 12px", color:C.textMid }}>{dmy(e.fecha_llegada)}</td>
                                     <td style={{ padding:"8px 12px", color:C.textMid }}>{getFechaSalidaD(e) || "—"}</td>
                                     <td style={{ padding:"8px 12px", color:C.textMid, textAlign:"center" }}>{e.num_reservas || 1}</td>
+                                    <td style={{ padding:"8px 12px", fontWeight:600, color:"#1A7A3C", textAlign:"right", whiteSpace:"nowrap" }}>{e.precio_total ? `€${Number(e.precio_total).toLocaleString("es-ES")}` : "—"}</td>
                                   </tr>
                                 ))}
                                 {gruposEnCasa.map((g, i) => (
@@ -4522,6 +4523,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
                                     <td style={{ padding:"8px 12px", color:C.textMid }}>{dmy(g.fecha_inicio)}</td>
                                     <td style={{ padding:"8px 12px", color:C.textMid }}>{g.fecha_fin ? dmy(g.fecha_fin) : "—"}</td>
                                     <td style={{ padding:"8px 12px", color:C.textMid, textAlign:"center" }}>{g.habitaciones || "—"}</td>
+                                    <td style={{ padding:"8px 12px", color:C.textMid, textAlign:"right", whiteSpace:"nowrap" }}>—</td>
                                   </tr>
                                 ))}
                               </tbody>
@@ -4529,6 +4531,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
                                 <tr style={{ borderTop:`2px solid ${C.border}` }}>
                                   <td colSpan={4} style={{ padding:"8px 12px", fontSize:11, fontWeight:700, color:C.textMid, textTransform:"uppercase", letterSpacing:"0.8px" }}>Total</td>
                                   <td style={{ padding:"8px 12px", fontWeight:800, color:C.text, textAlign:"center" }}>{totalHabs}</td>
+                                  <td/>
                                 </tr>
                               </tfoot>
                             </table>
@@ -5108,14 +5111,16 @@ function PickupView({ datos, onGuardado }) {
   const setModalNRPersist = (v) => { setModalNR(v); try { localStorage.setItem("fr_nr_modal", v ? "1" : "0"); } catch {} };
   const [nrForm, setNrForm] = useState(() => {
     const hoy0 = new Date(); const _p0=n=>String(n).padStart(2,"0"); const hoyD=`${hoy0.getFullYear()}-${_p0(hoy0.getMonth()+1)}-${_p0(hoy0.getDate())}`;
-    try { const s = localStorage.getItem("fr_nr_form"); return s ? JSON.parse(s) : { canal:"", num_reservas:"1", fecha_llegada:hoyD, fecha_salida:"", noches:"", precio_total:"", numero_reserva:"" }; } catch { return { canal:"", num_reservas:"1", fecha_llegada:hoyD, fecha_salida:"", noches:"", precio_total:"", numero_reserva:"" }; }
+    try { return { canal:"", num_reservas:"", fecha_llegada:"", fecha_salida:"", noches:"", precio_total:"", numero_reserva:"" }; } catch { return { canal:"", num_reservas:"", fecha_llegada:"", fecha_salida:"", noches:"", precio_total:"", numero_reserva:"" }; }
   });
   const setNrFormPersist = (fn) => setNrForm(prev => { const next = typeof fn === "function" ? fn(prev) : fn; try { localStorage.setItem("fr_nr_form", JSON.stringify(next)); } catch {} return next; });
   const [nrGuardando, setNrGuardando] = useState(false);
   const [nrError, setNrError] = useState("");
   const [nrOk, setNrOk] = useState(false);
-  const [gestionTab, setGestionTab] = useState("buscar");
+  const [gestionTab, setGestionTab] = useState(() => { try { return localStorage.getItem("fr_gestion_tab") || "buscar"; } catch { return "buscar"; } });
   const setGestionTabPersist = (v) => { setGestionTab(v); try { localStorage.setItem("fr_gestion_tab", v); } catch {} };
+  const [nrTipo, setNrTipo] = useState(() => { try { return localStorage.getItem("fr_nr_tipo") || "individual"; } catch { return "individual"; } });
+  const setNrTipoPersist = (v) => { setNrTipo(v); try { localStorage.setItem("fr_nr_tipo", v); } catch {} };
   const [busqTerm, setBusqTerm] = useState(() => { try { return localStorage.getItem("fr_gestion_busq") || ""; } catch { return ""; } });
   const setBusqTermPersist = (v) => { setBusqTerm(v); try { localStorage.setItem("fr_gestion_busq", v); } catch {} };
   const [editEntry, setEditEntry] = useState(null); // entrada en edición
@@ -5476,18 +5481,18 @@ function PickupView({ datos, onGuardado }) {
       {/* Modal Gestión de reserva */}
       {modalNR && (
           <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.55)", zIndex:2000, display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}>
-            <div style={{ background:C.bgCard, borderRadius:14, padding:"28px 32px", width:"100%", maxWidth:460, boxShadow:"0 20px 60px rgba(0,0,0,0.25)" }}>
+            <div style={{ background:C.bgCard, borderRadius:14, padding:"28px 32px", width:"100%", maxWidth: gestionTab==="nueva" && nrTipo==="grupo" ? 540 : 460, maxHeight:"90vh", overflowY:"auto", boxShadow:"0 20px 60px rgba(0,0,0,0.25)" }}>
               {/* Cabecera */}
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:18 }}>
                 <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:20, color:C.text }}>Gestión de reserva</p>
-                <button onClick={()=>{ setModalNRPersist(false); setEditEntry(null); }} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, width:28, height:28, cursor:"pointer", fontSize:14, color:C.textLight }}>✕</button>
+                <button onClick={()=>{ setModalNRPersist(false); setEditEntry(null); setGestionTabPersist("buscar"); }} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, width:28, height:28, cursor:"pointer", fontSize:14, color:C.textLight }}>✕</button>
               </div>
 
               {/* Pestañas */}
               <div style={{ display:"flex", gap:4, marginBottom:20, background:C.bg, borderRadius:8, padding:4 }}>
                 {[{key:"buscar",label:"Buscar reserva"},{key:"nueva",label:"Nueva reserva"}].map(tab => (
-                  <button key={tab.key} onClick={()=>setGestionTabPersist(tab.key)}
-                    style={{ flex:1, padding:"7px 0", borderRadius:6, border:"none", cursor:"pointer", fontSize:12, fontWeight:700, fontFamily:"'Plus Jakarta Sans',sans-serif", background:gestionTab===tab.key ? C.bgCard : "transparent", color:gestionTab===tab.key ? C.text : C.textLight, boxShadow:gestionTab===tab.key ? "0 1px 4px rgba(0,0,0,0.08)" : "none", transition:"all 0.15s" }}>
+                  <button key={tab.key} onClick={()=>{ setGestionTabPersist(tab.key); if(tab.key==="nueva"){ setNrForm({ canal:"", num_reservas:"", fecha_llegada:"", fecha_salida:"", noches:"", precio_total:"", numero_reserva:"" }); try { localStorage.removeItem("fr_nr_form"); } catch {} } }}
+                    style={{ flex:1, padding:"7px 0", borderRadius:6, border:"none", cursor:"pointer", fontSize:12, fontWeight:700, fontFamily:"'Plus Jakarta Sans',sans-serif", background:gestionTab===tab.key ? C.text : "transparent", color:gestionTab===tab.key ? "#fff" : C.textLight, boxShadow:gestionTab===tab.key ? "0 1px 4px rgba(0,0,0,0.18)" : "none", transition:"all 0.15s" }}>
                     {tab.label}
                   </button>
                 ))}
@@ -5522,7 +5527,7 @@ function PickupView({ datos, onGuardado }) {
                           <div><p style={lbl}>Canal</p>
                             <select value={editForm.canal} onChange={e=>setEditForm(f=>({...f,canal:e.target.value}))} style={inp}>
                               <option value="">—</option>
-                              {["Booking.com","Expedia","Directo","Web","Teléfono","Agencia","Corporativo","Grupo","Evento","Otro"].map(c=><option key={c} value={c}>{c}</option>)}
+                              {["Booking.com","Expedia","Hotels.com","Airbnb","Hotelbeds","Agoda","Trip.com","Directo","Web","Tour operador","Agencia de viajes","GDS","Empresa"].map(c=><option key={c} value={c}>{c}</option>)}
                             </select></div>
                           <div><p style={lbl}>Habitaciones</p>
                             <input type="number" min="1" value={editForm.num_reservas} onChange={e=>setEditForm(f=>({...f,num_reservas:e.target.value}))} style={inp}/></div>
@@ -5599,51 +5604,76 @@ function PickupView({ datos, onGuardado }) {
               {/* ── Pestaña Nueva reserva ── */}
               {gestionTab === "nueva" && (
                 <>
-                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
-                    <div>
-                      <p style={{ fontSize:10, color:C.textLight, fontWeight:600, textTransform:"uppercase", letterSpacing:"0.8px", marginBottom:4 }}>Fecha llegada</p>
-                      <input type="date" value={nrForm.fecha_llegada||hoyISO} onChange={e=>{ const v=e.target.value; setNrFormPersist(f=>({ ...f, fecha_llegada:v, fecha_salida:"", noches:"" })); }} style={{ width:"100%", padding:"8px 10px", borderRadius:7, border:`1px solid ${C.border}`, fontSize:13, background:C.bgCard, color:C.text, fontFamily:"inherit", boxSizing:"border-box" }}/>
-                    </div>
-                    <div>
-                      <p style={{ fontSize:10, color:C.textLight, fontWeight:600, textTransform:"uppercase", letterSpacing:"0.8px", marginBottom:4 }}>Canal</p>
-                      <select value={nrForm.canal} onChange={e=>setNrFormPersist(f=>({...f,canal:e.target.value}))}
-                        style={{ width:"100%", padding:"8px 10px", borderRadius:7, border:`1px solid ${C.border}`, fontSize:13, background:C.bgCard, color:C.text, fontFamily:"inherit", boxSizing:"border-box" }}>
-                        <option value="">Seleccionar</option>
-                        {["Booking.com","Expedia","Directo","Web","Teléfono","Agencia","Corporativo","Grupo","Evento","Otro"].map(c=><option key={c} value={c}>{c}</option>)}
-                      </select>
-                    </div>
-                    <div>
-                      <p style={{ fontSize:10, color:C.textLight, fontWeight:600, textTransform:"uppercase", letterSpacing:"0.8px", marginBottom:4 }}>Habitaciones</p>
-                      <input type="number" min="1" value={nrForm.num_reservas} onChange={e=>setNrFormPersist(f=>({...f,num_reservas:e.target.value}))}
-                        style={{ width:"100%", padding:"8px 10px", borderRadius:7, border:`1px solid ${C.border}`, fontSize:13, background:C.bgCard, color:C.text, fontFamily:"inherit", boxSizing:"border-box" }}/>
-                    </div>
-                    <div>
-                      <p style={{ fontSize:10, color:C.textLight, fontWeight:600, textTransform:"uppercase", letterSpacing:"0.8px", marginBottom:4 }}>Noches</p>
-                      <input type="number" min="1" value={nrForm.noches} onChange={e=>{ const v=e.target.value; const fl=nrForm.fecha_llegada||hoyISO; const d=new Date(fl+"T00:00:00"); if(parseInt(v)>0){d.setDate(d.getDate()+parseInt(v));} const _p=n=>String(n).padStart(2,"0"); setNrFormPersist(f=>({...f,noches:v,fecha_salida:parseInt(v)>0?`${d.getFullYear()}-${_p(d.getMonth()+1)}-${_p(d.getDate())}`:""})); }}
-                        style={{ width:"100%", padding:"8px 10px", borderRadius:7, border:`1px solid ${C.border}`, fontSize:13, background:C.bgCard, color:C.text, fontFamily:"inherit", boxSizing:"border-box" }}/>
-                    </div>
-                    <div>
-                      <p style={{ fontSize:10, color:C.textLight, fontWeight:600, textTransform:"uppercase", letterSpacing:"0.8px", marginBottom:4 }}>Fecha salida</p>
-                      <input type="date" value={nrForm.fecha_salida} onChange={e=>{ const v=e.target.value; const fl=nrForm.fecha_llegada||hoyISO; const n=v?Math.round((new Date(v+"T00:00:00")-new Date(fl+"T00:00:00"))/86400000):0; setNrFormPersist(f=>({...f,fecha_salida:v,noches:n>0?String(n):""})); }}
-                        style={{ width:"100%", padding:"8px 10px", borderRadius:7, border:`1px solid ${C.border}`, fontSize:13, background:C.bgCard, color:C.text, fontFamily:"inherit", boxSizing:"border-box" }}/>
-                    </div>
-                    <div>
-                      <p style={{ fontSize:10, color:C.textLight, fontWeight:600, textTransform:"uppercase", letterSpacing:"0.8px", marginBottom:4 }}>Precio total €</p>
-                      <input type="number" min="0" step="0.01" value={nrForm.precio_total} onChange={e=>setNrFormPersist(f=>({...f,precio_total:e.target.value}))}
-                        style={{ width:"100%", padding:"8px 10px", borderRadius:7, border:`1px solid ${C.border}`, fontSize:13, background:C.bgCard, color:C.text, fontFamily:"inherit", boxSizing:"border-box" }}/>
-                    </div>
-                    <div>
-                      <p style={{ fontSize:10, color:C.textLight, fontWeight:600, textTransform:"uppercase", letterSpacing:"0.8px", marginBottom:4 }}>Nº de reserva</p>
-                      <input type="number" min="1" value={nrForm.numero_reserva} placeholder="—" onChange={e=>setNrFormPersist(f=>({...f,numero_reserva:e.target.value}))}
-                        style={{ width:"100%", padding:"8px 10px", borderRadius:7, border:`1px solid ${C.border}`, fontSize:13, background:C.bgCard, color:C.text, fontFamily:"inherit", boxSizing:"border-box" }}/>
-                    </div>
+                  {/* Selector Individual / Grupo */}
+                  <div style={{ display:"flex", gap:4, marginBottom:16, background:C.bg, borderRadius:8, padding:4 }}>
+                    {[{key:"individual",label:"Individual"},{key:"grupo",label:"Grupo"}].map(opt => (
+                      <button key={opt.key} onClick={() => setNrTipoPersist(opt.key)}
+                        style={{ flex:1, padding:"7px 0", borderRadius:6, border:"none", cursor:"pointer", fontSize:12, fontWeight:700, fontFamily:"inherit", background:nrTipo===opt.key ? C.text : "transparent", color:nrTipo===opt.key ? "#fff" : C.textLight, boxShadow:nrTipo===opt.key ? "0 1px 4px rgba(0,0,0,0.18)" : "none", transition:"all 0.15s" }}>
+                        {opt.label}
+                      </button>
+                    ))}
                   </div>
-                  {nrError && <p style={{ fontSize:12, color:C.red, marginTop:10 }}>{nrError}</p>}
-                  {nrOk && <p style={{ fontSize:12, color:C.green, marginTop:10, fontWeight:600 }}>Reserva guardada</p>}
-                  <button onClick={guardarNuevaReserva} disabled={nrGuardando}
-                    style={{ marginTop:18, width:"100%", padding:"10px 0", borderRadius:8, background:nrGuardando?C.border:C.text, color:"#fff", border:"none", cursor:nrGuardando?"default":"pointer", fontSize:13, fontWeight:700, fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
-                    {nrGuardando ? "Guardando..." : "Guardar reserva"}
-                  </button>
+
+                  {/* Formulario individual */}
+                  {nrTipo === "individual" && (
+                    <>
+                      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
+                        <div>
+                          <p style={{ fontSize:10, color:C.textLight, fontWeight:600, textTransform:"uppercase", letterSpacing:"0.8px", marginBottom:4 }}>Fecha llegada</p>
+                          <input type="date" value={nrForm.fecha_llegada||""} onChange={e=>{ const v=e.target.value; setNrFormPersist(f=>({ ...f, fecha_llegada:v, fecha_salida:"", noches:"" })); }} style={{ width:"100%", padding:"8px 10px", borderRadius:7, border:`1px solid ${C.border}`, fontSize:13, background:C.bgCard, color:C.text, fontFamily:"inherit", boxSizing:"border-box" }}/>
+                        </div>
+                        <div>
+                          <p style={{ fontSize:10, color:C.textLight, fontWeight:600, textTransform:"uppercase", letterSpacing:"0.8px", marginBottom:4 }}>Canal</p>
+                          <select value={nrForm.canal} onChange={e=>setNrFormPersist(f=>({...f,canal:e.target.value}))}
+                            style={{ width:"100%", padding:"8px 10px", borderRadius:7, border:`1px solid ${C.border}`, fontSize:13, background:C.bgCard, color:C.text, fontFamily:"inherit", boxSizing:"border-box" }}>
+                            <option value="">Seleccionar</option>
+                            {["Booking.com","Expedia","Hotels.com","Airbnb","Hotelbeds","Agoda","Trip.com","Directo","Web","Tour operador","Agencia de viajes","GDS","Empresa"].map(c=><option key={c} value={c}>{c}</option>)}
+                          </select>
+                        </div>
+                        <div>
+                          <p style={{ fontSize:10, color:C.textLight, fontWeight:600, textTransform:"uppercase", letterSpacing:"0.8px", marginBottom:4 }}>Habitaciones</p>
+                          <input type="number" min="1" value={nrForm.num_reservas} onChange={e=>setNrFormPersist(f=>({...f,num_reservas:e.target.value}))}
+                            style={{ width:"100%", padding:"8px 10px", borderRadius:7, border:`1px solid ${C.border}`, fontSize:13, background:C.bgCard, color:C.text, fontFamily:"inherit", boxSizing:"border-box" }}/>
+                        </div>
+                        <div>
+                          <p style={{ fontSize:10, color:C.textLight, fontWeight:600, textTransform:"uppercase", letterSpacing:"0.8px", marginBottom:4 }}>Noches</p>
+                          <input type="number" min="1" value={nrForm.noches} onChange={e=>{ const v=e.target.value; const fl=nrForm.fecha_llegada||""; const d=new Date(fl+"T00:00:00"); if(parseInt(v)>0){d.setDate(d.getDate()+parseInt(v));} const _p=n=>String(n).padStart(2,"0"); setNrFormPersist(f=>({...f,noches:v,fecha_salida:parseInt(v)>0?`${d.getFullYear()}-${_p(d.getMonth()+1)}-${_p(d.getDate())}`:""})); }}
+                            style={{ width:"100%", padding:"8px 10px", borderRadius:7, border:`1px solid ${C.border}`, fontSize:13, background:C.bgCard, color:C.text, fontFamily:"inherit", boxSizing:"border-box" }}/>
+                        </div>
+                        <div>
+                          <p style={{ fontSize:10, color:C.textLight, fontWeight:600, textTransform:"uppercase", letterSpacing:"0.8px", marginBottom:4 }}>Fecha salida</p>
+                          <input type="date" value={nrForm.fecha_salida} onChange={e=>{ const v=e.target.value; const fl=nrForm.fecha_llegada||""; const n=v?Math.round((new Date(v+"T00:00:00")-new Date(fl+"T00:00:00"))/86400000):0; setNrFormPersist(f=>({...f,fecha_salida:v,noches:n>0?String(n):""})); }}
+                            style={{ width:"100%", padding:"8px 10px", borderRadius:7, border:`1px solid ${C.border}`, fontSize:13, background:C.bgCard, color:C.text, fontFamily:"inherit", boxSizing:"border-box" }}/>
+                        </div>
+                        <div>
+                          <p style={{ fontSize:10, color:C.textLight, fontWeight:600, textTransform:"uppercase", letterSpacing:"0.8px", marginBottom:4 }}>Precio total €</p>
+                          <input type="number" min="0" step="0.01" value={nrForm.precio_total} onChange={e=>setNrFormPersist(f=>({...f,precio_total:e.target.value}))}
+                            style={{ width:"100%", padding:"8px 10px", borderRadius:7, border:`1px solid ${C.border}`, fontSize:13, background:C.bgCard, color:C.text, fontFamily:"inherit", boxSizing:"border-box" }}/>
+                        </div>
+                        <div>
+                          <p style={{ fontSize:10, color:C.textLight, fontWeight:600, textTransform:"uppercase", letterSpacing:"0.8px", marginBottom:4 }}>Nº de reserva</p>
+                          <input type="number" min="1" value={nrForm.numero_reserva} onChange={e=>setNrFormPersist(f=>({...f,numero_reserva:e.target.value}))}
+                            style={{ width:"100%", padding:"8px 10px", borderRadius:7, border:`1px solid ${C.border}`, fontSize:13, background:C.bgCard, color:C.text, fontFamily:"inherit", boxSizing:"border-box" }}/>
+                        </div>
+                      </div>
+                      {nrError && <p style={{ fontSize:12, color:C.red, marginTop:10 }}>{nrError}</p>}
+                      {nrOk && <p style={{ fontSize:12, color:C.green, marginTop:10, fontWeight:600 }}>Reserva guardada</p>}
+                      <button onClick={guardarNuevaReserva} disabled={nrGuardando}
+                        style={{ marginTop:18, width:"100%", padding:"10px 0", borderRadius:8, background:nrGuardando?C.border:C.text, color:"#fff", border:"none", cursor:nrGuardando?"default":"pointer", fontSize:13, fontWeight:700, fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+                        {nrGuardando ? "Guardando..." : "Guardar reserva"}
+                      </button>
+                    </>
+                  )}
+
+                  {/* Formulario grupo */}
+                  {nrTipo === "grupo" && (
+                    <ModalFormGrupo
+                      datos={datos}
+                      grupoData={{ tipo:"grupo" }}
+                      onClose={() => setNrTipoPersist("individual")}
+                      onGuardado={() => { setModalNRPersist(false); setNrTipoPersist("individual"); onGuardado && onGuardado(true); }}
+                    />
+                  )}
                 </>
               )}
             </div>
@@ -6639,6 +6669,360 @@ function BudgetView({ datos, anio: anioProp }) {
 
 
 // ─── GRUPOS & EVENTOS VIEW ────────────────────────────────────────
+function ModalFormGrupo({ datos, grupoData = {}, onClose, onGuardado }) {
+  const t = useT();
+  const session = datos.session;
+  const isEditing = Boolean(grupoData?.id);
+
+  const FORM_VACIO = { tipo:"grupo", nombre:"", categoria:"corporativo", estado:"confirmado", segmento:"negocio", fecha_inicio:"", fecha_fin:"", fecha_confirmacion:"", habitaciones:"", pax:"", adr_grupo:"", revenue_fnb:"", revenue_sala:"", notas:"", motivo_perdida:"", hora_inicio:"", hora_fin:"", sala_nombre:"", servicio_incluido:false };
+
+  const normEstado = (e) => (e === "tentativo" || e === "cotizacion") ? "cotizado" : (e || "confirmado");
+  const parseNotasEvento = (notas) => {
+    if (!notas) return { hora_inicio:"", hora_fin:"", sala_nombre:"", servicio_incluido:false, notasUser:"" };
+    const m = notas.match(/^\[ev:([^\]]*)\]\n?([\s\S]*)$/);
+    if (!m) return { hora_inicio:"", hora_fin:"", sala_nombre:"", servicio_incluido:false, notasUser: notas };
+    const parts = Object.fromEntries(m[1].split(",").map(p => p.split("=")));
+    return { hora_inicio: parts.hi||"", hora_fin: parts.hf||"", sala_nombre: parts.sala||"", servicio_incluido: parts.serv==="sí", notasUser: m[2] };
+  };
+  const packNotasEvento = (f) => {
+    const meta = `[ev:hi=${f.hora_inicio},hf=${f.hora_fin},sala=${f.sala_nombre},serv=${f.servicio_incluido?"sí":"no"}]`;
+    return meta + (f.notas ? "\n" + f.notas : "");
+  };
+
+  const initForm = () => {
+    const g = grupoData;
+    if (!g || !g.nombre) return { ...FORM_VACIO, tipo: g.tipo||"grupo", fecha_inicio: g.fecha_inicio||"", fecha_fin: g.fecha_fin||"" };
+    const esEvento = g.categoria === "evento";
+    const { hora_inicio, hora_fin, sala_nombre, servicio_incluido, notasUser } = esEvento ? parseNotasEvento(g.notas) : {};
+    return {
+      tipo: esEvento ? "evento" : "grupo",
+      nombre: g.nombre||"", categoria: g.categoria||"corporativo", estado: normEstado(g.estado), segmento: g.segmento||"negocio",
+      fecha_inicio: g.fecha_inicio||"", fecha_fin: g.fecha_fin||"", fecha_confirmacion: g.fecha_confirmacion||"",
+      habitaciones: g.habitaciones||"", pax: g.pax||"", adr_grupo: g.adr_grupo||"",
+      revenue_fnb: g.revenue_fnb||"", revenue_sala: g.revenue_sala||"",
+      notas: esEvento ? (notasUser||"") : (g.notas||""), motivo_perdida: g.motivo_perdida||"",
+      hora_inicio: hora_inicio||"", hora_fin: hora_fin||"", sala_nombre: sala_nombre||"", servicio_incluido: servicio_incluido||false,
+    };
+  };
+
+  const [form, setForm] = useState(initForm);
+  const [guardando, setGuardando] = useState(false);
+
+  const CATS = {
+    corporativo: { label: t("cat_corporativo"), color: "#2B7EC1" },
+    boda:        { label: t("cat_boda"),        color: "#D4547A" },
+    feria:       { label: t("cat_feria"),       color: "#E85D04" },
+    deportivo:   { label: t("cat_deportivo"),   color: "#059669" },
+    otros:       { label: t("cat_otros"),       color: "#7C3AED" },
+    evento:      { label: "Evento",             color: "#0A7C6A" },
+  };
+  const ESTADOS = {
+    confirmado: { label: t("estado_confirmado"), color: "#1A7A3C", bg: "#E6F7EE", peso: 1.0 },
+    cotizado:   { label: t("estado_cotizacion"), color: "#B8860B", bg: "#FFF8E7", peso: 0.5 },
+    cancelado:  { label: t("estado_cancelado"),  color: "#999",    bg: "#F5F5F5", peso: 0   },
+    tentativo:  { label: t("estado_cotizacion"), color: "#B8860B", bg: "#FFF8E7", peso: 0.5 },
+  };
+
+  const guardar = async () => {
+    if (!form.nombre || !form.fecha_inicio) return;
+    if (form.tipo === "grupo" && !form.fecha_fin) return;
+    setGuardando(true);
+    const esEvento = form.tipo === "evento";
+    const payload = {
+      hotel_id: session.user.id,
+      nombre: form.nombre,
+      categoria: esEvento ? "evento" : form.categoria,
+      estado: normEstado(form.estado),
+      segmento: form.segmento||null,
+      fecha_inicio: form.fecha_inicio,
+      fecha_fin: esEvento ? form.fecha_inicio : (form.fecha_fin || form.fecha_inicio),
+      habitaciones: esEvento ? 0 : (parseInt(form.habitaciones)||0),
+      adr_grupo: esEvento ? 0 : Math.round((parseFloat(form.adr_grupo)||0) * NET_HAB_FNB * 100) / 100,
+      revenue_fnb: Math.round((parseFloat(form.revenue_fnb)||0) * NET_HAB_FNB * 100) / 100,
+      revenue_sala: Math.round((parseFloat(form.revenue_sala)||0) * NET_SALA * 100) / 100,
+      fecha_confirmacion: form.fecha_confirmacion||null,
+      notas: esEvento ? packNotasEvento(form) : (form.notas||null),
+      motivo_perdida: form.motivo_perdida||null,
+    };
+    if (isEditing) {
+      await supabase.from("grupos_eventos").update(payload).eq("id", grupoData.id);
+    } else {
+      await supabase.from("grupos_eventos").insert(payload);
+    }
+    setGuardando(false);
+    onGuardado && onGuardado();
+  };
+
+  const eliminar = async () => {
+    const msg = form.tipo === "evento" ? t("eliminar_evento") : t("eliminar_grupo");
+    if (!window.confirm(msg)) return;
+    await supabase.from("grupos_eventos").delete().eq("id", grupoData.id);
+    onGuardado && onGuardado();
+  };
+
+  const inp = { width:"100%", padding:"9px 12px", borderRadius:7, border:`1.5px solid ${C.border}`, fontSize:13, fontFamily:"'Plus Jakarta Sans',sans-serif", color:C.text, background:C.bg, outline:"none", boxSizing:"border-box" };
+
+  return (
+    <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+
+      <div>
+        <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>{t("form_nombre")}</p>
+        <input style={inp} placeholder="" value={form.nombre} onChange={e=>setForm(f=>({...f,nombre:e.target.value}))}/>
+      </div>
+
+      <div style={{ display:"grid", gridTemplateColumns: form.tipo === "evento" ? "1fr 1fr" : "1fr 1fr 1fr", gap:10 }}>
+        {form.tipo !== "evento" && (
+          <div>
+            <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>{t("form_categoria")}</p>
+            <select style={inp} value={form.categoria} onChange={e=>setForm(f=>({...f,categoria:e.target.value}))}>
+              {Object.entries(CATS).filter(([k])=>k!=="evento").map(([k,v])=><option key={k} value={k}>{v.label}</option>)}
+            </select>
+          </div>
+        )}
+        <div>
+          <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>{t("form_segmento")}</p>
+          <select style={inp} value={form.segmento} onChange={e=>setForm(f=>({...f,segmento:e.target.value}))}>
+            {["deportivo","negocio","turistico","congreso","social","otros"].map(s=><option key={s} value={s}>{t("seg_"+s)}</option>)}
+          </select>
+        </div>
+        <div>
+          <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>{t("form_estado")}</p>
+          <select style={inp} value={form.estado} onChange={e=>setForm(f=>({...f,estado:e.target.value}))}>
+            {Object.entries(ESTADOS).map(([k,v])=><option key={k} value={k}>{v.label}</option>)}
+          </select>
+        </div>
+      </div>
+
+      {form.tipo === "evento" ? (
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
+          <div>
+            <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>Fecha del evento *</p>
+            <input style={inp} type="date" value={form.fecha_inicio} onChange={e=>setForm(f=>({...f,fecha_inicio:e.target.value,fecha_fin:e.target.value}))}/>
+          </div>
+          <div>
+            <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>{t("form_fecha_confirmacion")}</p>
+            <input style={inp} type="date" value={form.fecha_confirmacion} onChange={e=>setForm(f=>({...f,fecha_confirmacion:e.target.value}))}/>
+          </div>
+        </div>
+      ) : (
+        <>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
+            <div>
+              <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>{t("form_fecha_entrada")}</p>
+              <input style={inp} type="date" value={form.fecha_inicio} onChange={e=>setForm(f=>({...f,fecha_inicio:e.target.value}))}/>
+            </div>
+            <div>
+              <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>{t("form_fecha_salida")}</p>
+              <input style={inp} type="date" value={form.fecha_fin} onChange={e=>setForm(f=>({...f,fecha_fin:e.target.value}))}/>
+            </div>
+          </div>
+          <div>
+            <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>{t("form_fecha_confirmacion")}</p>
+            <input style={inp} type="date" value={form.fecha_confirmacion} onChange={e=>setForm(f=>({...f,fecha_confirmacion:e.target.value}))}/>
+          </div>
+          {form.fecha_inicio && form.fecha_fin && (() => {
+            const noches = Math.max(0, Math.round((new Date(form.fecha_fin) - new Date(form.fecha_inicio)) / 86400000));
+            return noches > 0 ? (
+              <div style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:7, padding:"7px 12px", fontSize:12, color:C.textMid, display:"flex", alignItems:"center", gap:6 }}>
+                <span style={{ fontWeight:700, color:C.text }}>{noches}</span> noche{noches !== 1 ? "s" : ""} de duración
+              </div>
+            ) : null;
+          })()}
+        </>
+      )}
+
+      {form.tipo === "evento" && (
+        <>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
+            <div>
+              <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>{t("form_hora_inicio")}</p>
+              <input style={inp} type="time" value={form.hora_inicio} onChange={e=>setForm(f=>({...f,hora_inicio:e.target.value}))}/>
+            </div>
+            <div>
+              <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>{t("form_hora_fin")}</p>
+              <input style={inp} type="time" value={form.hora_fin} onChange={e=>setForm(f=>({...f,hora_fin:e.target.value}))}/>
+            </div>
+          </div>
+          <div>
+            <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>{t("form_sala_nombre")}</p>
+            <select style={inp} value={form.sala_nombre} onChange={e=>setForm(f=>({...f,sala_nombre:e.target.value}))}>
+              <option value="">— Seleccionar sala —</option>
+              {SALAS_FIJAS.map(s => <option key={s} value={s}>{s}</option>)}
+            </select>
+          </div>
+          <label style={{ display:"flex", alignItems:"center", gap:8, cursor:"pointer" }}>
+            <input type="checkbox" checked={form.servicio_incluido} onChange={e=>setForm(f=>({...f,servicio_incluido:e.target.checked}))} style={{ width:16, height:16 }}/>
+            <span style={{ fontSize:13, color:C.text }}>{t("form_servicio_incluido")}</span>
+          </label>
+        </>
+      )}
+
+      {form.tipo === "grupo" ? (
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:10 }}>
+          <div>
+            <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>{t("form_habitaciones")}</p>
+            <input style={inp} type="number" placeholder="" value={form.habitaciones} onChange={e=>setForm(f=>({...f,habitaciones:e.target.value}))}/>
+          </div>
+          <div>
+            <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>PAX</p>
+            <input style={inp} type="number" placeholder="" value={form.pax} onChange={e=>setForm(f=>({...f,pax:e.target.value}))}/>
+          </div>
+          <div>
+            <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>{t("form_adr")}</p>
+            <input style={inp} type="number" placeholder="" value={form.adr_grupo} onChange={e=>setForm(f=>({...f,adr_grupo:e.target.value}))}/>
+          </div>
+        </div>
+      ) : (
+        <div>
+          <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>PAX</p>
+          <input style={inp} type="number" placeholder="" value={form.pax} onChange={e=>setForm(f=>({...f,pax:e.target.value}))}/>
+        </div>
+      )}
+
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
+        <div>
+          <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>{t("form_fnb")}</p>
+          <input style={inp} type="number" placeholder="" value={form.revenue_fnb} onChange={e=>setForm(f=>({...f,revenue_fnb:e.target.value}))}/>
+        </div>
+        <div>
+          <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>{t("form_sala")}</p>
+          <input style={inp} type="number" placeholder="" value={form.revenue_sala} onChange={e=>setForm(f=>({...f,revenue_sala:e.target.value}))}/>
+        </div>
+      </div>
+      <p style={{ fontSize:10, color:"#004B87", lineHeight:1.5 }}>ⓘ Al guardar se deduce el IVA: ADR/F&B ÷1,10 · sala ÷1,21</p>
+
+      {form.estado === "cancelado" && (
+        <div>
+          <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>{t("form_motivo")}</p>
+          <input style={inp} placeholder="Precio, competencia, fecha..." value={form.motivo_perdida} onChange={e=>setForm(f=>({...f,motivo_perdida:e.target.value}))}/>
+        </div>
+      )}
+
+      <div>
+        <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>{t("form_notas")}</p>
+        <textarea style={{...inp, resize:"vertical", minHeight:60}} placeholder="Contacto, condiciones especiales..." value={form.notas} onChange={e=>setForm(f=>({...f,notas:e.target.value}))}/>
+      </div>
+
+      {(form.habitaciones || form.revenue_fnb || form.revenue_sala) && (() => {
+        const noches = form.fecha_inicio && form.fecha_fin
+          ? Math.max(1, Math.round((new Date(form.fecha_fin) - new Date(form.fecha_inicio)) / 86400000))
+          : 1;
+        const revHab = (parseInt(form.habitaciones)||0) * (parseFloat(form.adr_grupo)||0) * noches;
+        const revFnb = parseFloat(form.revenue_fnb)||0;
+        const revSala = parseFloat(form.revenue_sala)||0;
+        const total = revHab + revFnb + revSala;
+        return total > 0 ? (
+          <div style={{ background:"#E6F7EE", border:"1px solid #1A7A3C33", borderRadius:8, padding:"10px 14px", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+            <p style={{ fontSize:12, color:"#1A7A3C", fontWeight:600 }}>{t("rev_estimado")}</p>
+            <p style={{ fontSize:18, fontWeight:800, color:"#1A7A3C" }}>€{Math.round(total).toLocaleString("es-ES")}</p>
+          </div>
+        ) : null;
+      })()}
+
+      {form.fecha_inicio && form.fecha_fin && (parseInt(form.habitaciones)||0) > 0 && (() => {
+        const produccion  = datos.produccion  || [];
+        const presupuesto = datos.presupuesto || [];
+        const noches = Math.max(1, Math.round((new Date(form.fecha_fin) - new Date(form.fecha_inicio)) / 86400000));
+        const rooms    = parseInt(form.habitaciones) || 0;
+        const adrGrupo = parseFloat(form.adr_grupo)  || 0;
+        const revFnb   = parseFloat(form.revenue_fnb)  || 0;
+        const revSala  = parseFloat(form.revenue_sala) || 0;
+        const anioEvt = parseInt(form.fecha_inicio.slice(0,4));
+        const iniLY   = `${anioEvt-1}${form.fecha_inicio.slice(4)}`;
+        const finLY   = `${anioEvt-1}${form.fecha_fin.slice(4)}`;
+        const diasLY   = produccion.filter(r => { const f = String(r.fecha||"").slice(0,10); return f >= iniLY && f <= finLY; });
+        const habOcuLY = diasLY.reduce((a,r) => a+(r.hab_ocupadas||0), 0);
+        const revHabLY = diasLY.reduce((a,r) => a+(r.revenue_hab||0), 0);
+        const habDisLY = diasLY.reduce((a,r) => a+(r.hab_disponibles||0), 0);
+        let adrTransient, factorOcc, fuenteLY = true;
+        if (habOcuLY > 0) {
+          adrTransient = Math.round(revHabLY / habOcuLY);
+          factorOcc    = habDisLY > 0 ? Math.min(1, habOcuLY / habDisLY) : 0.7;
+        } else {
+          const mesIni = parseInt(form.fecha_inicio.slice(5,7));
+          const pptoM  = presupuesto.find(p => p.mes === mesIni && p.anio === anioEvt) || presupuesto.find(p => p.mes === mesIni);
+          adrTransient = pptoM?.adr_ppto || null;
+          factorOcc    = 0.65;
+          fuenteLY     = false;
+        }
+        if (!adrTransient) return (
+          <div style={{ background:"#F5F5F5", border:`1px solid ${C.border}`, borderRadius:8, padding:"12px 16px" }}>
+            <p style={{ fontSize:11, fontWeight:700, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:6 }}>📊 {t("analisis_desplazamiento")}</p>
+            <p style={{ fontSize:12, color:C.textLight }}>{t("sin_datos_ly")} — importa producción o presupuesto para activar este análisis.</p>
+          </div>
+        );
+        const contribucion        = rooms * adrGrupo * noches + revFnb + revSala;
+        const costeDesplazamiento = rooms * adrTransient * noches * factorOcc;
+        const valorNeto           = contribucion - costeDesplazamiento;
+        const isPos               = adrGrupo > 0 ? valorNeto >= 0 : false;
+        const breakEvenHab = costeDesplazamiento - revFnb - revSala;
+        const breakEvenAdr = rooms > 0 && noches > 0 && breakEvenHab > 0 ? Math.round(breakEvenHab / (rooms * noches)) : null;
+        const sinAdr      = adrGrupo === 0;
+        const borderColor = sinAdr ? "#2B7EC133" : isPos ? "#1A7A3C33" : "#E85D0433";
+        const bgColor     = sinAdr ? "#EEF4FB"   : isPos ? "#F0FBF4"   : "#FFF8F0";
+        return (
+          <div style={{ background:bgColor, border:`1px solid ${borderColor}`, borderRadius:8, padding:"14px 16px" }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
+              <p style={{ fontSize:11, fontWeight:700, color:C.textLight, textTransform:"uppercase", letterSpacing:1 }}>📊 {t("analisis_desplazamiento")}</p>
+              {!sinAdr && (
+                <span style={{ fontSize:12, fontWeight:700, padding:"3px 10px", borderRadius:6, background: isPos ? C.greenLight : "#FDECEA", color: isPos ? C.green : C.red }}>
+                  {isPos ? t("acepta_grupo") : t("revisar_grupo")}
+                </span>
+              )}
+            </div>
+            {sinAdr ? (
+              <p style={{ fontSize:12, color:"#2B7EC1", marginBottom:12 }}>Rellena el ADR del grupo para ver el análisis completo.</p>
+            ) : (
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8, marginBottom:12 }}>
+                {[
+                  { label: t("contrib_grupo"),   val: `€${Math.round(contribucion).toLocaleString("es-ES")}`,        color: C.text },
+                  { label: t("coste_desplaz"),   val: `€${Math.round(costeDesplazamiento).toLocaleString("es-ES")}`, color: "#E85D04" },
+                  { label: t("valor_neto"),      val: `${isPos?"+":""}€${Math.round(valorNeto).toLocaleString("es-ES")}`, color: isPos ? C.green : C.red },
+                ].map(({ label, val, color }) => (
+                  <div key={label} style={{ background:C.bgCard, borderRadius:6, padding:"8px 10px" }}>
+                    <p style={{ fontSize:10, color:C.textLight, marginBottom:3 }}>{label}</p>
+                    <p style={{ fontSize:13, fontWeight:800, color }}>{val}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div style={{ display:"flex", gap:16, flexWrap:"wrap", borderTop:`1px solid ${C.border}`, paddingTop:10 }}>
+              <div>
+                <p style={{ fontSize:10, color:C.textLight }}>{t("adr_transient_ref")} {!fuenteLY && <span style={{ color:"#E85D04" }}>({t("fuente_ppto")})</span>}</p>
+                <p style={{ fontSize:12, fontWeight:600, color:C.textMid }}>€{adrTransient}</p>
+              </div>
+              <div>
+                <p style={{ fontSize:10, color:C.textLight }}>{t("occ_hist_ly")}</p>
+                <p style={{ fontSize:12, fontWeight:600, color:C.textMid }}>{Math.round(factorOcc*100)}%</p>
+              </div>
+              {breakEvenAdr != null && (
+                <div>
+                  <p style={{ fontSize:10, color:C.textLight }}>{t("adr_minimo_rentable")}</p>
+                  <p style={{ fontSize:12, fontWeight:700, color: adrGrupo >= breakEvenAdr ? C.green : C.red }}>€{breakEvenAdr}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
+
+      <div style={{ display:"flex", justifyContent:"space-between", marginTop:4 }}>
+        {isEditing
+          ? <button onClick={eliminar} style={{ background:"none", border:`1px solid ${C.red}`, color:C.red, borderRadius:7, padding:"8px 16px", fontSize:12, cursor:"pointer" }}>{t("form_eliminar")}</button>
+          : <div/>
+        }
+        <div style={{ display:"flex", gap:8 }}>
+          <button onClick={onClose} style={{ background:"none", border:`1px solid ${C.border}`, color:C.textMid, borderRadius:7, padding:"8px 16px", fontSize:12, cursor:"pointer" }}>{t("form_cancelar")}</button>
+          <button onClick={guardar} disabled={guardando||!form.nombre||!form.fecha_inicio||(form.tipo==="grupo"&&!form.fecha_fin)}
+            style={{ background:C.text, color:"#fff", border:"none", borderRadius:7, padding:"8px 20px", fontSize:13, fontWeight:600, cursor:"pointer", opacity:guardando?0.6:1 }}>
+            {guardando ? t("guardando_btn") : t("form_guardar")}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function GruposView({ datos, onRecargar, onVolverHeatmap, subVistaExt, onCambiarSubVista }) {
   const t = useT();
   const grupos = datos.grupos || [];
@@ -6845,8 +7229,6 @@ function GruposView({ datos, onRecargar, onVolverHeatmap, subVistaExt, onCambiar
   const setModalGrupo = (g) => { setModalGrupoRaw(g); try { if (g?.id) localStorage.setItem("fr_grupos_modal_id", g.id); else localStorage.removeItem("fr_grupos_modal_id"); } catch {} };
   const [detalleGrupo, setDetalleGrupoRaw] = useState(null);
   const setDetalleGrupo = (g) => { setDetalleGrupoRaw(g); try { if (g?.id) localStorage.setItem("fr_grupos_detalle_id", g.id); else localStorage.removeItem("fr_grupos_detalle_id"); } catch {} };
-  const [guardando, setGuardando] = useState(false);
-  const [menuNuevo, setMenuNuevo] = useState(false);
   const [_subVistaInt, _setSubVistaInt] = useState(() => localStorage.getItem("fr_grupos_subvista") || "grupos");
   const subVista = subVistaExt ?? _subVistaInt;
   const cambiarSubVista = onCambiarSubVista ?? ((v) => { _setSubVistaInt(v); localStorage.setItem("fr_grupos_subvista", v); });
@@ -6865,27 +7247,8 @@ function GruposView({ datos, onRecargar, onVolverHeatmap, subVistaExt, onCambiar
   const prevMes = () => { if (mes === 0) { setMes(11); setAnio(a => a - 1); } else setMes(m => m - 1); };
   const nextMes = () => { if (mes === 11) { setMes(0); setAnio(a => a + 1); } else setMes(m => m + 1); };
 
-  // ── Formulario estado ──
-  const FORM_VACIO = { tipo:"grupo", nombre:"", categoria:"corporativo", estado:"confirmado", segmento:"negocio", fecha_inicio:"", fecha_fin:"", fecha_confirmacion:"", habitaciones:"", pax:"", adr_grupo:"", revenue_fnb:"", revenue_sala:"", notas:"", motivo_perdida:"", hora_inicio:"", hora_fin:"", sala_nombre:"", servicio_incluido:false };
-  const [form, setForm] = useState(FORM_VACIO);
-
-  // Parsea el prefijo de metadata de evento de las notas
-  const parseNotasEvento = (notas) => {
-    if (!notas) return { hora_inicio:"", hora_fin:"", sala_nombre:"", servicio_incluido:false, notasUser:"" };
-    const m = notas.match(/^\[ev:([^\]]*)\]\n?([\s\S]*)$/);
-    if (!m) return { hora_inicio:"", hora_fin:"", sala_nombre:"", servicio_incluido:false, notasUser: notas };
-    const parts = Object.fromEntries(m[1].split(",").map(p => p.split("=")));
-    return { hora_inicio: parts.hi||"", hora_fin: parts.hf||"", sala_nombre: parts.sala||"", servicio_incluido: parts.serv==="sí", notasUser: m[2] };
-  };
-
-  const packNotasEvento = (form) => {
-    const meta = `[ev:hi=${form.hora_inicio},hf=${form.hora_fin},sala=${form.sala_nombre},serv=${form.servicio_incluido?"sí":"no"}]`;
-    return meta + (form.notas ? "\n" + form.notas : "");
-  };
-
   const abrirNuevo = (fecha = "", tipo = "grupo", fechaFin = "") => {
-    setForm({ ...FORM_VACIO, fecha_inicio: fecha, fecha_fin: fechaFin || fecha, tipo, categoria: tipo === "evento" ? "evento" : "corporativo" });
-    setModalGrupo({});
+    setModalGrupo({ tipo, fecha_inicio: fecha, fecha_fin: fechaFin || fecha });
   };
 
   const [highlightId, setHighlightId] = useState(null);
@@ -6932,60 +7295,7 @@ function GruposView({ datos, onRecargar, onVolverHeatmap, subVistaExt, onCambiar
     } catch {}
   }, []);
 
-  const abrirEditar = (g) => {
-    const esEvento = g.categoria === "evento";
-    const { hora_inicio, hora_fin, sala_nombre, servicio_incluido, notasUser } = esEvento ? parseNotasEvento(g.notas) : {};
-    setForm({
-      tipo: esEvento ? "evento" : "grupo",
-      nombre: g.nombre||"", categoria: g.categoria||"corporativo", estado: normEstado(g.estado), segmento: g.segmento||"negocio",
-      fecha_inicio: g.fecha_inicio||"", fecha_fin: g.fecha_fin||"", fecha_confirmacion: g.fecha_confirmacion||"",
-      habitaciones: g.habitaciones||"", pax: g.pax||"", adr_grupo: g.adr_grupo||"",
-      revenue_fnb: g.revenue_fnb||"", revenue_sala: g.revenue_sala||"",
-      notas: esEvento ? (notasUser||"") : (g.notas||""), motivo_perdida: g.motivo_perdida||"",
-      hora_inicio: hora_inicio||"", hora_fin: hora_fin||"", sala_nombre: sala_nombre||"", servicio_incluido: servicio_incluido||false,
-    });
-    setModalGrupo(g);
-  };
-
-  const guardar = async () => {
-    if (!form.nombre || !form.fecha_inicio) return;
-    if (form.tipo === "grupo" && !form.fecha_fin) return;
-    setGuardando(true);
-    const esEvento = form.tipo === "evento";
-    const payload = {
-      hotel_id: session.user.id,
-      nombre: form.nombre,
-      categoria: esEvento ? "evento" : form.categoria,
-      estado: normEstado(form.estado),
-      segmento: form.segmento||null,
-      fecha_inicio: form.fecha_inicio,
-      fecha_fin: esEvento ? form.fecha_inicio : (form.fecha_fin || form.fecha_inicio),
-      habitaciones: esEvento ? 0 : (parseInt(form.habitaciones)||0),
-      adr_grupo: esEvento ? 0 : Math.round((parseFloat(form.adr_grupo)||0) * NET_HAB_FNB * 100) / 100,
-      revenue_fnb: Math.round((parseFloat(form.revenue_fnb)||0) * NET_HAB_FNB * 100) / 100,
-      revenue_sala: Math.round((parseFloat(form.revenue_sala)||0) * NET_SALA * 100) / 100,
-      fecha_confirmacion: form.fecha_confirmacion||null,
-      notas: esEvento ? packNotasEvento(form) : (form.notas||null),
-      motivo_perdida: form.motivo_perdida||null,
-    };
-    if (modalGrupo?.id) {
-      await supabase.from("grupos_eventos").update(payload).eq("id", modalGrupo.id);
-    } else {
-      await supabase.from("grupos_eventos").insert(payload);
-    }
-    await onRecargar();
-    setGuardando(false);
-    setModalGrupo(null);
-  };
-
-  const eliminar = async (id, tipo) => {
-    const msg = tipo === "evento" ? t("eliminar_evento") : t("eliminar_grupo");
-    if (!window.confirm(msg)) return;
-    await supabase.from("grupos_eventos").delete().eq("id", id);
-    await onRecargar();
-    setModalGrupo(null);
-    onRecargar();
-  };
+  const abrirEditar = (g) => { setModalGrupo(g); };
 
   const calcRevTotal = (g) => {
     const noches = g.fecha_inicio && g.fecha_fin
@@ -7044,33 +7354,6 @@ function GruposView({ datos, onRecargar, onVolverHeatmap, subVistaExt, onCambiar
             ← Heatmap
           </button>
         )}
-        <div style={{ position:"relative" }}>
-          <button onClick={()=>setMenuNuevo(v=>!v)}
-            style={{ background:"#0A2540", color:"#fff", border:"none", borderRadius:8, padding:"7px 16px", fontSize:13, fontWeight:600, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", display:"flex", alignItems:"center", gap:6 }}>
-            + Nueva reserva
-            <span style={{ fontSize:10, opacity:0.7 }}>▾</span>
-          </button>
-          {menuNuevo && (
-            <>
-              <div style={{ position:"fixed", inset:0, zIndex:999 }} onClick={()=>setMenuNuevo(false)}/>
-              <div style={{ position:"absolute", right:0, top:"calc(100% + 6px)", background:C.bgCard, border:`1px solid ${C.border}`, borderRadius:10, boxShadow:"0 8px 24px rgba(0,0,0,0.12)", zIndex:1000, minWidth:160, overflow:"hidden" }}>
-                <button onClick={()=>{ setMenuNuevo(false); abrirNuevo(); }}
-                  style={{ width:"100%", padding:"11px 16px", background:"none", border:"none", textAlign:"left", cursor:"pointer", fontSize:13, fontWeight:600, color:C.text, fontFamily:"'Plus Jakarta Sans',sans-serif" }}
-                  onMouseEnter={e=>e.currentTarget.style.background=C.bg}
-                  onMouseLeave={e=>e.currentTarget.style.background="none"}>
-                  Grupo
-                </button>
-                <div style={{ height:1, background:C.border, margin:"0 12px" }}/>
-                <button onClick={()=>{ setMenuNuevo(false); abrirNuevo("", "evento"); }}
-                  style={{ width:"100%", padding:"11px 16px", background:"none", border:"none", textAlign:"left", cursor:"pointer", fontSize:13, fontWeight:600, color:C.text, fontFamily:"'Plus Jakarta Sans',sans-serif" }}
-                  onMouseEnter={e=>e.currentTarget.style.background=C.bg}
-                  onMouseLeave={e=>e.currentTarget.style.background="none"}>
-                  Evento
-                </button>
-              </div>
-            </>
-          )}
-        </div>
       </div>
 
       {/* ── Vista mensual (Calendario) ── */}
@@ -7739,292 +8022,19 @@ function GruposView({ datos, onRecargar, onVolverHeatmap, subVistaExt, onCambiar
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20 }}>
               <h3 style={{ fontSize:18, fontWeight:700, color:C.text }}>
                 {modalGrupo?.id
-                  ? (form.tipo === "evento" ? t("editar_evento") : t("editar_grupo"))
-                  : (form.tipo === "evento" ? t("nuevo_evento_title") : t("nuevo_grupo_title"))}
+                  ? (modalGrupo.categoria === "evento" ? t("editar_evento") : t("editar_grupo"))
+                  : (modalGrupo.tipo === "evento" ? t("nuevo_evento_title") : t("nuevo_grupo_title"))}
               </h3>
               <button onClick={()=>setModalGrupo(null)} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, width:28, height:28, cursor:"pointer", fontSize:16, color:C.textMid, display:"flex", alignItems:"center", justifyContent:"center", padding:0 }}>×</button>
             </div>
 
-            <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+            <ModalFormGrupo
+              datos={datos}
+              grupoData={modalGrupo}
+              onClose={()=>setModalGrupo(null)}
+              onGuardado={()=>{ onRecargar(); setModalGrupo(null); }}
+            />
 
-              <div>
-                <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>{t("form_nombre")}</p>
-                <input style={inp} placeholder="Boda García · Congreso Pharma..." value={form.nombre} onChange={e=>setForm(f=>({...f,nombre:e.target.value}))}/>
-              </div>
-
-              <div style={{ display:"grid", gridTemplateColumns: form.tipo === "evento" ? "1fr 1fr" : "1fr 1fr 1fr", gap:10 }}>
-                {form.tipo !== "evento" && (
-                  <div>
-                    <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>{t("form_categoria")}</p>
-                    <select style={inp} value={form.categoria} onChange={e=>setForm(f=>({...f,categoria:e.target.value}))}>
-                      {Object.entries(CATS).filter(([k])=>k!=="evento").map(([k,v])=><option key={k} value={k}>{v.label}</option>)}
-                    </select>
-                  </div>
-                )}
-                <div>
-                  <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>{t("form_segmento")}</p>
-                  <select style={inp} value={form.segmento} onChange={e=>setForm(f=>({...f,segmento:e.target.value}))}>
-                    {["deportivo","negocio","turistico","congreso","social","otros"].map(s=><option key={s} value={s}>{t("seg_"+s)}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>{t("form_estado")}</p>
-                  <select style={inp} value={form.estado} onChange={e=>setForm(f=>({...f,estado:e.target.value}))}>
-                    {Object.entries(ESTADOS).map(([k,v])=><option key={k} value={k}>{v.label}</option>)}
-                  </select>
-                </div>
-              </div>
-
-              {/* Fechas — eventos solo tienen fecha de celebración; grupos tienen entrada+salida */}
-              {form.tipo === "evento" ? (
-                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
-                  <div>
-                    <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>Fecha del evento *</p>
-                    <input style={inp} type="date" value={form.fecha_inicio} onChange={e=>setForm(f=>({...f,fecha_inicio:e.target.value,fecha_fin:e.target.value}))}/>
-                  </div>
-                  <div>
-                    <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>{t("form_fecha_confirmacion")}</p>
-                    <input style={inp} type="date" value={form.fecha_confirmacion} onChange={e=>setForm(f=>({...f,fecha_confirmacion:e.target.value}))}/>
-                  </div>
-                </div>
-              ) : (
-                <>
-                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
-                    <div>
-                      <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>{t("form_fecha_entrada")}</p>
-                      <input style={inp} type="date" value={form.fecha_inicio} onChange={e=>setForm(f=>({...f,fecha_inicio:e.target.value}))}/>
-                    </div>
-                    <div>
-                      <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>{t("form_fecha_salida")}</p>
-                      <input style={inp} type="date" value={form.fecha_fin} onChange={e=>setForm(f=>({...f,fecha_fin:e.target.value}))}/>
-                    </div>
-                  </div>
-                  <div>
-                    <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>{t("form_fecha_confirmacion")}</p>
-                    <input style={inp} type="date" value={form.fecha_confirmacion} onChange={e=>setForm(f=>({...f,fecha_confirmacion:e.target.value}))}/>
-                  </div>
-                  {form.fecha_inicio && form.fecha_fin && (() => {
-                    const noches = Math.max(0, Math.round((new Date(form.fecha_fin) - new Date(form.fecha_inicio)) / 86400000));
-                    return noches > 0 ? (
-                      <div style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:7, padding:"7px 12px", fontSize:12, color:C.textMid, display:"flex", alignItems:"center", gap:6 }}>
-                        <span style={{ fontWeight:700, color:C.text }}>{noches}</span> noche{noches !== 1 ? "s" : ""} de duración
-                      </div>
-                    ) : null;
-                  })()}
-                </>
-              )}
-
-              {/* Campos específicos de evento: hora y sala */}
-              {form.tipo === "evento" && (
-                <>
-                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
-                    <div>
-                      <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>{t("form_hora_inicio")}</p>
-                      <input style={inp} type="time" value={form.hora_inicio} onChange={e=>setForm(f=>({...f,hora_inicio:e.target.value}))}/>
-                    </div>
-                    <div>
-                      <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>{t("form_hora_fin")}</p>
-                      <input style={inp} type="time" value={form.hora_fin} onChange={e=>setForm(f=>({...f,hora_fin:e.target.value}))}/>
-                    </div>
-                  </div>
-                  <div>
-                    <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>{t("form_sala_nombre")}</p>
-                    <select style={inp} value={form.sala_nombre} onChange={e=>setForm(f=>({...f,sala_nombre:e.target.value}))}>
-                      <option value="">— Seleccionar sala —</option>
-                      {SALAS_FIJAS.map(s => <option key={s} value={s}>{s}</option>)}
-                    </select>
-                  </div>
-                  <label style={{ display:"flex", alignItems:"center", gap:8, cursor:"pointer" }}>
-                    <input type="checkbox" checked={form.servicio_incluido} onChange={e=>setForm(f=>({...f,servicio_incluido:e.target.checked}))} style={{ width:16, height:16 }}/>
-                    <span style={{ fontSize:13, color:C.text }}>{t("form_servicio_incluido")}</span>
-                  </label>
-                </>
-              )}
-
-              {/* Campos específicos de grupo: habitaciones y ADR */}
-              {form.tipo === "grupo" ? (
-                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:10 }}>
-                  <div>
-                    <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>{t("form_habitaciones")}</p>
-                    <input style={inp} type="number" placeholder="20" value={form.habitaciones} onChange={e=>setForm(f=>({...f,habitaciones:e.target.value}))}/>
-                  </div>
-                  <div>
-                    <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>PAX</p>
-                    <input style={inp} type="number" placeholder="40" value={form.pax} onChange={e=>setForm(f=>({...f,pax:e.target.value}))}/>
-                  </div>
-                  <div>
-                    <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>{t("form_adr")}</p>
-                    <input style={inp} type="number" placeholder="89" value={form.adr_grupo} onChange={e=>setForm(f=>({...f,adr_grupo:e.target.value}))}/>
-                  </div>
-                </div>
-              ) : (
-                <div>
-                  <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>PAX</p>
-                  <input style={inp} type="number" placeholder="40" value={form.pax} onChange={e=>setForm(f=>({...f,pax:e.target.value}))}/>
-                </div>
-              )}
-
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
-                <div>
-                  <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>{t("form_fnb")}</p>
-                  <input style={inp} type="number" placeholder="5000" value={form.revenue_fnb} onChange={e=>setForm(f=>({...f,revenue_fnb:e.target.value}))}/>
-                </div>
-                <div>
-                  <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>{t("form_sala")}</p>
-                  <input style={inp} type="number" placeholder="800" value={form.revenue_sala} onChange={e=>setForm(f=>({...f,revenue_sala:e.target.value}))}/>
-                </div>
-              </div>
-              <p style={{ fontSize:10, color:"#004B87", lineHeight:1.5 }}>ⓘ Al guardar se deduce el IVA: ADR/F&B ÷1,10 · sala ÷1,21</p>
-
-              {form.estado === "cancelado" && (
-                <div>
-                  <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>{t("form_motivo")}</p>
-                  <input style={inp} placeholder="Precio, competencia, fecha..." value={form.motivo_perdida} onChange={e=>setForm(f=>({...f,motivo_perdida:e.target.value}))}/>
-                </div>
-              )}
-
-              <div>
-                <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>{t("form_notas")}</p>
-                <textarea style={{...inp, resize:"vertical", minHeight:60}} placeholder="Contacto, condiciones especiales..." value={form.notas} onChange={e=>setForm(f=>({...f,notas:e.target.value}))}/>
-              </div>
-
-              {/* Preview revenue */}
-              {(form.habitaciones || form.revenue_fnb || form.revenue_sala) && (() => {
-                const noches = form.fecha_inicio && form.fecha_fin
-                  ? Math.max(1, Math.round((new Date(form.fecha_fin) - new Date(form.fecha_inicio)) / 86400000))
-                  : 1;
-                const revHab = (parseInt(form.habitaciones)||0) * (parseFloat(form.adr_grupo)||0) * noches;
-                const revFnb = parseFloat(form.revenue_fnb)||0;
-                const revSala = parseFloat(form.revenue_sala)||0;
-                const total = revHab + revFnb + revSala;
-                return total > 0 ? (
-                  <div style={{ background:"#E6F7EE", border:"1px solid #1A7A3C33", borderRadius:8, padding:"10px 14px", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-                    <p style={{ fontSize:12, color:"#1A7A3C", fontWeight:600 }}>{t("rev_estimado")}</p>
-                    <p style={{ fontSize:18, fontWeight:800, color:"#1A7A3C" }}>€{Math.round(total).toLocaleString("es-ES")}</p>
-                  </div>
-                ) : null;
-              })()}
-
-              {/* ── ANÁLISIS DE DESPLAZAMIENTO ── */}
-              {form.fecha_inicio && form.fecha_fin && (parseInt(form.habitaciones)||0) > 0 && (() => {
-                const produccion  = datos.produccion  || [];
-                const presupuesto = datos.presupuesto || [];
-                const noches = Math.max(1, Math.round((new Date(form.fecha_fin) - new Date(form.fecha_inicio)) / 86400000));
-                const rooms    = parseInt(form.habitaciones) || 0;
-                const adrGrupo = parseFloat(form.adr_grupo)  || 0;
-                const revFnb   = parseFloat(form.revenue_fnb)  || 0;
-                const revSala  = parseFloat(form.revenue_sala) || 0;
-
-                // Periodo LY equivalente
-                const anioEvt = parseInt(form.fecha_inicio.slice(0,4));
-                const iniLY   = `${anioEvt-1}${form.fecha_inicio.slice(4)}`;
-                const finLY   = `${anioEvt-1}${form.fecha_fin.slice(4)}`;
-
-                const diasLY   = produccion.filter(r => { const f = String(r.fecha||"").slice(0,10); return f >= iniLY && f <= finLY; });
-                const habOcuLY = diasLY.reduce((a,r) => a+(r.hab_ocupadas||0), 0);
-                const revHabLY = diasLY.reduce((a,r) => a+(r.revenue_hab||0), 0);
-                const habDisLY = diasLY.reduce((a,r) => a+(r.hab_disponibles||0), 0);
-
-                let adrTransient, factorOcc, fuenteLY = true;
-                if (habOcuLY > 0) {
-                  adrTransient = Math.round(revHabLY / habOcuLY);
-                  factorOcc    = habDisLY > 0 ? Math.min(1, habOcuLY / habDisLY) : 0.7;
-                } else {
-                  // Fallback: presupuesto del mes de inicio
-                  const mesIni = parseInt(form.fecha_inicio.slice(5,7));
-                  const pptoM  = presupuesto.find(p => p.mes === mesIni && p.anio === anioEvt)
-                              || presupuesto.find(p => p.mes === mesIni);
-                  adrTransient = pptoM?.adr_ppto || null;
-                  factorOcc    = 0.65;
-                  fuenteLY     = false;
-                }
-                // Sin referencia de precio: mostrar aviso
-                if (!adrTransient) return (
-                  <div style={{ background:"#F5F5F5", border:`1px solid ${C.border}`, borderRadius:8, padding:"12px 16px" }}>
-                    <p style={{ fontSize:11, fontWeight:700, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:6 }}>📊 {t("analisis_desplazamiento")}</p>
-                    <p style={{ fontSize:12, color:C.textLight }}>{t("sin_datos_ly")} — importa producción o presupuesto para activar este análisis.</p>
-                  </div>
-                );
-
-                const contribucion        = rooms * adrGrupo * noches + revFnb + revSala;
-                const costeDesplazamiento = rooms * adrTransient * noches * factorOcc;
-                const valorNeto           = contribucion - costeDesplazamiento;
-                const isPos               = adrGrupo > 0 ? valorNeto >= 0 : false;
-
-                // ADR mínimo para que el grupo sea rentable (valor neto ≥ 0)
-                const breakEvenHab = costeDesplazamiento - revFnb - revSala;
-                const breakEvenAdr = rooms > 0 && noches > 0 && breakEvenHab > 0
-                  ? Math.round(breakEvenHab / (rooms * noches)) : null;
-
-                const sinAdr      = adrGrupo === 0;
-                const borderColor = sinAdr ? "#2B7EC133" : isPos ? "#1A7A3C33" : "#E85D0433";
-                const bgColor     = sinAdr ? "#EEF4FB"   : isPos ? "#F0FBF4"   : "#FFF8F0";
-
-                return (
-                  <div style={{ background:bgColor, border:`1px solid ${borderColor}`, borderRadius:8, padding:"14px 16px" }}>
-                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
-                      <p style={{ fontSize:11, fontWeight:700, color:C.textLight, textTransform:"uppercase", letterSpacing:1 }}>📊 {t("analisis_desplazamiento")}</p>
-                      {!sinAdr && (
-                        <span style={{ fontSize:12, fontWeight:700, padding:"3px 10px", borderRadius:6,
-                          background: isPos ? C.greenLight : "#FDECEA", color: isPos ? C.green : C.red }}>
-                          {isPos ? t("acepta_grupo") : t("revisar_grupo")}
-                        </span>
-                      )}
-                    </div>
-
-                    {sinAdr ? (
-                      <p style={{ fontSize:12, color:"#2B7EC1", marginBottom:12 }}>
-                        Rellena el ADR del grupo para ver el análisis completo.
-                      </p>
-                    ) : (
-                    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8, marginBottom:12 }}>
-                      {[
-                        { label: t("contrib_grupo"),   val: `€${Math.round(contribucion).toLocaleString("es-ES")}`,        color: C.text },
-                        { label: t("coste_desplaz"),   val: `€${Math.round(costeDesplazamiento).toLocaleString("es-ES")}`, color: "#E85D04" },
-                        { label: t("valor_neto"),      val: `${isPos?"+":""}€${Math.round(valorNeto).toLocaleString("es-ES")}`, color: isPos ? C.green : C.red },
-                      ].map(({ label, val, color }) => (
-                        <div key={label} style={{ background:C.bgCard, borderRadius:6, padding:"8px 10px" }}>
-                          <p style={{ fontSize:10, color:C.textLight, marginBottom:3 }}>{label}</p>
-                          <p style={{ fontSize:13, fontWeight:800, color }}>{val}</p>
-                        </div>
-                      ))}
-                    </div>
-                    )}
-
-                    <div style={{ display:"flex", gap:16, flexWrap:"wrap", borderTop:`1px solid ${C.border}`, paddingTop:10 }}>
-                      <div>
-                        <p style={{ fontSize:10, color:C.textLight }}>{t("adr_transient_ref")} {!fuenteLY && <span style={{ color:"#E85D04" }}>({t("fuente_ppto")})</span>}</p>
-                        <p style={{ fontSize:12, fontWeight:600, color:C.textMid }}>€{adrTransient}</p>
-                      </div>
-                      <div>
-                        <p style={{ fontSize:10, color:C.textLight }}>{t("occ_hist_ly")}</p>
-                        <p style={{ fontSize:12, fontWeight:600, color:C.textMid }}>{Math.round(factorOcc*100)}%</p>
-                      </div>
-                      {breakEvenAdr != null && (
-                        <div>
-                          <p style={{ fontSize:10, color:C.textLight }}>{t("adr_minimo_rentable")}</p>
-                          <p style={{ fontSize:12, fontWeight:700, color: adrGrupo >= breakEvenAdr ? C.green : C.red }}>€{breakEvenAdr}</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                );
-              })()}
-
-              <div style={{ display:"flex", justifyContent:"space-between", marginTop:4 }}>
-                {modalGrupo?.id
-                  ? <button onClick={()=>eliminar(modalGrupo.id, form.tipo)} style={{ background:"none", border:`1px solid ${C.red}`, color:C.red, borderRadius:7, padding:"8px 16px", fontSize:12, cursor:"pointer" }}>{t("form_eliminar")}</button>
-                  : <div/>
-                }
-                <div style={{ display:"flex", gap:8 }}>
-                  <button onClick={()=>setModalGrupo(null)} style={{ background:"none", border:`1px solid ${C.border}`, color:C.textMid, borderRadius:7, padding:"8px 16px", fontSize:12, cursor:"pointer" }}>{t("form_cancelar")}</button>
-                  <button onClick={guardar} disabled={guardando||!form.nombre||!form.fecha_inicio||(form.tipo==="grupo"&&!form.fecha_fin)}
-                    style={{ background:"#7C3AED", color:"#fff", border:"none", borderRadius:7, padding:"8px 20px", fontSize:13, fontWeight:600, cursor:"pointer", opacity:guardando?0.6:1 }}>
-                    {guardando?t("guardando_btn"):t("form_guardar")}
-                  </button>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       )}
