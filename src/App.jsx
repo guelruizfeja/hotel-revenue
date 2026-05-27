@@ -5481,7 +5481,7 @@ function PickupView({ datos, onGuardado }) {
       {/* Modal Gestión de reserva */}
       {modalNR && (
           <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.55)", zIndex:2000, display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}>
-            <div style={{ background:C.bgCard, borderRadius:14, padding:"28px 32px", width:"100%", maxWidth: gestionTab==="nueva" && nrTipo==="grupo" ? 540 : 460, maxHeight:"90vh", overflowY:"auto", boxShadow:"0 20px 60px rgba(0,0,0,0.25)" }}>
+            <div style={{ background:C.bgCard, borderRadius:14, padding:"28px 32px", width:"100%", maxWidth: gestionTab==="nueva" && (nrTipo==="grupo" || nrTipo==="evento") ? 540 : 460, maxHeight:"90vh", overflowY:"auto", boxShadow:"0 20px 60px rgba(0,0,0,0.25)" }}>
               {/* Cabecera */}
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:18 }}>
                 <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:20, color:C.text }}>Gestión de reserva</p>
@@ -5606,7 +5606,7 @@ function PickupView({ datos, onGuardado }) {
                 <>
                   {/* Selector Individual / Grupo */}
                   <div style={{ display:"flex", gap:4, marginBottom:16, background:C.bg, borderRadius:8, padding:4 }}>
-                    {[{key:"individual",label:"Individual"},{key:"grupo",label:"Grupo"}].map(opt => (
+                    {[{key:"individual",label:"Individual"},{key:"grupo",label:"Grupo"},{key:"evento",label:"Evento"}].map(opt => (
                       <button key={opt.key} onClick={() => setNrTipoPersist(opt.key)}
                         style={{ flex:1, padding:"7px 0", borderRadius:6, border:"none", cursor:"pointer", fontSize:12, fontWeight:700, fontFamily:"inherit", background:nrTipo===opt.key ? C.text : "transparent", color:nrTipo===opt.key ? "#fff" : C.textLight, boxShadow:nrTipo===opt.key ? "0 1px 4px rgba(0,0,0,0.18)" : "none", transition:"all 0.15s" }}>
                         {opt.label}
@@ -5665,11 +5665,11 @@ function PickupView({ datos, onGuardado }) {
                     </>
                   )}
 
-                  {/* Formulario grupo */}
-                  {nrTipo === "grupo" && (
+                  {/* Formulario grupo / evento */}
+                  {(nrTipo === "grupo" || nrTipo === "evento") && (
                     <ModalFormGrupo
                       datos={datos}
-                      grupoData={{ tipo:"grupo" }}
+                      grupoData={{ tipo: nrTipo }}
                       onClose={() => setNrTipoPersist("individual")}
                       onGuardado={() => { setModalNRPersist(false); setNrTipoPersist("individual"); onGuardado && onGuardado(true); }}
                     />
