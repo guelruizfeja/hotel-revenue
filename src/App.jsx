@@ -3673,14 +3673,16 @@ function DesgloseMovimientoView({ datos, tipo, onBack }) {
 }
 
 async function generarInformeDiarioPDF(kpis, hotelNombre) {
-  const MESES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+  const MESES     = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+  const MESES_S   = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
   const {
     fecha, mesNombre, occ, adr, revpar,
-    hab_ocupadas, hab_disponibles, pickup_neto, cancelaciones, revenue_pickup_ayer,
+    hab_ocupadas, hab_disponibles, pickup_neto,
     revenueAcumulado, presupuestoMensual,
     avg_occ, avg_adr, avg_revpar,
     revHabMes, revFnbMes, canalesRevenue,
     revGruposMes, revIndividualMes,
+    adrPpto, gruposProximos,
   } = kpis;
 
   const loadScript = src => new Promise((res, rej) => {
@@ -3700,264 +3702,290 @@ async function generarInformeDiarioPDF(kpis, hotelNombre) {
   const C_GRIS  = [100, 116, 139];
   const C_VERDE = [5, 150, 105];
   const C_ROJO  = [220, 38, 38];
-  const C_GRISC = [241, 245, 249];
+  const C_GRISC = [245, 247, 250];
   const C_GRISM = [148, 163, 184];
+  const C_BORDE = [226, 232, 240];
+  const C_NEGRO = [26, 26, 26];
 
-  const fmt  = n => n != null && !isNaN(n) ? Math.round(n).toLocaleString("es-ES") : "—";
-  const fmtD = iso => { if (!iso) return "—"; const [yr,mo,dy] = iso.split("-"); return `${parseInt(dy)} de ${MESES[parseInt(mo)-1]} de ${yr}`; };
+  const fmt   = n => n != null && !isNaN(n) ? Math.round(n).toLocaleString("es-ES") : "—";
+  const fmtD  = iso => { if (!iso) return "—"; const [yr,mo,dy] = iso.split("-"); return `${parseInt(dy)} de ${MESES[parseInt(mo)-1]} de ${yr}`; };
+  const fmtSD = iso => { if (!iso) return "—"; const [,mo,dy] = iso.split("-"); return `${parseInt(dy)} ${MESES_S[parseInt(mo)-1]}`; };
 
-  // Draw donut chart via canvas and add as PNG image
+  // Donut via canvas (transparent bg → white center when placed on white PDF)
   function addDonut(cx, cy, rMm, segments) {
-    const px = 140;
+    const px = 160;
     const canvas = document.createElement("canvas");
     canvas.width = px; canvas.height = px;
     const ctx = canvas.getContext("2d");
     const ccx = px/2, ccy = px/2;
-    const outerR = px/2 - 3;
-    const ringW  = outerR * 0.42;
-    const total  = segments.reduce((s, sg) => s + (sg.value || 0), 0);
+    const outerR = px/2 - 4;
+    const ringW  = Math.round(outerR * 0.44);
+    const midR   = outerR - ringW/2;
+    const total  = segments.reduce((s, sg) => s + (sg.value||0), 0);
     if (total === 0) {
-      ctx.beginPath();
-      ctx.arc(ccx, ccy, outerR - ringW/2, 0, 2*Math.PI);
-      ctx.strokeStyle = "rgba(255,255,255,0.18)";
-      ctx.lineWidth = ringW;
-      ctx.stroke();
+      ctx.beginPath(); ctx.arc(ccx, ccy, midR, 0, 2*Math.PI);
+      ctx.strokeStyle = "#CBD5E1"; ctx.lineWidth = ringW; ctx.stroke();
     } else {
-      let a = -Math.PI / 2;
-      const gap = segments.filter(s => s.value > 0).length > 1 ? 0.04 : 0;
+      let a = -Math.PI/2;
+      const activeSegs = segments.filter(s => s.value > 0);
+      const gap = activeSegs.length > 1 ? 0.05 : 0;
       for (const seg of segments) {
         if (!seg.value) continue;
-        const sweep = (seg.value / total) * 2 * Math.PI - gap;
-        ctx.beginPath();
-        ctx.arc(ccx, ccy, outerR - ringW/2, a, a + sweep);
-        ctx.strokeStyle = seg.color;
-        ctx.lineWidth = ringW;
-        ctx.lineCap = "butt";
-        ctx.stroke();
+        const sweep = (seg.value/total)*2*Math.PI - gap;
+        ctx.beginPath(); ctx.arc(ccx, ccy, midR, a, a+sweep);
+        ctx.strokeStyle = seg.color; ctx.lineWidth = ringW; ctx.lineCap = "butt"; ctx.stroke();
         a += sweep + gap;
       }
     }
-    const mm = rMm * 2;
-    doc.addImage(canvas.toDataURL("image/png"), "PNG", cx - rMm, cy - rMm, mm, mm);
+    const mm = rMm*2;
+    doc.addImage(canvas.toDataURL("image/png"), "PNG", cx-rMm, cy-rMm, mm, mm);
   }
 
-  // ── HEADER ────────────────────────────────────────────
-  doc.setFillColor(...C_AZUL);
-  doc.rect(0, 0, W, 33, "F");
-  doc.setFillColor(...C_GOLD);
-  doc.rect(0, 31, W, 2, "F");
+  // Colored legend square
+  function legendSq(x, y2, hex) {
+    const [r,g,b] = hex.match(/\w\w/g).map(h => parseInt(h,16));
+    doc.setFillColor(r,g,b); doc.rect(x, y2-2.2, 2.5, 2.5, "F");
+  }
+
+  // ── HEADER ──────────────────────────────────────────
+  doc.setFillColor(...C_AZUL); doc.rect(0, 0, W, 32, "F");
+  doc.setFillColor(...C_GOLD); doc.rect(0, 30, W, 2, "F");
   doc.setTextColor(255,255,255);
-  doc.setFontSize(7.5); doc.setFont("helvetica","bold");
-  doc.text("INFORME DIARIO DE REVENUE", W/2, 10, { align:"center" });
+  doc.setFontSize(7); doc.setFont("helvetica","bold");
+  doc.text("INFORME DIARIO DE REVENUE", W/2, 9, { align:"center" });
   doc.setFontSize(15); doc.setFont("helvetica","bold");
   doc.text(hotelNombre || "Mi Hotel", W/2, 19, { align:"center" });
   doc.setFontSize(9); doc.setFont("helvetica","normal"); doc.setTextColor(180,200,220);
-  doc.text(fmtD(fecha), W/2, 27, { align:"center" });
-  y = 41;
+  doc.text(fmtD(fecha), W/2, 26, { align:"center" });
+  y = 39;
 
-  // ── RESUMEN DE AYER ──────────────────────────────────
+  // ── RESUMEN DE AYER ────────────────────────────────
   doc.setFontSize(8); doc.setFont("helvetica","bold"); doc.setTextColor(...C_GRIS);
   doc.text("RESUMEN DE AYER", M, y);
   doc.setFont("helvetica","normal"); doc.setTextColor(...C_GRISM);
-  doc.text("(vs. Media del Mes)", M + 39, y);
+  doc.text("(vs. Media del Mes)", M+39, y);
   y += 4;
 
-  const cardH = 36;
-  doc.setFillColor(255,255,255); doc.setDrawColor(226,232,240);
-  doc.roundedRect(M, y, W - M*2, cardH, 2, 2, "FD");
+  const kH = 38;
+  doc.setFillColor(255,255,255); doc.setDrawColor(...C_BORDE);
+  doc.roundedRect(M, y, W-M*2, kH, 2, 2, "FD");
 
-  const occDelta  = occ != null && avg_occ != null ? occ - avg_occ : null;
-  const adrDelta  = adr != null && avg_adr != null ? adr - avg_adr : null;
-  const rvpDelta  = revpar != null && avg_revpar != null && avg_revpar > 0 ? (revpar - avg_revpar) / avg_revpar * 100 : null;
-
+  const occΔ  = occ!=null&&avg_occ!=null ? occ-avg_occ : null;
+  const adrΔ  = adr!=null&&avg_adr!=null ? adr-avg_adr : null;
+  const rvpΔ  = revpar!=null&&avg_revpar!=null&&avg_revpar>0 ? (revpar-avg_revpar)/avg_revpar*100 : null;
   const kpiDefs = [
-    { lbl:"OCUPACIÓN",
-      val: occ != null ? parseFloat(occ).toFixed(1)+"%" : "—",
-      delta: occDelta, dfmt: n => (n>=0?"+":"")+parseFloat(n).toFixed(1)+" pp",
-      sub: hab_ocupadas != null ? `${hab_ocupadas}/${hab_disponibles} hab.` : null,
-      vc: null },
-    { lbl:"ADR",
-      val: adr != null ? `€${Math.round(adr)}` : "—",
-      delta: adrDelta, dfmt: n => (n>=0?"+":"")+`€${Math.abs(n).toFixed(1)}`,
-      sub: null, vc: null },
-    { lbl:"REVPAR",
-      val: revpar != null ? `€${Math.round(revpar)}` : "—",
-      delta: rvpDelta, dfmt: n => (n>=0?"+":"")+parseFloat(n).toFixed(1)+"%",
-      sub: null, vc: null },
-    { lbl:"TREVPAR",
-      val: "—", delta: null, dfmt: null, sub: null, vc: null },
-    { lbl:"PICKUP NETO",
-      val: pickup_neto != null ? (pickup_neto>=0?"+":"")+pickup_neto+" hab." : "—",
-      delta: null, dfmt: null, sub: null,
-      vc: pickup_neto > 0 ? C_VERDE : pickup_neto < 0 ? C_ROJO : C_AZUL },
+    { lbl:"OCUPACIÓN",   val: occ!=null?parseFloat(occ).toFixed(1)+"%":"—",    delta:occΔ, dfmt:n=>(n>=0?"+":"")+parseFloat(n).toFixed(1)+" pp", sub:hab_ocupadas!=null?`${hab_ocupadas}/${hab_disponibles} hab.`:null, vc:null },
+    { lbl:"ADR",         val: adr!=null?`€${Math.round(adr)}`:"—",             delta:adrΔ, dfmt:n=>(n>=0?"+":"")+`€${Math.abs(n).toFixed(1)}`,   sub:null, vc:null },
+    { lbl:"REVPAR",      val: revpar!=null?`€${Math.round(revpar)}`:"—",        delta:rvpΔ, dfmt:n=>(n>=0?"+":"")+parseFloat(n).toFixed(1)+"%",   sub:null, vc:null },
+    { lbl:"TREVPAR",     val:"—",                                               delta:null, dfmt:null, sub:null, vc:null },
+    { lbl:"PICKUP NETO", val: pickup_neto!=null?(pickup_neto>=0?"+":"")+pickup_neto+" hab.":"—", delta:null, dfmt:null, sub:null, vc:pickup_neto>0?C_VERDE:pickup_neto<0?C_ROJO:C_AZUL },
   ];
-  const kColW = (W - M*2) / kpiDefs.length;
+  const kColW = (W-M*2)/5;
   kpiDefs.forEach((k, i) => {
     const kx = M + i*kColW + kColW/2;
-    if (i > 0) { doc.setDrawColor(226,232,240); doc.line(M+i*kColW, y+4, M+i*kColW, y+cardH-4); }
+    if (i>0) { doc.setDrawColor(...C_BORDE); doc.line(M+i*kColW, y+5, M+i*kColW, y+kH-5); }
     doc.setFontSize(6.5); doc.setFont("helvetica","bold"); doc.setTextColor(...C_GRIS);
     doc.text(k.lbl, kx, y+9, { align:"center" });
-    doc.setFontSize(12.5); doc.setFont("helvetica","bold"); doc.setTextColor(...(k.vc||C_AZUL));
-    doc.text(k.val, kx, y+19, { align:"center" });
-    if (k.delta != null) {
-      const dStr = k.dfmt(k.delta);
-      doc.setFontSize(7); doc.setFont("helvetica","bold");
-      doc.setTextColor(...(k.delta >= 0 ? C_VERDE : C_ROJO));
-      doc.text(dStr, kx, y+26, { align:"center" });
+    doc.setFontSize(13); doc.setFont("helvetica","bold"); doc.setTextColor(...(k.vc||C_AZUL));
+    doc.text(k.val, kx, y+20, { align:"center" });
+    if (k.delta!=null) {
+      doc.setFontSize(7); doc.setFont("helvetica","bold"); doc.setTextColor(...(k.delta>=0?C_VERDE:C_ROJO));
+      doc.text(k.dfmt(k.delta), kx, y+27, { align:"center" });
     }
     if (k.sub) {
       doc.setFontSize(6); doc.setFont("helvetica","normal"); doc.setTextColor(...C_GRIS);
-      doc.text(k.sub, kx, k.delta!=null ? y+31 : y+26, { align:"center" });
+      doc.text(k.sub, kx, k.delta!=null?y+33:y+28, { align:"center" });
     }
   });
-  y += cardH + 7;
+  y += kH + 6;
 
-  // ── MIX DE REVENUE ───────────────────────────────────
+  // ── MIX DE REVENUE ──────────────────────────────────
   doc.setFontSize(8); doc.setFont("helvetica","bold"); doc.setTextColor(...C_GRIS);
   doc.text("MIX DE REVENUE", M, y);
   doc.setFont("helvetica","normal"); doc.setTextColor(...C_GRISM);
-  const mesLabel = mesNombre ? "— " + mesNombre.toUpperCase() : "— MES ACTUAL";
-  doc.text(mesLabel, M + 34, y);
-  y += 4;
+  doc.text(`— ${mesNombre||"MES ACTUAL"}`.toUpperCase(), M+34, y);
+  y += 5;
 
-  const mixH = 50;
-  doc.setFillColor(...C_AZUL);
-  doc.roundedRect(M, y, W - M*2, mixH, 2, 2, "F");
+  const mixH = 52;
+  doc.setFillColor(255,255,255); doc.setDrawColor(...C_BORDE);
+  doc.roundedRect(M, y, W-M*2, mixH, 2, 2, "FD");
 
-  const sW = (W - M*2) / 3;
-  const cy_mix = y + mixH/2;
-  const rMm = 12;
+  const sW   = (W-M*2)/3;
+  const rMm  = 13;
+  const cymx = y + mixH/2 + 2;
 
-  // Sub-titles
-  const subTitles = ["HAB. VS F&B", "PROCEDENCIA", "GRUPOS VS INDIVIDUAL"];
-  subTitles.forEach((t, i) => {
-    const sx = M + i*sW + sW/2;
-    doc.setFontSize(6); doc.setFont("helvetica","bold"); doc.setTextColor(180,200,220);
-    doc.text(t, sx, y+6, { align:"center" });
+  // Sub-headers
+  ["HAB. VS F&B","PROCEDENCIA","GRUPOS VS INDIVIDUAL"].forEach((lbl, i) => {
+    const sx = M + i*sW;
+    doc.setFontSize(6); doc.setFont("helvetica","bold"); doc.setTextColor(...C_GRIS);
+    doc.text(lbl, sx+4, y+7);
+    if (i>0) { doc.setDrawColor(...C_BORDE); doc.line(sx, y+3, sx, y+mixH-3); }
   });
 
-  // Donut 1: HAB vs F&B
-  const cx1 = M + sW*0 + sW*0.38;
-  addDonut(cx1, cy_mix+2, rMm, [
-    { value: revHabMes || 0,  color: "#4FC3F7" },
-    { value: revFnbMes || 0,  color: "#D4A017" },
-  ]);
-  const lx1 = cx1 + rMm + 2;
-  const habPct = (revHabMes||0)+(revFnbMes||0) > 0 ? Math.round((revHabMes||0)/((revHabMes||0)+(revFnbMes||0))*100) : null;
-  const fnbPct = habPct != null ? 100-habPct : null;
-  doc.setFontSize(6.5); doc.setFont("helvetica","bold"); doc.setTextColor(255,255,255);
-  if (habPct != null) {
-    doc.setTextColor(180,220,255); doc.text("Habitaciones", lx1, cy_mix-1);
-    doc.setFontSize(8); doc.setFont("helvetica","bold"); doc.setTextColor(255,255,255);
-    doc.text(`${habPct}%`, lx1, cy_mix+5);
-    doc.setFontSize(6.5); doc.setFont("helvetica","normal"); doc.setTextColor(...C_GOLD);
-    doc.text(`F&B ${fnbPct}%`, lx1, cy_mix+10);
+  // Donut 1: HAB vs F&B (navy large, gold small)
+  const totHF  = (revHabMes||0)+(revFnbMes||0);
+  const habPct = totHF>0 ? Math.round((revHabMes||0)/totHF*100) : null;
+  const cx1    = M + sW*0.36;
+  addDonut(cx1, cymx, rMm, totHF>0
+    ? [{ value:revHabMes||0, color:"#0A2540" }, { value:revFnbMes||0, color:"#D4A017" }]
+    : [{ value:1, color:"#CBD5E1" }]);
+  const lx1 = cx1 + rMm + 3;
+  if (habPct!=null) {
+    legendSq(lx1, cymx-4, "#0A2540");
+    doc.setFontSize(6.5); doc.setFont("helvetica","normal"); doc.setTextColor(...C_NEGRO);
+    doc.text(`Habitaciones ${habPct}%`, lx1+4, cymx-4);
+    legendSq(lx1, cymx+2, "#D4A017");
+    doc.text(`F&B ${100-habPct}%`, lx1+4, cymx+2);
   } else {
-    doc.setTextColor(180,200,220); doc.setFontSize(7);
-    doc.text("Sin datos", lx1, cy_mix+2);
+    doc.setFontSize(6.5); doc.setTextColor(...C_GRISM); doc.text("Sin datos", lx1, cymx);
   }
 
   // Donut 2: Procedencia
-  const cx2 = M + sW*1 + sW/2;
-  const canales = canalesRevenue && canalesRevenue.length > 0 ? canalesRevenue : [];
-  const canalColors = ["#94A3B8","#D4A017","#4FC3F7","#F472B6","#34D399"];
-  addDonut(cx2, cy_mix+2, rMm, canales.length > 0
-    ? canales.map((c, i) => ({ value: c.revenue||c.value||0, color: canalColors[i%canalColors.length] }))
-    : [{ value: 1, color: "rgba(255,255,255,0.2)" }]
-  );
-  doc.setFontSize(6.5); doc.setFont("helvetica","normal"); doc.setTextColor(180,200,220);
-  if (canales.length > 0) {
-    canales.slice(0,3).forEach((c, i) => {
-      doc.setTextColor(canalColors[i%canalColors.length]);
-      doc.text(`${c.canal||c.label||"Canal"} ${c.pct||""}%`, cx2 - rMm - 1, cy_mix - 3 + i*5, { align:"right" });
+  const canalColors = ["#94A3B8","#D4A017","#0A2540","#F472B6","#34D399"];
+  const cx2 = M + sW + sW*0.36;
+  const canales = (canalesRevenue||[]).filter(c => c.revenue>0);
+  addDonut(cx2, cymx, rMm, canales.length>0
+    ? canales.map((c,i) => ({ value:c.revenue, color:canalColors[i%canalColors.length] }))
+    : [{ value:1, color:"#CBD5E1" }]);
+  const lx2 = cx2 + rMm + 3;
+  if (canales.length>0) {
+    canales.slice(0,3).forEach((c,i) => {
+      legendSq(lx2, cymx - 4 + i*6, canalColors[i%canalColors.length]);
+      doc.setFontSize(6.5); doc.setFont("helvetica","normal"); doc.setTextColor(...C_NEGRO);
+      doc.text(`${c.canal} ${c.pct}%`, lx2+4, cymx - 4 + i*6);
     });
   } else {
-    doc.setFontSize(6.5); doc.setTextColor(180,200,220);
-    doc.text("Sin datos", cx2, cy_mix+2, { align:"center" });
+    doc.setFontSize(6.5); doc.setTextColor(...C_GRISM); doc.text("Sin datos", lx2, cymx);
   }
 
   // Donut 3: Grupos vs Individual
-  const cx3 = M + sW*2 + sW*0.62;
-  const totGI = (revGruposMes||0) + (revIndividualMes||0);
-  addDonut(cx3 - rMm*0.3, cy_mix+2, rMm, totGI > 0
-    ? [
-        { value: revGruposMes||0,     color: "#8B5CF6" },
-        { value: revIndividualMes||0, color: "#60A5FA" },
-      ]
-    : [{ value: 1, color: "rgba(255,255,255,0.2)" }]
-  );
-  const lx3 = cx3 - rMm*0.3 + rMm + 1;
-  if (totGI > 0) {
-    const gPct = Math.round((revGruposMes||0)/totGI*100);
-    doc.setFontSize(6.5); doc.setFont("helvetica","bold"); doc.setTextColor(196,181,253);
-    doc.text("Grupos", lx3, cy_mix-1);
-    doc.setFontSize(8); doc.setFont("helvetica","bold"); doc.setTextColor(255,255,255);
-    doc.text(`${gPct}%`, lx3, cy_mix+5);
-    doc.setFontSize(6.5); doc.setFont("helvetica","normal"); doc.setTextColor(147,197,253);
-    doc.text(`Indiv. ${100-gPct}%`, lx3, cy_mix+10);
-  } else {
-    doc.setFontSize(6.5); doc.setFont("helvetica","normal"); doc.setTextColor(180,200,220);
-    doc.text("Sin datos", lx3, cy_mix+2);
-  }
+  const totGI  = (revGruposMes||0)+(revIndividualMes||0);
+  const gPct   = totGI>0 ? Math.round((revGruposMes||0)/totGI*100) : null;
+  const cx3    = M + sW*2 + sW*0.36;
+  addDonut(cx3, cymx, rMm, totGI>0
+    ? [{ value:revGruposMes||0, color:"#7C3AED" }, { value:revIndividualMes||0, color:"#CBD5E1" }]
+    : [{ value:1, color:"#7C3AED" }]);
+  const lx3 = cx3 + rMm + 3;
+  legendSq(lx3, cymx-4, "#7C3AED");
+  doc.setFontSize(6.5); doc.setFont("helvetica","normal"); doc.setTextColor(...C_NEGRO);
+  doc.text(`Grupos ${gPct!=null?gPct:0}%`, lx3+4, cymx-4);
+  legendSq(lx3, cymx+2, "#CBD5E1");
+  doc.text(`Individual ${gPct!=null?100-gPct:100}%`, lx3+4, cymx+2);
 
-  y += mixH + 7;
+  y += mixH + 6;
 
-  // ── PICKUP DEL DÍA ───────────────────────────────────
-  doc.setFontSize(8); doc.setFont("helvetica","bold"); doc.setTextColor(...C_GRIS);
-  doc.text("PICKUP DEL DÍA", M, y); y += 4;
-  doc.setFillColor(...C_GRISC); doc.setDrawColor(226,232,240);
-  doc.roundedRect(M, y, W-M*2, 20, 2, 2, "FD");
-  const pCols = [
-    { lbl:"Nuevas reservas", val: pickup_neto!=null ? `+${pickup_neto} hab.` : "—", c: C_VERDE },
-    { lbl:"Cancelaciones",   val: cancelaciones!=null ? `${cancelaciones}` : "0", c: cancelaciones>0?C_ROJO:C_GRIS },
-    { lbl:"Revenue pickup",  val: revenue_pickup_ayer ? `€${fmt(revenue_pickup_ayer)}` : "—", c: C_VERDE },
-  ];
-  const pColW = (W-M*2)/3;
-  pCols.forEach((p, i) => {
-    const px2 = M + i*pColW + pColW/2;
-    if (i>0) { doc.setDrawColor(226,232,240); doc.line(M+i*pColW, y+3, M+i*pColW, y+17); }
-    doc.setFontSize(6.5); doc.setFont("helvetica","bold"); doc.setTextColor(...C_GRIS);
-    doc.text(p.lbl, px2, y+7, { align:"center" });
-    doc.setFontSize(11); doc.setFont("helvetica","bold"); doc.setTextColor(...p.c);
-    doc.text(p.val, px2, y+16, { align:"center" });
-  });
-  y += 26;
-
-  // ── PROGRESO MENSUAL ──────────────────────────────────
+  // ── PROGRESO MENSUAL ────────────────────────────────
   if (revenueAcumulado?.length) {
     const acum    = revenueAcumulado[revenueAcumulado.length-1]?.acum || 0;
     const lastDay = revenueAcumulado[revenueAcumulado.length-1]?.dia  || 1;
+    const pct     = presupuestoMensual && presupuestoMensual>0 ? Math.round(acum/presupuestoMensual*100) : null;
+    const barCol  = pct==null ? C_GRIS : pct>=100 ? C_VERDE : pct>=75 ? [196,154,10] : C_ROJO;
+
     doc.setFontSize(8); doc.setFont("helvetica","bold"); doc.setTextColor(...C_GRIS);
     doc.text("PROGRESO MENSUAL", M, y);
-    if (mesNombre) { doc.setFont("helvetica","normal"); doc.setTextColor(...C_GRISM); doc.text(`(${mesNombre})`, M+43, y); }
+    doc.setFont("helvetica","normal"); doc.setTextColor(...C_GRISM);
+    doc.text(`(${mesNombre||""})`, M+44, y);
     y += 4;
 
-    doc.setFillColor(...C_GRISC); doc.setDrawColor(226,232,240);
-    doc.roundedRect(M, y, W-M*2, 30, 2, 2, "FD");
+    const pgH = 54;
+    doc.setFillColor(255,255,255); doc.setDrawColor(...C_BORDE);
+    doc.roundedRect(M, y, W-M*2, pgH, 2, 2, "FD");
 
-    // Acumulado
-    doc.setFontSize(8); doc.setFont("helvetica","normal"); doc.setTextColor(...C_GRIS);
-    doc.text(`Acumulado día ${lastDay}:`, M+6, y+10);
-    doc.setFont("helvetica","bold"); doc.setTextColor(...C_AZUL);
-    doc.text(`€${fmt(acum)}`, M+52, y+10);
+    // 3-col header row
+    const pgCols = [
+      { lbl:`ACUMULADO DÍA ${lastDay}`, val:`€${fmt(acum)}`, vc:C_AZUL },
+      { lbl:"CUMPLIMIENTO",             val:pct!=null?`${pct}%`:"—",  vc:barCol },
+      { lbl:"PRESUPUESTO",              val:presupuestoMensual?`€${fmt(presupuestoMensual)}`:"—", vc:C_AZUL },
+    ];
+    const pgCW = (W-M*2)/3;
+    pgCols.forEach((col, i) => {
+      const px3 = M + i*pgCW + pgCW/2;
+      if (i>0) { doc.setDrawColor(...C_BORDE); doc.line(M+i*pgCW, y+3, M+i*pgCW, y+22); }
+      doc.setFontSize(6.5); doc.setFont("helvetica","bold"); doc.setTextColor(...C_GRIS);
+      doc.text(col.lbl, px3, y+8, { align:"center" });
+      doc.setFontSize(13); doc.setFont("helvetica","bold"); doc.setTextColor(...col.vc);
+      doc.text(col.val, px3, y+18, { align:"center" });
+    });
 
-    if (presupuestoMensual) {
-      const pct = Math.min(Math.round(acum/presupuestoMensual*100), 100);
-      const barColor = pct>=100 ? C_VERDE : pct>=75 ? [196,154,10] : C_ROJO;
-      doc.setFont("helvetica","normal"); doc.setTextColor(...C_GRIS);
-      doc.text(`Presupuesto: €${fmt(presupuestoMensual)}`, M+6, y+18);
-      doc.setFont("helvetica","bold"); doc.setTextColor(...barColor);
-      doc.text(`${pct}% del objetivo`, W-M-6, y+18, { align:"right" });
-      const bx = M+6, by2 = y+22, bw = W-M*2-12, bh = 4;
-      doc.setFillColor(210,220,230); doc.roundedRect(bx, by2, bw, bh, 1.5, 1.5, "F");
-      doc.setFillColor(...barColor); doc.roundedRect(bx, by2, Math.max(bw*pct/100, 2), bh, 1.5, 1.5, "F");
+    // Revenue progress bar
+    const bx = M+6, bw = W-M*2-12, bh = 3.5;
+    const by1 = y+24;
+    doc.setFillColor(...C_BORDE); doc.roundedRect(bx, by1, bw, bh, 1.5, 1.5, "F");
+    if (pct!=null) {
+      doc.setFillColor(...barCol); doc.roundedRect(bx, by1, Math.max(bw*Math.min(pct,100)/100, 2), bh, 1.5, 1.5, "F");
     }
-    y += 36;
+    // "Faltan X para cerrar el mes"
+    if (presupuestoMensual && pct!=null && pct<100) {
+      const faltan = presupuestoMensual - acum;
+      doc.setFontSize(7); doc.setFont("helvetica","normal"); doc.setTextColor(...C_GRISM);
+      doc.text(`Faltan €${fmt(faltan)} para cerrar el mes en objetivo`, bx, by1+7);
+    }
+
+    // ADR section
+    const adrMedio = avg_adr;
+    const adrBy = by1 + 13;
+    doc.setDrawColor(...C_BORDE); doc.line(M+6, adrBy, W-M-6, adrBy);
+    doc.setFontSize(7); doc.setFont("helvetica","bold"); doc.setTextColor(...C_GRIS);
+    doc.text("ADR MEDIO DEL MES", M+6, adrBy+6);
+    if (adrPpto) {
+      doc.setFont("helvetica","normal"); doc.setTextColor(...C_GRISM);
+      doc.text(`Ppto: €${fmt(adrPpto)}`, W-M-6, adrBy+6, { align:"right" });
+    }
+    // ADR value
+    doc.setFontSize(12); doc.setFont("helvetica","bold");
+    const adrDeltaPct = adrMedio!=null&&adrPpto&&adrPpto>0 ? (adrMedio-adrPpto)/adrPpto*100 : null;
+    const adrBarCol = adrDeltaPct==null ? C_GRIS : adrDeltaPct>=0 ? C_VERDE : C_ROJO;
+    doc.setTextColor(...C_AZUL);
+    doc.text(adrMedio!=null?`€${Math.round(adrMedio)}`:"—", W/2, adrBy+14, { align:"center" });
+    // ADR bar
+    const adrBarY = adrBy+17;
+    doc.setFillColor(...C_BORDE); doc.roundedRect(bx, adrBarY, bw, bh, 1.5, 1.5, "F");
+    if (adrMedio!=null && adrPpto && adrPpto>0) {
+      const adrPctBar = Math.min(adrMedio/adrPpto, 1);
+      doc.setFillColor(...adrBarCol); doc.roundedRect(bx, adrBarY, Math.max(bw*adrPctBar, 2), bh, 1.5, 1.5, "F");
+      if (adrDeltaPct!=null) {
+        doc.setFontSize(7); doc.setFont("helvetica","bold"); doc.setTextColor(...adrBarCol);
+        doc.text(`${adrDeltaPct>=0?"+":""}${adrDeltaPct.toFixed(1)}% vs presupuesto`, W/2, adrBarY+7, { align:"center" });
+      }
+    }
+    y += pgH + 6;
   }
 
-  // ── FOOTER ───────────────────────────────────────────
-  doc.setFillColor(...C_AZUL);
-  doc.rect(0, 285, W, 12, "F");
+  // ── GRUPOS & EVENTOS ─────────────────────────────────
+  if (gruposProximos?.length) {
+    doc.setFontSize(8); doc.setFont("helvetica","bold"); doc.setTextColor(...C_GRIS);
+    doc.text("GRUPOS & EVENTOS", M, y);
+    doc.setFont("helvetica","normal"); doc.setTextColor(...C_GRISM);
+    doc.text("— PRÓXIMOS 7 DÍAS", M+40, y);
+    y += 4;
+
+    const tH = 9 + gruposProximos.length*8;
+    doc.setFillColor(255,255,255); doc.setDrawColor(...C_BORDE);
+    doc.roundedRect(M, y, W-M*2, tH, 2, 2, "FD");
+
+    // Headers
+    const cols = [{lbl:"NOMBRE",x:M+3,w:44},{lbl:"TIPO",x:M+47,w:28},{lbl:"FECHAS",x:M+75,w:46},{lbl:"HAB.",x:M+121,w:18},{lbl:"REVENUE",x:M+139,w:30}];
+    doc.setFontSize(6); doc.setFont("helvetica","bold"); doc.setTextColor(...C_GRIS);
+    cols.forEach(c => doc.text(c.lbl, c.x, y+6));
+    doc.setDrawColor(...C_BORDE); doc.line(M+3, y+8, W-M-3, y+8);
+
+    gruposProximos.forEach((g, i) => {
+      const ry = y + 14 + i*8;
+      doc.setFontSize(7); doc.setFont("helvetica","bold"); doc.setTextColor(...C_NEGRO);
+      doc.text((g.nombre||"").slice(0,20), cols[0].x, ry);
+      doc.setFont("helvetica","normal"); doc.setTextColor(...C_GRIS);
+      doc.text((g.tipo||"").slice(0,14), cols[1].x, ry);
+      const fechas = `${fmtSD(g.fecha_inicio)} – ${fmtSD(g.fecha_fin)}`;
+      doc.text(fechas, cols[2].x, ry);
+      doc.text(g.habitaciones?`${g.habitaciones} hab.`:"—", cols[3].x, ry);
+      doc.setFont("helvetica","bold"); doc.setTextColor(...C_AZUL);
+      doc.text(g.revenue?`€${fmt(g.revenue)}`:"—", cols[4].x, ry);
+    });
+    y += tH + 6;
+  }
+
+  // ── FOOTER ──────────────────────────────────────────
+  doc.setFillColor(...C_AZUL); doc.rect(0, 285, W, 12, "F");
   doc.setFontSize(8); doc.setFont("helvetica","normal"); doc.setTextColor(180,200,220);
   doc.text("FastRevenue — fastrevenue.app", M, 292);
   doc.setTextColor(...C_GOLD);
@@ -9934,10 +9962,12 @@ export default function App() {
                               const inicioMes = `${anioActual}-${mesStr}-01`;
                               const inicioSig = mesActual===12 ? `${anioActual+1}-01-01` : `${anioActual}-${String(mesActual+1).padStart(2,'0')}-01`;
                               const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-                              const [{ data: datosMes }, { data: pickupRows }, { data: pptoData }] = await Promise.all([
+                              const [{ data: datosMes }, { data: pickupRows }, { data: pptoData }, { data: canalesRows }, { data: gruposRows }] = await Promise.all([
                                 supabase.from("produccion_diaria").select("fecha,hab_ocupadas,hab_disponibles,revenue_hab,revenue_fnb,revenue_total").eq("hotel_id", session.user.id).gte("fecha", inicioMes).lt("fecha", inicioSig).order("fecha", { ascending: true }),
                                 supabase.from("pickup_entries").select("num_reservas,precio_total,estado").eq("hotel_id", session.user.id).eq("fecha_pickup", ultimoDia.fecha),
                                 supabase.from("presupuesto").select("rev_total_ppto,adr_ppto").eq("hotel_id", session.user.id).eq("mes", mesActual).eq("anio", anioActual).maybeSingle(),
+                                supabase.from("pickup_entries").select("canal,precio_total,num_reservas,estado").eq("hotel_id", session.user.id).gte("fecha_pickup", inicioMes).lt("fecha_pickup", inicioSig).neq("estado","cancelada"),
+                                supabase.from("grupos_eventos").select("nombre,categoria,estado,fecha_inicio,fecha_fin,habitaciones,adr_grupo,revenue_fnb,revenue_sala").eq("hotel_id", session.user.id).neq("estado","cancelado").gte("fecha_fin", inicioMes).order("fecha_inicio"),
                               ]);
                               let nuevas=0, cancels=0, revPickup=0;
                               for (const p of (pickupRows||[])) { const nr=p.num_reservas||1; if (p.estado==='cancelada') cancels+=nr; else { nuevas+=nr; revPickup+=p.precio_total||0; } }
@@ -9945,10 +9975,26 @@ export default function App() {
                               const revenueAcumulado = (datosMes||[]).map(d => { acum+=d.revenue_hab||0; return { dia: parseInt(d.fecha.split('-')[2]), acum: Math.round(acum) }; });
                               let totHabOcu=0, totHabDisp=0, totRevHab=0, totRevFnb=0;
                               for (const d of (datosMes||[])) { if (d.hab_disponibles>0) { totHabOcu+=d.hab_ocupadas||0; totHabDisp+=d.hab_disponibles||0; totRevHab+=d.revenue_hab||0; totRevFnb+=d.revenue_fnb||0; } }
+                              // Canales revenue del mes
+                              const canalMap = {};
+                              for (const p of (canalesRows||[])) { const c = p.canal||"Otro"; canalMap[c] = (canalMap[c]||0) + (p.precio_total||0); }
+                              const totCanalRev = Object.values(canalMap).reduce((s,v) => s+v, 0);
+                              const canalesRevenue = Object.entries(canalMap).sort((a,b) => b[1]-a[1]).slice(0,4).map(([canal, revenue]) => ({ canal, revenue: Math.round(revenue), pct: totCanalRev>0 ? Math.round(revenue/totCanalRev*100) : 0 }));
+                              // Grupos del mes y próximos 7 días
+                              let revGruposMes = 0;
+                              for (const g of (gruposRows||[])) {
+                                const noches = Math.max(1, (new Date(g.fecha_fin)-new Date(g.fecha_inicio))/86400000);
+                                revGruposMes += (g.habitaciones||0)*(g.adr_grupo||0)*noches + (g.revenue_fnb||0) + (g.revenue_sala||0);
+                              }
+                              const en7Str = new Date(new Date(ultimoDia.fecha+'T00:00:00').getTime()+7*86400000).toISOString().split('T')[0];
+                              const gruposProximos = (gruposRows||[]).filter(g => g.fecha_inicio >= ultimoDia.fecha && g.fecha_inicio <= en7Str).map(g => {
+                                const noches = Math.max(1, (new Date(g.fecha_fin)-new Date(g.fecha_inicio))/86400000);
+                                return { nombre: g.nombre, tipo: g.categoria||"", fecha_inicio: g.fecha_inicio, fecha_fin: g.fecha_fin, habitaciones: g.habitaciones||0, revenue: Math.round((g.habitaciones||0)*(g.adr_grupo||0)*noches+(g.revenue_fnb||0)+(g.revenue_sala||0)) };
+                              });
                               const occ = ultimoDia.hab_disponibles>0 ? ultimoDia.hab_ocupadas/ultimoDia.hab_disponibles*100 : null;
                               const adr = ultimoDia.adr ?? (ultimoDia.hab_ocupadas>0&&ultimoDia.revenue_hab ? ultimoDia.revenue_hab/ultimoDia.hab_ocupadas : null);
                               const revpar = ultimoDia.revpar ?? (ultimoDia.hab_disponibles>0&&ultimoDia.revenue_hab ? ultimoDia.revenue_hab/ultimoDia.hab_disponibles : null);
-                              const kpisPayload = { fecha: ultimoDia.fecha, mesNombre: MESES[mesActual-1], occ, adr, revpar, trevpar: null, hab_ocupadas: ultimoDia.hab_ocupadas, hab_disponibles: ultimoDia.hab_disponibles, pickup_neto: nuevas, cancelaciones: cancels, revenue_pickup_ayer: revPickup||null, revenueAcumulado, presupuestoMensual: pptoData?.rev_total_ppto??null, avg_occ: totHabDisp>0?totHabOcu/totHabDisp*100:null, avg_adr: totHabOcu>0?totRevHab/totHabOcu:null, avg_revpar: totHabDisp>0?totRevHab/totHabDisp:null, avg_trevpar: null, revHabMes: Math.round(totRevHab), revFnbMes: Math.round(totRevFnb), canalesRevenue: [], revGruposMes: 0, revIndividualMes: Math.round(totRevHab), adrPpto: pptoData?.adr_ppto??null, gruposProximos: [] };
+                              const kpisPayload = { fecha: ultimoDia.fecha, mesNombre: MESES[mesActual-1], occ, adr, revpar, trevpar: null, hab_ocupadas: ultimoDia.hab_ocupadas, hab_disponibles: ultimoDia.hab_disponibles, pickup_neto: nuevas, cancelaciones: cancels, revenue_pickup_ayer: revPickup||null, revenueAcumulado, presupuestoMensual: pptoData?.rev_total_ppto??null, avg_occ: totHabDisp>0?totHabOcu/totHabDisp*100:null, avg_adr: totHabOcu>0?totRevHab/totHabOcu:null, avg_revpar: totHabDisp>0?totRevHab/totHabDisp:null, avg_trevpar: null, revHabMes: Math.round(totRevHab), revFnbMes: Math.round(totRevFnb), canalesRevenue, revGruposMes: Math.round(revGruposMes), revIndividualMes: Math.round(Math.max(0, totRevHab-revGruposMes)), adrPpto: pptoData?.adr_ppto??null, gruposProximos };
                               let pdfBase64 = null;
                               try {
                                 pdfBase64 = await generarInformeDiarioPDF(kpisPayload, datos.hotel?.nombre||null);
