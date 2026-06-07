@@ -3672,6 +3672,130 @@ function DesgloseMovimientoView({ datos, tipo, onBack }) {
   );
 }
 
+async function generarInformeDiarioPDF(kpis, hotelNombre) {
+  const MESES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+  const { fecha, occ, adr, revpar, hab_ocupadas, hab_disponibles, pickup_neto, cancelaciones, revenue_pickup_ayer, revenueAcumulado, presupuestoMensual } = kpis;
+  const fmt  = n => n != null ? Math.round(n).toLocaleString("es-ES") : "—";
+  const fmtP = n => n != null ? parseFloat(n).toFixed(1) + "%" : "—";
+  const fmtD = iso => { if (!iso) return "—"; const [y,m,d] = iso.split("-"); return `${parseInt(d)} de ${MESES[parseInt(m)-1]} de ${y}`; };
+
+  const loadScript = src => new Promise((res, rej) => {
+    if (document.querySelector(`script[src="${src}"]`)) { res(); return; }
+    const s = document.createElement("script");
+    s.src = src; s.onload = res; s.onerror = rej;
+    document.head.appendChild(s);
+  });
+  await loadScript("https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js");
+  const { jsPDF } = window.jspdf;
+
+  const doc = new jsPDF({ orientation:"portrait", unit:"mm", format:"a4" });
+  const W = 210; const M = 14; let y = M;
+
+  const azul  = [10,37,64];
+  const gold  = [212,160,23];
+  const gris  = [100,116,139];
+  const negro = [26,26,26];
+  const verde = [5,150,105];
+  const rojo  = [220,38,38];
+  const grisCl= [241,245,249];
+
+  // Header
+  doc.setFillColor(...azul);
+  doc.rect(0, 0, W, 38, "F");
+  doc.setFillColor(...gold);
+  doc.rect(0, 36, W, 2, "F");
+  doc.setTextColor(255,255,255);
+  doc.setFontSize(8); doc.setFont("helvetica","bold");
+  doc.text("INFORME DIARIO DE REVENUE", W/2, 13, { align:"center" });
+  doc.setFontSize(16); doc.setFont("helvetica","bold");
+  doc.text(hotelNombre || "Mi Hotel", W/2, 22, { align:"center" });
+  doc.setFontSize(9); doc.setFont("helvetica","normal");
+  doc.setTextColor(180,200,220);
+  doc.text(fmtD(fecha), W/2, 30, { align:"center" });
+
+  y = 48;
+
+  // KPIs principales
+  doc.setFontSize(8); doc.setFont("helvetica","bold");
+  doc.setTextColor(...gris);
+  doc.text("RESUMEN DEL DÍA", M, y); y += 6;
+
+  const kpiCols = [
+    { label:"Ocupación", val: occ != null ? fmtP(occ) : "—" },
+    { label:"ADR",       val: adr != null ? `€${fmt(adr)}` : "—" },
+    { label:"RevPAR",    val: revpar != null ? `€${fmt(revpar)}` : "—" },
+    { label:"Hab. Ocup.",val: hab_ocupadas != null ? `${hab_ocupadas}/${hab_disponibles}` : "—" },
+  ];
+  const colW = (W - M*2) / kpiCols.length;
+  kpiCols.forEach((k, i) => {
+    const x = M + i * colW;
+    doc.setFillColor(...grisCl);
+    doc.roundedRect(x, y, colW - 3, 22, 2, 2, "F");
+    doc.setFontSize(7); doc.setFont("helvetica","bold"); doc.setTextColor(...gris);
+    doc.text(k.label, x + (colW-3)/2, y + 7, { align:"center" });
+    doc.setFontSize(14); doc.setFont("helvetica","bold"); doc.setTextColor(...azul);
+    doc.text(k.val, x + (colW-3)/2, y + 17, { align:"center" });
+  });
+  y += 28;
+
+  // Pickup
+  doc.setFontSize(8); doc.setFont("helvetica","bold"); doc.setTextColor(...gris);
+  doc.text("PICKUP DEL DÍA", M, y); y += 6;
+  doc.setFillColor(...grisCl);
+  doc.roundedRect(M, y, W - M*2, 20, 2, 2, "F");
+  const pickupCols = [
+    { label:"Nuevas reservas", val: pickup_neto != null ? `+${pickup_neto} hab.` : "—", color: verde },
+    { label:"Cancelaciones",   val: cancelaciones != null ? `${cancelaciones}` : "0", color: cancelaciones > 0 ? rojo : gris },
+    { label:"Revenue pickup",  val: revenue_pickup_ayer ? `€${fmt(revenue_pickup_ayer)}` : "—", color: verde },
+  ];
+  const pColW = (W - M*2) / pickupCols.length;
+  pickupCols.forEach((p, i) => {
+    const x = M + i * pColW;
+    doc.setFontSize(7); doc.setFont("helvetica","bold"); doc.setTextColor(...gris);
+    doc.text(p.label, x + pColW/2, y + 7, { align:"center" });
+    doc.setFontSize(13); doc.setFont("helvetica","bold"); doc.setTextColor(...p.color);
+    doc.text(p.val, x + pColW/2, y + 16, { align:"center" });
+  });
+  y += 26;
+
+  // Progreso mensual
+  if (revenueAcumulado?.length) {
+    const acum = revenueAcumulado[revenueAcumulado.length-1]?.acum || 0;
+    const lastDay = revenueAcumulado[revenueAcumulado.length-1]?.dia || 1;
+    doc.setFontSize(8); doc.setFont("helvetica","bold"); doc.setTextColor(...gris);
+    doc.text("PROGRESO MENSUAL", M, y); y += 6;
+    doc.setFillColor(...grisCl);
+    doc.roundedRect(M, y, W - M*2, 24, 2, 2, "F");
+    doc.setFontSize(9); doc.setFont("helvetica","normal"); doc.setTextColor(...negro);
+    doc.text(`Acumulado día ${lastDay}:`, M+6, y+9);
+    doc.setFont("helvetica","bold"); doc.setTextColor(...azul);
+    doc.text(`€${fmt(acum)}`, M+50, y+9);
+    if (presupuestoMensual) {
+      const pct = Math.min(Math.round(acum/presupuestoMensual*100), 100);
+      const barColor = pct >= 100 ? verde : pct >= 75 ? [196,154,10] : rojo;
+      doc.setFont("helvetica","normal"); doc.setTextColor(...gris);
+      doc.text(`Presupuesto: €${fmt(presupuestoMensual)}  ·  Cumplimiento:`, M+6, y+17);
+      doc.setFont("helvetica","bold"); doc.setTextColor(...barColor);
+      doc.text(`${pct}%`, M+80, y+17);
+      // Barra
+      const barX = M+6, barY = y+20, barW = W-M*2-12, barH = 3;
+      doc.setFillColor(210,220,230); doc.roundedRect(barX, barY, barW, barH, 1, 1, "F");
+      doc.setFillColor(...barColor); doc.roundedRect(barX, barY, barW*pct/100, barH, 1, 1, "F");
+    }
+    y += 30;
+  }
+
+  // Footer
+  doc.setFillColor(...azul);
+  doc.rect(0, 285, W, 12, "F");
+  doc.setFontSize(8); doc.setFont("helvetica","normal"); doc.setTextColor(180,200,220);
+  doc.text("FastRevenue — fastrevenue.app", M, 292);
+  doc.setTextColor(...gold);
+  doc.text("info@fastrevenue.app", W-M, 292, { align:"right" });
+
+  return doc.output("datauristring").split(",")[1];
+}
+
 function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMovimiento, kpiModal, setKpiModal, kpiModalExterno, onKpiModalExternoHandled, onNavigarGrupos }) {
   const t = useT();
   const { produccion } = datos;
@@ -9654,10 +9778,12 @@ export default function App() {
                               const occ = ultimoDia.hab_disponibles>0 ? ultimoDia.hab_ocupadas/ultimoDia.hab_disponibles*100 : null;
                               const adr = ultimoDia.adr ?? (ultimoDia.hab_ocupadas>0&&ultimoDia.revenue_hab ? ultimoDia.revenue_hab/ultimoDia.hab_ocupadas : null);
                               const revpar = ultimoDia.revpar ?? (ultimoDia.hab_disponibles>0&&ultimoDia.revenue_hab ? ultimoDia.revenue_hab/ultimoDia.hab_disponibles : null);
+                              const kpisPayload = { fecha: ultimoDia.fecha, mesNombre: MESES[mesActual-1], occ, adr, revpar, trevpar: null, hab_ocupadas: ultimoDia.hab_ocupadas, hab_disponibles: ultimoDia.hab_disponibles, pickup_neto: nuevas, cancelaciones: cancels, revenue_pickup_ayer: revPickup||null, revenueAcumulado, presupuestoMensual: pptoData?.rev_total_ppto??null, avg_occ: totHabDisp>0?totHabOcu/totHabDisp*100:null, avg_adr: totHabOcu>0?totRevHab/totHabOcu:null, avg_revpar: totHabDisp>0?totRevHab/totHabDisp:null, avg_trevpar: null, revHabMes: totRevHab, revFnbMes: 0, canalesRevenue: [], revGruposMes: 0, revIndividualMes: totRevHab, adrPpto: pptoData?.adr_ppto??null, gruposProximos: [] };
+                              const pdfBase64 = await generarInformeDiarioPDF(kpisPayload, datos.hotel?.nombre||null);
                               const resp = await fetch('/api/daily-email', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
-                                body: JSON.stringify({ email: session.user.email, hotelNombre: datos.hotel?.nombre||null, kpis: { fecha: ultimoDia.fecha, mesNombre: MESES[mesActual-1], occ, adr, revpar, trevpar: null, hab_ocupadas: ultimoDia.hab_ocupadas, hab_disponibles: ultimoDia.hab_disponibles, pickup_neto: nuevas, cancelaciones: cancels, revenue_pickup_ayer: revPickup||null, revenueAcumulado, presupuestoMensual: pptoData?.rev_total_ppto??null, avg_occ: totHabDisp>0?totHabOcu/totHabDisp*100:null, avg_adr: totHabOcu>0?totRevHab/totHabOcu:null, avg_revpar: totHabDisp>0?totRevHab/totHabDisp:null, avg_trevpar: null, revHabMes: totRevHab, revFnbMes: 0, canalesRevenue: [], revGruposMes: 0, revIndividualMes: totRevHab, adrPpto: pptoData?.adr_ppto??null, gruposProximos: [] } }),
+                                body: JSON.stringify({ email: session.user.email, hotelNombre: datos.hotel?.nombre||null, kpis: kpisPayload, pdfBase64 }),
                               });
                               const json = await resp.json();
                               if (!resp.ok) throw new Error(json.error || `HTTP ${resp.status}`);
