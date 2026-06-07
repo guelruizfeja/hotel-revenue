@@ -39,3 +39,33 @@ button:focus,
 button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
 }
+
+/* Selects nativos: quitar apariencia del navegador, borde negro consistente */
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23888'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 28px !important;
+  cursor: pointer;
+  border: 1px solid #111111 !important;
+  border-radius: 7px;
+}
+select:focus {
+  outline: none;
+  border-color: #111111 !important;
+  box-shadow: 0 0 0 2px rgba(0,0,0,0.08);
+}
+
+/* Date input: reemplazar highlight azul por negro acorde al navbar */
+input[type="date"]::-webkit-datetime-edit-day-field:focus,
+input[type="date"]::-webkit-datetime-edit-month-field:focus,
+input[type="date"]::-webkit-datetime-edit-year-field:focus,
+input[type="date"]::-webkit-datetime-edit-hour-field:focus,
+input[type="date"]::-webkit-datetime-edit-minute-field:focus,
+input[type="date"]::-webkit-datetime-edit-ampm-field:focus {
+  background-color: #111111 !important;
+  color: #ffffff !important;
+  border-radius: 2px;
+}

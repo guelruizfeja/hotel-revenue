@@ -358,6 +358,53 @@ const MESES_FULL = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Ag
 const NET_HAB_FNB = 1 / 1.10; // Deduce IVA 10% (alojamiento y F&B)
 const NET_SALA    = 1 / 1.21; // Deduce IVA 21% (salas)
 
+function CustomSelect({ value, onChange, options, style }) {
+  const [open, setOpen] = React.useState(false);
+  const ref = React.useRef(null);
+  const selected = options.find(o => o.value === value) || options[0];
+  React.useEffect(() => {
+    if (!open) return;
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+  return (
+    <div ref={ref} style={{ position:"relative", ...style }}>
+      <button type="button" onClick={() => setOpen(o => !o)}
+        style={{ width:"100%", display:"flex", alignItems:"center", justifyContent:"space-between", gap:8,
+          padding:"8px 10px", borderRadius:7, border:"1px solid #111111", background:"#fff",
+          cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:13, fontWeight:500,
+          color:"#1A1A1A", boxSizing:"border-box" }}>
+        <span style={{ display:"flex", alignItems:"center", gap:7 }}>
+          {selected.color && <span style={{ width:8, height:8, borderRadius:"50%", background:selected.color, flexShrink:0, display:"inline-block" }}/>}
+          <span style={{ color: selected.color || "#1A1A1A", fontWeight: selected.color ? 700 : 500 }}>{selected.label}</span>
+        </span>
+        <span style={{ fontSize:9, color:"#888", transform: open ? "rotate(180deg)" : "none", transition:"transform 0.15s" }}>▼</span>
+      </button>
+      {open && (
+        <div style={{ position:"absolute", top:"calc(100% + 4px)", left:0, right:0, zIndex:999,
+          background:"#fff", border:"1px solid #111111", borderRadius:8,
+          boxShadow:"0 4px 16px rgba(0,0,0,0.12)", overflow:"hidden" }}>
+          {options.map(o => (
+            <button key={o.value} type="button"
+              onClick={() => { onChange(o.value); setOpen(false); }}
+              style={{ width:"100%", display:"flex", alignItems:"center", gap:8, padding:"9px 12px",
+                background: o.value === value ? (o.bg || "#F5F5F5") : "transparent",
+                border:"none", cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif",
+                fontSize:13, fontWeight: o.value === value ? 700 : 500, color:"#1A1A1A",
+                textAlign:"left", transition:"background 0.12s" }}
+              onMouseEnter={e => { if (o.value !== value) e.currentTarget.style.background = "#F5F5F5"; }}
+              onMouseLeave={e => { e.currentTarget.style.background = o.value === value ? (o.bg || "#F5F5F5") : "transparent"; }}>
+              {o.color && <span style={{ width:8, height:8, borderRadius:"50%", background:o.color, flexShrink:0, display:"inline-block" }}/>}
+              <span style={{ color: o.color || "#1A1A1A", fontWeight: o.color ? 700 : 500 }}>{o.label}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 const AnimatedBar = (props) => {
   const { x, y, width, height, fill, onClick } = props;
   const [animKey, setAnimKey] = useState(0);
@@ -996,24 +1043,22 @@ function KpiCard({ label, subtitle, value, changeLm, upLm, changeLy, upLy, i, on
   const indicatorIcon  = pct === null ? null : isFlat ? "—" : upLm ? "↑" : "↓";
   return (
     <div onClick={onClick} style={{
-      background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: 8,
+      background: C.bgCard, border: `1.5px solid #111111`, borderRadius: 8,
       padding: "14px 18px", animation: `fadeUp 0.5s ease ${i * 0.08}s both`,
-      borderLeft: `3px solid ${kpiAccent}`, position: "relative", overflow: "hidden",
+      position: "relative", overflow: "hidden",
       boxShadow: "0 1px 4px rgba(0,0,0,0.06)", cursor: "pointer",
       transition: "box-shadow 0.2s, transform 0.2s, border-color 0.2s, background 0.2s",
       display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center",
     }}
     onMouseEnter={e=>{
-      e.currentTarget.style.boxShadow=`0 6px 24px ${kpiAccent}40`;
+      e.currentTarget.style.boxShadow=`0 6px 24px rgba(0,0,0,0.18)`;
       e.currentTarget.style.transform="translateY(-2px)";
-      e.currentTarget.style.borderColor=kpiAccent;
-      e.currentTarget.style.background=`${kpiAccent}08`;
+      e.currentTarget.style.borderColor="#111111";
     }}
     onMouseLeave={e=>{
       e.currentTarget.style.boxShadow="0 1px 4px rgba(0,0,0,0.06)";
       e.currentTarget.style.transform="translateY(0)";
-      e.currentTarget.style.borderColor=C.border;
-      e.currentTarget.style.borderLeftColor=kpiAccent;
+      e.currentTarget.style.borderColor="#111111";
       e.currentTarget.style.background=C.bgCard;
     }}>
       <p style={{ fontSize: 11, color: C.text, textTransform: "uppercase", letterSpacing: "1.5px", fontWeight: 700 }}>{label}</p>
@@ -2186,26 +2231,34 @@ function ImportarExcel({ onClose, session, onImportado, onProduccionDirecta, hot
         mediaADR = 120;
       }
 
-      // 3-4 reservas confirmadas + 1-2 cancelaciones
+      // Pool con pesos: Booking, Directo y Empresa aparecen más veces → más probabilidad de salir
       const plantillaConf = [
         { canal:"Booking.com",      mesesDesde:1, mesesHasta:4,  nochesDef:2, factorADR:0.97 },
-        { canal:"Directo",          mesesDesde:2, mesesHasta:6,  nochesDef:3, factorADR:1.05 },
+        { canal:"Booking.com",      mesesDesde:2, mesesHasta:5,  nochesDef:1, factorADR:0.96 },
+        { canal:"Booking.com",      mesesDesde:3, mesesHasta:7,  nochesDef:3, factorADR:0.98 },
+        { canal:"Directo",          mesesDesde:1, mesesHasta:4,  nochesDef:2, factorADR:1.06 },
+        { canal:"Directo",          mesesDesde:2, mesesHasta:6,  nochesDef:3, factorADR:1.04 },
+        { canal:"Empresa",          mesesDesde:1, mesesHasta:2,  nochesDef:1, factorADR:1.12 },
+        { canal:"Empresa",          mesesDesde:1, mesesHasta:3,  nochesDef:2, factorADR:1.08 },
+        { canal:"Expedia",          mesesDesde:3, mesesHasta:7,  nochesDef:2, factorADR:0.95 },
+        { canal:"Expedia",          mesesDesde:4, mesesHasta:8,  nochesDef:2, factorADR:0.94 },
         { canal:"Web",              mesesDesde:1, mesesHasta:5,  nochesDef:2, factorADR:1.02 },
-        { canal:"Expedia",          mesesDesde:4, mesesHasta:8,  nochesDef:2, factorADR:0.95 },
-        { canal:"Empresa",          mesesDesde:1, mesesHasta:3,  nochesDef:1, factorADR:1.10 },
         { canal:"Hotels.com",       mesesDesde:2, mesesHasta:6,  nochesDef:2, factorADR:0.96 },
         { canal:"Airbnb",           mesesDesde:3, mesesHasta:7,  nochesDef:3, factorADR:0.94 },
         { canal:"Tour operador",    mesesDesde:3, mesesHasta:9,  nochesDef:4, factorADR:0.90 },
+        { canal:"Agencia de viajes",mesesDesde:2, mesesHasta:8,  nochesDef:3, factorADR:0.92 },
+        { canal:"GDS",              mesesDesde:1, mesesHasta:4,  nochesDef:2, factorADR:1.00 },
       ];
       const plantillaCancel = [
         { canal:"Booking.com",      mesesDesde:2, mesesHasta:5, nochesDef:2, factorADR:0.97 },
-        { canal:"Web",              mesesDesde:3, mesesHasta:7, nochesDef:2, factorADR:1.02 },
+        { canal:"Booking.com",      mesesDesde:3, mesesHasta:6, nochesDef:1, factorADR:0.96 },
         { canal:"Expedia",          mesesDesde:2, mesesHasta:6, nochesDef:2, factorADR:0.95 },
+        { canal:"Web",              mesesDesde:3, mesesHasta:7, nochesDef:2, factorADR:1.02 },
         { canal:"Airbnb",           mesesDesde:3, mesesHasta:8, nochesDef:2, factorADR:0.93 },
       ];
-      // Tomar aleatoriamente 3 ó 4 confirmadas y 1 ó 2 canceladas
-      const numConf   = Math.random() < 0.5 ? 3 : 4;
-      const numCancel = Math.random() < 0.5 ? 1 : 2;
+      // 6-8 confirmadas + 1 cancelada = 7-9 reservas en total, siempre distintas
+      const numConf   = 6 + Math.floor(Math.random() * 3); // 6, 7 u 8
+      const numCancel = 1;
       const shuffled = (arr) => [...arr].sort(() => Math.random() - 0.5);
       const selConf   = shuffled(plantillaConf).slice(0, numConf);
       const selCancel = shuffled(plantillaCancel).slice(0, numCancel);
@@ -2868,12 +2921,11 @@ function ImportarExcel({ onClose, session, onImportado, onProduccionDirecta, hot
                   )}
                   <div>
                     <label style={labelStyle}>Estado</label>
-                    <select value={pickupForm.estado}
-                      onChange={e => setPickupForm(f=>({...f, estado:e.target.value}))}
-                      style={{...inputStyle, cursor:"pointer"}}>
-                      <option value="confirmada">Confirmada</option>
-                      <option value="cancelada">Cancelada</option>
-                    </select>
+                    <CustomSelect
+                      value={pickupForm.estado}
+                      onChange={v => setPickupForm(f=>({...f, estado:v}))}
+                      options={[{value:"confirmada",label:"Confirmada",color:"#1A7A3C",bg:"#E6F7EE"},{value:"cancelada",label:"Cancelada",color:"#999",bg:"#F5F5F5"}]}
+                    />
                   </div>
                 </div>
                 <p style={{ fontSize:10, color:"#004B87", marginBottom:8, lineHeight:1.5 }}>ⓘ Al guardar se deduce el IVA automáticamente: precio ÷1,10 (IVA 10%)</p>
@@ -3507,10 +3559,11 @@ function ModalEditarReserva({ entry, onClose, onGuardado }) {
           <div><p style={lbl}>Fecha salida</p>
             <input type="date" value={form.fecha_salida} onChange={f("fecha_salida")} style={inp}/></div>
           <div><p style={lbl}>Estado</p>
-            <select value={form.estado} onChange={f("estado")} style={inp}>
-              <option value="confirmada">Confirmada</option>
-              <option value="cancelada">Cancelada</option>
-            </select></div>
+            <CustomSelect
+              value={form.estado}
+              onChange={v => f("estado")({target:{value:v}})}
+              options={[{value:"confirmada",label:"Confirmada",color:"#1A7A3C",bg:"#E6F7EE"},{value:"cancelada",label:"Cancelada",color:"#999",bg:"#F5F5F5"}]}
+            /></div>
           <div><p style={lbl}>Precio total €</p>
             <input type="number" min="0" step="0.01" value={form.precio_total} onChange={f("precio_total")} style={inp}/></div>
           <div><p style={lbl}>Nº reserva</p>
@@ -4064,7 +4117,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
                   <button onClick={()=>setHmMesSel(m=>m<11?m+1:0)} style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:6, width:28, height:28, cursor:"pointer", fontSize:14, color:C.textMid, display:"flex", alignItems:"center", justifyContent:"center", padding:0 }}>›</button>
                   <div style={{ marginLeft:"auto" }}>
                     <button onClick={()=>{ setHmModoCrear(v=>!v); setHmDayModal(null); }}
-                      style={{ padding:"5px 12px", borderRadius:7, border:`1.5px solid ${hmModoCrear?"#3B82F6":C.border}`, background:hmModoCrear?"#3B82F618":C.bg, color:hmModoCrear?"#3B82F6":C.textMid, fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:5, transition:"all 0.15s" }}>
+                      style={{ padding:"5px 12px", borderRadius:7, border:"none", background:C.text, color:"#fff", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:5, transition:"all 0.15s" }}>
                       <span style={{ fontSize:14 }}>+</span> Nuevo evento/grupo
                     </button>
                   </div>
@@ -4695,7 +4748,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
                         const { iso, dia: n, occ, adr, isHoy, isFut, diaSem } = dia;
                         const esFinde = diaSem === 0 || diaSem === 6;
                         return (
-                          <div key={iso} onClick={() => setHmMesSel(mes)}
+                          <div key={iso} onClick={() => { setHmMesSel(mes); setHmDayModal(iso); }}
                             title={occ!=null ? `${n} ${MESES_H[mes]}: ${occ}%${adr!=null?` · ADR €${Math.round(adr)}`:""}` : "Sin datos"}
                             style={{
                               borderRadius:6, padding:"5px 3px", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
@@ -5072,9 +5125,31 @@ function PickupView({ datos, onGuardado }) {
         const cn = ind.filter(r=>r.noches>0); mediaNoches = cn.length ? cn.reduce((a,r)=>a+r.noches,0)/cn.length : 2;
         const cp = ind.filter(r=>r.precio_total>0&&r.noches>0); mediaADR = cp.length ? cp.reduce((a,r)=>a+(r.precio_total/r.noches),0)/cp.length : 120;
       } else { mediaNoches = 2; mediaADR = 120; }
-      const plantillaConf = [{canal:"Booking.com",mesesDesde:1,mesesHasta:4,nochesDef:2,factorADR:0.97},{canal:"Directo",mesesDesde:2,mesesHasta:6,nochesDef:3,factorADR:1.05},{canal:"Web",mesesDesde:1,mesesHasta:5,nochesDef:2,factorADR:1.02},{canal:"Expedia",mesesDesde:4,mesesHasta:8,nochesDef:2,factorADR:0.95},{canal:"Empresa",mesesDesde:1,mesesHasta:3,nochesDef:1,factorADR:1.10},{canal:"Hotels.com",mesesDesde:2,mesesHasta:6,nochesDef:2,factorADR:0.96},{canal:"Airbnb",mesesDesde:3,mesesHasta:7,nochesDef:3,factorADR:0.94},{canal:"Tour operador",mesesDesde:3,mesesHasta:9,nochesDef:4,factorADR:0.90}];
-      const plantillaCancel = [{canal:"Booking.com",mesesDesde:2,mesesHasta:5,nochesDef:2,factorADR:0.97},{canal:"Web",mesesDesde:3,mesesHasta:7,nochesDef:2,factorADR:1.02},{canal:"Expedia",mesesDesde:2,mesesHasta:6,nochesDef:2,factorADR:0.95},{canal:"Airbnb",mesesDesde:3,mesesHasta:8,nochesDef:2,factorADR:0.93}];
-      const numConf = Math.random()<0.5?3:4, numCancel = Math.random()<0.5?1:2;
+      const plantillaConf = [
+        {canal:"Booking.com",mesesDesde:1,mesesHasta:4,nochesDef:2,factorADR:0.97},
+        {canal:"Booking.com",mesesDesde:2,mesesHasta:5,nochesDef:1,factorADR:0.96},
+        {canal:"Booking.com",mesesDesde:3,mesesHasta:7,nochesDef:3,factorADR:0.98},
+        {canal:"Directo",mesesDesde:1,mesesHasta:4,nochesDef:2,factorADR:1.06},
+        {canal:"Directo",mesesDesde:2,mesesHasta:6,nochesDef:3,factorADR:1.04},
+        {canal:"Empresa",mesesDesde:1,mesesHasta:2,nochesDef:1,factorADR:1.12},
+        {canal:"Empresa",mesesDesde:1,mesesHasta:3,nochesDef:2,factorADR:1.08},
+        {canal:"Expedia",mesesDesde:3,mesesHasta:7,nochesDef:2,factorADR:0.95},
+        {canal:"Expedia",mesesDesde:4,mesesHasta:8,nochesDef:2,factorADR:0.94},
+        {canal:"Web",mesesDesde:1,mesesHasta:5,nochesDef:2,factorADR:1.02},
+        {canal:"Hotels.com",mesesDesde:2,mesesHasta:6,nochesDef:2,factorADR:0.96},
+        {canal:"Airbnb",mesesDesde:3,mesesHasta:7,nochesDef:3,factorADR:0.94},
+        {canal:"Tour operador",mesesDesde:3,mesesHasta:9,nochesDef:4,factorADR:0.90},
+        {canal:"Agencia de viajes",mesesDesde:2,mesesHasta:8,nochesDef:3,factorADR:0.92},
+        {canal:"GDS",mesesDesde:1,mesesHasta:4,nochesDef:2,factorADR:1.00},
+      ];
+      const plantillaCancel = [
+        {canal:"Booking.com",mesesDesde:2,mesesHasta:5,nochesDef:2,factorADR:0.97},
+        {canal:"Booking.com",mesesDesde:3,mesesHasta:6,nochesDef:1,factorADR:0.96},
+        {canal:"Expedia",mesesDesde:2,mesesHasta:6,nochesDef:2,factorADR:0.95},
+        {canal:"Web",mesesDesde:3,mesesHasta:7,nochesDef:2,factorADR:1.02},
+        {canal:"Airbnb",mesesDesde:3,mesesHasta:8,nochesDef:2,factorADR:0.93},
+      ];
+      const numConf = 6 + Math.floor(Math.random() * 3), numCancel = 1;
       const shuffled = arr => [...arr].sort(()=>Math.random()-0.5);
       const mkFila = ({canal,mesesDesde,mesesHasta,nochesDef,factorADR}, estado) => {
         const dias = Math.round(mesesDesde*30 + Math.random()*(mesesHasta-mesesDesde)*30);
@@ -5110,13 +5185,14 @@ function PickupView({ datos, onGuardado }) {
   const [modalNR, setModalNR] = useState(() => { try { return localStorage.getItem("fr_nr_modal") === "1"; } catch { return false; } });
   const setModalNRPersist = (v) => { setModalNR(v); try { localStorage.setItem("fr_nr_modal", v ? "1" : "0"); } catch {} };
   const [nrForm, setNrForm] = useState(() => {
-    const hoy0 = new Date(); const _p0=n=>String(n).padStart(2,"0"); const hoyD=`${hoy0.getFullYear()}-${_p0(hoy0.getMonth()+1)}-${_p0(hoy0.getDate())}`;
-    try { return { canal:"", num_reservas:"", fecha_llegada:"", fecha_salida:"", noches:"", precio_total:"", numero_reserva:"" }; } catch { return { canal:"", num_reservas:"", fecha_llegada:"", fecha_salida:"", noches:"", precio_total:"", numero_reserva:"" }; }
+    const hoy0 = new Date(); const hoyD=`${hoy0.getFullYear()}-01-01`;
+    try { return { canal:"", num_reservas:"", fecha_llegada:hoyD, fecha_salida:"", noches:"", precio_total:"", numero_reserva:"" }; } catch { return { canal:"", num_reservas:"", fecha_llegada:hoyD, fecha_salida:"", noches:"", precio_total:"", numero_reserva:"" }; }
   });
   const setNrFormPersist = (fn) => setNrForm(prev => { const next = typeof fn === "function" ? fn(prev) : fn; try { localStorage.setItem("fr_nr_form", JSON.stringify(next)); } catch {} return next; });
   const [nrGuardando, setNrGuardando] = useState(false);
   const [nrError, setNrError] = useState("");
   const [nrOk, setNrOk] = useState(false);
+  const [nrPreciosPorNoche, setNrPreciosPorNoche] = useState([]);
   const [gestionTab, setGestionTab] = useState(() => { try { return localStorage.getItem("fr_gestion_tab") || "buscar"; } catch { return "buscar"; } });
   const setGestionTabPersist = (v) => { setGestionTab(v); try { localStorage.setItem("fr_gestion_tab", v); } catch {} };
   const [nrTipo, setNrTipo] = useState(() => { try { return localStorage.getItem("fr_nr_tipo") || "individual"; } catch { return "individual"; } });
@@ -5177,11 +5253,18 @@ function PickupView({ datos, onGuardado }) {
           .select("id").eq("hotel_id", session.user.id).eq("numero_reserva", numero_reserva).limit(1);
         if (dup && dup.length > 0) throw new Error(`La reserva #${numero_reserva} ya existe`);
       }
+      const preciosPNVal = nrPreciosPorNoche.length > 0 && nrPreciosPorNoche.some(v=>parseFloat(v)>0)
+        ? nrPreciosPorNoche.map(v => Math.round((parseFloat(v)||0) * NET_HAB_FNB * 100) / 100)
+        : null;
+      const precioTotalFinal = preciosPNVal
+        ? Math.round(preciosPNVal.reduce((a,v)=>a+v,0) * 100) / 100
+        : (nrForm.precio_total ? Math.round(parseFloat(nrForm.precio_total) * NET_HAB_FNB * 100) / 100 : null);
       const row = {
         hotel_id: session.user.id, fecha_pickup: hoyISO, fecha_llegada: fechaLlegada,
         canal: nrForm.canal || null, num_reservas: parseInt(nrForm.num_reservas)||1,
         fecha_salida: fechaSalida, noches,
-        precio_total: nrForm.precio_total ? parseFloat(nrForm.precio_total) : null,
+        precio_total: precioTotalFinal,
+        precios_por_noche: preciosPNVal,
         estado: "confirmada",
         es_individual: true,
         numero_reserva,
@@ -5491,7 +5574,7 @@ function PickupView({ datos, onGuardado }) {
               {/* Pestañas */}
               <div style={{ display:"flex", gap:4, marginBottom:20, background:C.bg, borderRadius:8, padding:4 }}>
                 {[{key:"buscar",label:"Buscar reserva"},{key:"nueva",label:"Nueva reserva"}].map(tab => (
-                  <button key={tab.key} onClick={()=>{ setGestionTabPersist(tab.key); if(tab.key==="nueva"){ setNrForm({ canal:"", num_reservas:"", fecha_llegada:"", fecha_salida:"", noches:"", precio_total:"", numero_reserva:"" }); try { localStorage.removeItem("fr_nr_form"); } catch {} } }}
+                  <button key={tab.key} onClick={()=>{ setGestionTabPersist(tab.key); if(tab.key==="nueva"){ const _h=new Date(); const _hoy=`${_h.getFullYear()}-01-01`; setNrForm({ canal:"", num_reservas:"", fecha_llegada:_hoy, fecha_salida:"", noches:"", precio_total:"", numero_reserva:"" }); try { localStorage.removeItem("fr_nr_form"); } catch {} } }}
                     style={{ flex:1, padding:"7px 0", borderRadius:6, border:"none", cursor:"pointer", fontSize:12, fontWeight:700, fontFamily:"'Plus Jakarta Sans',sans-serif", background:gestionTab===tab.key ? C.text : "transparent", color:gestionTab===tab.key ? "#fff" : C.textLight, boxShadow:gestionTab===tab.key ? "0 1px 4px rgba(0,0,0,0.18)" : "none", transition:"all 0.15s" }}>
                     {tab.label}
                   </button>
@@ -5536,10 +5619,11 @@ function PickupView({ datos, onGuardado }) {
                           <div><p style={lbl}>Fecha salida</p>
                             <input type="date" value={editForm.fecha_salida} onChange={e=>setEditForm(f=>({...f,fecha_salida:e.target.value}))} style={inp}/></div>
                           <div><p style={lbl}>Estado</p>
-                            <select value={editForm.estado} onChange={e=>setEditForm(f=>({...f,estado:e.target.value}))} style={inp}>
-                              <option value="confirmada">Confirmada</option>
-                              <option value="cancelada">Cancelada</option>
-                            </select></div>
+                            <CustomSelect
+                              value={editForm.estado}
+                              onChange={v => setEditForm(f=>({...f, estado:v}))}
+                              options={[{value:"confirmada",label:"Confirmada",color:"#1A7A3C",bg:"#E6F7EE"},{value:"cancelada",label:"Cancelada",color:"#999",bg:"#F5F5F5"}]}
+                            /></div>
                           <div><p style={lbl}>Precio total €</p>
                             <input type="number" min="0" step="0.01" value={editForm.precio_total} onChange={e=>setEditForm(f=>({...f,precio_total:e.target.value}))} style={inp}/></div>
                           <div><p style={lbl}>Nº reserva</p>
@@ -5637,19 +5721,42 @@ function PickupView({ datos, onGuardado }) {
                         </div>
                         <div>
                           <p style={{ fontSize:10, color:C.textLight, fontWeight:600, textTransform:"uppercase", letterSpacing:"0.8px", marginBottom:4 }}>Noches</p>
-                          <input type="number" min="1" value={nrForm.noches} onChange={e=>{ const v=e.target.value; const fl=nrForm.fecha_llegada||""; const d=new Date(fl+"T00:00:00"); if(parseInt(v)>0){d.setDate(d.getDate()+parseInt(v));} const _p=n=>String(n).padStart(2,"0"); setNrFormPersist(f=>({...f,noches:v,fecha_salida:parseInt(v)>0?`${d.getFullYear()}-${_p(d.getMonth()+1)}-${_p(d.getDate())}`:""})); }}
+                          <input type="number" min="1" value={nrForm.noches} onChange={e=>{ const v=e.target.value; const fl=nrForm.fecha_llegada||""; const d=new Date(fl+"T00:00:00"); if(parseInt(v)>0){d.setDate(d.getDate()+parseInt(v));} const _p=n=>String(n).padStart(2,"0"); setNrFormPersist(f=>({...f,noches:v,fecha_salida:parseInt(v)>0?`${d.getFullYear()}-${_p(d.getMonth()+1)}-${_p(d.getDate())}`:""}) ); setNrPreciosPorNoche(Array.from({length:parseInt(v)||0},()=>"")); }}
                             style={{ width:"100%", padding:"8px 10px", borderRadius:7, border:`1px solid ${C.border}`, fontSize:13, background:C.bgCard, color:C.text, fontFamily:"inherit", boxSizing:"border-box" }}/>
                         </div>
                         <div>
                           <p style={{ fontSize:10, color:C.textLight, fontWeight:600, textTransform:"uppercase", letterSpacing:"0.8px", marginBottom:4 }}>Fecha salida</p>
-                          <input type="date" value={nrForm.fecha_salida} onChange={e=>{ const v=e.target.value; const fl=nrForm.fecha_llegada||""; const n=v?Math.round((new Date(v+"T00:00:00")-new Date(fl+"T00:00:00"))/86400000):0; setNrFormPersist(f=>({...f,fecha_salida:v,noches:n>0?String(n):""})); }}
+                          <input type="date" value={nrForm.fecha_salida} onChange={e=>{ const v=e.target.value; const fl=nrForm.fecha_llegada||""; const n=v?Math.round((new Date(v+"T00:00:00")-new Date(fl+"T00:00:00"))/86400000):0; setNrFormPersist(f=>({...f,fecha_salida:v,noches:n>0?String(n):""})); setNrPreciosPorNoche(Array.from({length:n>0?n:0},()=>"")); }}
                             style={{ width:"100%", padding:"8px 10px", borderRadius:7, border:`1px solid ${C.border}`, fontSize:13, background:C.bgCard, color:C.text, fontFamily:"inherit", boxSizing:"border-box" }}/>
                         </div>
-                        <div>
-                          <p style={{ fontSize:10, color:C.textLight, fontWeight:600, textTransform:"uppercase", letterSpacing:"0.8px", marginBottom:4 }}>Precio total €</p>
-                          <input type="number" min="0" step="0.01" value={nrForm.precio_total} onChange={e=>setNrFormPersist(f=>({...f,precio_total:e.target.value}))}
-                            style={{ width:"100%", padding:"8px 10px", borderRadius:7, border:`1px solid ${C.border}`, fontSize:13, background:C.bgCard, color:C.text, fontFamily:"inherit", boxSizing:"border-box" }}/>
-                        </div>
+                        {parseInt(nrForm.noches) > 1 ? (
+                          <div style={{ gridColumn:"1 / -1" }}>
+                            <p style={{ fontSize:10, color:C.textLight, fontWeight:600, textTransform:"uppercase", letterSpacing:"0.8px", marginBottom:6 }}>Precio por noche €</p>
+                            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(90px,1fr))", gap:6 }}>
+                              {nrPreciosPorNoche.map((precio, idx) => (
+                                <div key={idx}>
+                                  <label style={{ fontSize:9, color:C.textMid, display:"block", marginBottom:3 }}>Noche {idx+1}</label>
+                                  <input type="number" min="0" step="0.01" value={precio}
+                                    onChange={e=>setNrPreciosPorNoche(prev=>prev.map((v,i)=>i===idx?e.target.value:v))}
+                                    style={{ width:"100%", padding:"8px 10px", borderRadius:7, border:`1px solid ${C.border}`, fontSize:13, background:C.bgCard, color:C.text, fontFamily:"inherit", boxSizing:"border-box" }}/>
+                                </div>
+                              ))}
+                              {nrPreciosPorNoche.some(v=>parseFloat(v)>0) && (
+                                <div style={{ display:"flex", alignItems:"flex-end", paddingBottom:1 }}>
+                                  <div style={{ width:"100%", padding:"8px 10px", borderRadius:7, border:`1px solid ${C.border}`, fontSize:12, fontWeight:600, background:"#F5F7FA", color:C.textMid, boxSizing:"border-box" }}>
+                                    Total: €{nrPreciosPorNoche.reduce((a,v)=>a+(parseFloat(v)||0),0).toLocaleString("es-ES",{minimumFractionDigits:2,maximumFractionDigits:2})}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ) : (
+                          <div>
+                            <p style={{ fontSize:10, color:C.textLight, fontWeight:600, textTransform:"uppercase", letterSpacing:"0.8px", marginBottom:4 }}>Precio total €</p>
+                            <input type="number" min="0" step="0.01" value={nrForm.precio_total} onChange={e=>setNrFormPersist(f=>({...f,precio_total:e.target.value}))}
+                              style={{ width:"100%", padding:"8px 10px", borderRadius:7, border:`1px solid ${C.border}`, fontSize:13, background:C.bgCard, color:C.text, fontFamily:"inherit", boxSizing:"border-box" }}/>
+                          </div>
+                        )}
                         <div>
                           <p style={{ fontSize:10, color:C.textLight, fontWeight:600, textTransform:"uppercase", letterSpacing:"0.8px", marginBottom:4 }}>Nº de reserva</p>
                           <input type="number" min="1" value={nrForm.numero_reserva} onChange={e=>setNrFormPersist(f=>({...f,numero_reserva:e.target.value}))}
@@ -6691,7 +6798,9 @@ function ModalFormGrupo({ datos, grupoData = {}, onClose, onGuardado }) {
 
   const initForm = () => {
     const g = grupoData;
-    if (!g || !g.nombre) return { ...FORM_VACIO, tipo: g.tipo||"grupo", fecha_inicio: g.fecha_inicio||"", fecha_fin: g.fecha_fin||"" };
+    const _anyo = new Date().getFullYear();
+    const _defFecha = `${_anyo}-01-01`;
+    if (!g || !g.nombre) return { ...FORM_VACIO, tipo: g.tipo||"grupo", fecha_inicio: g.fecha_inicio||_defFecha, fecha_fin: g.fecha_fin||_defFecha };
     const esEvento = g.categoria === "evento";
     const { hora_inicio, hora_fin, sala_nombre, servicio_incluido, notasUser } = esEvento ? parseNotasEvento(g.notas) : {};
     return {
@@ -6707,6 +6816,7 @@ function ModalFormGrupo({ datos, grupoData = {}, onClose, onGuardado }) {
 
   const [form, setForm] = useState(initForm);
   const [guardando, setGuardando] = useState(false);
+  const [ingresosHabs, setIngresosHabs] = useState("");
 
   const CATS = {
     corporativo: { label: t("cat_corporativo"), color: "#2B7EC1" },
@@ -6737,7 +6847,13 @@ function ModalFormGrupo({ datos, grupoData = {}, onClose, onGuardado }) {
       fecha_inicio: form.fecha_inicio,
       fecha_fin: esEvento ? form.fecha_inicio : (form.fecha_fin || form.fecha_inicio),
       habitaciones: esEvento ? 0 : (parseInt(form.habitaciones)||0),
-      adr_grupo: esEvento ? 0 : Math.round((parseFloat(form.adr_grupo)||0) * NET_HAB_FNB * 100) / 100,
+      adr_grupo: esEvento ? 0 : (() => {
+        const habs = parseInt(form.habitaciones)||0;
+        const noches = Math.max(1, Math.round((new Date(form.fecha_fin)-new Date(form.fecha_inicio))/86400000));
+        const ing = parseFloat(ingresosHabs)||0;
+        const adr = habs > 0 && noches > 0 && ing > 0 ? ing/(habs*noches) : (parseFloat(form.adr_grupo)||0);
+        return Math.round(adr * NET_HAB_FNB * 100) / 100;
+      })(),
       revenue_fnb: Math.round((parseFloat(form.revenue_fnb)||0) * NET_HAB_FNB * 100) / 100,
       revenue_sala: Math.round((parseFloat(form.revenue_sala)||0) * NET_SALA * 100) / 100,
       fecha_confirmacion: form.fecha_confirmacion||null,
@@ -6787,9 +6903,11 @@ function ModalFormGrupo({ datos, grupoData = {}, onClose, onGuardado }) {
         </div>
         <div>
           <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>{t("form_estado")}</p>
-          <select style={inp} value={form.estado} onChange={e=>setForm(f=>({...f,estado:e.target.value}))}>
-            {Object.entries(ESTADOS).map(([k,v])=><option key={k} value={k}>{v.label}</option>)}
-          </select>
+          <CustomSelect
+            value={form.estado}
+            onChange={v => setForm(f=>({...f, estado:v}))}
+            options={Object.entries(ESTADOS).filter(([k])=>k!=="tentativo").map(([k,v])=>({ value:k, label:v.label, color:v.color, bg:v.bg }))}
+          />
         </div>
       </div>
 
@@ -6858,20 +6976,34 @@ function ModalFormGrupo({ datos, grupoData = {}, onClose, onGuardado }) {
       )}
 
       {form.tipo === "grupo" ? (
-        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:10 }}>
-          <div>
-            <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>{t("form_habitaciones")}</p>
-            <input style={inp} type="number" placeholder="" value={form.habitaciones} onChange={e=>setForm(f=>({...f,habitaciones:e.target.value}))}/>
+        <>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
+            <div>
+              <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>{t("form_habitaciones")}</p>
+              <input style={inp} type="number" placeholder="" value={form.habitaciones} onChange={e=>setForm(f=>({...f,habitaciones:e.target.value}))}/>
+            </div>
+            <div>
+              <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>PAX</p>
+              <input style={inp} type="number" placeholder="" value={form.pax} onChange={e=>setForm(f=>({...f,pax:e.target.value}))}/>
+            </div>
           </div>
-          <div>
-            <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>PAX</p>
-            <input style={inp} type="number" placeholder="" value={form.pax} onChange={e=>setForm(f=>({...f,pax:e.target.value}))}/>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
+            <div>
+              <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>Ingresos habs €</p>
+              <input style={inp} type="number" placeholder="" value={ingresosHabs} onChange={e=>setIngresosHabs(e.target.value)}/>
+            </div>
+            <div>
+              <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>{t("form_adr")}</p>
+              {(() => {
+                const habs = parseInt(form.habitaciones)||0;
+                const noches = form.fecha_inicio && form.fecha_fin ? Math.max(1, Math.round((new Date(form.fecha_fin)-new Date(form.fecha_inicio))/86400000)) : 0;
+                const ing = parseFloat(ingresosHabs)||0;
+                const adrCalc = habs > 0 && noches > 0 && ing > 0 ? Math.round(ing/(habs*noches)*100)/100 : null;
+                return <input style={{...inp, background:C.bg, color: adrCalc ? C.text : C.textLight }} type="number" readOnly value={adrCalc ?? ""} placeholder="Auto"/>;
+              })()}
+            </div>
           </div>
-          <div>
-            <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>{t("form_adr")}</p>
-            <input style={inp} type="number" placeholder="" value={form.adr_grupo} onChange={e=>setForm(f=>({...f,adr_grupo:e.target.value}))}/>
-          </div>
-        </div>
+        </>
       ) : (
         <div>
           <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>PAX</p>
@@ -6919,92 +7051,6 @@ function ModalFormGrupo({ datos, grupoData = {}, onClose, onGuardado }) {
         ) : null;
       })()}
 
-      {form.fecha_inicio && form.fecha_fin && (parseInt(form.habitaciones)||0) > 0 && (() => {
-        const produccion  = datos.produccion  || [];
-        const presupuesto = datos.presupuesto || [];
-        const noches = Math.max(1, Math.round((new Date(form.fecha_fin) - new Date(form.fecha_inicio)) / 86400000));
-        const rooms    = parseInt(form.habitaciones) || 0;
-        const adrGrupo = parseFloat(form.adr_grupo)  || 0;
-        const revFnb   = parseFloat(form.revenue_fnb)  || 0;
-        const revSala  = parseFloat(form.revenue_sala) || 0;
-        const anioEvt = parseInt(form.fecha_inicio.slice(0,4));
-        const iniLY   = `${anioEvt-1}${form.fecha_inicio.slice(4)}`;
-        const finLY   = `${anioEvt-1}${form.fecha_fin.slice(4)}`;
-        const diasLY   = produccion.filter(r => { const f = String(r.fecha||"").slice(0,10); return f >= iniLY && f <= finLY; });
-        const habOcuLY = diasLY.reduce((a,r) => a+(r.hab_ocupadas||0), 0);
-        const revHabLY = diasLY.reduce((a,r) => a+(r.revenue_hab||0), 0);
-        const habDisLY = diasLY.reduce((a,r) => a+(r.hab_disponibles||0), 0);
-        let adrTransient, factorOcc, fuenteLY = true;
-        if (habOcuLY > 0) {
-          adrTransient = Math.round(revHabLY / habOcuLY);
-          factorOcc    = habDisLY > 0 ? Math.min(1, habOcuLY / habDisLY) : 0.7;
-        } else {
-          const mesIni = parseInt(form.fecha_inicio.slice(5,7));
-          const pptoM  = presupuesto.find(p => p.mes === mesIni && p.anio === anioEvt) || presupuesto.find(p => p.mes === mesIni);
-          adrTransient = pptoM?.adr_ppto || null;
-          factorOcc    = 0.65;
-          fuenteLY     = false;
-        }
-        if (!adrTransient) return (
-          <div style={{ background:"#F5F5F5", border:`1px solid ${C.border}`, borderRadius:8, padding:"12px 16px" }}>
-            <p style={{ fontSize:11, fontWeight:700, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:6 }}>📊 {t("analisis_desplazamiento")}</p>
-            <p style={{ fontSize:12, color:C.textLight }}>{t("sin_datos_ly")} — importa producción o presupuesto para activar este análisis.</p>
-          </div>
-        );
-        const contribucion        = rooms * adrGrupo * noches + revFnb + revSala;
-        const costeDesplazamiento = rooms * adrTransient * noches * factorOcc;
-        const valorNeto           = contribucion - costeDesplazamiento;
-        const isPos               = adrGrupo > 0 ? valorNeto >= 0 : false;
-        const breakEvenHab = costeDesplazamiento - revFnb - revSala;
-        const breakEvenAdr = rooms > 0 && noches > 0 && breakEvenHab > 0 ? Math.round(breakEvenHab / (rooms * noches)) : null;
-        const sinAdr      = adrGrupo === 0;
-        const borderColor = sinAdr ? "#2B7EC133" : isPos ? "#1A7A3C33" : "#E85D0433";
-        const bgColor     = sinAdr ? "#EEF4FB"   : isPos ? "#F0FBF4"   : "#FFF8F0";
-        return (
-          <div style={{ background:bgColor, border:`1px solid ${borderColor}`, borderRadius:8, padding:"14px 16px" }}>
-            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
-              <p style={{ fontSize:11, fontWeight:700, color:C.textLight, textTransform:"uppercase", letterSpacing:1 }}>📊 {t("analisis_desplazamiento")}</p>
-              {!sinAdr && (
-                <span style={{ fontSize:12, fontWeight:700, padding:"3px 10px", borderRadius:6, background: isPos ? C.greenLight : "#FDECEA", color: isPos ? C.green : C.red }}>
-                  {isPos ? t("acepta_grupo") : t("revisar_grupo")}
-                </span>
-              )}
-            </div>
-            {sinAdr ? (
-              <p style={{ fontSize:12, color:"#2B7EC1", marginBottom:12 }}>Rellena el ADR del grupo para ver el análisis completo.</p>
-            ) : (
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8, marginBottom:12 }}>
-                {[
-                  { label: t("contrib_grupo"),   val: `€${Math.round(contribucion).toLocaleString("es-ES")}`,        color: C.text },
-                  { label: t("coste_desplaz"),   val: `€${Math.round(costeDesplazamiento).toLocaleString("es-ES")}`, color: "#E85D04" },
-                  { label: t("valor_neto"),      val: `${isPos?"+":""}€${Math.round(valorNeto).toLocaleString("es-ES")}`, color: isPos ? C.green : C.red },
-                ].map(({ label, val, color }) => (
-                  <div key={label} style={{ background:C.bgCard, borderRadius:6, padding:"8px 10px" }}>
-                    <p style={{ fontSize:10, color:C.textLight, marginBottom:3 }}>{label}</p>
-                    <p style={{ fontSize:13, fontWeight:800, color }}>{val}</p>
-                  </div>
-                ))}
-              </div>
-            )}
-            <div style={{ display:"flex", gap:16, flexWrap:"wrap", borderTop:`1px solid ${C.border}`, paddingTop:10 }}>
-              <div>
-                <p style={{ fontSize:10, color:C.textLight }}>{t("adr_transient_ref")} {!fuenteLY && <span style={{ color:"#E85D04" }}>({t("fuente_ppto")})</span>}</p>
-                <p style={{ fontSize:12, fontWeight:600, color:C.textMid }}>€{adrTransient}</p>
-              </div>
-              <div>
-                <p style={{ fontSize:10, color:C.textLight }}>{t("occ_hist_ly")}</p>
-                <p style={{ fontSize:12, fontWeight:600, color:C.textMid }}>{Math.round(factorOcc*100)}%</p>
-              </div>
-              {breakEvenAdr != null && (
-                <div>
-                  <p style={{ fontSize:10, color:C.textLight }}>{t("adr_minimo_rentable")}</p>
-                  <p style={{ fontSize:12, fontWeight:700, color: adrGrupo >= breakEvenAdr ? C.green : C.red }}>€{breakEvenAdr}</p>
-                </div>
-              )}
-            </div>
-          </div>
-        );
-      })()}
 
       <div style={{ display:"flex", justifyContent:"space-between", marginTop:4 }}>
         {isEditing
