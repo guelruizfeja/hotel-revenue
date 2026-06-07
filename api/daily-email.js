@@ -37,13 +37,8 @@ export default async function handler(req, res) {
     if (!kpis || typeof kpis !== 'object') return res.status(400).json({ error: 'Faltan kpis' });
 
     const hotel = escapeHtml(cleanString(hotelNombre, 100) ?? 'tu hotel');
-    const { fecha, occ, adr, revpar, pickup_neto, cancelaciones, revenue_pickup_ayer, revenueAcumulado, presupuestoMensual } = kpis;
+    const { fecha } = kpis;
     const safeFecha = cleanString(fecha, 10) ?? '';
-
-    const acum     = revenueAcumulado?.length ? revenueAcumulado[revenueAcumulado.length - 1]?.acum : null;
-    const lastDay  = revenueAcumulado?.length ? revenueAcumulado[revenueAcumulado.length - 1]?.dia  : null;
-    const pct      = presupuestoMensual && acum ? Math.round(acum / presupuestoMensual * 100) : null;
-    const pctColor = pct == null ? '#0A2540' : pct >= 100 ? '#059669' : pct >= 75 ? '#C49A0A' : '#DC2626';
 
     const html = `<!DOCTYPE html>
 <html lang="es">
@@ -68,49 +63,19 @@ export default async function handler(req, res) {
   <!-- CUERPO -->
   <tr><td style="background:#FFFFFF;border:1px solid #E2E8F0;border-top:none;padding:32px;">
 
-    <p style="margin:0 0 6px;font-size:15px;color:#374151;line-height:1.7;">
+    <p style="margin:0 0 16px;font-size:15px;color:#374151;line-height:1.7;">
       Buenos días,
     </p>
-    <p style="margin:0 0 20px;font-size:14px;color:#374151;line-height:1.8;">
-      Aquí tienes el resumen de operaciones de <strong style="color:#0A2540;">${fmtDate(safeFecha)}</strong>.
-      Encontrarás el análisis detallado con los KPIs, pickup y progreso mensual en el <strong>PDF adjunto</strong>.
+    <p style="margin:0 0 14px;font-size:14px;color:#374151;line-height:1.85;">
+      Te adjunto el informe diario de operaciones de <strong style="color:#0A2540;">${fmtDate(safeFecha)}</strong>.
+      Encontrarás el análisis completo con los KPIs del día, la comparativa con la media del mes,
+      el mix de revenue y el progreso mensual en el <strong>PDF adjunto</strong>.
     </p>
-
-    <!-- KPIs rápidos -->
-    <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 20px;background:#F8FAFC;border-radius:8px;overflow:hidden;border:1px solid #E2E8F0;">
-      <tr>
-        <td style="padding:14px 12px;text-align:center;width:25%;">
-          <p style="margin:0 0 3px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#64748B;">Ocupación</p>
-          <p style="margin:0;font-size:22px;font-weight:700;color:#0A2540;">${occ != null ? fmt(occ) + '%' : '—'}</p>
-        </td>
-        <td style="padding:14px 12px;text-align:center;width:25%;border-left:1px solid #E2E8F0;">
-          <p style="margin:0 0 3px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#64748B;">ADR</p>
-          <p style="margin:0;font-size:22px;font-weight:700;color:#0A2540;">${fmtEur(adr)}</p>
-        </td>
-        <td style="padding:14px 12px;text-align:center;width:25%;border-left:1px solid #E2E8F0;">
-          <p style="margin:0 0 3px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#64748B;">RevPAR</p>
-          <p style="margin:0;font-size:22px;font-weight:700;color:#0A2540;">${fmtEur(revpar)}</p>
-        </td>
-        <td style="padding:14px 12px;text-align:center;width:25%;border-left:1px solid #E2E8F0;">
-          <p style="margin:0 0 3px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#64748B;">Pickup neto</p>
-          <p style="margin:0;font-size:22px;font-weight:700;color:${pickup_neto > 0 ? '#059669' : '#0A2540'};">${pickup_neto != null ? '+' + pickup_neto + ' hab.' : '—'}</p>
-        </td>
-      </tr>
-    </table>
-
-    ${acum != null ? `
-    <p style="margin:0 0 6px;font-size:12px;color:#64748B;line-height:1.7;">
-      Revenue acumulado del mes (día ${lastDay}): <strong style="color:#0A2540;">${fmtEur(acum)}</strong>
-      ${pct != null ? `&nbsp;·&nbsp;<strong style="color:${pctColor};">${pct}% del objetivo</strong>` : ''}
-    </p>` : ''}
-
-    ${cancelaciones > 0 ? `
-    <p style="margin:8px 0 0;font-size:12px;color:#64748B;">
-      Cancelaciones ayer: <strong style="color:#DC2626;">${cancelaciones}</strong>
-      ${revenue_pickup_ayer ? `&nbsp;·&nbsp;Revenue pickup: <strong style="color:#059669;">${fmtEur(revenue_pickup_ayer)}</strong>` : ''}
-    </p>` : ''}
-
-    <p style="margin:20px 0 0;font-size:13px;color:#94A3B8;line-height:1.6;">
+    <p style="margin:0 0 20px;font-size:14px;color:#374151;line-height:1.85;">
+      Revisa el PDF para obtener una visión detallada de la evolución del negocio y tomar
+      las mejores decisiones del día.
+    </p>
+    <p style="margin:0;font-size:13px;color:#94A3B8;line-height:1.6;">
       Accede al dashboard para ver el detalle en tiempo real.
     </p>
 
