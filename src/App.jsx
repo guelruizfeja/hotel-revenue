@@ -9779,7 +9779,14 @@ export default function App() {
                               const adr = ultimoDia.adr ?? (ultimoDia.hab_ocupadas>0&&ultimoDia.revenue_hab ? ultimoDia.revenue_hab/ultimoDia.hab_ocupadas : null);
                               const revpar = ultimoDia.revpar ?? (ultimoDia.hab_disponibles>0&&ultimoDia.revenue_hab ? ultimoDia.revenue_hab/ultimoDia.hab_disponibles : null);
                               const kpisPayload = { fecha: ultimoDia.fecha, mesNombre: MESES[mesActual-1], occ, adr, revpar, trevpar: null, hab_ocupadas: ultimoDia.hab_ocupadas, hab_disponibles: ultimoDia.hab_disponibles, pickup_neto: nuevas, cancelaciones: cancels, revenue_pickup_ayer: revPickup||null, revenueAcumulado, presupuestoMensual: pptoData?.rev_total_ppto??null, avg_occ: totHabDisp>0?totHabOcu/totHabDisp*100:null, avg_adr: totHabOcu>0?totRevHab/totHabOcu:null, avg_revpar: totHabDisp>0?totRevHab/totHabDisp:null, avg_trevpar: null, revHabMes: totRevHab, revFnbMes: 0, canalesRevenue: [], revGruposMes: 0, revIndividualMes: totRevHab, adrPpto: pptoData?.adr_ppto??null, gruposProximos: [] };
-                              const pdfBase64 = await generarInformeDiarioPDF(kpisPayload, datos.hotel?.nombre||null);
+                              let pdfBase64 = null;
+                              try {
+                                pdfBase64 = await generarInformeDiarioPDF(kpisPayload, datos.hotel?.nombre||null);
+                                if (!pdfBase64) throw new Error("PDF vacío");
+                              } catch(pdfErr) {
+                                showToast("Aviso: PDF no generado (" + pdfErr.message + ") — enviando sin adjunto", false);
+                                await new Promise(r => setTimeout(r, 2000));
+                              }
                               const resp = await fetch('/api/daily-email', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
