@@ -1138,7 +1138,7 @@ function LoadingSpinner() {
   const t = useT();
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: 60 }}>
-      <div style={{ color: C.accent, fontFamily: "'Cormorant Garamond', serif", fontSize: 16 }}>{t("cargando_datos")}</div>
+      <div style={{ color: C.accent, fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 16 }}>{t("cargando_datos")}</div>
     </div>
   );
 }
@@ -1148,7 +1148,7 @@ function EmptyState({ mensaje }) {
   return (
     <div style={{ textAlign: "center", padding: 60 }}>
 
-      <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 18, fontWeight: 700, color: C.text, marginBottom: 8 }}>{t("sin_datos")}</p>
+      <p style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 18, fontWeight: 700, color: C.text, marginBottom: 8 }}>{t("sin_datos")}</p>
       <p style={{ fontSize: 13, color: C.textLight }}>{mensaje || t("importa_excel")}</p>
     </div>
   );
@@ -1833,7 +1833,7 @@ function ImportarExcel({ onClose, session, onImportado, onProduccionDirecta, hot
       const CANALES = [
         "Booking.com","Booking.com","Booking.com","Booking.com","Booking.com","Booking.com",
         "Directo","Directo","Directo","Directo",
-        "Web","Web","Web",
+        "Web propia","Web propia","Web propia",
         "Expedia","Expedia",
         "Hotels.com",
         "Airbnb","Airbnb",
@@ -2216,7 +2216,7 @@ function ImportarExcel({ onClose, session, onImportado, onProduccionDirecta, hot
         patronCanales = [
           { canal:"Booking.com",       peso:0.32 },
           { canal:"Directo",           peso:0.20 },
-          { canal:"Web",               peso:0.10 },
+          { canal:"Web propia",         peso:0.10 },
           { canal:"Expedia",           peso:0.08 },
           { canal:"Hotels.com",        peso:0.05 },
           { canal:"Airbnb",            peso:0.05 },
@@ -2242,7 +2242,7 @@ function ImportarExcel({ onClose, session, onImportado, onProduccionDirecta, hot
         { canal:"Empresa",          mesesDesde:1, mesesHasta:3,  nochesDef:2, factorADR:1.08 },
         { canal:"Expedia",          mesesDesde:3, mesesHasta:7,  nochesDef:2, factorADR:0.95 },
         { canal:"Expedia",          mesesDesde:4, mesesHasta:8,  nochesDef:2, factorADR:0.94 },
-        { canal:"Web",              mesesDesde:1, mesesHasta:5,  nochesDef:2, factorADR:1.02 },
+        { canal:"Web propia",       mesesDesde:1, mesesHasta:5,  nochesDef:2, factorADR:1.02 },
         { canal:"Hotels.com",       mesesDesde:2, mesesHasta:6,  nochesDef:2, factorADR:0.96 },
         { canal:"Airbnb",           mesesDesde:3, mesesHasta:7,  nochesDef:3, factorADR:0.94 },
         { canal:"Tour operador",    mesesDesde:3, mesesHasta:9,  nochesDef:4, factorADR:0.90 },
@@ -2253,7 +2253,7 @@ function ImportarExcel({ onClose, session, onImportado, onProduccionDirecta, hot
         { canal:"Booking.com",      mesesDesde:2, mesesHasta:5, nochesDef:2, factorADR:0.97 },
         { canal:"Booking.com",      mesesDesde:3, mesesHasta:6, nochesDef:1, factorADR:0.96 },
         { canal:"Expedia",          mesesDesde:2, mesesHasta:6, nochesDef:2, factorADR:0.95 },
-        { canal:"Web",              mesesDesde:3, mesesHasta:7, nochesDef:2, factorADR:1.02 },
+        { canal:"Web propia",       mesesDesde:3, mesesHasta:7, nochesDef:2, factorADR:1.02 },
         { canal:"Airbnb",           mesesDesde:3, mesesHasta:8, nochesDef:2, factorADR:0.93 },
       ];
       // 6-8 confirmadas + 1 cancelada = 7-9 reservas en total, siempre distintas
@@ -2390,7 +2390,7 @@ function ImportarExcel({ onClose, session, onImportado, onProduccionDirecta, hot
 
       {/* Header */}
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"22px 26px 18px", borderBottom: fullPage ? `1px solid ${H.border}` : "none" }}>
-        <h2 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:28, fontWeight:700, color:"#0A0A0A", letterSpacing:0.2 }}>
+        <h2 style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:28, fontWeight:700, color:"#0A0A0A", letterSpacing:0.2 }}>
           Gestión de datos
         </h2>
         <button onClick={onClose} style={{ background:"none", border:`1px solid ${H.border}`, borderRadius:7, padding:"6px 14px", cursor:"pointer", fontSize:12, fontWeight:600, color:H.textMid, fontFamily:"'Plus Jakarta Sans',sans-serif", display:"flex", alignItems:"center", gap:6 }}>
@@ -2737,7 +2737,7 @@ function ImportarExcel({ onClose, session, onImportado, onProduccionDirecta, hot
                         {[["OCC", occ!=null?`${occ}%`:"—"], ["ADR", adr!=null?`€${adr}`:"—"], ["RevPAR", revpar!=null?`€${revpar}`:"—"]].map(([k,v]) => (
                           <div key={k} style={{ flex:1, background:H.bg, border:`1px solid ${H.border}`, borderRadius:8, padding:"8px 10px", textAlign:"center" }}>
                             <p style={{ fontSize:9, color:H.textMid, textTransform:"uppercase", letterSpacing:"0.8px", marginBottom:3 }}>{k}</p>
-                            <p style={{ fontSize:16, fontWeight:700, color:H.accent, fontFamily:"'Cormorant Garamond',serif" }}>{v}</p>
+                            <p style={{ fontSize:16, fontWeight:700, color:H.accent, fontFamily:"'Plus Jakarta Sans',sans-serif" }}>{v}</p>
                           </div>
                         ))}
                       </div>
@@ -2807,7 +2807,7 @@ function ImportarExcel({ onClose, session, onImportado, onProduccionDirecta, hot
                       style={{...inputStyle, cursor:"pointer"}}>
                       <option value="">— Selecciona canal —</option>
                       <option value="Directo">Directo</option>
-                      <option value="Web">Web</option>
+                      <option value="Web propia">Web propia</option>
                       <option value="Booking.com">Booking.com</option>
                       <option value="Expedia">Expedia</option>
                       <option value="Hotels.com">Hotels.com</option>
@@ -3050,7 +3050,7 @@ function MonthDetailView({ datos, mes, anio, onBack }) {
         ].map((k, i) => (
           <div key={i} style={{ background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: 8, padding: "16px 18px", borderTop: `3px solid ${C.accent}` }}>
             <p style={{ fontSize: 11, color: C.textLight, textTransform: "uppercase", letterSpacing: "1.5px" }}>{k.label}</p>
-            <p style={{ fontSize: 24, fontWeight: 700, fontFamily: "'Cormorant Garamond', serif", color: C.text, marginTop: 6 }}>{k.value}</p>
+            <p style={{ fontSize: 24, fontWeight: 700, fontFamily: "'Plus Jakarta Sans', sans-serif", color: C.text, marginTop: 6 }}>{k.value}</p>
           </div>
         ))}
       </div>
@@ -3493,7 +3493,7 @@ async function generarReportePDF(datos, mes, anio, hotelNombre, returnData = fal
 // ─── DASHBOARD VIEW ───────────────────────────────────────────────
 // ─── DESGLOSE MOVIMIENTO VIEW ────────────────────────────────────────────────
 function ModalEditarReserva({ entry, onClose, onGuardado }) {
-  const canales = ["Directo","Web","Booking.com","Expedia","Hotels.com","Airbnb","Hotelbeds","Agoda","Trip.com","GDS","Tour operador","Agencia de viajes","Empresa","Grupos","Eventos / MICE","Otro"];
+  const canales = ["Directo","Web propia","Booking.com","Expedia","Hotels.com","Airbnb","Hotelbeds","Agoda","Trip.com","GDS","Tour operador","Agencia de viajes","Empresa","Grupos","Eventos / MICE","Otro"];
   const [form, setForm] = useState({
     fecha_llegada:  String(entry.fecha_llegada||"").slice(0,10),
     canal:          entry.canal || "",
@@ -3538,10 +3538,10 @@ function ModalEditarReserva({ entry, onClose, onGuardado }) {
       <div style={{ background:C.bgCard, borderRadius:14, padding:"28px 32px", width:"100%", maxWidth:460, boxShadow:"0 20px 60px rgba(0,0,0,0.25)" }}
         onClick={e => e.stopPropagation()}>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:18 }}>
-          <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:20, color:C.text }}>Gestión de reserva</p>
+          <p style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontWeight:700, fontSize:20, color:C.text }}>Gestión de reserva</p>
           <button onClick={onClose} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, width:28, height:28, cursor:"pointer", fontSize:14, color:C.textLight }}>✕</button>
         </div>
-        <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:16, color:C.text, marginBottom:14 }}>
+        <p style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontWeight:700, fontSize:16, color:C.text, marginBottom:14 }}>
           Editar reserva{entry.numero_reserva ? ` #${entry.numero_reserva}` : ""}
         </p>
         <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
@@ -3624,7 +3624,7 @@ function DesgloseMovimientoView({ datos, tipo, onBack }) {
       <div style={{ display:"flex", alignItems:"center", gap:16 }}>
         <button onClick={onBack} style={{ background:C.bgCard, border:`1px solid ${C.border}`, borderRadius:8, padding:"8px 16px", cursor:"pointer", fontSize:13, color:C.textMid, fontFamily:"'Plus Jakarta Sans',sans-serif", display:"flex", alignItems:"center", gap:6 }}>← Volver</button>
         <div>
-          <h2 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:24, fontWeight:700, color:C.text, margin:0 }}>{TITULOS[tipo]}</h2>
+          <h2 style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:24, fontWeight:700, color:C.text, margin:0 }}>{TITULOS[tipo]}</h2>
           <p style={{ fontSize:12, color:C.textLight, margin:0, marginTop:2 }}>{hoyStr} · {total} reservas</p>
         </div>
       </div>
@@ -3931,7 +3931,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
             {t("bienvenido")}, <span style={{ color:C.text }}>{datos.hotel?.nombre || "Mi Hotel"}</span>
           </p>
           <div style={{ display:"flex", alignItems:"baseline", gap:10 }}>
-            <h2 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:28, fontWeight:700, color:C.text, margin:0, letterSpacing:-0.5 }}>
+            <h2 style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:28, fontWeight:700, color:C.text, margin:0, letterSpacing:-0.5 }}>
               {t("meses_full")[mes]}
             </h2>
             <span style={{ fontSize:20, fontWeight:400, color:C.textLight }}>{anio}</span>
@@ -4927,7 +4927,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
             return (
               <Card style={{ display:"flex", flexDirection:"column", minHeight:360, marginTop:16 }}>
                 <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16 }}>
-                  <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:18, color:C.text }}>
+                  <p style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontWeight:700, fontSize:18, color:C.text }}>
                     {metricas.find(m=>m.key===metricaSel)?.label}
                   </p>
                   <div style={{ display:"flex", gap:14 }}>
@@ -4993,7 +4993,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
 
 
       <Card>
-        <p style={{ fontFamily: "'Cormorant Garamond', serif", fontWeight: 700, fontSize: 20, color: C.text, marginBottom: 16 }}>
+        <p style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 700, fontSize: 20, color: C.text, marginBottom: 16 }}>
           {t("ultimos_12m")}
         </p>
         <div style={{ overflowX: "auto" }}>
@@ -5135,7 +5135,7 @@ function PickupView({ datos, onGuardado }) {
         {canal:"Empresa",mesesDesde:1,mesesHasta:3,nochesDef:2,factorADR:1.08},
         {canal:"Expedia",mesesDesde:3,mesesHasta:7,nochesDef:2,factorADR:0.95},
         {canal:"Expedia",mesesDesde:4,mesesHasta:8,nochesDef:2,factorADR:0.94},
-        {canal:"Web",mesesDesde:1,mesesHasta:5,nochesDef:2,factorADR:1.02},
+        {canal:"Web propia",mesesDesde:1,mesesHasta:5,nochesDef:2,factorADR:1.02},
         {canal:"Hotels.com",mesesDesde:2,mesesHasta:6,nochesDef:2,factorADR:0.96},
         {canal:"Airbnb",mesesDesde:3,mesesHasta:7,nochesDef:3,factorADR:0.94},
         {canal:"Tour operador",mesesDesde:3,mesesHasta:9,nochesDef:4,factorADR:0.90},
@@ -5146,7 +5146,7 @@ function PickupView({ datos, onGuardado }) {
         {canal:"Booking.com",mesesDesde:2,mesesHasta:5,nochesDef:2,factorADR:0.97},
         {canal:"Booking.com",mesesDesde:3,mesesHasta:6,nochesDef:1,factorADR:0.96},
         {canal:"Expedia",mesesDesde:2,mesesHasta:6,nochesDef:2,factorADR:0.95},
-        {canal:"Web",mesesDesde:3,mesesHasta:7,nochesDef:2,factorADR:1.02},
+        {canal:"Web propia",mesesDesde:3,mesesHasta:7,nochesDef:2,factorADR:1.02},
         {canal:"Airbnb",mesesDesde:3,mesesHasta:8,nochesDef:2,factorADR:0.93},
       ];
       const numConf = 6 + Math.floor(Math.random() * 3), numCancel = 1;
@@ -5286,7 +5286,16 @@ function PickupView({ datos, onGuardado }) {
   const trimTipRef = useRef(null);
   const [canalMetric, setCanalMetric]     = useState("adr"); // "adr" | "noches"
   const [ayerVista, setAyerVista]         = useState(null); // null | "count"|"adr"|"noches"|"antelacion"
-  const [reservasVentana, setReservasVentana] = useState("30d"); // "ayer" | "7d" | "30d" | "year"
+  const [reservasVentana, setReservasVentana] = useState(() => localStorage.getItem('reservasVentana') || "30d");
+  const [reservasMesFiltro, setReservasMesFiltro] = useState(() => { try { const v = localStorage.getItem('reservasMesFiltro'); return v ? JSON.parse(v) : null; } catch { return null; } });
+  const [showMesPicker, setShowMesPicker] = useState(false);
+  const mesPickerRef = useRef(null);
+  useEffect(() => {
+    if (!showMesPicker) return;
+    const handler = e => { if (mesPickerRef.current && !mesPickerRef.current.contains(e.target)) setShowMesPicker(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showMesPicker]);
   const [reservasVista, setReservasVista]     = useState("count"); // "count"|"adr"|"noches"|"antelacion"
   const [otaDetalle, setOtaDetalle]           = useState(() => localStorage.getItem('otaDetalle') === 'true');
   const [showPickupDetalle, setShowPickupDetalle] = useState(false);
@@ -5402,7 +5411,7 @@ function PickupView({ datos, onGuardado }) {
   const normCanal = c => {
     const lc = (c || "").toLowerCase().trim();
     if (lc.includes("directo") || lc.includes("teléfono") || lc.includes("telefono") || lc.includes("email")) return "Directo";
-    if (lc.includes("web")) return "Web";
+    if (lc.includes("web")) return "Web propia";
     if (lc.includes("empresa") || lc.includes("corporativo")) return "Empresa";
     if (lc.includes("mice") || lc.includes("evento")) return "Eventos / MICE";
     if (lc.includes("grupo")) return "Grupos";
@@ -5433,7 +5442,7 @@ function PickupView({ datos, onGuardado }) {
     "Trip.com":         "#06B6D4",
     // Canales directos
     "Directo":          "#111111",
-    "Web":              "#BDBDBD",
+    "Web propia":       "#BDBDBD",
     // Canales B2B / otros
     "Tour operador":    "#F59E0B",
     "Agencia de viajes":"#8B5CF6",
@@ -5474,11 +5483,15 @@ function PickupView({ datos, onGuardado }) {
   const hoyTs = new Date();
   const _hoyD = hoyTs.toISOString().slice(0,10);
   const _ayerD = (() => { const d=new Date(hoyTs); d.setDate(d.getDate()-1); return d.toISOString().slice(0,10); })();
-  const ventanaDesde = reservasVentana === "ayer" ? _ayerD
+  const ventanaDesde = reservasMesFiltro
+    ? `${reservasMesFiltro.anio}-${String(reservasMesFiltro.mes+1).padStart(2,"0")}-01`
+    : reservasVentana === "ayer" ? _ayerD
     : reservasVentana === "7d"   ? new Date(hoyTs - 7   * 86400000).toISOString().slice(0,10)
     : reservasVentana === "30d"  ? new Date(hoyTs - 30  * 86400000).toISOString().slice(0,10)
     :                              new Date(hoyTs - 365 * 86400000).toISOString().slice(0,10);
-  const ventanaHasta = reservasVentana === "ayer" ? _ayerD : _hoyD;
+  const ventanaHasta = reservasMesFiltro
+    ? (() => { const d = new Date(reservasMesFiltro.anio, reservasMesFiltro.mes+1, 0); return d.toISOString().slice(0,10); })()
+    : reservasVentana === "ayer" ? _ayerD : _hoyD;
   const reservasVentanaEntries = pickupEntries.filter(e => {
     const fp = String(e.fecha_pickup||"").slice(0,10);
     return fp >= ventanaDesde && fp <= ventanaHasta && (e.estado||"confirmada") !== "cancelada" && !esGrupoEvento(e);
@@ -5567,7 +5580,7 @@ function PickupView({ datos, onGuardado }) {
             <div style={{ background:C.bgCard, borderRadius:14, padding:"28px 32px", width:"100%", maxWidth: gestionTab==="nueva" && (nrTipo==="grupo" || nrTipo==="evento") ? 540 : 460, maxHeight:"90vh", overflowY:"auto", boxShadow:"0 20px 60px rgba(0,0,0,0.25)" }}>
               {/* Cabecera */}
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:18 }}>
-                <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:20, color:C.text }}>Gestión de reserva</p>
+                <p style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontWeight:700, fontSize:20, color:C.text }}>Gestión de reserva</p>
                 <button onClick={()=>{ setModalNRPersist(false); setEditEntry(null); setGestionTabPersist("buscar"); }} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, width:28, height:28, cursor:"pointer", fontSize:14, color:C.textLight }}>✕</button>
               </div>
 
@@ -5597,7 +5610,7 @@ function PickupView({ datos, onGuardado }) {
                 if (editEntry) return (
                   <div>
                     <button onClick={() => setEditEntry(null)} style={{ display:"flex", alignItems:"center", gap:5, background:"none", border:"none", cursor:"pointer", color:C.textMid, fontSize:12, marginBottom:14, padding:0, fontFamily:"inherit" }}>← Volver a resultados</button>
-                    <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:16, color:C.text, marginBottom:14 }}>
+                    <p style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontWeight:700, fontSize:16, color:C.text, marginBottom:14 }}>
                       Editar reserva{editEntry.numero_reserva ? ` #${editEntry.numero_reserva}` : ""}
                     </p>
                     {(() => {
@@ -5610,7 +5623,7 @@ function PickupView({ datos, onGuardado }) {
                           <div><p style={lbl}>Canal</p>
                             <select value={editForm.canal} onChange={e=>setEditForm(f=>({...f,canal:e.target.value}))} style={inp}>
                               <option value="">—</option>
-                              {["Booking.com","Expedia","Hotels.com","Airbnb","Hotelbeds","Agoda","Trip.com","Directo","Web","Tour operador","Agencia de viajes","GDS","Empresa"].map(c=><option key={c} value={c}>{c}</option>)}
+                              {["Booking.com","Expedia","Hotels.com","Airbnb","Hotelbeds","Agoda","Trip.com","Directo","Web propia","Tour operador","Agencia de viajes","GDS","Empresa"].map(c=><option key={c} value={c}>{c}</option>)}
                             </select></div>
                           <div><p style={lbl}>Habitaciones</p>
                             <input type="number" min="1" value={editForm.num_reservas} onChange={e=>setEditForm(f=>({...f,num_reservas:e.target.value}))} style={inp}/></div>
@@ -5711,7 +5724,7 @@ function PickupView({ datos, onGuardado }) {
                           <select value={nrForm.canal} onChange={e=>setNrFormPersist(f=>({...f,canal:e.target.value}))}
                             style={{ width:"100%", padding:"8px 10px", borderRadius:7, border:`1px solid ${C.border}`, fontSize:13, background:C.bgCard, color:C.text, fontFamily:"inherit", boxSizing:"border-box" }}>
                             <option value="">Seleccionar</option>
-                            {["Booking.com","Expedia","Hotels.com","Airbnb","Hotelbeds","Agoda","Trip.com","Directo","Web","Tour operador","Agencia de viajes","GDS","Empresa"].map(c=><option key={c} value={c}>{c}</option>)}
+                            {["Booking.com","Expedia","Hotels.com","Airbnb","Hotelbeds","Agoda","Trip.com","Directo","Web propia","Tour operador","Agencia de viajes","GDS","Empresa"].map(c=><option key={c} value={c}>{c}</option>)}
                           </select>
                         </div>
                         <div>
@@ -5798,7 +5811,7 @@ function PickupView({ datos, onGuardado }) {
             {ultDiaTotal > 0 && <span style={{ fontSize:8, color:"#aaa", display:"block", marginTop:2 }}>{showPickupDetalle ? "▲" : "▼"}</span>}
           </div>
           <div>
-            <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:18, color:C.text }}>{tituloBloque}</p>
+            <p style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontWeight:700, fontSize:18, color:C.text }}>{tituloBloque}</p>
           </div>
         </div>
 
@@ -6078,7 +6091,7 @@ function PickupView({ datos, onGuardado }) {
           <div style={{ borderTop:`1px solid ${C.border}`, margin:"16px 0" }}/>
 
           {/* CANCELACIONES DE AYER */}
-          <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:14, color:C.text, marginBottom:2 }}>{t("cancelaciones_ayer")}</p>
+          <p style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontWeight:700, fontSize:14, color:C.text, marginBottom:2 }}>{t("cancelaciones_ayer")}</p>
           <p style={{ fontSize:10, color:C.textLight, marginBottom:10 }}>
             {ayerD.toLocaleDateString("es-ES",{weekday:"long",day:"numeric",month:"long"}).replace(/^\w/,c=>c.toUpperCase())}
           </p>
@@ -6131,15 +6144,41 @@ function PickupView({ datos, onGuardado }) {
               <p style={{ fontSize:9, color:"#ffffff", fontWeight:700, textTransform:"uppercase", letterSpacing:1, marginTop:4 }}>reservas</p>
             </div>
             <div style={{ flex:1 }}>
-              <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:18, color:C.text, marginBottom:8 }}>Resumen de reservas</p>
+              <p style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontWeight:700, fontSize:18, color:C.text, marginBottom:8 }}>Resumen de reservas</p>
               {/* Toggle ventana */}
-              <div style={{ display:"flex", borderRadius:8, overflow:"hidden", border:`1px solid ${C.border}`, width:"fit-content" }}>
-                {[["ayer","Ayer"], ["7d","7 días"], ["30d","30 días"], ["year","1 año"]].map(([key, label]) => (
-                  <button key={key} onClick={()=>{ setReservasVentana(key); setOtaDetalle(false); localStorage.setItem('otaDetalle','false'); }}
-                    style={{ padding:"5px 14px", fontSize:11, fontWeight:700, cursor:"pointer", border:"none", background: reservasVentana===key ? "#111" : "transparent", color: reservasVentana===key ? "#fff" : C.textMid, transition:"background 0.2s", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
-                    {label}
+              <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>
+                <div style={{ display:"flex", borderRadius:8, overflow:"hidden", border:`1px solid ${C.border}`, width:"fit-content" }}>
+                  {[["ayer","Ayer"], ["7d","7 días"], ["30d","30 días"], ["year","1 año"]].map(([key, label]) => (
+                    <button key={key} onClick={()=>{ setReservasVentana(key); localStorage.setItem('reservasVentana',key); setReservasMesFiltro(null); localStorage.removeItem('reservasMesFiltro'); setShowMesPicker(false); setOtaDetalle(false); localStorage.setItem('otaDetalle','false'); }}
+                      style={{ padding:"5px 14px", fontSize:11, fontWeight:700, cursor:"pointer", border:"none", background: !reservasMesFiltro && reservasVentana===key ? "#111" : "transparent", color: !reservasMesFiltro && reservasVentana===key ? "#fff" : C.textMid, transition:"background 0.2s", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                {/* Picker de mes */}
+                <div style={{ position:"relative" }} ref={mesPickerRef}>
+                  <button onClick={()=>setShowMesPicker(v=>!v)}
+                    style={{ padding:"5px 12px", fontSize:11, fontWeight:700, cursor:"pointer", borderRadius:8, border:`1px solid ${reservasMesFiltro ? "#111" : C.border}`, background: reservasMesFiltro ? "#111" : "transparent", color: reservasMesFiltro ? "#fff" : C.textMid, fontFamily:"'Plus Jakarta Sans',sans-serif", transition:"all 0.2s" }}>
+                    {reservasMesFiltro ? `${MESES_CORTO[reservasMesFiltro.mes]} ${reservasMesFiltro.anio}` : "Seleccionar mes"}
                   </button>
-                ))}
+                  {showMesPicker && (
+                    <div style={{ position:"absolute", top:"calc(100% + 6px)", left:0, zIndex:300, background:C.bgCard, border:`1px solid #111`, borderRadius:10, padding:"12px", boxShadow:"0 8px 24px rgba(0,0,0,0.12)", minWidth:220 }}>
+                      <PeriodSelectorInline
+                        mes={reservasMesFiltro?.mes ?? hoy.getMonth()}
+                        anio={reservasMesFiltro?.anio ?? hoy.getFullYear()}
+                        onChange={(m,a)=>{ const v={mes:m,anio:a}; setReservasMesFiltro(v); localStorage.setItem('reservasMesFiltro',JSON.stringify(v)); setReservasVentana(null); localStorage.removeItem('reservasVentana'); setShowMesPicker(false); setOtaDetalle(false); localStorage.setItem('otaDetalle','false'); }}
+                        aniosDisponibles={[...new Set((datos.produccion||[]).map(d=>new Date(d.fecha+"T00:00:00").getFullYear()).concat([hoy.getFullYear()]))].sort()}
+                        allowFuture={false}
+                      />
+                      {reservasMesFiltro && (
+                        <button onClick={()=>{ setReservasMesFiltro(null); localStorage.removeItem('reservasMesFiltro'); setReservasVentana("30d"); localStorage.setItem('reservasVentana',"30d"); setShowMesPicker(false); }}
+                          style={{ width:"100%", marginTop:8, padding:"5px 0", borderRadius:6, border:`1px solid ${C.border}`, background:"none", color:C.textMid, fontSize:11, cursor:"pointer", fontFamily:"inherit" }}>
+                          Quitar filtro
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -6631,7 +6670,7 @@ function BudgetView({ datos, anio: anioProp }) {
       <Card>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:20 }}>
           <div>
-            <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:18, color:C.text }}>{chartTitle}</p>
+            <p style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontWeight:700, fontSize:18, color:C.text }}>{chartTitle}</p>
             <p style={{ fontSize:11, color:C.textLight, marginTop:3, letterSpacing:"0.3px" }}>Presupuesto · Real · Forecast &mdash; {anio}</p>
           </div>
           <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:10 }}>
@@ -6709,7 +6748,7 @@ function BudgetView({ datos, anio: anioProp }) {
 
       {/* Tabla detalle */}
       <Card>
-        <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:16, color:C.text, marginBottom:16 }}>{t("detalle_mensual")}</p>
+        <p style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontWeight:700, fontSize:16, color:C.text, marginBottom:16 }}>{t("detalle_mensual")}</p>
         <div style={{ overflowX:"auto" }}>
           <table style={{ width:"100%", borderCollapse:"collapse", fontSize:12 }}>
             <thead>
@@ -7630,7 +7669,7 @@ function GruposView({ datos, onRecargar, onVolverHeatmap, subVistaExt, onCambiar
 
               {/* Funnel visual */}
               <Card>
-                <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:16, color:C.text, marginBottom:16 }}>Datos {anio}</p>
+                <p style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontWeight:700, fontSize:16, color:C.text, marginBottom:16 }}>Datos {anio}</p>
                 <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
                   {FUNNEL.map((f,i)=>(
                     <div key={i}>
@@ -7669,7 +7708,7 @@ function GruposView({ datos, onRecargar, onVolverHeatmap, subVistaExt, onCambiar
 
               {/* Cotizaciones pendientes */}
               <Card>
-                <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:16, color:C.text, marginBottom:16 }}>Cotizaciones pendientes</p>
+                <p style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontWeight:700, fontSize:16, color:C.text, marginBottom:16 }}>Cotizaciones pendientes</p>
                 {pendientes.length === 0 ? (
                   <p style={{ color:C.textLight, fontSize:13, textAlign:"center", padding:"24px 0" }}>Sin cotizaciones abiertas</p>
                 ) : (
@@ -7898,7 +7937,7 @@ function GruposView({ datos, onRecargar, onVolverHeatmap, subVistaExt, onCambiar
           <Card>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20 }}>
               <div>
-                <p style={{ fontFamily:"'Cormorant Garamond',serif", fontWeight:700, fontSize:18, color:C.text }}>Revenue confirmado</p>
+                <p style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontWeight:700, fontSize:18, color:C.text }}>Revenue confirmado</p>
                 <p style={{ fontSize:11, color:C.textLight, marginTop:3 }}>Grupos · Eventos · Salas — {t("meses_full")[mes]} {anio}</p>
               </div>
               <div style={{ display:"flex", gap:6 }}>
@@ -8347,7 +8386,7 @@ function SalasView({ datos, onRecargar, onVolver, onVerEventos, salaDetalle, set
             <div style={{ display:"flex", alignItems:"center", gap:12 }}>
               <button onClick={()=>cambiarPlanningDia(null)} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, padding:"5px 10px", cursor:"pointer", fontSize:12, color:C.textMid }}>← Volver</button>
               <div>
-                <h2 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:22, fontWeight:700, color:C.text, margin:0 }}>{salaDetalle}</h2>
+                <h2 style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:22, fontWeight:700, color:C.text, margin:0 }}>{salaDetalle}</h2>
                 <p style={{ fontSize:13, color:C.textMid, margin:0 }}>{DS_FULL[fechaObj.getDay()]}, {fechaObj.getDate()} {MESES_FULL[fechaObj.getMonth()]} {fechaObj.getFullYear()}</p>
               </div>
             </div>
@@ -8421,7 +8460,7 @@ function SalasView({ datos, onRecargar, onVolver, onVerEventos, salaDetalle, set
           <div style={{ display:"flex", alignItems:"center", gap:12 }}>
             <button onClick={()=>setSalaDetalle(null)} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, padding:"5px 10px", cursor:"pointer", fontSize:12, color:C.textMid }}>← Volver</button>
             <div>
-              <h2 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:22, fontWeight:700, color:C.text, margin:0 }}>{salaDetalle}</h2>
+              <h2 style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:22, fontWeight:700, color:C.text, margin:0 }}>{salaDetalle}</h2>
               {meta.tipo && <span style={{ fontSize:11, color:C.textMid }}>{meta.tipo}{meta.capacidad ? ` · ${meta.capacidad} pax` : ""}</span>}
             </div>
           </div>
@@ -8506,7 +8545,7 @@ function SalasView({ datos, onRecargar, onVolver, onVerEventos, salaDetalle, set
       {/* Header */}
       <div style={{ display:"flex", alignItems:"center", gap:12 }}>
         {onVolver && <button onClick={onVolver} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, padding:"5px 10px", cursor:"pointer", fontSize:12, color:C.textMid }}>← Volver</button>}
-        <h2 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:24, fontWeight:700, color:C.text, margin:0 }}>Salas</h2>
+        <h2 style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:24, fontWeight:700, color:C.text, margin:0 }}>Salas</h2>
       </div>
 
       <div style={{ display:"flex", gap:6 }}>
@@ -8660,7 +8699,7 @@ function PantallaSubscripcion({ session, onPagar }) {
     <div style={{ minHeight:"100vh", background:C.bg, display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
       <div style={{ width:460, background:C.bgCard, borderRadius:20, padding:"48px 40px", boxShadow:"0 32px 80px rgba(0,0,0,0.1)", textAlign:"center" }}>
         <img src={LOGO_B64} alt="FastRevenue" style={{ height:52, marginBottom:24 }} />
-        <h1 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:26, fontWeight:800, color:C.text, marginBottom:10 }}>{t("empieza_gratis")}</h1>
+        <h1 style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:26, fontWeight:800, color:C.text, marginBottom:10 }}>{t("empieza_gratis")}</h1>
         <p style={{ fontSize:14, color:C.textMid, lineHeight:1.7, marginBottom:32 }}>
           {t("acceso_completo")}<br/>
           {t("precio_sub")}
@@ -8737,7 +8776,7 @@ function OnboardingOverlay({ step, onNext, onSkip }) {
           <span style={{ fontSize: 10, fontWeight: 700, color: C.accent, textTransform: "uppercase", letterSpacing: 1.5 }}>{t("ob_paso")} {step + 1} {t("ob_de")} {STEPS.length}</span>
           <button onClick={(e) => { e.stopPropagation(); onSkip(); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11, color: C.textLight, padding: 0 }}>{t("ob_omitir")}</button>
         </div>
-        <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 18, fontWeight: 700, color: C.text, marginBottom: 6 }}>{t(s.titleKey)}</p>
+        <p style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 18, fontWeight: 700, color: C.text, marginBottom: 6 }}>{t(s.titleKey)}</p>
         <p style={{ fontSize: 13, color: C.textMid, lineHeight: 1.6, marginBottom: 16 }}>{t(s.textKey)}</p>
         <button onClick={(e) => { e.stopPropagation(); onNext(); }} style={{ width: "100%", background: C.accent, color: "#fff", border: "none", borderRadius: 8, padding: "10px", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
           {step < STEPS.length - 1 ? t("ob_siguiente") : t("ob_empezar")}
@@ -8818,7 +8857,7 @@ function ModalConfigUnificado({ datos, session, navHidden, toggleNavHidden, navR
     <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:1000 }}>
       <div style={{ background:C.bgCard, borderRadius:16, padding:"32px 36px", width:480, maxHeight:"85vh", overflowY:"auto", boxShadow:"0 24px 60px rgba(0,0,0,0.2)", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:24 }}>
-          <h2 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:20, fontWeight:700, color:C.text }}>Configuración del hotel</h2>
+          <h2 style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:20, fontWeight:700, color:C.text }}>Configuración del hotel</h2>
           <button onClick={onClose} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, width:28, height:28, cursor:"pointer", fontSize:15, color:C.textLight, display:"flex", alignItems:"center", justifyContent:"center", padding:0 }}>✕</button>
         </div>
         {/* Pestañas */}
@@ -9296,6 +9335,19 @@ export default function App() {
     return () => document.removeEventListener("mousedown", handler);
   }, [mostrarPerfil]);
   const [perfilSeccion, setPerfilSeccion] = useState(null);
+  const EXTRANETS_DEFAULT = [
+    { nombre:"Brand Web", url:"" },
+    { nombre:"Booking.com", url:"https://admin.booking.com" },
+    { nombre:"Expedia", url:"https://www.expediapartnercentral.com" },
+  ];
+  const [extranets, setExtranets] = useState(() => {
+    try { const s = localStorage.getItem("fr_extranets"); return s ? JSON.parse(s) : EXTRANETS_DEFAULT; } catch { return EXTRANETS_DEFAULT; }
+  });
+  const setExtranetsPersist = (v) => { setExtranets(v); try { localStorage.setItem("fr_extranets", JSON.stringify(v)); } catch {} };
+  const [editingExtranetIdx, setEditingExtranetIdx] = useState(null);
+  const [extranetForm, setExtranetForm] = useState({ nombre:"", url:"" });
+  const [addingExtranet, setAddingExtranet] = useState(false);
+  const [newExtranetForm, setNewExtranetForm] = useState({ nombre:"", url:"" });
   const [configInitialTab, setConfigInitialTab] = useState("datos");
   const [navRestrictions, setNavRestrictions] = useState(() => {
     try {
@@ -9348,7 +9400,7 @@ export default function App() {
 
   if (loading) return (
     <div style={{ minHeight: "100vh", background: C.bgDeep, display: "flex", alignItems: "center", justifyContent: "center" }}>
-      <div style={{ color: C.accent, fontFamily: "'Cormorant Garamond', serif", fontSize: 20 }}>{t("cargando")}</div>
+      <div style={{ color: C.accent, fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 20 }}>{t("cargando")}</div>
     </div>
   );
 
@@ -9359,7 +9411,7 @@ export default function App() {
     <LangContext.Provider value={lang}>
     <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", background: C.bg, minHeight: "100vh" }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;0,800;1,400;1,600&family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
         * { box-sizing: border-box; margin: 0; padding: 0; } html, body, #root { width: 100%; min-height: 100vh; }
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: ${C.border}; }
@@ -9488,54 +9540,58 @@ export default function App() {
                 <span className="topbar-perfil-label" style={{ color:"#ffffff" }}>{t("mi_perfil")}</span>
               </button>
               {mostrarPerfil && (
-                <div style={{ position:"absolute", top:42, right:0, width:240, background:C.bgCard, border:`1px solid ${C.border}`, borderRadius:10, boxShadow:"0 4px 24px rgba(0,0,0,0.15)", zIndex:200, overflow:"hidden" }}>
-                  <div style={{ padding:"10px 16px", borderBottom:`1px solid ${C.border}`, background:C.bg }}>
-                    <p style={{ fontSize:11, color:C.textLight, marginBottom:2 }}>{t("conectado_como")}</p>
-                    <p style={{ fontSize:12, fontWeight:600, color:C.text, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{session.user.email}</p>
+                <div style={{ position:"absolute", top:46, right:0, width:256, background:"#ffffff", border:"1.5px solid #111111", borderRadius:12, boxShadow:"0 8px 32px rgba(0,0,0,0.18)", zIndex:200, overflow:"hidden", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+                  {/* Cabecera usuario */}
+                  <div style={{ padding:"14px 18px 12px", borderBottom:"1px solid #F0F0F0" }}>
+                    <p style={{ fontSize:10, fontWeight:700, color:"#999", textTransform:"uppercase", letterSpacing:"1px", marginBottom:3 }}>{t("conectado_como")}</p>
+                    <p style={{ fontSize:13, fontWeight:600, color:"#111111", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{session.user.email}</p>
                   </div>
-                  {[
-                    { label:"Configuración del hotel", key:"hotel" },
-                    { label:t("suscripcion"), key:"suscripcion" },
-                    { label:t("extranets"), key:"extranets" },
-                    { label:t("informe_mensual"), key:"informe" },
-                  ].map(op => (
-                    <button key={op.key} onClick={async () => {
-                        if (op.key === "informe") {
-                          setMostrarPerfil(false);
-                          setGenerandoPDF(true);
-                          await generarReportePDF(datos, mesSel, anioSel, datos.hotel?.nombre||"Mi Hotel");
-                          setGenerandoPDF(false);
-                        } else if (op.key === "personalizacion") {
-                          setConfigInitialTab("personalizacion");
-                          setPerfilSeccion("config");
-                          setMostrarPerfil(false);
-                        } else if (op.key === "hotel") {
-                          setConfigInitialTab("datos");
-                          setPerfilSeccion("config");
-                          setMostrarPerfil(false);
-                        } else {
-                          setPerfilSeccion(op.key);
-                          setMostrarPerfil(false);
-                        }
-                      }}
-                      style={{ width:"100%", display:"flex", alignItems:"center", padding:"10px 16px", background:"transparent", border:"none", borderBottom:`1px solid ${C.border}`, cursor:"pointer", fontSize:12, color:C.text, fontFamily:"'Plus Jakarta Sans',sans-serif", textAlign:"left", letterSpacing:0.2 }}
-                      onMouseEnter={e=>e.currentTarget.style.background=C.bg}
-                      onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
-                      {op.key === "informe" && generandoPDF ? t("generando") : op.label}
-                    </button>
-                  ))}
-                  <div style={{ padding:"10px 16px", borderTop:`1px solid ${C.border}`, display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-                    <span style={{ fontSize:12, color:C.textMid, fontFamily:"'Plus Jakarta Sans',sans-serif" }}>{t("idioma") ?? "Idioma"}</span>
-                    <select value={lang} onChange={e => { setLang(e.target.value); localStorage.setItem("fr_lang", e.target.value); }}
-                      style={{ border:`1px solid ${C.border}`, borderRadius:6, padding:"3px 6px", fontSize:11, fontWeight:500, color:C.text, background:C.bgCard, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", outline:"none" }}>
-                      <option value="es">Español</option>
-                      <option value="en">English</option>
-                      <option value="fr">Français</option>
-                    </select>
+                  {/* Opciones */}
+                  <div style={{ padding:"6px 0" }}>
+                    {[
+                      { label:"Configuración del hotel", key:"hotel" },
+                      { label:t("suscripcion"),           key:"suscripcion" },
+                      { label:t("extranets"),             key:"extranets" },
+                      { label:t("informe_mensual"),       key:"informe" },
+                    ].map(op => (
+                      <button key={op.key} onClick={async () => {
+                          if (op.key === "informe") {
+                            setMostrarPerfil(false);
+                            setGenerandoPDF(true);
+                            await generarReportePDF(datos, mesSel, anioSel, datos.hotel?.nombre||"Mi Hotel");
+                            setGenerandoPDF(false);
+                          } else if (op.key === "hotel") {
+                            setConfigInitialTab("datos");
+                            setPerfilSeccion("config");
+                            setMostrarPerfil(false);
+                          } else {
+                            setPerfilSeccion(op.key);
+                            setMostrarPerfil(false);
+                          }
+                        }}
+                        style={{ width:"100%", padding:"9px 18px", background:"transparent", border:"none", cursor:"pointer", fontSize:13, fontWeight:500, color:"#1A1A1A", textAlign:"left" }}
+                        onMouseEnter={e=>e.currentTarget.style.background="#F7F7F7"}
+                        onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                        {op.key === "informe" && generandoPDF ? t("generando") : op.label}
+                      </button>
+                    ))}
                   </div>
+                  {/* Idioma */}
+                  <div style={{ padding:"10px 18px 12px", borderTop:"1px solid #F0F0F0", borderBottom:"1px solid #F0F0F0" }}>
+                    <p style={{ fontSize:10, fontWeight:700, color:"#999", textTransform:"uppercase", letterSpacing:"1px", marginBottom:8 }}>{t("idioma") ?? "Idioma"}</p>
+                    <div style={{ display:"flex", gap:6 }}>
+                      {[{v:"es",l:"ES"},{v:"en",l:"EN"},{v:"fr",l:"FR"}].map(({v,l}) => (
+                        <button key={v} onClick={()=>{ setLang(v); localStorage.setItem("fr_lang",v); }}
+                          style={{ flex:1, padding:"5px 0", borderRadius:6, border: lang===v ? "1.5px solid #111111" : "1px solid #E0E0E0", background: lang===v ? "#111111" : "transparent", color: lang===v ? "#fff" : "#666", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit", transition:"all 0.12s" }}>
+                          {l}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  {/* Cerrar sesión */}
                   <button onClick={handleLogout}
-                    style={{ width:"100%", display:"flex", alignItems:"center", padding:"10px 16px", background:"transparent", border:"none", borderTop:`1px solid ${C.border}`, cursor:"pointer", fontSize:12, color:C.red, fontFamily:"'Plus Jakarta Sans',sans-serif", textAlign:"left", letterSpacing:0.2 }}
-                    onMouseEnter={e=>e.currentTarget.style.background=C.redLight}
+                    style={{ width:"100%", padding:"11px 18px", background:"transparent", border:"none", cursor:"pointer", fontSize:13, fontWeight:600, color:"#D32F2F", textAlign:"left" }}
+                    onMouseEnter={e=>e.currentTarget.style.background="#FFF5F5"}
                     onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
                     {t("cerrar_sesion")}
                   </button>
@@ -9641,7 +9697,7 @@ export default function App() {
         <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:1000 }}>
           <div style={{ background:C.bgCard, borderRadius:16, padding:"36px 40px", width:360, boxShadow:"0 24px 60px rgba(0,0,0,0.2)", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
-              <h2 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:20, fontWeight:700, color:C.text }}>Sección restringida</h2>
+              <h2 style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:20, fontWeight:700, color:C.text }}>Sección restringida</h2>
               <button onClick={() => { setRestriccionModal(null); setRestriccionInput(""); setShowRestriccionInput(false); setRestriccionError(""); }} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, width:28, height:28, cursor:"pointer", fontSize:15, color:C.textLight, display:"flex", alignItems:"center", justifyContent:"center", padding:0 }}>✕</button>
             </div>
             <p style={{ fontSize:13, color:C.textMid, marginBottom:20 }}>
@@ -9679,7 +9735,7 @@ export default function App() {
         <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:1000 }}>
           <div style={{ background:C.bgCard, borderRadius:16, padding:"36px 40px", width:440, boxShadow:"0 24px 60px rgba(0,0,0,0.2)", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:24 }}>
-              <h2 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:20, fontWeight:700, color:C.text }}>Gestión de suscripción</h2>
+              <h2 style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:20, fontWeight:700, color:C.text }}>Gestión de suscripción</h2>
               <button onClick={()=>{ setPerfilSeccion(null); setConfirmCancelar(false); }} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, width:28, height:28, cursor:"pointer", fontSize:15, color:C.textLight, display:"flex", alignItems:"center", justifyContent:"center", padding:0 }}>✕</button>
             </div>
 
@@ -9720,19 +9776,6 @@ export default function App() {
               )}
             </div>
 
-            {/* Badge plan */}
-            <div style={{ background:C.accentLight, borderRadius:10, padding:"12px 16px", marginBottom:20, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-              <div>
-                <p style={{ fontSize:13, fontWeight:700, color:C.accent }}>FastRevenue Básico</p>
-                <p style={{ fontSize:11, color:C.textMid }}>€49/mes + IVA</p>
-              </div>
-              <span style={{ fontSize:11, fontWeight:600,
-                color: suscripcion?.estado === "cancelando" ? C.gold : C.green,
-                background: suscripcion?.estado === "cancelando" ? "#FEF3C7" : C.greenLight,
-                padding:"3px 10px", borderRadius:20 }}>
-                {suscripcion?.estado === "cancelando" ? "Cancela pronto" : "Activo"}
-              </span>
-            </div>
 
             {/* Aviso cancelación programada */}
             {suscripcion?.estado === "cancelando" && (
@@ -9868,29 +9911,86 @@ export default function App() {
       {/* Modal Extranets */}
       {perfilSeccion === "extranets" && (
         <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:1000 }}>
-          <div style={{ background:C.bgCard, borderRadius:16, padding:"36px 40px", width:480, boxShadow:"0 24px 60px rgba(0,0,0,0.2)", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
-            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
-              <h2 style={{ fontFamily:"'Cormorant Garamond',serif", fontSize:20, fontWeight:700, color:C.text }}>Extranets</h2>
-              <button onClick={()=>setPerfilSeccion(null)} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, width:28, height:28, cursor:"pointer", fontSize:15, color:C.textLight, display:"flex", alignItems:"center", justifyContent:"center", padding:0 }}>✕</button>
+          <div style={{ background:C.bgCard, borderRadius:16, padding:"32px 36px", width:500, maxHeight:"85vh", overflowY:"auto", boxShadow:"0 24px 60px rgba(0,0,0,0.2)", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
+              <h2 style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:20, fontWeight:700, color:C.text }}>Extranets</h2>
+              <button onClick={()=>{ setPerfilSeccion(null); setEditingExtranetIdx(null); setAddingExtranet(false); }} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, width:28, height:28, cursor:"pointer", fontSize:15, color:C.textLight, display:"flex", alignItems:"center", justifyContent:"center", padding:0 }}>✕</button>
             </div>
-            <p style={{ fontSize:12, color:C.textMid, marginBottom:24 }}>Accede directamente a la extranet de cada canal</p>
-            {[
-              { nombre:"Brand Web", desc:"Motor de reservas directo", url:"#", logo:"🌐", color:"#004B87" },
-              { nombre:"Booking.com", desc:"Extranet de Booking.com", url:"https://admin.booking.com", logo:"🔵", color:"#003580" },
-              { nombre:"Expedia", desc:"Extranet de Expedia Group", url:"https://www.expediapartnercentral.com", logo:"🟡", color:"#FFD700" },
-            ].map((ex, i) => (
-              <a key={i} href={ex.url} target={ex.url==="#"?"_self":"_blank"} rel="noreferrer"
-                style={{ display:"flex", alignItems:"center", gap:14, padding:"14px 16px", borderRadius:10, border:`1px solid ${C.border}`, marginBottom:10, textDecoration:"none", background:C.bg, transition:"all 0.15s" }}
-                onMouseEnter={e=>{ e.currentTarget.style.background=C.accentLight; e.currentTarget.style.borderColor=C.accent; }}
-                onMouseLeave={e=>{ e.currentTarget.style.background=C.bg; e.currentTarget.style.borderColor=C.border; }}>
-                <div style={{ width:40, height:40, borderRadius:8, background:ex.color+"18", display:"flex", alignItems:"center", justifyContent:"center", fontSize:22, flexShrink:0 }}>{ex.logo}</div>
-                <div style={{ flex:1 }}>
-                  <p style={{ fontSize:13, fontWeight:700, color:C.text, marginBottom:2 }}>{ex.nombre}</p>
-                  <p style={{ fontSize:11, color:C.textMid }}>{ex.desc}</p>
+            <p style={{ fontSize:12, color:C.textMid, marginBottom:20 }}>Accede directamente a la extranet de cada canal</p>
+
+            {extranets.map((ex, i) => {
+              return (
+                <div key={i} style={{ marginBottom:8 }}>
+                  {editingExtranetIdx === i ? (
+                    <div style={{ border:`1px solid #111111`, borderRadius:10, padding:"14px 16px", background:C.bg }}>
+                      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:8 }}>
+                        <div>
+                          <p style={{ fontSize:10, color:C.textLight, fontWeight:600, textTransform:"uppercase", letterSpacing:"0.8px", marginBottom:4 }}>Nombre</p>
+                          <input value={extranetForm.nombre} onChange={e=>setExtranetForm(f=>({...f,nombre:e.target.value}))}
+                            style={{ width:"100%", padding:"7px 10px", borderRadius:7, border:`1px solid ${C.border}`, fontSize:13, background:C.bgCard, color:C.text, fontFamily:"inherit", boxSizing:"border-box" }}/>
+                        </div>
+                        <div>
+                          <p style={{ fontSize:10, color:C.textLight, fontWeight:600, textTransform:"uppercase", letterSpacing:"0.8px", marginBottom:4 }}>URL</p>
+                          <input value={extranetForm.url} onChange={e=>setExtranetForm(f=>({...f,url:e.target.value}))}
+                            placeholder="https://..." style={{ width:"100%", padding:"7px 10px", borderRadius:7, border:`1px solid ${C.border}`, fontSize:13, background:C.bgCard, color:C.text, fontFamily:"inherit", boxSizing:"border-box" }}/>
+                        </div>
+                      </div>
+                      <div style={{ display:"flex", gap:8 }}>
+                        <button onClick={()=>{ const updated=[...extranets]; updated[i]={nombre:extranetForm.nombre,url:extranetForm.url}; setExtranetsPersist(updated); setEditingExtranetIdx(null); }}
+                          style={{ flex:1, padding:"7px 0", borderRadius:7, border:"none", background:"#111111", color:"#fff", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>Guardar</button>
+                        <button onClick={()=>setEditingExtranetIdx(null)}
+                          style={{ padding:"7px 14px", borderRadius:7, border:`1px solid ${C.border}`, background:"none", color:C.textMid, fontSize:12, cursor:"pointer", fontFamily:"inherit" }}>Cancelar</button>
+                        <button onClick={()=>{ setExtranetsPersist(extranets.filter((_,j)=>j!==i)); setEditingExtranetIdx(null); }}
+                          style={{ padding:"7px 14px", borderRadius:7, border:`1px solid ${C.red}`, background:"none", color:C.red, fontSize:12, cursor:"pointer", fontFamily:"inherit" }}>Eliminar</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div onClick={()=>{ if(ex.url) window.open(ex.url,"_blank","noreferrer"); }}
+                      style={{ display:"flex", alignItems:"center", gap:12, padding:"13px 16px", borderRadius:10, border:`1px solid ${C.border}`, background:C.bg, cursor: ex.url ? "pointer" : "default", transition:"border-color 0.15s, background 0.15s" }}
+                      onMouseEnter={e=>{ if(ex.url){ e.currentTarget.style.borderColor="#111111"; e.currentTarget.style.background=C.bgCard; } }}
+                      onMouseLeave={e=>{ e.currentTarget.style.borderColor=C.border; e.currentTarget.style.background=C.bg; }}>
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <p style={{ fontSize:13, fontWeight:700, color:C.text }}>{ex.nombre}</p>
+                        {!ex.url && <p style={{ fontSize:11, color:C.red, fontStyle:"italic" }}>Sin URL configurada</p>}
+                      </div>
+                      <button onClick={e=>{ e.stopPropagation(); setExtranetForm({ nombre:ex.nombre, url:ex.url||"" }); setEditingExtranetIdx(i); }}
+                        style={{ padding:"5px 10px", borderRadius:6, border:`1px solid ${C.border}`, background:C.bgCard, color:C.textMid, fontSize:11, cursor:"pointer", fontFamily:"inherit", flexShrink:0 }}>Editar</button>
+                    </div>
+                  )}
                 </div>
-                <span style={{ fontSize:11, color:C.textLight }}>→</span>
-              </a>
-            ))}
+              );
+            })}
+
+            {/* Añadir nueva extranet */}
+            {addingExtranet ? (
+              <div style={{ border:`1px solid #111111`, borderRadius:10, padding:"14px 16px", background:C.bg, marginTop:10 }}>
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:10 }}>
+                  <div>
+                    <p style={{ fontSize:10, color:C.textLight, fontWeight:600, textTransform:"uppercase", letterSpacing:"0.8px", marginBottom:4 }}>Nombre</p>
+                    <input value={newExtranetForm.nombre} onChange={e=>setNewExtranetForm(f=>({...f,nombre:e.target.value}))}
+                      placeholder="Ej: Hotelbeds" style={{ width:"100%", padding:"7px 10px", borderRadius:7, border:`1px solid ${C.border}`, fontSize:13, background:C.bgCard, color:C.text, fontFamily:"inherit", boxSizing:"border-box" }}/>
+                  </div>
+                  <div>
+                    <p style={{ fontSize:10, color:C.textLight, fontWeight:600, textTransform:"uppercase", letterSpacing:"0.8px", marginBottom:4 }}>URL</p>
+                    <input value={newExtranetForm.url} onChange={e=>setNewExtranetForm(f=>({...f,url:e.target.value}))}
+                      placeholder="https://..." style={{ width:"100%", padding:"7px 10px", borderRadius:7, border:`1px solid ${C.border}`, fontSize:13, background:C.bgCard, color:C.text, fontFamily:"inherit", boxSizing:"border-box" }}/>
+                  </div>
+                </div>
+                <div style={{ display:"flex", gap:8 }}>
+                  <button onClick={()=>{ if(!newExtranetForm.nombre) return; setExtranetsPersist([...extranets,{ nombre:newExtranetForm.nombre, url:newExtranetForm.url }]); setNewExtranetForm({nombre:"",url:""}); setAddingExtranet(false); }}
+                    style={{ flex:1, padding:"7px 0", borderRadius:7, border:"none", background:"#111111", color:"#fff", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>Añadir</button>
+                  <button onClick={()=>{ setAddingExtranet(false); setNewExtranetForm({nombre:"",url:""}); }}
+                    style={{ padding:"7px 14px", borderRadius:7, border:`1px solid ${C.border}`, background:"none", color:C.textMid, fontSize:12, cursor:"pointer", fontFamily:"inherit" }}>Cancelar</button>
+                </div>
+              </div>
+            ) : (
+              <button onClick={()=>setAddingExtranet(true)}
+                style={{ width:"100%", marginTop:10, padding:"10px 0", borderRadius:9, border:`1.5px dashed ${C.border}`, background:"none", color:C.textMid, fontSize:13, fontWeight:600, cursor:"pointer", fontFamily:"inherit", transition:"border-color 0.15s, color 0.15s" }}
+                onMouseEnter={e=>{ e.currentTarget.style.borderColor="#111111"; e.currentTarget.style.color="#111111"; }}
+                onMouseLeave={e=>{ e.currentTarget.style.borderColor=C.border; e.currentTarget.style.color=C.textMid; }}>
+                + Añadir extranet
+              </button>
+            )}
           </div>
         </div>
       )}
