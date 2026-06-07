@@ -1035,7 +1035,7 @@ function KpiModal({ kpi, datos, mes, anio, onClose }) {
   );
 }
 
-function KpiCard({ label, subtitle, value, changeLm, upLm, changeLy, upLy, i, onClick, accentColor }) {
+const KpiCard = React.memo(function KpiCard({ label, subtitle, value, changeLm, upLm, changeLy, upLy, i, onClick, accentColor }) {
   const kpiAccent = accentColor || C.accent;
   const pct = changeLm && changeLm !== "—" ? parseFloat(changeLm) : null;
   const isFlat = pct !== null && Math.abs(pct) < 1;
@@ -1074,7 +1074,12 @@ function KpiCard({ label, subtitle, value, changeLm, upLm, changeLy, upLy, i, on
       </div>
     </div>
   );
-}
+}, (prev, next) =>
+  prev.label === next.label && prev.subtitle === next.subtitle &&
+  prev.value === next.value && prev.changeLm === next.changeLm &&
+  prev.upLm === next.upLm && prev.changeLy === next.changeLy &&
+  prev.upLy === next.upLy && prev.i === next.i && prev.accentColor === next.accentColor
+);
 
 function PeriodSelectorInline({ mes, anio, onChange, aniosDisponibles, allowFuture = false }) {
   const t = useT();
@@ -5169,6 +5174,19 @@ function PickupView({ datos, onGuardado }) {
     setGenerandoMock(false);
   };
 
+  // Auto-generar mock si no hay datos de pickup de hoy (desarrollo)
+  const autoMockDoneRef = useRef(false);
+  useEffect(() => {
+    if (autoMockDoneRef.current) return;
+    const hoy = new Date();
+    const hoyStr = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,"0")}-${String(hoy.getDate()).padStart(2,"0")}`;
+    const tieneHoy = (datos.pickupEntries || []).some(e => String(e.fecha_pickup||"").slice(0,10) === hoyStr);
+    if (!tieneHoy && session?.user?.id) {
+      autoMockDoneRef.current = true;
+      generarPickupMock();
+    }
+  }, [datos.pickupEntries]);
+
   // Mapa precalculado — mismo origen que el heatmap
   const habEnCasaMapPU = useMemo(
     () => buildHabEnCasaMap(datos.pickupEntries, datos.grupos),
@@ -8808,6 +8826,9 @@ function ModalConfigUnificado({ datos, session, navHidden, toggleNavHidden, navR
   const [hForm, setHForm] = React.useState({ nombre: datos.hotel?.nombre||"", ciudad: datos.hotel?.ciudad||"", habitaciones: datos.hotel?.habitaciones||"" });
   const [hGuardando, setHGuardando] = React.useState(false);
   const [hOk, setHOk] = React.useState(false);
+  const [enviandoEmail, setEnviandoEmail] = React.useState(false);
+  const [okEmail, setOkEmail] = React.useState(false);
+  const [errorEmail, setErrorEmail] = React.useState("");
   const [pin, setPin] = React.useState("");
   const [pinError, setPinError] = React.useState("");
   const [pinLoading, setPinLoading] = React.useState(false);
@@ -8895,6 +8916,56 @@ function ModalConfigUnificado({ datos, session, navHidden, toggleNavHidden, navR
             }} style={{ marginTop:10, width:"100%", padding:"11px", borderRadius:9, border:"none", background:hOk?"#059669":C.accent, color:"#fff", fontSize:14, fontWeight:700, cursor:hGuardando||hOk?"not-allowed":"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", transition:"background 0.2s" }}>
               {hGuardando ? "Guardando..." : hOk ? "✓ Guardado" : "Guardar cambios"}
             </button>
+
+            {/* Envío de informe de prueba */}
+            <div style={{ borderTop:`1px solid ${C.border}`, paddingTop:16, marginTop:6 }}>
+              <p style={{ fontSize:11, color:C.textLight, fontWeight:600, marginBottom:6 }}>CORREO DIARIO</p>
+              <p style={{ fontSize:12, color:C.textMid, marginBottom:10 }}>Envía el informe con los datos del último día registrado para verificar que el correo llega correctamente.</p>
+              <button disabled={enviandoEmail || okEmail} onClick={async () => {
+                setEnviandoEmail(true); setErrorEmail("");
+                try {
+                  const { data: ultimoDia } = await supabase.from("produccion_diaria")
+                    .select("*").eq("hotel_id", session.user.id).order("fecha", { ascending: false }).limit(1).maybeSingle();
+                  if (!ultimoDia) throw new Error("Sin datos de producción registrados. Importa o introduce datos primero.");
+                  const mesActual = parseInt(ultimoDia.fecha.split('-')[1]);
+                  const anioActual = parseInt(ultimoDia.fecha.split('-')[0]);
+                  const mesStr = String(mesActual).padStart(2,'0');
+                  const inicioMes = `${anioActual}-${mesStr}-01`;
+                  const inicioSig = mesActual === 12 ? `${anioActual+1}-01-01` : `${anioActual}-${String(mesActual+1).padStart(2,'0')}-01`;
+                  const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+                  const [{ data: datosMes }, { data: pickupRows }, { data: pptoData }] = await Promise.all([
+                    supabase.from("produccion_diaria").select("fecha,hab_ocupadas,hab_disponibles,revenue_hab,revenue_fnb,revenue_total").eq("hotel_id", session.user.id).gte("fecha", inicioMes).lt("fecha", inicioSig).order("fecha", { ascending: true }),
+                    supabase.from("pickup_entries").select("num_reservas,precio_total,estado").eq("hotel_id", session.user.id).eq("fecha_pickup", ultimoDia.fecha),
+                    supabase.from("presupuesto").select("rev_total_ppto,adr_ppto").eq("hotel_id", session.user.id).eq("mes", mesActual).eq("anio", anioActual).maybeSingle(),
+                  ]);
+                  let nuevas = 0, cancels = 0, revPickup = 0;
+                  for (const p of (pickupRows || [])) { const nr = p.num_reservas||1; if (p.estado==='cancelada') cancels+=nr; else { nuevas+=nr; revPickup+=p.precio_total||0; } }
+                  let acum = 0;
+                  const revenueAcumulado = (datosMes||[]).map(d => { acum += d.revenue_hab||0; return { dia: parseInt(d.fecha.split('-')[2]), acum: Math.round(acum) }; });
+                  let totHabOcu=0, totHabDisp=0, totRevHab=0;
+                  for (const d of (datosMes||[])) { if (d.hab_disponibles>0) { totHabOcu+=d.hab_ocupadas||0; totHabDisp+=d.hab_disponibles||0; totRevHab+=d.revenue_hab||0; } }
+                  const occ = ultimoDia.hab_disponibles>0 ? ultimoDia.hab_ocupadas/ultimoDia.hab_disponibles*100 : null;
+                  const adr = ultimoDia.adr ?? (ultimoDia.hab_ocupadas>0&&ultimoDia.revenue_hab ? ultimoDia.revenue_hab/ultimoDia.hab_ocupadas : null);
+                  const revpar = ultimoDia.revpar ?? (ultimoDia.hab_disponibles>0&&ultimoDia.revenue_hab ? ultimoDia.revenue_hab/ultimoDia.hab_disponibles : null);
+                  const resp = await fetch('/api/daily-email', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+                    body: JSON.stringify({
+                      email: session.user.email,
+                      hotelNombre: datos.hotel?.nombre || null,
+                      kpis: { fecha: ultimoDia.fecha, mesNombre: MESES[mesActual-1], occ, adr, revpar, trevpar: null, hab_ocupadas: ultimoDia.hab_ocupadas, hab_disponibles: ultimoDia.hab_disponibles, pickup_neto: nuevas, cancelaciones: cancels, revenue_pickup_ayer: revPickup||null, revenueAcumulado, presupuestoMensual: pptoData?.rev_total_ppto??null, avg_occ: totHabDisp>0?totHabOcu/totHabDisp*100:null, avg_adr: totHabOcu>0?totRevHab/totHabOcu:null, avg_revpar: totHabDisp>0?totRevHab/totHabDisp:null, avg_trevpar: null, revHabMes: totRevHab, revFnbMes: 0, canalesRevenue: [], revGruposMes: 0, revIndividualMes: totRevHab, adrPpto: pptoData?.adr_ppto??null, gruposProximos: [] },
+                    }),
+                  });
+                  const json = await resp.json();
+                  if (!resp.ok) throw new Error(json.error || `HTTP ${resp.status}`);
+                  setOkEmail(true); setTimeout(() => setOkEmail(false), 4000);
+                } catch(e) { setErrorEmail(e.message); }
+                setEnviandoEmail(false);
+              }} style={{ width:"100%", padding:"10px", borderRadius:8, border:`1px solid ${C.border}`, background: okEmail ? C.greenLight : "transparent", color: okEmail ? C.green : C.text, fontSize:13, fontWeight:600, cursor: enviandoEmail||okEmail ? "not-allowed" : "pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", transition:"all .2s" }}>
+                {enviandoEmail ? "Enviando..." : okEmail ? "✓ Correo enviado" : "Enviar correo de prueba"}
+              </button>
+              {errorEmail && <p style={{ fontSize:11, color:C.red, marginTop:6 }}>{errorEmail}</p>}
+            </div>
           </div>
         )}
 
@@ -9022,6 +9093,8 @@ export default function App() {
   const [enviandoInformePrueba, setEnviandoInformePrueba] = useState(false);
   const [okInformePrueba, setOkInformePrueba] = useState(false);
   const [errorInformePrueba, setErrorInformePrueba] = useState("");
+  const [toast, setToast] = useState(null); // { msg, ok }
+  const showToast = (msg, ok=true) => { setToast({ msg, ok }); setTimeout(() => setToast(null), ok ? 3500 : 6000); };
   const [datos, setDatos] = useState(() => {
     try {
       const cached = sessionStorage.getItem("fr_datos_cache_v4");
@@ -9390,13 +9463,7 @@ export default function App() {
   };
   const handleOnboardingSkip = () => { localStorage.setItem("fr_onboarding_v1", "1"); setOnboardingStep(null); };
 
-  const views = {
-    dashboard: (props) => <DashboardView {...props} onMesDetalle={(m, a) => setMesDetalle({ mes: m, anio: a })} onDesgloseMovimiento={tipo => setDesgloseMovimiento(tipo)} kpiModal={kpiModal} setKpiModal={setKpiModal} kpiModalExterno={kpiModalApp} onKpiModalExternoHandled={() => setKpiModalApp(null)} onNavigarGrupos={(subvista, fechaInicio, fechaFin, id) => { localStorage.setItem("fr_grupos_subvista", subvista); sessionStorage.setItem("fr_pending_nuevo", JSON.stringify({ tipo: subvista === "eventos" ? "evento" : "grupo", fecha_inicio: fechaInicio, fecha_fin: fechaFin, highlightId: id||null })); sessionStorage.setItem("fr_from_heatmap", "1"); setView("grupos"); localStorage.setItem("fr_view", "grupos"); }} />,
-    pickup:    (props) => <PickupView    {...props} />,
-    budget:    (props) => <BudgetView    {...props} />,
-    grupos:    (props) => <GruposView    {...props} onRecargar={() => cargarDatos(true)} onVolverHeatmap={() => { setView("dashboard"); localStorage.setItem("fr_view", "dashboard"); }} subVistaExt={gruposSubVista} onCambiarSubVista={cambiarGruposSubVista} />,
-  };
-  const View = views[view] || views["dashboard"];
+  const _commonViewProps = { datos, mes: mesSel, anio: anioSel, onGuardado: cargarDatos, onPeriodo: (m,a) => { setMesSel(m); setAnioSel(a); localStorage.setItem("rm_mes", m); localStorage.setItem("rm_anio", a); } };
 
   if (loading) return (
     <div style={{ minHeight: "100vh", background: C.bgDeep, display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -9553,6 +9620,7 @@ export default function App() {
                       { label:t("suscripcion"),           key:"suscripcion" },
                       { label:t("extranets"),             key:"extranets" },
                       { label:t("informe_mensual"),       key:"informe" },
+                      { label:"Enviar informe diario",    key:"informe_diario" },
                     ].map(op => (
                       <button key={op.key} onClick={async () => {
                           if (op.key === "informe") {
@@ -9560,6 +9628,41 @@ export default function App() {
                             setGenerandoPDF(true);
                             await generarReportePDF(datos, mesSel, anioSel, datos.hotel?.nombre||"Mi Hotel");
                             setGenerandoPDF(false);
+                          } else if (op.key === "informe_diario") {
+                            setMostrarPerfil(false);
+                            showToast("Enviando informe...", true);
+                            try {
+                              const { data: ultimoDia } = await supabase.from("produccion_diaria").select("*").eq("hotel_id", session.user.id).order("fecha", { ascending: false }).limit(1).maybeSingle();
+                              if (!ultimoDia) throw new Error("Sin datos de producción registrados");
+                              const mesActual = parseInt(ultimoDia.fecha.split('-')[1]);
+                              const anioActual = parseInt(ultimoDia.fecha.split('-')[0]);
+                              const mesStr = String(mesActual).padStart(2,'0');
+                              const inicioMes = `${anioActual}-${mesStr}-01`;
+                              const inicioSig = mesActual===12 ? `${anioActual+1}-01-01` : `${anioActual}-${String(mesActual+1).padStart(2,'0')}-01`;
+                              const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+                              const [{ data: datosMes }, { data: pickupRows }, { data: pptoData }] = await Promise.all([
+                                supabase.from("produccion_diaria").select("fecha,hab_ocupadas,hab_disponibles,revenue_hab,revenue_fnb,revenue_total").eq("hotel_id", session.user.id).gte("fecha", inicioMes).lt("fecha", inicioSig).order("fecha", { ascending: true }),
+                                supabase.from("pickup_entries").select("num_reservas,precio_total,estado").eq("hotel_id", session.user.id).eq("fecha_pickup", ultimoDia.fecha),
+                                supabase.from("presupuesto").select("rev_total_ppto,adr_ppto").eq("hotel_id", session.user.id).eq("mes", mesActual).eq("anio", anioActual).maybeSingle(),
+                              ]);
+                              let nuevas=0, cancels=0, revPickup=0;
+                              for (const p of (pickupRows||[])) { const nr=p.num_reservas||1; if (p.estado==='cancelada') cancels+=nr; else { nuevas+=nr; revPickup+=p.precio_total||0; } }
+                              let acum=0;
+                              const revenueAcumulado = (datosMes||[]).map(d => { acum+=d.revenue_hab||0; return { dia: parseInt(d.fecha.split('-')[2]), acum: Math.round(acum) }; });
+                              let totHabOcu=0, totHabDisp=0, totRevHab=0;
+                              for (const d of (datosMes||[])) { if (d.hab_disponibles>0) { totHabOcu+=d.hab_ocupadas||0; totHabDisp+=d.hab_disponibles||0; totRevHab+=d.revenue_hab||0; } }
+                              const occ = ultimoDia.hab_disponibles>0 ? ultimoDia.hab_ocupadas/ultimoDia.hab_disponibles*100 : null;
+                              const adr = ultimoDia.adr ?? (ultimoDia.hab_ocupadas>0&&ultimoDia.revenue_hab ? ultimoDia.revenue_hab/ultimoDia.hab_ocupadas : null);
+                              const revpar = ultimoDia.revpar ?? (ultimoDia.hab_disponibles>0&&ultimoDia.revenue_hab ? ultimoDia.revenue_hab/ultimoDia.hab_disponibles : null);
+                              const resp = await fetch('/api/daily-email', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+                                body: JSON.stringify({ email: session.user.email, hotelNombre: datos.hotel?.nombre||null, kpis: { fecha: ultimoDia.fecha, mesNombre: MESES[mesActual-1], occ, adr, revpar, trevpar: null, hab_ocupadas: ultimoDia.hab_ocupadas, hab_disponibles: ultimoDia.hab_disponibles, pickup_neto: nuevas, cancelaciones: cancels, revenue_pickup_ayer: revPickup||null, revenueAcumulado, presupuestoMensual: pptoData?.rev_total_ppto??null, avg_occ: totHabDisp>0?totHabOcu/totHabDisp*100:null, avg_adr: totHabOcu>0?totRevHab/totHabOcu:null, avg_revpar: totHabDisp>0?totRevHab/totHabDisp:null, avg_trevpar: null, revHabMes: totRevHab, revFnbMes: 0, canalesRevenue: [], revGruposMes: 0, revIndividualMes: totRevHab, adrPpto: pptoData?.adr_ppto??null, gruposProximos: [] } }),
+                              });
+                              const json = await resp.json();
+                              if (!resp.ok) throw new Error(json.error || `HTTP ${resp.status}`);
+                              showToast("✓ Informe enviado a " + session.user.email, true);
+                            } catch(e) { showToast("Error: " + e.message, false); }
                           } else if (op.key === "hotel") {
                             setConfigInitialTab("datos");
                             setPerfilSeccion("config");
@@ -9572,7 +9675,7 @@ export default function App() {
                         style={{ width:"100%", padding:"9px 18px", background:"transparent", border:"none", cursor:"pointer", fontSize:13, fontWeight:500, color:"#1A1A1A", textAlign:"left" }}
                         onMouseEnter={e=>e.currentTarget.style.background="#F7F7F7"}
                         onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
-                        {op.key === "informe" && generandoPDF ? t("generando") : op.label}
+                        {op.key === "informe" && generandoPDF ? t("generando") : op.key === "informe_diario" && enviandoInformePrueba ? "Enviando..." : op.key === "informe_diario" && okInformePrueba ? "✓ Enviado" : op.label}
                       </button>
                     ))}
                   </div>
@@ -9672,7 +9775,20 @@ export default function App() {
         ) : desgloseMovimiento ? (
           <div style={{ width:"100%" }}><DesgloseMovimientoView datos={datos} tipo={desgloseMovimiento} onBack={() => setDesgloseMovimiento(null)} /></div>
         ) : view !== "gestion" ? (
-          <div style={{ width:"100%" }}><View datos={datos} mes={mesSel} anio={anioSel} onGuardado={cargarDatos} onPeriodo={(m,a) => { setMesSel(m); setAnioSel(a); localStorage.setItem("rm_mes", m); localStorage.setItem("rm_anio", a); }} /></div>
+          <div style={{ width:"100%" }}>
+            {(view === "dashboard" || !["pickup","budget","grupos"].includes(view)) && (
+              <DashboardView {..._commonViewProps}
+                onMesDetalle={(m,a) => setMesDetalle({ mes:m, anio:a })}
+                onDesgloseMovimiento={tipo => setDesgloseMovimiento(tipo)}
+                kpiModal={kpiModal} setKpiModal={setKpiModal}
+                kpiModalExterno={kpiModalApp} onKpiModalExternoHandled={() => setKpiModalApp(null)}
+                onNavigarGrupos={(subvista, fechaInicio, fechaFin, id) => { localStorage.setItem("fr_grupos_subvista", subvista); sessionStorage.setItem("fr_pending_nuevo", JSON.stringify({ tipo: subvista === "eventos" ? "evento" : "grupo", fecha_inicio: fechaInicio, fecha_fin: fechaFin, highlightId: id||null })); sessionStorage.setItem("fr_from_heatmap", "1"); setView("grupos"); localStorage.setItem("fr_view", "grupos"); }}
+              />
+            )}
+            {view === "pickup" && <PickupView {..._commonViewProps} />}
+            {view === "budget" && <BudgetView {..._commonViewProps} />}
+            {view === "grupos" && <GruposView {..._commonViewProps} onRecargar={() => cargarDatos(true)} onVolverHeatmap={() => { setView("dashboard"); localStorage.setItem("fr_view", "dashboard"); }} subVistaExt={gruposSubVista} onCambiarSubVista={cambiarGruposSubVista} />}
+          </div>
         ) : null}
       </main>
 
@@ -9728,6 +9844,13 @@ export default function App() {
               {restriccionLoading ? "Verificando…" : "Entrar"}
             </button>
           </div>
+        </div>
+      )}
+
+      {/* Toast global */}
+      {toast && (
+        <div style={{ position:"fixed", bottom:24, left:"50%", transform:"translateX(-50%)", zIndex:9999, background: toast.ok ? "#111" : "#D32F2F", color:"#fff", padding:"12px 24px", borderRadius:10, fontSize:13, fontWeight:600, fontFamily:"'Plus Jakarta Sans',sans-serif", boxShadow:"0 8px 24px rgba(0,0,0,0.2)", maxWidth:"90vw", textAlign:"center", pointerEvents:"none" }}>
+          {toast.msg}
         </div>
       )}
 
