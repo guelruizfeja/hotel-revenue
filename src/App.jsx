@@ -9408,8 +9408,24 @@ export default function App() {
   const cambiarGruposSubVista = (v) => { setGruposSubVista(v); localStorage.setItem("fr_grupos_subvista", v); };
 
   const hoy = new Date();
-  const [mesSel,  setMesSel]  = useState(() => { const v = localStorage.getItem("rm_mes");  return v !== null ? parseInt(v) : hoy.getMonth(); });
-  const [anioSel, setAnioSel] = useState(() => { const v = localStorage.getItem("rm_anio"); return v !== null ? parseInt(v) : hoy.getFullYear(); });
+  const [mesSel,  setMesSel]  = useState(() => {
+    const v = localStorage.getItem("rm_mes"), a = localStorage.getItem("rm_anio");
+    if (v !== null && a !== null) {
+      const sM = parseInt(v), sA = parseInt(a), cM = hoy.getMonth(), cA = hoy.getFullYear();
+      if (sA < cA || (sA === cA && sM < cM)) return cM; // mes guardado ya pasó → avanzar al mes actual
+      return sM;
+    }
+    return hoy.getMonth();
+  });
+  const [anioSel, setAnioSel] = useState(() => {
+    const v = localStorage.getItem("rm_mes"), a = localStorage.getItem("rm_anio");
+    if (v !== null && a !== null) {
+      const sM = parseInt(v), sA = parseInt(a), cM = hoy.getMonth(), cA = hoy.getFullYear();
+      if (sA < cA || (sA === cA && sM < cM)) return cA;
+      return sA;
+    }
+    return hoy.getFullYear();
+  });
   const [importar, setImportar] = useState(false);
   const [suscripcion, setSuscripcion] = useState(null);
   const [cargandoSub, setCargandoSub] = useState(true);
