@@ -873,9 +873,11 @@ function KpiModal({ kpi, datos, mes, anio, onClose }) {
                 { label:"Habitaciones", value:`€${Math.round(totalHabS).toLocaleString("es-ES")}`, color:C.accent },
                 { label:"F&B", value:`€${Math.round(totalFnbS).toLocaleString("es-ES")}`, color:"#E85D04" },
               ].map((k,i)=>(
-                <div key={i} style={{ background:`${C.accent}0f`, borderRadius:8, padding:"16px", borderLeft:`3px solid ${k.color||C.accent}`, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", textAlign:"center" }}>
-                  <p style={{ fontSize:10, color:C.textMid, textTransform:"uppercase", letterSpacing:1.5, marginBottom:6, fontWeight:600 }}>{k.label}</p>
-                  <p style={{ fontSize:22, fontWeight:700, color:k.color||(k.up===false?C.red:k.up===true?C.green:C.text), fontFamily:"'Plus Jakarta Sans',sans-serif" }}>{k.value}</p>
+                <div key={i} style={{ background:C.bgCard, border:"1.5px solid #111111", borderRadius:8, padding:"14px 18px", boxShadow:"0 1px 4px rgba(0,0,0,0.06)", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", textAlign:"center", transition:"box-shadow 0.2s, transform 0.2s" }}
+                  onMouseEnter={e=>{e.currentTarget.style.boxShadow="0 6px 24px rgba(0,0,0,0.18)";e.currentTarget.style.transform="translateY(-2px)";}}
+                  onMouseLeave={e=>{e.currentTarget.style.boxShadow="0 1px 4px rgba(0,0,0,0.06)";e.currentTarget.style.transform="translateY(0)";}}>
+                  <p style={{ fontSize:11, color:C.text, textTransform:"uppercase", letterSpacing:"1.5px", marginBottom:6, fontWeight:700 }}>{k.label}</p>
+                  <p style={{ fontSize:"clamp(18px,4vw,24px)", fontWeight:700, color:k.color||(k.up===false?C.red:k.up===true?C.green:C.text), fontFamily:"'Plus Jakarta Sans',sans-serif", letterSpacing:"-1px", lineHeight:1, margin:0 }}>{k.value}</p>
                 </div>
               ))}
             </div>
@@ -896,9 +898,11 @@ function KpiModal({ kpi, datos, mes, anio, onClose }) {
                 { label:"Habitaciones", value:`€${Math.round(totalHabM).toLocaleString("es-ES")}`, color:C.accent },
                 { label:"F&B", value:`€${Math.round(totalFnbM).toLocaleString("es-ES")}`, color:"#E85D04" },
               ].map((k,i)=>(
-                <div key={i} style={{ background:`${C.accent}0f`, borderRadius:8, padding:"16px", borderLeft:`3px solid ${k.color||C.accent}`, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", textAlign:"center" }}>
-                  <p style={{ fontSize:10, color:C.textMid, textTransform:"uppercase", letterSpacing:1.5, marginBottom:6, fontWeight:600 }}>{k.label}</p>
-                  <p style={{ fontSize:22, fontWeight:700, color:k.color||(k.up===false?C.red:k.up===true?C.green:C.text), fontFamily:"'Plus Jakarta Sans',sans-serif" }}>{k.value}</p>
+                <div key={i} style={{ background:C.bgCard, border:"1.5px solid #111111", borderRadius:8, padding:"14px 18px", boxShadow:"0 1px 4px rgba(0,0,0,0.06)", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", textAlign:"center", transition:"box-shadow 0.2s, transform 0.2s" }}
+                  onMouseEnter={e=>{e.currentTarget.style.boxShadow="0 6px 24px rgba(0,0,0,0.18)";e.currentTarget.style.transform="translateY(-2px)";}}
+                  onMouseLeave={e=>{e.currentTarget.style.boxShadow="0 1px 4px rgba(0,0,0,0.06)";e.currentTarget.style.transform="translateY(0)";}}>
+                  <p style={{ fontSize:11, color:C.text, textTransform:"uppercase", letterSpacing:"1.5px", marginBottom:6, fontWeight:700 }}>{k.label}</p>
+                  <p style={{ fontSize:"clamp(18px,4vw,24px)", fontWeight:700, color:k.color||(k.up===false?C.red:k.up===true?C.green:C.text), fontFamily:"'Plus Jakarta Sans',sans-serif", letterSpacing:"-1px", lineHeight:1, margin:0 }}>{k.value}</p>
                 </div>
               ))}
               {vsLYv && <div style={{ gridColumn:"1/-1", display:"flex", gap:8, alignItems:"center" }}>
@@ -918,9 +922,11 @@ function KpiModal({ kpi, datos, mes, anio, onClose }) {
           return (
             <div style={{ display:"grid", gridTemplateColumns:`repeat(${cards.length},1fr)`, gap:12, marginBottom:20 }}>
               {cards.map((k,i)=>(
-                <div key={i} style={{ background:`${C.accent}0f`, borderRadius:8, padding:"16px", borderLeft:`3px solid ${C.accent}`, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", textAlign:"center" }}>
-                  <p style={{ fontSize:10, color:C.textMid, textTransform:"uppercase", letterSpacing:1.5, marginBottom:6, fontWeight:600 }}>{k.label}</p>
-                  <p style={{ fontSize:22, fontWeight:700, color:k.up===false?C.red:k.up===true?C.green:C.text, fontFamily:"'Plus Jakarta Sans',sans-serif" }}>{k.value}</p>
+                <div key={i} style={{ background:C.bgCard, border:"1.5px solid #111111", borderRadius:8, padding:"14px 18px", boxShadow:"0 1px 4px rgba(0,0,0,0.06)", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", textAlign:"center", transition:"box-shadow 0.2s, transform 0.2s" }}
+                  onMouseEnter={e=>{e.currentTarget.style.boxShadow="0 6px 24px rgba(0,0,0,0.18)";e.currentTarget.style.transform="translateY(-2px)";}}
+                  onMouseLeave={e=>{e.currentTarget.style.boxShadow="0 1px 4px rgba(0,0,0,0.06)";e.currentTarget.style.transform="translateY(0)";}}>
+                  <p style={{ fontSize:11, color:C.text, textTransform:"uppercase", letterSpacing:"1.5px", marginBottom:6, fontWeight:700 }}>{k.label}</p>
+                  <p style={{ fontSize:"clamp(18px,4vw,24px)", fontWeight:700, color:k.up===false?C.red:k.up===true?C.green:C.text, fontFamily:"'Plus Jakarta Sans',sans-serif", letterSpacing:"-1px", lineHeight:1, margin:0 }}>{k.value}</p>
                 </div>
               ))}
             </div>
