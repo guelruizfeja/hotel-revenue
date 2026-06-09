@@ -748,13 +748,10 @@ function KpiModal({ kpi, datos, mes, anio, onClose }) {
   const [modoVista, setModoVista] = useState("30dias"); // "30dias" | "mes"
 
   const todasProd = (produccion||[]).sort((a,b)=>new Date(a.fecha)-new Date(b.fecha));
-  const ultimaFechaMes = todasProd
-    .filter(d => { const f=new Date(d.fecha+"T00:00:00"); return f.getMonth()===mes && f.getFullYear()===anio; })
-    .map(d => d.fecha).slice(-1)[0];
   const _pad2 = n => String(n).padStart(2,"0");
   const _hoyLocal = new Date();
   const _hoyStr = `${_hoyLocal.getFullYear()}-${_pad2(_hoyLocal.getMonth()+1)}-${_pad2(_hoyLocal.getDate())}`;
-  const refDateStr = ultimaFechaMes || _hoyStr;
+  const refDateStr = _hoyStr;
   const _ref = new Date(refDateStr+"T00:00:00");
   const _desde = new Date(_ref); _desde.setDate(_ref.getDate()-29);
   const desde30Str = `${_desde.getFullYear()}-${_pad2(_desde.getMonth()+1)}-${_pad2(_desde.getDate())}`;
