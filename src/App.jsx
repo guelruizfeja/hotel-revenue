@@ -873,7 +873,7 @@ function KpiModal({ kpi, datos, mes, anio, onClose }) {
                 { label:"Habitaciones", value:`€${Math.round(totalHabS).toLocaleString("es-ES")}`, color:C.accent },
                 { label:"F&B", value:`€${Math.round(totalFnbS).toLocaleString("es-ES")}`, color:"#E85D04" },
               ].map((k,i)=>(
-                <div key={i} style={{ background:C.bgCard, border:"1.5px solid #111111", borderRadius:8, padding:"14px 18px", boxShadow:"0 1px 4px rgba(0,0,0,0.06)", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", textAlign:"center", transition:"box-shadow 0.2s, transform 0.2s" }}
+                <div key={i} style={{ background:"#f5f5f5", border:"1.5px solid #111111", borderRadius:8, padding:"14px 18px", boxShadow:"0 1px 4px rgba(0,0,0,0.06)", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", textAlign:"center", transition:"box-shadow 0.2s, transform 0.2s" }}
                   onMouseEnter={e=>{e.currentTarget.style.boxShadow="0 6px 24px rgba(0,0,0,0.18)";e.currentTarget.style.transform="translateY(-2px)";}}
                   onMouseLeave={e=>{e.currentTarget.style.boxShadow="0 1px 4px rgba(0,0,0,0.06)";e.currentTarget.style.transform="translateY(0)";}}>
                   <p style={{ fontSize:11, color:C.text, textTransform:"uppercase", letterSpacing:"1.5px", marginBottom:6, fontWeight:700 }}>{k.label}</p>
@@ -898,7 +898,7 @@ function KpiModal({ kpi, datos, mes, anio, onClose }) {
                 { label:"Habitaciones", value:`€${Math.round(totalHabM).toLocaleString("es-ES")}`, color:C.accent },
                 { label:"F&B", value:`€${Math.round(totalFnbM).toLocaleString("es-ES")}`, color:"#E85D04" },
               ].map((k,i)=>(
-                <div key={i} style={{ background:C.bgCard, border:"1.5px solid #111111", borderRadius:8, padding:"14px 18px", boxShadow:"0 1px 4px rgba(0,0,0,0.06)", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", textAlign:"center", transition:"box-shadow 0.2s, transform 0.2s" }}
+                <div key={i} style={{ background:"#f5f5f5", border:"1.5px solid #111111", borderRadius:8, padding:"14px 18px", boxShadow:"0 1px 4px rgba(0,0,0,0.06)", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", textAlign:"center", transition:"box-shadow 0.2s, transform 0.2s" }}
                   onMouseEnter={e=>{e.currentTarget.style.boxShadow="0 6px 24px rgba(0,0,0,0.18)";e.currentTarget.style.transform="translateY(-2px)";}}
                   onMouseLeave={e=>{e.currentTarget.style.boxShadow="0 1px 4px rgba(0,0,0,0.06)";e.currentTarget.style.transform="translateY(0)";}}>
                   <p style={{ fontSize:11, color:C.text, textTransform:"uppercase", letterSpacing:"1.5px", marginBottom:6, fontWeight:700 }}>{k.label}</p>
@@ -922,7 +922,7 @@ function KpiModal({ kpi, datos, mes, anio, onClose }) {
           return (
             <div style={{ display:"grid", gridTemplateColumns:`repeat(${cards.length},1fr)`, gap:12, marginBottom:20 }}>
               {cards.map((k,i)=>(
-                <div key={i} style={{ background:C.bgCard, border:"1.5px solid #111111", borderRadius:8, padding:"14px 18px", boxShadow:"0 1px 4px rgba(0,0,0,0.06)", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", textAlign:"center", transition:"box-shadow 0.2s, transform 0.2s" }}
+                <div key={i} style={{ background:"#f5f5f5", border:"1.5px solid #111111", borderRadius:8, padding:"14px 18px", boxShadow:"0 1px 4px rgba(0,0,0,0.06)", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", textAlign:"center", transition:"box-shadow 0.2s, transform 0.2s" }}
                   onMouseEnter={e=>{e.currentTarget.style.boxShadow="0 6px 24px rgba(0,0,0,0.18)";e.currentTarget.style.transform="translateY(-2px)";}}
                   onMouseLeave={e=>{e.currentTarget.style.boxShadow="0 1px 4px rgba(0,0,0,0.06)";e.currentTarget.style.transform="translateY(0)";}}>
                   <p style={{ fontSize:11, color:C.text, textTransform:"uppercase", letterSpacing:"1.5px", marginBottom:6, fontWeight:700 }}>{k.label}</p>
@@ -1049,7 +1049,7 @@ const KpiCard = React.memo(function KpiCard({ label, subtitle, value, changeLm, 
   const indicatorIcon  = pct === null ? null : isFlat ? "—" : upLm ? "↑" : "↓";
   return (
     <div onClick={onClick} style={{
-      background: C.bgCard, border: `1.5px solid #111111`, borderRadius: 8,
+      background: "#f5f5f5", border: `1.5px solid #111111`, borderRadius: 8,
       padding: "14px 18px", animation: `fadeUp 0.5s ease ${i * 0.08}s both`,
       position: "relative", overflow: "hidden",
       boxShadow: "0 1px 4px rgba(0,0,0,0.06)", cursor: "pointer",
@@ -1065,7 +1065,7 @@ const KpiCard = React.memo(function KpiCard({ label, subtitle, value, changeLm, 
       e.currentTarget.style.boxShadow="0 1px 4px rgba(0,0,0,0.06)";
       e.currentTarget.style.transform="translateY(0)";
       e.currentTarget.style.borderColor="#111111";
-      e.currentTarget.style.background=C.bgCard;
+      e.currentTarget.style.background="#f5f5f5";
     }}>
       <p style={{ fontSize: 11, color: C.text, textTransform: "uppercase", letterSpacing: "1.5px", fontWeight: 700 }}>{label}</p>
       {subtitle && <p style={{ fontSize: 9, color: C.textMid, marginTop: 1, letterSpacing: "0.5px", opacity: 0.7 }}>{subtitle}</p>}
