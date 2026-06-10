@@ -2412,9 +2412,11 @@ function ImportarExcel({ onClose, session, onImportado, onProduccionDirecta, hot
             const active = activeBlock === tab.id;
             return (
               <button key={tab.id} onClick={() => setActiveBlockPersist(tab.id)}
-                style={{ background: active ? "#EBF2FA" : H.card, border:`1px solid ${active ? H.blue : H.border}`, borderRadius:10, padding:"14px 8px 10px", cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", display:"flex", flexDirection:"column", alignItems:"center", gap:7, transition:"all 0.15s", boxShadow: active ? `0 2px 12px rgba(0,75,135,0.12)` : "none" }}>
-                {TabIcons[tab.id](active ? H.blue : H.textMid)}
-                <span style={{ fontSize:10, fontWeight: active ? 700 : 500, color: active ? H.blue : H.textMid, textAlign:"center", lineHeight:1.2 }}>{tab.label}</span>
+                style={{ background: active ? "#e8e8e8" : H.card, border:`1.5px solid ${active ? "#111111" : H.border}`, borderRadius:10, padding:"14px 8px 10px", cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", display:"flex", flexDirection:"column", alignItems:"center", gap:7, transition:"all 0.15s", boxShadow: active ? "0 2px 8px rgba(0,0,0,0.12)" : "none", transform: active ? "translateY(-1px)" : "translateY(0)" }}
+                onMouseEnter={e => { if (!active) { e.currentTarget.style.background="#f5f5f5"; e.currentTarget.style.border="1.5px solid #111111"; e.currentTarget.style.transform="translateY(-2px)"; e.currentTarget.style.boxShadow="0 4px 12px rgba(0,0,0,0.1)"; }}}
+                onMouseLeave={e => { if (!active) { e.currentTarget.style.background=H.card; e.currentTarget.style.border=`1.5px solid ${H.border}`; e.currentTarget.style.transform="translateY(0)"; e.currentTarget.style.boxShadow="none"; }}}>
+                {TabIcons[tab.id](active ? "#111111" : H.textMid)}
+                <span style={{ fontSize:10, fontWeight: active ? 700 : 500, color: active ? "#111111" : H.textMid, textAlign:"center", lineHeight:1.2 }}>{tab.label}</span>
                 {tab.done && <span style={{ width:6, height:6, borderRadius:"50%", background: H.green, display:"block" }} />}
               </button>
             );
@@ -9340,11 +9342,16 @@ function ModalConfigUnificado({ datos, session, navHidden, toggleNavHidden, navR
                 const restriction = navRestrictions[n.key];
                 const pinVal = pinInputs[n.key] || "";
                 return (
-                  <div key={n.key} style={{ borderRadius:10, border:`1.5px solid ${isRestricted ? C.accent : C.border}`, overflow:"hidden" }}>
-                    <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"11px 14px", background: isRestricted ? C.accentLight : C.bg, cursor:"pointer" }} onClick={() => toggleRestriction(n.key)}>
-                      <span style={{ fontSize:13, fontWeight: isRestricted ? 600 : 400, color: isRestricted ? C.text : C.textMid }}>{t(n.labelKey)}</span>
-                      <span style={{ fontSize:11, fontWeight:600, color: isRestricted ? C.accent : C.textLight, background: isRestricted ? "rgba(0,75,135,0.08)" : "transparent", padding:"3px 9px", borderRadius:20, border:`1px solid ${isRestricted ? C.accent : C.border}`, flexShrink:0 }}>
-                        {isRestricted ? "🔒 Restringida" : "🔓 Libre"}
+                  <div key={n.key} style={{ borderRadius:10, border:`1.5px solid ${isRestricted ? "#111111" : C.border}`, overflow:"hidden", transition:"all 0.15s", boxShadow: isRestricted ? "0 2px 8px rgba(0,0,0,0.10)" : "none" }}>
+                    <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"11px 14px", background: isRestricted ? "#e8e8e8" : C.bg, cursor:"pointer", transition:"background 0.15s" }}
+                      onClick={() => toggleRestriction(n.key)}
+                      onMouseEnter={e => { if (!isRestricted) { e.currentTarget.style.background="#f5f5f5"; e.currentTarget.parentElement.style.border="1.5px solid #111111"; e.currentTarget.parentElement.style.boxShadow="0 4px 12px rgba(0,0,0,0.08)"; }}}
+                      onMouseLeave={e => { if (!isRestricted) { e.currentTarget.style.background=C.bg; e.currentTarget.parentElement.style.border=`1.5px solid ${C.border}`; e.currentTarget.parentElement.style.boxShadow="none"; }}}>
+                      <span style={{ fontSize:13, fontWeight: isRestricted ? 600 : 400, color: "#111111" }}>{t(n.labelKey)}</span>
+                      <span style={{ display:"flex", alignItems:"center", justifyContent:"center", width:30, height:30, borderRadius:7, background: isRestricted ? "#111111" : "transparent", border:`1.5px solid ${isRestricted ? "#111111" : C.border}`, flexShrink:0, transition:"all 0.15s" }}>
+                        {isRestricted
+                          ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                          : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#888888" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M17 11V7a5 5 0 0 0-9.9-1"/></svg>}
                       </span>
                     </div>
                     {isRestricted && (
