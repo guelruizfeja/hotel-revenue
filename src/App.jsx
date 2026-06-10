@@ -1052,6 +1052,7 @@ const KpiCard = React.memo(function KpiCard({ label, subtitle, value, changeLm, 
       boxShadow: "0 1px 4px rgba(0,0,0,0.06)", cursor: "pointer",
       transition: "box-shadow 0.2s, transform 0.2s, border-color 0.2s, background 0.2s",
       display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center",
+      height: "100%", boxSizing: "border-box",
     }}
     onMouseEnter={e=>{
       e.currentTarget.style.boxShadow=`0 6px 24px rgba(0,0,0,0.18)`;
@@ -2137,6 +2138,10 @@ function ImportarExcel({ onClose, session, onImportado, onProduccionDirecta, hot
     setGuardandoPickup(true); setErrorPickup(""); setOkPickup(false);
     try {
       if (!pickupForm.fecha_llegada) throw new Error("La fecha de llegada es obligatoria");
+      const { data: maxRow } = await supabase.from("pickup_entries")
+        .select("numero_reserva").eq("hotel_id", session.user.id)
+        .not("numero_reserva", "is", null).order("numero_reserva", { ascending: false }).limit(1);
+      const nextNumero = ((maxRow?.[0]?.numero_reserva) || 0) + 1;
       const row = {
         hotel_id:      session.user.id,
         fecha_pickup:  pickupForm.fecha_pickup,
@@ -2156,6 +2161,7 @@ function ImportarExcel({ onClose, session, onImportado, onProduccionDirecta, hot
           ? preciosPorNoche.map(v => Math.round((parseFloat(v) || 0) * NET_HAB_FNB * 100) / 100)
           : null,
         estado:        pickupForm.estado || "confirmada",
+        numero_reserva: nextNumero,
       };
       const { error } = await supabase.from("pickup_entries").insert(row);
       if (error) throw new Error(error.message);
@@ -2194,9 +2200,34 @@ function ImportarExcel({ onClose, session, onImportado, onProduccionDirecta, hot
 
       // Leer todos los pickup para calcular patrones (excluir grupos/eventos)
       const { data: todos } = await supabase.from("pickup_entries")
-        .select("canal,num_reservas,noches,precio_total,estado,fecha_llegada")
+        .select("canal,num_reservas,noches,precio_total,estado,fecha_llegada,numero_reserva")
         .eq("hotel_id", session.user.id)
         .neq("estado", "cancelada");
+
+      const { data: todosParaMax } = await supabase.from("pickup_entries")
+        .select("numero_reserva")
+        .eq("hotel_id", session.user.id)
+        .not("numero_reserva", "is", null);
+      const maxNumRes = (todosParaMax || []).reduce((max, r) => r.numero_reserva > max ? r.numero_reserva : max, 0);
+
+      // Asignar número a todas las entradas que no tienen, ordenadas por fecha_pickup + id
+      const { data: sinNumero } = await supabase.from("pickup_entries")
+        .select("id")
+        .eq("hotel_id", session.user.id)
+        .is("numero_reserva", null)
+        .order("fecha_pickup", { ascending: true })
+        .order("id", { ascending: true });
+      let maxNumResActual = maxNumRes;
+      if (sinNumero && sinNumero.length > 0) {
+        let siguiente = maxNumRes + 1;
+        const LOTE = 20;
+        for (let i = 0; i < sinNumero.length; i += LOTE) {
+          await Promise.all(sinNumero.slice(i, i + LOTE).map(r =>
+            supabase.from("pickup_entries").update({ numero_reserva: siguiente++ }).eq("id", r.id)
+          ));
+        }
+        maxNumResActual = siguiente - 1;
+      }
 
       // Calcular patrones solo con reservas individuales (excluir grupos/eventos)
       const CANALES_EXCLUIDOS = ["grupos/eventos", "grupo", "evento", "groups/events"];
@@ -2290,10 +2321,11 @@ function ImportarExcel({ onClose, session, onImportado, onProduccionDirecta, hot
         };
       };
 
-      const filas = [
+      const filasBase = [
         ...selConf.map(p => mkFila(p, "confirmada")),
         ...selCancel.map(p => mkFila(p, "cancelada")),
       ];
+      const filas = filasBase.map((f, i) => ({ ...f, numero_reserva: maxNumResActual + i + 1 }));
 
       const { error } = await supabase.from("pickup_entries").insert(filas);
       if (error) throw new Error(error.message);
@@ -4072,7 +4104,12 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
     .sort((a,b) => b[1]-a[1])
     .slice(0,2)
     .map(([mes]) => mes);
-  const [metricaSel, setMetricaSel] = useState(() => localStorage.getItem("fr_metrica_sel") || "adr_occ");
+  const KPI_ALL_KEYS = ["Ocupación","ADR","RevPAR","TRevPAR"];
+  const [kpiOrder, setKpiOrder] = useState(() => { try { const s=JSON.parse(localStorage.getItem("fr_kpi_order")||"null"); if(s&&Array.isArray(s)&&s.length===4) return s; } catch {} return KPI_ALL_KEYS; });
+  const kpiDragKey = useRef(null);
+  const [kpiPreview, setKpiPreview] = useState(null);
+  const [draggingKpiKey, setDraggingKpiKey] = useState(null);
+const [metricaSel, setMetricaSel] = useState(() => localStorage.getItem("fr_metrica_sel") || "adr_occ");
   const setMetricaSelPersist = (v) => { setMetricaSel(v); localStorage.setItem("fr_metrica_sel", v); };
   const [notasMes, setNotasMes] = useState(() => { try { return JSON.parse(localStorage.getItem("fr_notas_mes")||"{}"); } catch { return {}; } });
   const [editingNota, setEditingNota] = useState(null);
@@ -4273,7 +4310,16 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(clamp(140px,40vw,200px), 1fr))", gap: 10, marginBottom: 8 }}>
-        {kpis.map((k, i) => <KpiCard key={i} {...k} i={i} onClick={()=>setKpiModal(k.kpiKey)} />)}
+        {(kpiPreview || kpiOrder).map(key => kpis.find(k=>k.kpiKey===key)).filter(Boolean).map((k, i) => (
+          <div key={k.kpiKey} draggable
+            onDragStart={e => { kpiDragKey.current = k.kpiKey; e.dataTransfer.effectAllowed = "move"; setTimeout(() => setDraggingKpiKey(k.kpiKey), 0); }}
+            onDragEnd={() => { if (kpiDragKey.current !== null && kpiPreview) { setKpiOrder(kpiPreview); localStorage.setItem("fr_kpi_order", JSON.stringify(kpiPreview)); } kpiDragKey.current = null; setKpiPreview(null); setDraggingKpiKey(null); }}
+            onDragOver={e => { e.preventDefault(); const from=kpiDragKey.current; if (!from||from===k.kpiKey) return; const base=kpiPreview||kpiOrder; const fi=base.indexOf(from),ti=base.indexOf(k.kpiKey); if(fi===-1||ti===-1||fi===ti) return; const next=[...base]; next.splice(fi,1); next.splice(ti,0,from); setKpiPreview(next); }}
+            onDrop={e => { e.preventDefault(); const c=kpiPreview||kpiOrder; setKpiOrder(c); localStorage.setItem("fr_kpi_order",JSON.stringify(c)); setKpiPreview(null); kpiDragKey.current=null; }}
+            style={{ visibility: draggingKpiKey===k.kpiKey?"hidden":"visible", cursor:"grab", height:"100%" }}>
+            <KpiCard {...k} i={i} onClick={()=>setKpiModal(k.kpiKey)} />
+          </div>
+        ))}
       </div>
 
       <p style={{ fontSize: 11, color: C.textLight, marginBottom: 20, marginTop: 0 }}>
@@ -5592,8 +5638,12 @@ function PickupView({ datos, onGuardado }) {
       const fechaLlegada = nrForm.fecha_llegada || hoyISO;
       let fechaSalida = nrForm.fecha_salida || null;
       if (!fechaSalida) { const d = new Date(fechaLlegada+"T00:00:00"); d.setDate(d.getDate()+noches); fechaSalida = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; }
-      const numero_reserva = nrForm.numero_reserva ? parseInt(nrForm.numero_reserva) : null;
-      if (numero_reserva) {
+      const { data: maxRow2 } = await supabase.from("pickup_entries")
+        .select("numero_reserva").eq("hotel_id", session.user.id)
+        .not("numero_reserva", "is", null).order("numero_reserva", { ascending: false }).limit(1);
+      const nextNumero2 = ((maxRow2?.[0]?.numero_reserva) || 0) + 1;
+      let numero_reserva = nrForm.numero_reserva ? parseInt(nrForm.numero_reserva) : nextNumero2;
+      if (nrForm.numero_reserva) {
         const { data: dup } = await supabase.from("pickup_entries")
           .select("id").eq("hotel_id", session.user.id).eq("numero_reserva", numero_reserva).limit(1);
         if (dup && dup.length > 0) throw new Error(`La reserva #${numero_reserva} ya existe`);
@@ -6455,6 +6505,7 @@ function PickupView({ datos, onGuardado }) {
             return (
               <table style={{ width:"100%", borderCollapse:"collapse" }}>
                 <thead><tr>
+                  <th style={thS}>Nº</th>
                   <th style={thS}>Llegada</th>
                   <th style={thS}>Canal</th>
                   <th style={{ ...thS, textAlign:"right" }}>ADR</th>
@@ -6468,6 +6519,7 @@ function PickupView({ datos, onGuardado }) {
                     const canalColor = CANAL_COLORS[canal] || C.textMid;
                     return (
                       <tr key={i} style={{ background: i%2===0?"transparent":C.redLight+"66" }}>
+                        <td style={{ ...tdS, color:C.textLight, fontWeight:500 }}>{e.numero_reserva ?? "—"}</td>
                         <td style={{ ...tdS, color:C.text, fontWeight:600 }}>{fmtFecha(e.fecha_llegada)}</td>
                         <td style={{ ...tdS, color:canalColor, fontWeight:700 }}>{canal}</td>
                         <td style={{ ...tdS, textAlign:"right", fontWeight:800, color:C.red }}>{adr !== null ? `€${adr.toLocaleString("es-ES")}` : "—"}</td>
@@ -7979,8 +8031,8 @@ function GruposView({ datos, onRecargar, onVolverHeatmap, subVistaExt, onCambiar
                 { label:"Revenue cotizado",    value: fmtEur(revCotizado),   color:"#B8860B", sub:`${cotizados.length} cotizaciones` },
                 { label:"Tiempo medio cierre", value: tiempoMedio!=null?`${tiempoMedio}d`:"—", color:C.accent, sub:"días hasta confirmar" },
               ].map((k,i)=>(
-                <div key={i} style={{ background:C.bgCard, border:`1px solid ${C.border}`, borderRadius:10, padding:"14px 18px", borderLeft:`3px solid ${k.color}` }}>
-                  <p style={{ fontSize:10, color:C.textLight, textTransform:"uppercase", letterSpacing:1.2, marginBottom:6, fontWeight:600 }}>{k.label}</p>
+                <div key={i} style={{ background:"#f5f5f5", border:"1.5px solid #111111", borderRadius:8, padding:"14px 18px", boxShadow:"0 1px 4px rgba(0,0,0,0.06)" }}>
+                  <p style={{ fontSize:10, color:C.text, textTransform:"uppercase", letterSpacing:1.5, marginBottom:6, fontWeight:700 }}>{k.label}</p>
                   <p style={{ fontSize:22, fontWeight:700, color:k.color, fontFamily:"'Plus Jakarta Sans',sans-serif", margin:0 }}>{k.value}</p>
                   <p style={{ fontSize:10, color:C.textLight, marginTop:3 }}>{k.sub}</p>
                 </div>
@@ -9190,7 +9242,7 @@ function ModalConfigUnificado({ datos, session, navHidden, toggleNavHidden, navR
         {/* Pestañas */}
         <div style={{ display:"flex", gap:6, marginBottom:24 }}>
           {TABS_CONFIG.map(tc => (
-            <button key={tc.key} onClick={() => { setTab(tc.key); if (tc.key !== "personalizacion") setUnlocked(false); }}
+            <button key={tc.key} onClick={() => { setTab(tc.key); }}
               style={{ padding:"7px 16px", border:`1.5px solid ${tab===tc.key ? "#111111" : C.border}`, borderRadius:8, background: tab===tc.key ? "#f5f5f5" : "transparent", color: tab===tc.key ? "#111111" : C.textMid, fontSize:12, fontWeight: tab===tc.key ? 700 : 400, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", transition:"all 0.15s", boxShadow: tab===tc.key ? "0 1px 4px rgba(0,0,0,0.06)" : "none" }}>
               {tc.label}
             </button>
@@ -9275,34 +9327,8 @@ function ModalConfigUnificado({ datos, session, navHidden, toggleNavHidden, navR
           </div>
         )}
 
-        {/* Pestaña: Personalización — verificación */}
-        {tab === "personalizacion" && !unlocked && (
-          <div>
-            <p style={{ fontSize:13, color:C.textMid, marginBottom:20 }}>Introduce tu contraseña de acceso para continuar.</p>
-            <div style={{ position:"relative", marginBottom: pinError ? 6 : 16 }}>
-              <input type={showPin ? "text" : "password"} autoFocus value={pin} onChange={e => { setPin(e.target.value); setPinError(""); }} onKeyDown={e => { if (e.key === "Enter") verificarPin(); }} placeholder="Contraseña"
-                style={{ width:"100%", padding:"10px 40px 10px 14px", borderRadius:8, border:`1.5px solid ${pinError ? C.red : C.border}`, background:C.bg, color:C.text, fontSize:13, fontFamily:"'Plus Jakarta Sans',sans-serif", outline:"none", boxSizing:"border-box" }} />
-              <button onMouseDown={e=>{e.preventDefault();setShowPin(true);}} onMouseUp={()=>setShowPin(false)} onMouseLeave={()=>setShowPin(false)} onTouchStart={e=>{e.preventDefault();setShowPin(true);}} onTouchEnd={()=>setShowPin(false)}
-                style={{ position:"absolute", right:10, top:"50%", transform:"translateY(-50%)", background:"none", border:"none", cursor:"pointer", color:C.textLight, padding:4, display:"flex", alignItems:"center", userSelect:"none", WebkitUserSelect:"none" }}>
-                {showPin
-                  ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
-                  : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>}
-              </button>
-            </div>
-            {pinError && <p style={{ fontSize:11, color:C.red, marginBottom:12 }}>{pinError}</p>}
-            <label style={{ display:"flex", alignItems:"center", gap:8, marginBottom:16, cursor:"pointer" }}>
-              <input type="checkbox" checked={rememberSettings} onChange={e => setRememberSettings(e.target.checked)} style={{ width:14, height:14, accentColor:C.accent, cursor:"pointer", flexShrink:0 }} />
-              <span style={{ fontSize:12, color:C.textMid }}>Recordar en esta sesión</span>
-            </label>
-            <button onClick={verificarPin} disabled={pinLoading||!pin}
-              style={{ width:"100%", padding:"10px 0", background:C.accent, color:"#fff", border:"none", borderRadius:8, fontSize:13, fontWeight:600, cursor:pinLoading||!pin?"not-allowed":"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", opacity:pinLoading||!pin?0.6:1 }}>
-              {pinLoading ? "Verificando…" : "Continuar"}
-            </button>
-          </div>
-        )}
-
-        {/* Pestaña: Personalización — contenido */}
-        {tab === "personalizacion" && unlocked && (
+        {/* Pestaña: Personalización */}
+        {tab === "personalizacion" && (
           <div>
             <p style={{ fontSize:12, color:C.textMid, marginBottom:20 }}>Activa o desactiva las pestañas que quieres ver en la barra de navegación.</p>
 
