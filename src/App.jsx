@@ -23,7 +23,7 @@ const useT = () => { const lang = useContext(LangContext); return (k) => (TRANSL
 const TRANSLATIONS = {
   es: {
     // Nav & topbar
-    nav_dashboard:"Dashboard", nav_pickup:"Reservas", nav_budget:"Presupuesto", nav_grupos:"Grupos/Eventos", nav_salas:"Salas", nav_gestion:"Gestión de datos",
+    nav_dashboard:"Dashboard", nav_pickup:"Reservas", nav_budget:"Forecast", nav_grupos:"Grupos/Eventos", nav_salas:"Salas", nav_gestion:"Gestión de datos",
     importar:"Importar", mi_perfil:"Mi perfil", cerrar_sesion:"Cerrar sesión",
     suscripcion:"Suscripción", extranets:"Extranets", informe_mensual:"Informe mensual",
     conectado_como:"Conectado como", cargando:"Cargando...",
@@ -32,7 +32,7 @@ const TRANSLATIONS = {
     ob0_title:"Importa tus datos", ob0_text:"Descarga la plantilla Excel, rellénala con tus datos de producción y súbela aquí. En segundos tendrás el dashboard activo.",
     ob1_title:"Dashboard", ob1_text:"Visualiza tus KPIs principales: RevPAR, ADR y ocupación comparados con el año anterior.",
     ob2_title:"Pickup", ob2_text:"Analiza el ritmo de nuevas reservas día a día y detecta tendencias de cara al mes.",
-    ob3_title:"Presupuesto", ob3_text:"Compara producción real vs objetivo mensual y proyecta el cierre del año.",
+    ob3_title:"Forecast", ob3_text:"Compara producción real vs objetivo mensual y proyecta el cierre del año.",
     ob4_title:"Grupos/Eventos", ob4_text:"Gestiona grupos y eventos: confirmados, tentativos y pipeline de negocio.",
     // KPIs
     kpi_ocupacion:"Ocupación", kpi_adr:"ADR", kpi_revpar:"RevPAR", kpi_trevpar:"TRevPAR",
@@ -125,7 +125,7 @@ const TRANSLATIONS = {
     precio_sub:"Después, solo €49/mes + IVA. Cancela cuando quieras.",
     empezar_prueba:"Empezar prueba gratuita →", redirigiendo:"Redirigiendo...",
     feat_dashboard:"Dashboard con KPIs en tiempo real", feat_pickup:"Análisis de pickup y forecast",
-    feat_presupuesto:"Presupuesto vs real mensual", feat_pdf:"Informes PDF mensuales",
+    feat_presupuesto:"Forecast vs real mensual", feat_pdf:"Informes PDF mensuales",
     ver_pickup:"→ Ver Pickup", importar_datos:"→ Importar datos", ver_mas:"→ Ver más",
     prox_semana:"Próx. semana", prox_mes:"Próx. mes", anio_actual:"Año actual",
     otb_actual:"OTB Actual", anio_anterior:"Año Anterior",
@@ -406,15 +406,19 @@ function CustomSelect({ value, onChange, options, style }) {
 }
 
 const AnimatedBar = (props) => {
-  const { x, y, width, height, fill, onClick } = props;
+  const { x, y, width, height, fill, onClick, highlighted } = props;
   const [animKey, setAnimKey] = useState(0);
   if (!height || height <= 0) return null;
   return (
-    <g onClick={onClick} style={{ cursor:"pointer", outline:"none" }}
+    <g onClick={() => onClick && onClick(props)} style={{ cursor:"pointer", outline:"none" }}
       onMouseEnter={() => setAnimKey(k => k + 1)}>
-      {/* Barra base — siempre visible a color completo */}
-      <rect x={x} y={y} width={width} height={height} rx={4} ry={4} fill={fill}/>
-      {/* Overlay de relleno animado desde abajo al hover */}
+      <rect x={x} y={y} width={width} height={height} rx={4} ry={4} fill={fill}
+        opacity={highlighted ? 1 : 0.82}
+        style={{ transition:"opacity 0.15s" }}/>
+      {highlighted && (
+        <rect x={x-1} y={y-1} width={width+2} height={height+1} rx={4} ry={4}
+          fill="none" stroke="#ffffff" strokeWidth={1.5} strokeOpacity={0.5}/>
+      )}
       {animKey > 0 && (
         <rect key={animKey} x={x} y={y} width={width} height={height} rx={4} ry={4} fill={fill}
           style={{
@@ -4104,6 +4108,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
     .sort((a,b) => b[1]-a[1])
     .slice(0,2)
     .map(([mes]) => mes);
+  const [activeSeriesKey, setActiveSeriesKey] = useState(null);
   const KPI_ALL_KEYS = ["Ocupación","ADR","RevPAR","TRevPAR"];
   const [kpiOrder, setKpiOrder] = useState(() => { try { const s=JSON.parse(localStorage.getItem("fr_kpi_order")||"null"); if(s&&Array.isArray(s)&&s.length===4) return s; } catch {} return KPI_ALL_KEYS; });
   const kpiDragKey = useRef(null);
@@ -5325,7 +5330,8 @@ const [metricaSel, setMetricaSel] = useState(() => localStorage.getItem("fr_metr
                 <div style={{ height:300 }} onMouseDown={e => e.preventDefault()}>
                   <ResponsiveContainer width="100%" height={300}>
                     {metricaSel === "adr_occ" ? (
-                      <ComposedChart data={porMes} barSize={14} barCategoryGap="32%">
+                      <ComposedChart data={porMes} barSize={14} barCategoryGap="32%"
+                        onMouseLeave={() => setActiveSeriesKey(null)}>
                         <defs>
                           <linearGradient id="gradOcc" x1="0" y1="0" x2="0" y2="1">
                             <stop offset="0%" stopColor="#004B87" stopOpacity={0.9}/>
@@ -5339,11 +5345,20 @@ const [metricaSel, setMetricaSel] = useState(() => localStorage.getItem("fr_metr
                         <Tooltip content={<CustomTooltip/>} cursor={false}/>
                         <Bar yAxisId="left" dataKey="occ" name="Ocupación" fill="url(#gradOcc)" radius={[4,4,0,0]}
                           cursor="pointer" activeBar={false} isAnimationActive={false}
-                          shape={(p) => <AnimatedBar {...p} onClick={() => { if(p?.mesIdx!=null) setModalDiario({mesIdx:p.mesIdx, anioIdx:p.anioIdx}); }}/>}
+                          onMouseEnter={() => setActiveSeriesKey("occ")}
                           onClick={(data) => { if(data?.mesIdx!=null) setModalDiario({mesIdx:data.mesIdx, anioIdx:data.anioIdx}); }}
+                          shape={<AnimatedBar highlighted={activeSeriesKey === "occ"} onClick={(p) => { if(p?.mesIdx!=null) setModalDiario({mesIdx:p.mesIdx, anioIdx:p.anioIdx}); }}/>}
                         />
-                        <Line yAxisId="right" dataKey="adr"    name="ADR"    type="monotone" stroke="#B8860B" strokeWidth={2} dot={{fill:"#B8860B", r:3, strokeWidth:0}} activeDot={{r:4}} isAnimationActive={false}/>
-                        <Line yAxisId="right" dataKey="revpar" name="RevPAR" type="monotone" stroke="#E53935" strokeWidth={2} dot={{fill:"#E53935", r:3, strokeWidth:0}} activeDot={{r:4}} isAnimationActive={false}/>
+                        <Line yAxisId="right" dataKey="adr"    name="ADR"    type="monotone" stroke="#B8860B"
+                          strokeWidth={activeSeriesKey === "adr" ? 3 : 2}
+                          dot={{ fill:"#B8860B", r: activeSeriesKey === "adr" ? 4 : 3, strokeWidth:0 }}
+                          activeDot={{ r:6, fill:"#B8860B", strokeWidth:0 }}
+                          onMouseEnter={() => setActiveSeriesKey("adr")} isAnimationActive={false}/>
+                        <Line yAxisId="right" dataKey="revpar" name="RevPAR" type="monotone" stroke="#E53935"
+                          strokeWidth={activeSeriesKey === "revpar" ? 3 : 2}
+                          dot={{ fill:"#E53935", r: activeSeriesKey === "revpar" ? 4 : 3, strokeWidth:0 }}
+                          activeDot={{ r:6, fill:"#E53935", strokeWidth:0 }}
+                          onMouseEnter={() => setActiveSeriesKey("revpar")} isAnimationActive={false}/>
                       </ComposedChart>
                     ) : (
                       <AreaChart data={porMes}>
