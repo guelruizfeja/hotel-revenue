@@ -545,7 +545,7 @@ const CustomTooltip = ({ active, payload, label, unit }) => {
   );
 };
 
-function WeatherBar({ ciudad, datos, lang, occDeTicker, stickyTop = 52 }) {
+function WeatherBar({ ciudad, datos, lang, occDeTicker, stickyTop = 52, barColor = "#1a1a1a" }) {
   const [weather, setWeather] = useState(null);
   const [ahora, setAhora] = useState(new Date());
   useEffect(() => { const id = setInterval(() => setAhora(new Date()), 1000); return () => clearInterval(id); }, []);
@@ -684,7 +684,7 @@ function WeatherBar({ ciudad, datos, lang, occDeTicker, stickyTop = 52 }) {
   if (!ciudad) return null;
 
   return (
-    <div style={{ background:"#1a1a1a", borderBottom:`1px solid #2e2e2e`, position:"sticky", top:stickyTop, zIndex:99, height:40, display:"flex", alignItems:"center", overflow:"hidden" }}>
+    <div style={{ background:barColor, borderBottom:`1px solid rgba(255,255,255,0.08)`, position:"sticky", top:stickyTop, zIndex:99, height:40, display:"flex", alignItems:"center", overflow:"hidden", transition:"background 0.2s" }}>
 
       {/* Ticker */}
       <div style={{ flex:1, overflow:"hidden", padding:"0 16px 0 clamp(12px,4vw,32px)" }}>
@@ -6312,12 +6312,12 @@ function PickupView({ datos, onGuardado }) {
 
       {/* PICKUP TRIMESTRAL — ancho completo */}
       <Card style={{ position:"relative" }}>
-        <div ref={trimTipRef} style={{ position:"fixed", display: trimTip ? "block" : "none", background:"#0A2540", borderRadius:10, padding:"10px 14px", boxShadow:"0 8px 24px rgba(0,0,0,0.25)", pointerEvents:"none", zIndex:9999, minWidth:120 }}>
+        <div ref={trimTipRef} style={{ position:"fixed", display: trimTip ? "block" : "none", background:"#f5f5f5", border:"1.5px solid #111111", borderRadius:8, padding:"12px 16px", boxShadow:"0 1px 4px rgba(0,0,0,0.06)", pointerEvents:"none", zIndex:9999, minWidth:148 }}>
           {trimTip && <>
-            <p style={{ color:"#fff", fontSize:10, fontWeight:700, marginBottom:6, textTransform:"uppercase", letterSpacing:"1px" }}>{trimTip.mes}</p>
-            {trimTip.otb  != null && <div style={{ display:"flex", alignItems:"center", gap:7, margin:"2px 0" }}><span style={{ width:8, height:8, borderRadius:"50%", background:COL_OTB, flexShrink:0, display:"inline-block" }}/><span style={{ color:"rgba(255,255,255,0.9)", fontSize:12 }}>{t("otb_actual")}: {trimTip.otb}</span></div>}
-            {trimTip.ppto != null && <div style={{ display:"flex", alignItems:"center", gap:7, margin:"2px 0" }}><span style={{ width:8, height:8, borderRadius:"50%", background:COL_PPTO, flexShrink:0, display:"inline-block" }}/><span style={{ color:"rgba(255,255,255,0.9)", fontSize:12 }}>{t("nav_budget")}: {trimTip.ppto}</span></div>}
-            {trimTip.ly   != null && <div style={{ display:"flex", alignItems:"center", gap:7, margin:"2px 0" }}><span style={{ width:8, height:8, borderRadius:"50%", background:COL_LY,  flexShrink:0, display:"inline-block" }}/><span style={{ color:"rgba(255,255,255,0.9)", fontSize:12 }}>{t("anio_anterior")}: {trimTip.ly}</span></div>}
+            <p style={{ color:"#111111", fontSize:10, fontWeight:700, marginBottom:6, textTransform:"uppercase", letterSpacing:"1px" }}>{trimTip.mes}</p>
+            {trimTip.otb  != null && <div style={{ display:"flex", alignItems:"center", gap:7, margin:"2px 0" }}><span style={{ width:8, height:8, borderRadius:2, background:COL_OTB, flexShrink:0, display:"inline-block", border:"1px solid rgba(0,0,0,0.15)" }}/><span style={{ color:"rgba(0,0,0,0.75)", fontSize:12 }}>{t("otb_actual")}: <span style={{ color:"#111111", fontWeight:700 }}>{trimTip.otb}</span></span></div>}
+            {trimTip.ppto != null && <div style={{ display:"flex", alignItems:"center", gap:7, margin:"2px 0" }}><span style={{ width:8, height:8, borderRadius:2, background:COL_PPTO, flexShrink:0, display:"inline-block", border:"1px solid rgba(0,0,0,0.15)" }}/><span style={{ color:"rgba(0,0,0,0.75)", fontSize:12 }}>{t("nav_budget")}: <span style={{ color:"#111111", fontWeight:700 }}>{trimTip.ppto}</span></span></div>}
+            {trimTip.ly   != null && <div style={{ display:"flex", alignItems:"center", gap:7, margin:"2px 0" }}><span style={{ width:8, height:8, borderRadius:2, background:COL_LY,  flexShrink:0, display:"inline-block", border:"1px solid rgba(0,0,0,0.15)" }}/><span style={{ color:"rgba(0,0,0,0.75)", fontSize:12 }}>{t("anio_anterior")}: <span style={{ color:"#111111", fontWeight:700 }}>{trimTip.ly}</span></span></div>}
           </>}
         </div>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:24, flexWrap:"wrap", gap:8 }}>
@@ -6977,29 +6977,6 @@ function BudgetView({ datos, anio: anioProp }) {
   return (
     <div style={{ display:"flex", flexDirection:"column", gap:20 }}>
 
-      {/* KPIs forecast resumen */}
-      {totalForecast > 0 && (
-        <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:14 }}>
-          {[
-            { label:t("rev_real_ytd"),         value:`€${Math.round(totalRevReal).toLocaleString("es-ES")}`,    color:C.green, lytd: lytdPct },
-            { label:t("forecast_cierre_anio"), value:`€${Math.round(totalForecast).toLocaleString("es-ES")}`,   color:"#B8860B" },
-            { label:t("presupuesto_anio"),     value:`€${Math.round(totalRevPpto).toLocaleString("es-ES")}`,   color:C.accent },
-          ].map((k,i) => (
-            <div key={i} style={{ background:C.bgCard, border:`1px solid ${C.border}`, borderRadius:10, padding:"16px 20px", borderLeft:`3px solid ${k.color}` }}>
-              <p style={{ fontSize:10, color:C.textLight, textTransform:"uppercase", letterSpacing:1.5, marginBottom:6, fontWeight:600 }}>{k.label}</p>
-              <div style={{ display:"flex", alignItems:"baseline", gap:8 }}>
-                <p style={{ fontSize:22, fontWeight:700, color:k.color, fontFamily:"'Plus Jakarta Sans',sans-serif", margin:0 }}>{k.value}</p>
-                {k.lytd != null && (
-                  <span style={{ fontSize:10, fontWeight:600, padding:"1px 5px", borderRadius:3, background: lytdUp ? C.greenLight : C.redLight, color: lytdUp ? C.green : C.red }}>
-                    {lytdUp ? "+" : ""}{k.lytd}% vs LYTD
-                  </span>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
       {/* Selector año */}
       {aniosDisponibles.length > 1 && (
         <div style={{ display:"flex", justifyContent:"flex-end" }}>
@@ -7064,15 +7041,15 @@ function BudgetView({ datos, anio: anioProp }) {
                 const mesNombre = raw.mesFull || raw.mes || "";
                 const anioLabel = raw.anioIdx ? ` ${raw.anioIdx}` : "";
                 return (
-                  <div style={{ background:"#111111", borderRadius:10, padding:"12px 16px", boxShadow:"0 8px 24px rgba(0,0,0,0.35)", minWidth:164 }}>
-                    <p style={{ margin:"0 0 8px", fontSize:10, fontWeight:700, color:"#FFFFFF", textTransform:"uppercase", letterSpacing:"1.5px" }}>{mesNombre}{anioLabel}</p>
+                  <div style={{ background:"#f5f5f5", border:"1.5px solid #111111", borderRadius:8, padding:"12px 16px", boxShadow:"0 1px 4px rgba(0,0,0,0.06)", minWidth:164 }}>
+                    <p style={{ margin:"0 0 8px", fontSize:10, fontWeight:700, color:"#111111", textTransform:"uppercase", letterSpacing:"1.5px" }}>{mesNombre}{anioLabel}</p>
                     {payload.map((p, i) => p.value != null && (
                       <div key={i} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", gap:20, marginBottom:4 }}>
                         <span style={{ display:"flex", alignItems:"center", gap:6 }}>
-                          <span style={{ display:"inline-block", width:8, height:8, borderRadius:2, background:colorMap[p.dataKey] || "#888" }} />
-                          <span style={{ fontSize:11, color:"rgba(255,255,255,0.75)" }}>{p.name}</span>
+                          <span style={{ display:"inline-block", width:8, height:8, borderRadius:2, background:colorMap[p.dataKey] || "#888", border:"1px solid rgba(0,0,0,0.15)" }} />
+                          <span style={{ fontSize:11, color:"rgba(0,0,0,0.65)" }}>{p.name}</span>
                         </span>
-                        <span style={{ fontSize:12, fontWeight:700, color:"#FFFFFF" }}>
+                        <span style={{ fontSize:12, fontWeight:700, color:"#111111" }}>
                           €{(kpiChart==="revenue" ? Math.round(p.value*1000) : Math.round(p.value)).toLocaleString("es-ES")}
                         </span>
                       </div>
@@ -9144,10 +9121,10 @@ function LiveClock({ lang }) {
   );
 }
 
-function ModalConfigUnificado({ datos, session, navHidden, toggleNavHidden, navRestrictions, onSaveRestrictions, initialTab, onClose, onGuardado }) {
+function ModalConfigUnificado({ datos, session, navHidden, toggleNavHidden, navRestrictions, onSaveRestrictions, initialTab, onClose, onGuardado, barColor, onOpenColorPicker }) {
   const t = useT();
   const [tab, setTab] = React.useState(initialTab || "datos");
-  const [unlocked, setUnlocked] = React.useState(false);
+  const [unlocked, setUnlocked] = React.useState(() => sessionStorage.getItem("fr_settings_unlocked") === "1");
   const [hForm, setHForm] = React.useState({ nombre: datos.hotel?.nombre||"", ciudad: datos.hotel?.ciudad||"", habitaciones: datos.hotel?.habitaciones||"" });
   const [hGuardando, setHGuardando] = React.useState(false);
   const [hOk, setHOk] = React.useState(false);
@@ -9161,6 +9138,7 @@ function ModalConfigUnificado({ datos, session, navHidden, toggleNavHidden, navR
   const [savedKeys, setSavedKeys] = React.useState({});
   const [showPin, setShowPin] = React.useState(false);
   const [showPinKey, setShowPinKey] = React.useState(null);
+  const [rememberSettings, setRememberSettings] = React.useState(false);
 
   const inp = { width:"100%", padding:"9px 12px", borderRadius:8, border:`1px solid ${C.border}`, background:C.bg, color:C.text, fontSize:13, fontFamily:"'Plus Jakarta Sans',sans-serif", boxSizing:"border-box", outline:"none" };
 
@@ -9170,6 +9148,7 @@ function ModalConfigUnificado({ datos, session, navHidden, toggleNavHidden, navR
     const { error } = await supabase.auth.signInWithPassword({ email: session.user.email, password: pin });
     setPinLoading(false);
     if (error) { setPinError("Contraseña incorrecta"); return; }
+    if (rememberSettings) sessionStorage.setItem("fr_settings_unlocked", "1");
     setUnlocked(true); setPin("");
   };
 
@@ -9207,10 +9186,10 @@ function ModalConfigUnificado({ datos, session, navHidden, toggleNavHidden, navR
           <button onClick={onClose} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, width:28, height:28, cursor:"pointer", fontSize:15, color:C.textLight, display:"flex", alignItems:"center", justifyContent:"center", padding:0 }}>✕</button>
         </div>
         {/* Pestañas */}
-        <div style={{ display:"flex", gap:0, marginBottom:24, borderBottom:`1.5px solid ${C.border}` }}>
+        <div style={{ display:"flex", gap:6, marginBottom:24 }}>
           {TABS_CONFIG.map(tc => (
             <button key={tc.key} onClick={() => { setTab(tc.key); if (tc.key !== "personalizacion") setUnlocked(false); }}
-              style={{ padding:"8px 16px", border:"none", borderBottom: tab===tc.key ? `2.5px solid ${C.accent}` : "2.5px solid transparent", background:"transparent", color: tab===tc.key ? C.accent : C.textMid, fontSize:12, fontWeight: tab===tc.key ? 700 : 400, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", transition:"all 0.15s", marginBottom:-1.5 }}>
+              style={{ padding:"7px 16px", border:`1.5px solid ${tab===tc.key ? "#111111" : C.border}`, borderRadius:8, background: tab===tc.key ? "#f5f5f5" : "transparent", color: tab===tc.key ? "#111111" : C.textMid, fontSize:12, fontWeight: tab===tc.key ? 700 : 400, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", transition:"all 0.15s", boxShadow: tab===tc.key ? "0 1px 4px rgba(0,0,0,0.06)" : "none" }}>
               {tc.label}
             </button>
           ))}
@@ -9309,6 +9288,10 @@ function ModalConfigUnificado({ datos, session, navHidden, toggleNavHidden, navR
               </button>
             </div>
             {pinError && <p style={{ fontSize:11, color:C.red, marginBottom:12 }}>{pinError}</p>}
+            <label style={{ display:"flex", alignItems:"center", gap:8, marginBottom:16, cursor:"pointer" }}>
+              <input type="checkbox" checked={rememberSettings} onChange={e => setRememberSettings(e.target.checked)} style={{ width:14, height:14, accentColor:C.accent, cursor:"pointer", flexShrink:0 }} />
+              <span style={{ fontSize:12, color:C.textMid }}>Recordar en esta sesión</span>
+            </label>
             <button onClick={verificarPin} disabled={pinLoading||!pin}
               style={{ width:"100%", padding:"10px 0", background:C.accent, color:"#fff", border:"none", borderRadius:8, fontSize:13, fontWeight:600, cursor:pinLoading||!pin?"not-allowed":"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", opacity:pinLoading||!pin?0.6:1 }}>
               {pinLoading ? "Verificando…" : "Continuar"}
@@ -9320,6 +9303,18 @@ function ModalConfigUnificado({ datos, session, navHidden, toggleNavHidden, navR
         {tab === "personalizacion" && unlocked && (
           <div>
             <p style={{ fontSize:12, color:C.textMid, marginBottom:20 }}>Activa o desactiva las pestañas que quieres ver en la barra de navegación.</p>
+
+            {/* Color barra superior */}
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"10px 14px", borderRadius:8, border:`1.5px solid ${C.border}`, background:C.bg, marginBottom:16 }}>
+              <span style={{ fontSize:13, fontWeight:600, color:C.text }}>Color de barra superior</span>
+              <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                <div style={{ width:22, height:22, borderRadius:5, background:barColor, border:"1.5px solid rgba(0,0,0,0.18)", flexShrink:0 }} />
+                <button onClick={onOpenColorPicker} style={{ padding:"5px 14px", borderRadius:7, border:`1.5px solid #111111`, background:"#f5f5f5", color:"#111111", fontSize:12, fontWeight:600, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+                  Cambiar
+                </button>
+              </div>
+            </div>
+
             <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
               {NAV.map(n => {
                 const isVisible = !navHidden.includes(n.key);
@@ -9677,10 +9672,11 @@ export default function App() {
   };
   const navigateTo = (key) => {
     const restriction = navRestrictions[key];
-    if (restriction) {
+    if (restriction && !sessionUnlockedTabs.includes(key)) {
       setRestriccionModal({ key, type: restriction.type });
       setRestriccionInput("");
       setRestriccionError("");
+      setRememberRestriccion(false);
     } else {
       setView(key);
       setMesDetalle(null);
@@ -9694,6 +9690,11 @@ export default function App() {
     if (r.type === "pin") {
       if (restriccionInput === r.value) {
         const key = restriccionModal.key;
+        if (rememberRestriccion) {
+          const updated = [...sessionUnlockedTabs, key];
+          setSessionUnlockedTabs(updated);
+          sessionStorage.setItem("fr_unlocked_tabs", JSON.stringify(updated));
+        }
         setRestriccionModal(null); setRestriccionInput(""); setShowRestriccionInput(false);
         setView(key); setMesDetalle(null); localStorage.setItem("fr_view", key);
       } else {
@@ -9705,6 +9706,11 @@ export default function App() {
       setRestriccionLoading(false);
       if (error) { setRestriccionError("Contraseña incorrecta"); return; }
       const key = restriccionModal.key;
+      if (rememberRestriccion) {
+        const updated = [...sessionUnlockedTabs, key];
+        setSessionUnlockedTabs(updated);
+        sessionStorage.setItem("fr_unlocked_tabs", JSON.stringify(updated));
+      }
       setRestriccionModal(null); setRestriccionInput(""); setShowRestriccionInput(false);
       setView(key); setMesDetalle(null); localStorage.setItem("fr_view", key);
     }
@@ -9770,11 +9776,18 @@ export default function App() {
     } catch {}
     return {};
   });
+  const [barColor, setBarColor] = useState(() => localStorage.getItem("fr_topbar_color") || "#111111");
+  const [colorPickerActive, setColorPickerActive] = useState(false);
+  const [tempBarColor, setTempBarColor] = useState("#111111");
   const [restriccionModal, setRestriccionModal] = useState(null);
   const [restriccionInput, setRestriccionInput] = useState("");
   const [restriccionError, setRestriccionError] = useState("");
   const [restriccionLoading, setRestriccionLoading] = useState(false);
   const [showRestriccionInput, setShowRestriccionInput] = useState(false);
+  const [rememberRestriccion, setRememberRestriccion] = useState(false);
+  const [sessionUnlockedTabs, setSessionUnlockedTabs] = useState(() => {
+    try { return JSON.parse(sessionStorage.getItem("fr_unlocked_tabs") || "[]"); } catch { return []; }
+  });
   const [kpiModalApp, setKpiModalApp] = useState(null);
   const [kpiModal, setKpiModal] = useState(null);
 
@@ -9891,7 +9904,7 @@ export default function App() {
       `}</style>
 
       {/* Barra principal negra: logo + nav + botones */}
-      <header style={{ background: "#111111", position: "sticky", top: 0, zIndex: 101, minHeight: 52, overflow: "visible" }}>
+      <header style={{ background: colorPickerActive ? tempBarColor : barColor, position: "sticky", top: 0, zIndex: 101, minHeight: 52, overflow: "visible", transition:"background 0.2s" }}>
         <div style={{ width: "100%", minHeight: 52, display: "flex", alignItems: "center", padding: "0 clamp(12px,4vw,32px)", gap: 6, flexWrap: "nowrap", overflow: "visible" }}>
           {/* Logo */}
           <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0, marginRight: 8 }}>
@@ -10077,7 +10090,7 @@ export default function App() {
 
       {/* Barra de sub-navegación de Grupos — visible solo en vista grupos */}
       {view === "grupos" && (
-        <div style={{ position:"sticky", top:52.5, zIndex:99, background:"#111111", display:"flex", alignItems:"center", gap:2, padding:"0 clamp(12px,4vw,32px)", height:40, overflow:"hidden" }}>
+        <div style={{ position:"sticky", top:52.5, zIndex:99, background:colorPickerActive ? tempBarColor : barColor, display:"flex", alignItems:"center", gap:2, padding:"0 clamp(12px,4vw,32px)", height:40, overflow:"hidden", transition:"background 0.2s" }}>
           {gruposSubDisplay.map(({ key, label }) => {
             const activo = gruposSubVista === key;
             return (
@@ -10114,7 +10127,7 @@ export default function App() {
       )}
       {view === "grupos" && <div style={{ height: "0.5px", background: "#fff", width: "100%", position:"sticky", top:92.5, zIndex:100 }} />}
 
-      <WeatherBar ciudad={datos.hotel?.ciudad} datos={datos} lang={lang} occDeTicker={_occDeTicker} stickyTop={view === "grupos" ? 93 : 52} />
+      <WeatherBar ciudad={datos.hotel?.ciudad} datos={datos} lang={lang} occDeTicker={_occDeTicker} stickyTop={view === "grupos" ? 93 : 52} barColor={colorPickerActive ? tempBarColor : barColor} />
       <div style={{ height: 8, background: "#fff", width: "100%" }} />
 
       {/* Main */}
@@ -10173,6 +10186,8 @@ export default function App() {
           initialTab={configInitialTab}
           onClose={() => setPerfilSeccion(null)}
           onGuardado={cargarDatos}
+          barColor={barColor}
+          onOpenColorPicker={() => { setTempBarColor(barColor); setColorPickerActive(true); setPerfilSeccion(null); }}
         />
       )}
 
@@ -10207,9 +10222,41 @@ export default function App() {
               </button>
             </div>
             {restriccionError && <p style={{ fontSize:11, color:C.red, marginBottom:12 }}>{restriccionError}</p>}
+            <label style={{ display:"flex", alignItems:"center", gap:8, marginBottom:16, cursor:"pointer" }}>
+              <input type="checkbox" checked={rememberRestriccion} onChange={e => setRememberRestriccion(e.target.checked)} style={{ width:14, height:14, accentColor:C.accent, cursor:"pointer", flexShrink:0 }} />
+              <span style={{ fontSize:12, color:C.textMid }}>Recordar en esta sesión</span>
+            </label>
             <button onClick={verificarRestriccion} disabled={restriccionLoading||!restriccionInput}
               style={{ width:"100%", padding:"10px 0", background:C.accent, color:"#fff", border:"none", borderRadius:8, fontSize:13, fontWeight:600, cursor:restriccionLoading||!restriccionInput?"not-allowed":"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", opacity:restriccionLoading||!restriccionInput?0.6:1 }}>
               {restriccionLoading ? "Verificando…" : "Entrar"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Paleta color barra superior */}
+      {colorPickerActive && (
+        <div style={{ position:"fixed", bottom:28, left:"50%", transform:"translateX(-50%)", zIndex:10000, background:"#f5f5f5", border:"1.5px solid #111111", borderRadius:12, padding:"18px 22px", boxShadow:"0 4px 20px rgba(0,0,0,0.18)", fontFamily:"'Plus Jakarta Sans',sans-serif", minWidth:340, maxWidth:"92vw" }}>
+          <p style={{ fontSize:11, fontWeight:700, color:"#111111", textTransform:"uppercase", letterSpacing:"1.2px", marginBottom:14 }}>Color de barra superior</p>
+          <div style={{ display:"flex", gap:8, flexWrap:"wrap", marginBottom:14 }}>
+            {["#111111","#0A2540","#004B87","#1A7A3C","#374151","#7C3AED","#B8860B","#9F1239","#0F766E","#1E293B"].map(col => (
+              <button key={col} onClick={() => setTempBarColor(col)}
+                style={{ width:30, height:30, borderRadius:6, background:col, border: tempBarColor===col ? "2.5px solid #111111" : "1.5px solid rgba(0,0,0,0.15)", cursor:"pointer", outline: tempBarColor===col ? "2px solid #f5f5f5" : "none", outlineOffset:"-4px", transition:"transform 0.1s", transform: tempBarColor===col ? "scale(1.15)" : "scale(1)", flexShrink:0 }} />
+            ))}
+            <label title="Color personalizado" style={{ width:30, height:30, borderRadius:6, border:"1.5px solid rgba(0,0,0,0.2)", overflow:"hidden", cursor:"pointer", flexShrink:0, position:"relative", display:"flex", alignItems:"center", justifyContent:"center" }}>
+              <input type="color" value={tempBarColor} onChange={e => setTempBarColor(e.target.value)}
+                style={{ position:"absolute", width:"200%", height:"200%", top:"-50%", left:"-50%", opacity:0, cursor:"pointer" }} />
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="13.5" cy="6.5" r="0.5"/><circle cx="17.5" cy="10.5" r="0.5"/><circle cx="8.5" cy="7.5" r="0.5"/><circle cx="6.5" cy="12.5" r="0.5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg>
+            </label>
+          </div>
+          <div style={{ display:"flex", gap:8 }}>
+            <button onClick={() => { setBarColor(tempBarColor); localStorage.setItem("fr_topbar_color", tempBarColor); setColorPickerActive(false); }}
+              style={{ flex:1, padding:"9px 0", background:"#111111", color:"#fff", border:"none", borderRadius:8, fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+              Guardar
+            </button>
+            <button onClick={() => setColorPickerActive(false)}
+              style={{ flex:1, padding:"9px 0", background:"transparent", color:"#111111", border:"1.5px solid #111111", borderRadius:8, fontSize:13, fontWeight:600, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+              Descartar
             </button>
           </div>
         </div>
