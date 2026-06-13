@@ -3949,16 +3949,9 @@ async function generarInformeDiarioPDF(kpis, hotelNombre) {
     if (pct!=null) {
       doc.setFillColor(...barCol); doc.roundedRect(bx, by1, Math.max(bw*Math.min(pct,100)/100, 2), bh, 1.5, 1.5, "F");
     }
-    // "Faltan X para cerrar el mes"
-    if (presupuestoMensual && pct!=null && pct<100) {
-      const faltan = presupuestoMensual - acum;
-      doc.setFontSize(7); doc.setFont("helvetica","normal"); doc.setTextColor(...C_GRISM);
-      doc.text(`Faltan €${fmt(faltan)} para cerrar el mes en objetivo`, bx, by1+7);
-    }
-
     // ADR section
     const adrMedio = avg_adr;
-    const adrBy = by1 + 13;
+    const adrBy = by1 + 7;
     doc.setDrawColor(...C_BORDE); doc.line(M+6, adrBy, W-M-6, adrBy);
     doc.setFontSize(7); doc.setFont("helvetica","bold"); doc.setTextColor(...C_GRIS);
     doc.text("ADR MEDIO DEL MES", M+6, adrBy+6);
