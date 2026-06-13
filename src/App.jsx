@@ -1718,7 +1718,6 @@ function ImportarExcel({ onClose, session, onImportado, onProduccionDirecta, hot
       setProdForm(f => ({...f, hab_ocupadas:"", hab_disponibles:"", revenue_hab:"", revenue_fnb:"", revenue_salas:""}));
       setOkProd(true); setTimeout(() => setOkProd(false), 3000);
       if (onImportado) onImportado();
-      enviarInformeDiario(row);
       const d = new Date(prodForm.fecha + 'T00:00:00');
       const nextDay = new Date(d); nextDay.setDate(d.getDate() + 1);
       if (nextDay.getMonth() !== d.getMonth()) enviarInformeMensual(d.getFullYear(), d.getMonth() + 1);
@@ -2125,7 +2124,6 @@ function ImportarExcel({ onClose, session, onImportado, onProduccionDirecta, hot
       setOkEdit(true);
       if (onProduccionDirecta) onProduccionDirecta({ hotel_id: session.user.id, fecha: fechaBusqueda, hab_ocupadas, hab_disponibles, revenue_hab, revenue_fnb, revenue_total, adr, revpar, trevpar });
       if (onImportado) onImportado();
-      enviarInformeDiario({ fecha: fechaBusqueda, hab_ocupadas, hab_disponibles, revenue_hab, revenue_fnb, revenue_total, adr, revpar, trevpar });
       const d = new Date(fechaBusqueda + 'T00:00:00');
       const nextDay = new Date(d); nextDay.setDate(d.getDate() + 1);
       if (nextDay.getMonth() !== d.getMonth()) enviarInformeMensual(d.getFullYear(), d.getMonth() + 1);
