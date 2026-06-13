@@ -530,8 +530,8 @@ const CustomTooltip = ({ active, payload, label, unit }) => {
   let displayLabel = raw.fecha || raw.mesNombre || label;
   if (raw.mesNombre && raw.anioIdx) displayLabel = `${raw.mesNombre} ${raw.anioIdx}`;
   return (
-    <div style={{ background:"#111111", borderRadius:10, padding:"12px 16px", boxShadow:"0 8px 24px rgba(0,0,0,0.35)", minWidth:148 }}>
-      <p style={{ color:"#fff", fontSize:10, fontWeight:700, marginBottom:8, textTransform:"uppercase", letterSpacing:"1px" }}>{displayLabel}</p>
+    <div style={{ background:"#f5f5f5", border:"1.5px solid #111111", borderRadius:8, padding:"12px 16px", boxShadow:"0 1px 4px rgba(0,0,0,0.06)", minWidth:148 }}>
+      <p style={{ color:"#111111", fontSize:10, fontWeight:700, marginBottom:8, textTransform:"uppercase", letterSpacing:"1.5px" }}>{displayLabel}</p>
       {payload.map((p, i) => {
         const isOcc = unit === "%" || OCC_NAMES.includes(p.name);
         const val = typeof p.value === 'number'
@@ -541,7 +541,7 @@ const CustomTooltip = ({ active, payload, label, unit }) => {
         return (
           <div key={i} style={{ display:"flex", alignItems:"center", gap:7, margin:"3px 0" }}>
             <span style={{ width:8, height:8, borderRadius:2, background:color, flexShrink:0, display:"inline-block" }}/>
-            <span style={{ color:"rgba(255,255,255,0.75)", fontSize:12 }}>{p.name}: <span style={{ color:"#fff", fontWeight:700 }}>{val}</span></span>
+            <span style={{ color:"rgba(0,0,0,0.65)", fontSize:12 }}>{p.name}: <span style={{ color:"#111111", fontWeight:700 }}>{val}</span></span>
           </div>
         );
       })}
@@ -6650,13 +6650,13 @@ function PickupView({ datos, onGuardado }) {
                       const d = payload[0];
                       const color = (typeof d.payload?.color === "string" && !d.payload.color.startsWith("url(")) ? d.payload.color : "#7A9CC8";
                       return (
-                        <div style={{ background:"#111111", borderRadius:10, padding:"10px 14px", boxShadow:"0 8px 24px rgba(0,0,0,0.35)", minWidth:130 }}>
-                          <p style={{ color:"#fff", fontSize:10, fontWeight:700, marginBottom:6, textTransform:"uppercase", letterSpacing:"1px" }}>{label}</p>
+                        <div style={{ background:"#f5f5f5", border:"1.5px solid #111111", borderRadius:8, padding:"10px 14px", boxShadow:"0 1px 4px rgba(0,0,0,0.06)", minWidth:130 }}>
+                          <p style={{ color:"#111111", fontSize:10, fontWeight:700, marginBottom:6, textTransform:"uppercase", letterSpacing:"1.5px" }}>{label}</p>
                           <div style={{ display:"flex", alignItems:"center", gap:7 }}>
                             <span style={{ width:8, height:8, borderRadius:2, background:color, flexShrink:0, display:"inline-block" }}/>
-                            <span style={{ color:"rgba(255,255,255,0.75)", fontSize:12 }}>{vista.label}: <span style={{ color:"#fff", fontWeight:700 }}>{vista.fmt(d.value)}</span></span>
+                            <span style={{ color:"rgba(0,0,0,0.65)", fontSize:12 }}>{vista.label}: <span style={{ color:"#111111", fontWeight:700 }}>{vista.fmt(d.value)}</span></span>
                           </div>
-                          {d.payload?.isOtaGroup && <p style={{ color:"rgba(255,255,255,0.45)", fontSize:10, marginTop:6 }}>Pulsa para ver desglose</p>}
+                          {d.payload?.isOtaGroup && <p style={{ color:"rgba(0,0,0,0.4)", fontSize:10, marginTop:6 }}>Pulsa para ver desglose</p>}
                         </div>
                       );
                     }}
@@ -6683,6 +6683,7 @@ function PickupView({ datos, onGuardado }) {
         const hab = datos.hotel?.habitaciones || 30;
 
         // 6 meses desde el mes actual
+        const diaHoy = hoy.getDate();
         const filasPace = Array.from({ length: 6 }, (_, i) => {
           const d    = new Date(hoy.getFullYear(), hoy.getMonth() + i, 1);
           const a    = d.getFullYear();
@@ -6690,13 +6691,17 @@ function PickupView({ datos, onGuardado }) {
           const key  = `${a}-${pad(m)}`;
           const diasMes = new Date(a, m, 0).getDate();
           const esFuturo = a > hoy.getFullYear() || (a === hoy.getFullYear() && m > hoy.getMonth() + 1);
+          const esMesActual = i === 0;
 
           // OTB actual
           const otb = otbPorMes[key] || 0;
-          // LY real (produccion)
+
+          // LY: mes actual → hasta mismo día (LYTD); meses futuros → mes completo
           const lyDatos = (produccion || []).filter(r => {
             const f = new Date(r.fecha + "T00:00:00");
-            return f.getFullYear() === a-1 && f.getMonth()+1 === m;
+            if (f.getFullYear() !== a-1 || f.getMonth()+1 !== m) return false;
+            if (esMesActual) return f.getDate() <= diaHoy;
+            return true;
           });
           const lyHabOcu = lyDatos.reduce((s,r) => s + (r.hab_ocupadas||0), 0);
           const lyHabDis = lyDatos.reduce((s,r) => s + (r.hab_disponibles||0), 0);
@@ -6712,13 +6717,17 @@ function PickupView({ datos, onGuardado }) {
           // OCC OTB estimada (reservas / (hab * días))
           const otbOcc = hab > 0 ? (otb / (hab * diasMes) * 100) : null;
 
+          // Ppto de referencia: mes actual → proporcional al día; meses futuros → objetivo completo
+          const ppOccRef = ppOcc != null && esMesActual ? (ppOcc * diaHoy / diasMes) : ppOcc;
+
           // Diferencias
           const diffLY   = lyOcc != null && otbOcc != null ? (otbOcc - lyOcc).toFixed(1) : null;
-          const diffPpto = ppOcc != null && otbOcc != null ? (otbOcc - ppOcc).toFixed(1) : null;
+          const diffPpto = ppOccRef != null && otbOcc != null ? (otbOcc - ppOccRef).toFixed(1) : null;
 
           return {
             label: MESES[d.getMonth()] + " " + a,
             esFuturo,
+            esMesActual,
             otb,
             otbOcc: otbOcc != null ? otbOcc.toFixed(1) : null,
             lyOcc:  lyOcc  != null ? lyOcc.toFixed(1)  : null,
@@ -6751,7 +6760,7 @@ function PickupView({ datos, onGuardado }) {
                     <th style={{ padding:"9px 12px", textAlign:"right",  color:C.text, fontWeight:700, fontSize:11, textTransform:"uppercase", letterSpacing:0.8 }}>OCC OTB</th>
                     <th style={{ padding:"9px 12px", textAlign:"right",  color:C.text, fontWeight:600, fontSize:11, textTransform:"uppercase", letterSpacing:0.8 }}>OCC LY</th>
                     <th style={{ padding:"9px 12px", textAlign:"right",  color:C.text, fontWeight:600, fontSize:11, textTransform:"uppercase", letterSpacing:0.8 }}>OCC Ppto</th>
-                    <th style={{ padding:"9px 12px", textAlign:"right",  color:C.text, fontWeight:600, fontSize:11, textTransform:"uppercase", letterSpacing:0.8 }}>vs LY</th>
+                    <th style={{ padding:"9px 12px", textAlign:"right",  color:C.text, fontWeight:600, fontSize:11, textTransform:"uppercase", letterSpacing:0.8 }}>vs LYTD</th>
                     <th style={{ padding:"9px 16px", textAlign:"right",  color:C.text, fontWeight:600, fontSize:11, textTransform:"uppercase", letterSpacing:0.8 }}>vs Ppto</th>
                   </tr>
                 </thead>
