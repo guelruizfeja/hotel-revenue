@@ -10022,12 +10022,9 @@ export default function App() {
                               const canalMap = {}; let totCanalRev = 0;
                               for (const p of (pickupRows||[])) { if((p.estado||'')==='cancelada') continue; const peso=p.precio_total||(p.num_reservas||1); const key=isOTA_p(p.canal)?'OTA':normCanalP(p.canal); canalMap[key]=(canalMap[key]||0)+peso; totCanalRev+=peso; }
                               const canalesRevenue = Object.entries(canalMap).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]).map(([canal,revenue])=>({ canal, revenue:Math.round(revenue), pct:totCanalRev>0?Math.round(revenue/totCanalRev*100):0 }));
-                              // Grupos del mes y próximos 7 días
-                              let revGruposMes = 0;
-                              for (const g of (gruposRows||[])) {
-                                const noches = Math.max(1, (new Date(g.fecha_fin)-new Date(g.fecha_inicio))/86400000);
-                                revGruposMes += (g.habitaciones||0)*(g.adr_grupo||0)*noches + (g.revenue_fnb||0) + (g.revenue_sala||0);
-                              }
+                              // Grupos en casa ayer (1 noche) y próximos 7 días
+                              const gruposAyer = (gruposRows||[]).filter(g => g.estado==='confirmado' && g.fecha_inicio<=ultimoDia.fecha && g.fecha_fin>ultimoDia.fecha);
+                              const revGruposAyer = gruposAyer.reduce((s,g) => s+(g.habitaciones||0)*(g.adr_grupo||0), 0);
                               const en7Str = new Date(new Date(ultimoDia.fecha+'T00:00:00').getTime()+7*86400000).toISOString().split('T')[0];
                               const gruposProximos = (gruposRows||[]).filter(g => g.fecha_inicio >= ultimoDia.fecha && g.fecha_inicio <= en7Str).map(g => {
                                 const noches = Math.max(1, (new Date(g.fecha_fin)-new Date(g.fecha_inicio))/86400000);
@@ -10039,7 +10036,7 @@ export default function App() {
                               const revTotalEff = ultimoDia.revenue_total || ((ultimoDia.revenue_hab||0) + (ultimoDia.revenue_fnb||0)) || null;
                               const trevpar = ultimoDia.trevpar ?? (ultimoDia.hab_disponibles>0&&revTotalEff ? revTotalEff/ultimoDia.hab_disponibles : null);
                               const totRevTotalEff = totRevTotal || (totRevHab + totRevFnb) || 0;
-                              const kpisPayload = { fecha: ultimoDia.fecha, mesNombre: MESES[mesActual-1], occ, adr, revpar, trevpar, hab_ocupadas: ultimoDia.hab_ocupadas, hab_disponibles: ultimoDia.hab_disponibles, pickup_neto: nuevas, cancelaciones: cancels, revenue_pickup_ayer: revPickup||null, revenueAcumulado, presupuestoMensual: pptoData?.rev_total_ppto??null, avg_occ: totHabDisp>0?totHabOcu/totHabDisp*100:null, avg_adr: totHabOcu>0?totRevHab/totHabOcu:null, avg_revpar: totHabDisp>0?totRevHab/totHabDisp:null, avg_trevpar: totHabDisp>0&&totRevTotalEff>0?totRevTotalEff/totHabDisp:null, revHabAyer: ultimoDia.revenue_hab||0, revFnbAyer: ultimoDia.revenue_fnb||0, canalesRevenue, revGruposAyer: Math.round(revGruposMes), revIndividualAyer: Math.round(Math.max(0, totRevHab-revGruposMes)), adrPpto: pptoData?.adr_ppto??null, gruposProximos };
+                              const kpisPayload = { fecha: ultimoDia.fecha, mesNombre: MESES[mesActual-1], occ, adr, revpar, trevpar, hab_ocupadas: ultimoDia.hab_ocupadas, hab_disponibles: ultimoDia.hab_disponibles, pickup_neto: nuevas, cancelaciones: cancels, revenue_pickup_ayer: revPickup||null, revenueAcumulado, presupuestoMensual: pptoData?.rev_total_ppto??null, avg_occ: totHabDisp>0?totHabOcu/totHabDisp*100:null, avg_adr: totHabOcu>0?totRevHab/totHabOcu:null, avg_revpar: totHabDisp>0?totRevHab/totHabDisp:null, avg_trevpar: totHabDisp>0&&totRevTotalEff>0?totRevTotalEff/totHabDisp:null, revHabAyer: ultimoDia.revenue_hab||0, revFnbAyer: ultimoDia.revenue_fnb||0, canalesRevenue, revGruposAyer: Math.round(revGruposAyer), revIndividualAyer: Math.round(Math.max(0, (ultimoDia.revenue_hab||0)-revGruposAyer)), adrPpto: pptoData?.adr_ppto??null, gruposProximos };
                               let pdfBase64 = null;
                               try {
                                 pdfBase64 = await generarInformeDiarioPDF(kpisPayload, datos.hotel?.nombre||null);
