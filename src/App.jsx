@@ -3718,7 +3718,7 @@ async function generarInformeDiarioPDF(kpis, hotelNombre) {
     lm_avg_occ, lm_avg_adr, lm_avg_revpar, lm_avg_trevpar,
     revHabAyer, revFnbAyer, canalesRevenue,
     revGruposAyer, revIndividualAyer,
-    adrPpto, gruposProximos,
+    adrPpto, gruposProximos, proximoConfirmado, gruposCotizacion,
   } = kpis;
 
   const loadScript = src => new Promise((res, rej) => {
@@ -3984,36 +3984,66 @@ async function generarInformeDiarioPDF(kpis, hotelNombre) {
   }
 
   // ── GRUPOS & EVENTOS ─────────────────────────────────
-  if (gruposProximos?.length) {
+  const hasGruposSection = gruposProximos?.length || proximoConfirmado || gruposCotizacion?.length;
+  if (hasGruposSection) {
     doc.setFontSize(8); doc.setFont("helvetica","bold"); doc.setTextColor(...C_GRIS);
     doc.text("GRUPOS & EVENTOS", M, y);
-    doc.setFont("helvetica","normal"); doc.setTextColor(...C_GRISM);
-    doc.text("— PRÓXIMOS 7 DÍAS", M+40, y);
-    y += 4;
+    y += 5;
 
-    const tH = 9 + gruposProximos.length*8;
-    doc.setFillColor(255,255,255); doc.setDrawColor(...C_BORDE);
-    doc.roundedRect(M, y, W-M*2, tH, 2, 2, "FD");
+    // helper: tabla de grupos
+    const drawGruposTable = (lista) => {
+      const tH = 9 + lista.length * 8;
+      doc.setFillColor(255,255,255); doc.setDrawColor(...C_BORDE);
+      doc.roundedRect(M, y, W-M*2, tH, 2, 2, "FD");
+      const cols = [{lbl:"NOMBRE",x:M+3},{lbl:"TIPO",x:M+52},{lbl:"FECHAS",x:M+80},{lbl:"HAB.",x:M+126},{lbl:"REVENUE",x:M+148}];
+      doc.setFontSize(6); doc.setFont("helvetica","bold"); doc.setTextColor(...C_GRIS);
+      cols.forEach(c => doc.text(c.lbl, c.x, y+6));
+      doc.setDrawColor(...C_BORDE); doc.line(M+3, y+8, W-M-3, y+8);
+      lista.forEach((g, i) => {
+        const ry = y + 14 + i*8;
+        doc.setFontSize(7); doc.setFont("helvetica","bold"); doc.setTextColor(...C_NEGRO);
+        doc.text((g.nombre||"—").slice(0,22), cols[0].x, ry);
+        doc.setFont("helvetica","normal"); doc.setTextColor(...C_GRIS);
+        doc.text((g.tipo||"").slice(0,13), cols[1].x, ry);
+        doc.text(`${fmtSD(g.fecha_inicio)} – ${fmtSD(g.fecha_fin)}`, cols[2].x, ry);
+        doc.text(g.habitaciones?`${g.habitaciones} hab.`:"—", cols[3].x, ry);
+        doc.setFont("helvetica","bold"); doc.setTextColor(...C_AZUL);
+        doc.text(g.revenue?`€${fmt(g.revenue)}`:"—", cols[4].x, ry);
+      });
+      y += tH + 4;
+    };
 
-    // Headers
-    const cols = [{lbl:"NOMBRE",x:M+3,w:44},{lbl:"TIPO",x:M+47,w:28},{lbl:"FECHAS",x:M+75,w:46},{lbl:"HAB.",x:M+121,w:18},{lbl:"REVENUE",x:M+139,w:30}];
-    doc.setFontSize(6); doc.setFont("helvetica","bold"); doc.setTextColor(...C_GRIS);
-    cols.forEach(c => doc.text(c.lbl, c.x, y+6));
-    doc.setDrawColor(...C_BORDE); doc.line(M+3, y+8, W-M-3, y+8);
+    // Próximos 7 días confirmados
+    if (gruposProximos?.length) {
+      doc.setFontSize(7); doc.setFont("helvetica","normal"); doc.setTextColor(...C_GRISM);
+      doc.text("Próximos 7 días (confirmados)", M, y); y += 3;
+      drawGruposTable(gruposProximos);
+    }
 
-    gruposProximos.forEach((g, i) => {
-      const ry = y + 14 + i*8;
-      doc.setFontSize(7); doc.setFont("helvetica","bold"); doc.setTextColor(...C_NEGRO);
-      doc.text((g.nombre||"").slice(0,20), cols[0].x, ry);
-      doc.setFont("helvetica","normal"); doc.setTextColor(...C_GRIS);
-      doc.text((g.tipo||"").slice(0,14), cols[1].x, ry);
-      const fechas = `${fmtSD(g.fecha_inicio)} – ${fmtSD(g.fecha_fin)}`;
-      doc.text(fechas, cols[2].x, ry);
-      doc.text(g.habitaciones?`${g.habitaciones} hab.`:"—", cols[3].x, ry);
-      doc.setFont("helvetica","bold"); doc.setTextColor(...C_AZUL);
-      doc.text(g.revenue?`€${fmt(g.revenue)}`:"—", cols[4].x, ry);
-    });
-    y += tH + 6;
+    // Próximo grupo confirmado (si no está ya en los 7 días)
+    if (proximoConfirmado && !gruposProximos?.find(g => g.fecha_inicio === proximoConfirmado.fecha_inicio && g.nombre === proximoConfirmado.nombre)) {
+      doc.setFontSize(7); doc.setFont("helvetica","normal"); doc.setTextColor(...C_GRISM);
+      doc.text("Próximo grupo confirmado", M, y); y += 3;
+      const cH = 18;
+      doc.setFillColor(245,250,255); doc.setDrawColor(...C_BORDE);
+      doc.roundedRect(M, y, W-M*2, cH, 2, 2, "FD");
+      doc.setFontSize(9); doc.setFont("helvetica","bold"); doc.setTextColor(...C_AZUL);
+      doc.text((proximoConfirmado.nombre||"—").slice(0,30), M+4, y+7);
+      doc.setFontSize(7); doc.setFont("helvetica","normal"); doc.setTextColor(...C_GRIS);
+      const info = [`${fmtSD(proximoConfirmado.fecha_inicio)} – ${fmtSD(proximoConfirmado.fecha_fin)}`, proximoConfirmado.tipo||"", proximoConfirmado.habitaciones?`${proximoConfirmado.habitaciones} hab.`:""].filter(Boolean).join("  ·  ");
+      doc.text(info, M+4, y+13);
+      if (proximoConfirmado.revenue) { doc.setFont("helvetica","bold"); doc.setTextColor(...C_AZUL); doc.text(`€${fmt(proximoConfirmado.revenue)}`, W-M-4, y+10, { align:"right" }); }
+      y += cH + 4;
+    }
+
+    // Grupos en cotización / tentativo
+    if (gruposCotizacion?.length) {
+      doc.setFontSize(7); doc.setFont("helvetica","normal"); doc.setTextColor(...C_GRISM);
+      doc.text("En cotización / tentativo", M, y); y += 3;
+      drawGruposTable(gruposCotizacion);
+    }
+
+    y += 2;
   }
 
   // ── FOOTER ──────────────────────────────────────────
@@ -10008,7 +10038,7 @@ export default function App() {
                                 supabase.from("produccion_diaria").select("fecha,hab_ocupadas,hab_disponibles,revenue_hab,revenue_fnb,revenue_total").eq("hotel_id", session.user.id).gte("fecha", inicioMes).lt("fecha", inicioSig).order("fecha", { ascending: true }),
                                 supabase.from("pickup_entries").select("canal,num_reservas,precio_total,estado").eq("hotel_id", session.user.id).eq("fecha_pickup", ultimoDia.fecha),
                                 supabase.from("presupuesto").select("rev_total_ppto,adr_ppto").eq("hotel_id", session.user.id).eq("mes", mesActual).eq("anio", anioActual).maybeSingle(),
-                                supabase.from("grupos_eventos").select("nombre,categoria,estado,fecha_inicio,fecha_fin,habitaciones,adr_grupo,revenue_fnb,revenue_sala").eq("hotel_id", session.user.id).neq("estado","cancelado").gte("fecha_fin", inicioMes).order("fecha_inicio"),
+                                supabase.from("grupos_eventos").select("nombre,categoria,estado,fecha_inicio,fecha_fin,habitaciones,adr_grupo,revenue_fnb,revenue_sala").eq("hotel_id", session.user.id).neq("estado","cancelado").gte("fecha_fin", ultimoDia.fecha).order("fecha_inicio"),
                                 supabase.from("produccion_diaria").select("hab_ocupadas,hab_disponibles,revenue_hab,revenue_fnb,revenue_total").eq("hotel_id", session.user.id).gte("fecha", inicioMesLM).lt("fecha", inicioMes),
                               ]);
                               let nuevas=0, cancels=0, revPickup=0;
@@ -10030,21 +10060,21 @@ export default function App() {
                               const canalMap = {}; let totCanalRev = 0;
                               for (const p of (pickupRows||[])) { if((p.estado||'')==='cancelada') continue; const peso=p.precio_total||(p.num_reservas||1); const key=isOTA_p(p.canal)?'OTA':normCanalP(p.canal); canalMap[key]=(canalMap[key]||0)+peso; totCanalRev+=peso; }
                               const canalesRevenue = Object.entries(canalMap).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]).map(([canal,revenue])=>({ canal, revenue:Math.round(revenue), pct:totCanalRev>0?Math.round(revenue/totCanalRev*100):0 }));
-                              // Grupos en casa ayer (1 noche) y próximos 7 días
+                              // Grupos en casa ayer (1 noche)
                               const gruposAyer = (gruposRows||[]).filter(g => g.estado==='confirmado' && g.fecha_inicio<=ultimoDia.fecha && g.fecha_fin>ultimoDia.fecha);
                               const revGruposAyer = gruposAyer.reduce((s,g) => s+(g.habitaciones||0)*(g.adr_grupo||0), 0);
+                              const mkGrupo = g => { const noches=Math.max(1,(new Date(g.fecha_fin+'T00:00:00')-new Date(g.fecha_inicio+'T00:00:00'))/86400000); return { nombre:g.nombre, tipo:g.categoria||"", estado:g.estado, fecha_inicio:g.fecha_inicio, fecha_fin:g.fecha_fin, habitaciones:g.habitaciones||0, revenue:Math.round((g.habitaciones||0)*(g.adr_grupo||0)*noches+(g.revenue_fnb||0)+(g.revenue_sala||0)) }; };
                               const en7Str = new Date(new Date(ultimoDia.fecha+'T00:00:00').getTime()+7*86400000).toISOString().split('T')[0];
-                              const gruposProximos = (gruposRows||[]).filter(g => g.fecha_inicio >= ultimoDia.fecha && g.fecha_inicio <= en7Str).map(g => {
-                                const noches = Math.max(1, (new Date(g.fecha_fin)-new Date(g.fecha_inicio))/86400000);
-                                return { nombre: g.nombre, tipo: g.categoria||"", fecha_inicio: g.fecha_inicio, fecha_fin: g.fecha_fin, habitaciones: g.habitaciones||0, revenue: Math.round((g.habitaciones||0)*(g.adr_grupo||0)*noches+(g.revenue_fnb||0)+(g.revenue_sala||0)) };
-                              });
+                              const gruposProximos = (gruposRows||[]).filter(g => g.estado==='confirmado' && g.fecha_inicio>ultimoDia.fecha && g.fecha_inicio<=en7Str).map(mkGrupo);
+                              const proximoConfirmado = (() => { const g=(gruposRows||[]).filter(g=>g.estado==='confirmado'&&g.fecha_inicio>ultimoDia.fecha).sort((a,b)=>a.fecha_inicio.localeCompare(b.fecha_inicio))[0]; return g?mkGrupo(g):null; })();
+                              const gruposCotizacion = (gruposRows||[]).filter(g=>(g.estado==='cotizado'||g.estado==='tentativo')&&g.fecha_fin>ultimoDia.fecha).sort((a,b)=>a.fecha_inicio.localeCompare(b.fecha_inicio)).map(mkGrupo);
                               const occ = ultimoDia.hab_disponibles>0 ? ultimoDia.hab_ocupadas/ultimoDia.hab_disponibles*100 : null;
                               const adr = ultimoDia.adr ?? (ultimoDia.hab_ocupadas>0&&ultimoDia.revenue_hab ? ultimoDia.revenue_hab/ultimoDia.hab_ocupadas : null);
                               const revpar = ultimoDia.revpar ?? (ultimoDia.hab_disponibles>0&&ultimoDia.revenue_hab ? ultimoDia.revenue_hab/ultimoDia.hab_disponibles : null);
                               const revTotalEff = ultimoDia.revenue_total || ((ultimoDia.revenue_hab||0) + (ultimoDia.revenue_fnb||0)) || null;
                               const trevpar = ultimoDia.trevpar ?? (ultimoDia.hab_disponibles>0&&revTotalEff ? revTotalEff/ultimoDia.hab_disponibles : null);
                               const totRevTotalEff = totRevTotal || (totRevHab + totRevFnb) || 0;
-                              const kpisPayload = { fecha: ultimoDia.fecha, mesNombre: MESES[mesActual-1], occ, adr, revpar, trevpar, hab_ocupadas: ultimoDia.hab_ocupadas, hab_disponibles: ultimoDia.hab_disponibles, pickup_neto: nuevas, cancelaciones: cancels, revenue_pickup_ayer: revPickup||null, revenueAcumulado, presupuestoMensual: pptoData?.rev_total_ppto??null, avg_occ: totHabDisp>0?totHabOcu/totHabDisp*100:null, avg_adr: totHabOcu>0?totRevHab/totHabOcu:null, avg_revpar: totHabDisp>0?totRevHab/totHabDisp:null, avg_trevpar: totHabDisp>0&&totRevTotalEff>0?totRevTotalEff/totHabDisp:null, lm_avg_occ, lm_avg_adr, lm_avg_revpar, lm_avg_trevpar, revHabAyer: ultimoDia.revenue_hab||0, revFnbAyer: ultimoDia.revenue_fnb||0, canalesRevenue, revGruposAyer: Math.round(revGruposAyer), revIndividualAyer: Math.round(Math.max(0, (ultimoDia.revenue_hab||0)-revGruposAyer)), adrPpto: pptoData?.adr_ppto??null, gruposProximos };
+                              const kpisPayload = { fecha: ultimoDia.fecha, mesNombre: MESES[mesActual-1], occ, adr, revpar, trevpar, hab_ocupadas: ultimoDia.hab_ocupadas, hab_disponibles: ultimoDia.hab_disponibles, pickup_neto: nuevas, cancelaciones: cancels, revenue_pickup_ayer: revPickup||null, revenueAcumulado, presupuestoMensual: pptoData?.rev_total_ppto??null, avg_occ: totHabDisp>0?totHabOcu/totHabDisp*100:null, avg_adr: totHabOcu>0?totRevHab/totHabOcu:null, avg_revpar: totHabDisp>0?totRevHab/totHabDisp:null, avg_trevpar: totHabDisp>0&&totRevTotalEff>0?totRevTotalEff/totHabDisp:null, lm_avg_occ, lm_avg_adr, lm_avg_revpar, lm_avg_trevpar, revHabAyer: ultimoDia.revenue_hab||0, revFnbAyer: ultimoDia.revenue_fnb||0, canalesRevenue, revGruposAyer: Math.round(revGruposAyer), revIndividualAyer: Math.round(Math.max(0, (ultimoDia.revenue_hab||0)-revGruposAyer)), adrPpto: pptoData?.adr_ppto??null, gruposProximos, proximoConfirmado, gruposCotizacion };
                               let pdfBase64 = null;
                               try {
                                 pdfBase64 = await generarInformeDiarioPDF(kpisPayload, datos.hotel?.nombre||null);
