@@ -9275,18 +9275,19 @@ function ModalConfigUnificado({ datos, session, navHidden, toggleNavHidden, navR
                   for (const p of (pickupRows || [])) { const nr = p.num_reservas||1; if (p.estado==='cancelada') cancels+=nr; else { nuevas+=nr; revPickup+=p.precio_total||0; } }
                   let acum = 0;
                   const revenueAcumulado = (datosMes||[]).map(d => { acum += d.revenue_hab||0; return { dia: parseInt(d.fecha.split('-')[2]), acum: Math.round(acum) }; });
-                  let totHabOcu=0, totHabDisp=0, totRevHab=0;
-                  for (const d of (datosMes||[])) { if (d.hab_disponibles>0) { totHabOcu+=d.hab_ocupadas||0; totHabDisp+=d.hab_disponibles||0; totRevHab+=d.revenue_hab||0; } }
+                  let totHabOcu=0, totHabDisp=0, totRevHab=0, totRevTotal=0;
+                  for (const d of (datosMes||[])) { if (d.hab_disponibles>0) { totHabOcu+=d.hab_ocupadas||0; totHabDisp+=d.hab_disponibles||0; totRevHab+=d.revenue_hab||0; totRevTotal+=d.revenue_total||0; } }
                   const occ = ultimoDia.hab_disponibles>0 ? ultimoDia.hab_ocupadas/ultimoDia.hab_disponibles*100 : null;
                   const adr = ultimoDia.adr ?? (ultimoDia.hab_ocupadas>0&&ultimoDia.revenue_hab ? ultimoDia.revenue_hab/ultimoDia.hab_ocupadas : null);
                   const revpar = ultimoDia.revpar ?? (ultimoDia.hab_disponibles>0&&ultimoDia.revenue_hab ? ultimoDia.revenue_hab/ultimoDia.hab_disponibles : null);
+                  const trevpar = ultimoDia.trevpar ?? (ultimoDia.hab_disponibles>0&&ultimoDia.revenue_total ? ultimoDia.revenue_total/ultimoDia.hab_disponibles : null);
                   const resp = await fetch('/api/daily-email', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
                     body: JSON.stringify({
                       email: session.user.email,
                       hotelNombre: datos.hotel?.nombre || null,
-                      kpis: { fecha: ultimoDia.fecha, mesNombre: MESES[mesActual-1], occ, adr, revpar, trevpar: null, hab_ocupadas: ultimoDia.hab_ocupadas, hab_disponibles: ultimoDia.hab_disponibles, pickup_neto: nuevas, cancelaciones: cancels, revenue_pickup_ayer: revPickup||null, revenueAcumulado, presupuestoMensual: pptoData?.rev_total_ppto??null, avg_occ: totHabDisp>0?totHabOcu/totHabDisp*100:null, avg_adr: totHabOcu>0?totRevHab/totHabOcu:null, avg_revpar: totHabDisp>0?totRevHab/totHabDisp:null, avg_trevpar: null, revHabMes: totRevHab, revFnbMes: 0, canalesRevenue: [], revGruposMes: 0, revIndividualMes: totRevHab, adrPpto: pptoData?.adr_ppto??null, gruposProximos: [] },
+                      kpis: { fecha: ultimoDia.fecha, mesNombre: MESES[mesActual-1], occ, adr, revpar, trevpar, hab_ocupadas: ultimoDia.hab_ocupadas, hab_disponibles: ultimoDia.hab_disponibles, pickup_neto: nuevas, cancelaciones: cancels, revenue_pickup_ayer: revPickup||null, revenueAcumulado, presupuestoMensual: pptoData?.rev_total_ppto??null, avg_occ: totHabDisp>0?totHabOcu/totHabDisp*100:null, avg_adr: totHabOcu>0?totRevHab/totHabOcu:null, avg_revpar: totHabDisp>0?totRevHab/totHabDisp:null, avg_trevpar: totHabDisp>0&&totRevTotal>0?totRevTotal/totHabDisp:null, revHabMes: totRevHab, revFnbMes: 0, canalesRevenue: [], revGruposMes: 0, revIndividualMes: totRevHab, adrPpto: pptoData?.adr_ppto??null, gruposProximos: [] },
                     }),
                   });
                   const json = await resp.json();
@@ -10013,8 +10014,8 @@ export default function App() {
                               for (const p of (pickupRows||[])) { const nr=p.num_reservas||1; if (p.estado==='cancelada') cancels+=nr; else { nuevas+=nr; revPickup+=p.precio_total||0; } }
                               let acum=0;
                               const revenueAcumulado = (datosMes||[]).map(d => { acum+=d.revenue_hab||0; return { dia: parseInt(d.fecha.split('-')[2]), acum: Math.round(acum) }; });
-                              let totHabOcu=0, totHabDisp=0, totRevHab=0, totRevFnb=0;
-                              for (const d of (datosMes||[])) { if (d.hab_disponibles>0) { totHabOcu+=d.hab_ocupadas||0; totHabDisp+=d.hab_disponibles||0; totRevHab+=d.revenue_hab||0; totRevFnb+=d.revenue_fnb||0; } }
+                              let totHabOcu=0, totHabDisp=0, totRevHab=0, totRevFnb=0, totRevTotal=0;
+                              for (const d of (datosMes||[])) { if (d.hab_disponibles>0) { totHabOcu+=d.hab_ocupadas||0; totHabDisp+=d.hab_disponibles||0; totRevHab+=d.revenue_hab||0; totRevFnb+=d.revenue_fnb||0; totRevTotal+=d.revenue_total||0; } }
                               // Canales revenue del mes
                               const canalMap = {};
                               for (const p of (canalesRows||[])) { const c = p.canal||"Otro"; canalMap[c] = (canalMap[c]||0) + (p.precio_total||0); }
@@ -10034,7 +10035,8 @@ export default function App() {
                               const occ = ultimoDia.hab_disponibles>0 ? ultimoDia.hab_ocupadas/ultimoDia.hab_disponibles*100 : null;
                               const adr = ultimoDia.adr ?? (ultimoDia.hab_ocupadas>0&&ultimoDia.revenue_hab ? ultimoDia.revenue_hab/ultimoDia.hab_ocupadas : null);
                               const revpar = ultimoDia.revpar ?? (ultimoDia.hab_disponibles>0&&ultimoDia.revenue_hab ? ultimoDia.revenue_hab/ultimoDia.hab_disponibles : null);
-                              const kpisPayload = { fecha: ultimoDia.fecha, mesNombre: MESES[mesActual-1], occ, adr, revpar, trevpar: null, hab_ocupadas: ultimoDia.hab_ocupadas, hab_disponibles: ultimoDia.hab_disponibles, pickup_neto: nuevas, cancelaciones: cancels, revenue_pickup_ayer: revPickup||null, revenueAcumulado, presupuestoMensual: pptoData?.rev_total_ppto??null, avg_occ: totHabDisp>0?totHabOcu/totHabDisp*100:null, avg_adr: totHabOcu>0?totRevHab/totHabOcu:null, avg_revpar: totHabDisp>0?totRevHab/totHabDisp:null, avg_trevpar: null, revHabMes: Math.round(totRevHab), revFnbMes: Math.round(totRevFnb), canalesRevenue, revGruposMes: Math.round(revGruposMes), revIndividualMes: Math.round(Math.max(0, totRevHab-revGruposMes)), adrPpto: pptoData?.adr_ppto??null, gruposProximos };
+                              const trevpar = ultimoDia.trevpar ?? (ultimoDia.hab_disponibles>0&&ultimoDia.revenue_total ? ultimoDia.revenue_total/ultimoDia.hab_disponibles : null);
+                              const kpisPayload = { fecha: ultimoDia.fecha, mesNombre: MESES[mesActual-1], occ, adr, revpar, trevpar, hab_ocupadas: ultimoDia.hab_ocupadas, hab_disponibles: ultimoDia.hab_disponibles, pickup_neto: nuevas, cancelaciones: cancels, revenue_pickup_ayer: revPickup||null, revenueAcumulado, presupuestoMensual: pptoData?.rev_total_ppto??null, avg_occ: totHabDisp>0?totHabOcu/totHabDisp*100:null, avg_adr: totHabOcu>0?totRevHab/totHabOcu:null, avg_revpar: totHabDisp>0?totRevHab/totHabDisp:null, avg_trevpar: totHabDisp>0&&totRevTotal>0?totRevTotal/totHabDisp:null, revHabMes: Math.round(totRevHab), revFnbMes: Math.round(totRevFnb), canalesRevenue, revGruposMes: Math.round(revGruposMes), revIndividualMes: Math.round(Math.max(0, totRevHab-revGruposMes)), adrPpto: pptoData?.adr_ppto??null, gruposProximos };
                               let pdfBase64 = null;
                               try {
                                 pdfBase64 = await generarInformeDiarioPDF(kpisPayload, datos.hotel?.nombre||null);
