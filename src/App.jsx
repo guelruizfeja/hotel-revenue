@@ -3715,6 +3715,7 @@ async function generarInformeDiarioPDF(kpis, hotelNombre) {
     hab_ocupadas, hab_disponibles, pickup_neto,
     revenueAcumulado, presupuestoMensual,
     avg_occ, avg_adr, avg_revpar, avg_trevpar,
+    lm_avg_occ, lm_avg_adr, lm_avg_revpar, lm_avg_trevpar,
     revHabAyer, revFnbAyer, canalesRevenue,
     revGruposAyer, revIndividualAyer,
     adrPpto, gruposProximos,
@@ -3922,11 +3923,11 @@ async function generarInformeDiarioPDF(kpis, hotelNombre) {
     doc.text(`(${mesNombre||""})`, M+44, y);
     y += 4;
 
-    const pgH = 54;
+    const pgH = 64;
     doc.setFillColor(255,255,255); doc.setDrawColor(...C_BORDE);
     doc.roundedRect(M, y, W-M*2, pgH, 2, 2, "FD");
 
-    // 3-col header row
+    // 3-col header row: Acumulado / Cumplimiento / Presupuesto
     const pgCols = [
       { lbl:`ACUMULADO DÍA ${lastDay}`, val:`€${fmt(acum)}`, vc:C_AZUL },
       { lbl:"CUMPLIMIENTO",             val:pct!=null?`${pct}%`:"—",  vc:barCol },
@@ -3949,33 +3950,36 @@ async function generarInformeDiarioPDF(kpis, hotelNombre) {
     if (pct!=null) {
       doc.setFillColor(...barCol); doc.roundedRect(bx, by1, Math.max(bw*Math.min(pct,100)/100, 2), bh, 1.5, 1.5, "F");
     }
-    // ADR section
-    const adrMedio = avg_adr;
-    const adrBy = by1 + 7;
-    doc.setDrawColor(...C_BORDE); doc.line(M+6, adrBy, W-M-6, adrBy);
-    doc.setFontSize(7); doc.setFont("helvetica","bold"); doc.setTextColor(...C_GRIS);
-    doc.text("ADR MEDIO DEL MES", M+6, adrBy+6);
-    if (adrPpto) {
-      doc.setFont("helvetica","normal"); doc.setTextColor(...C_GRISM);
-      doc.text(`Ppto: €${fmt(adrPpto)}`, W-M-6, adrBy+6, { align:"right" });
-    }
-    // ADR value
-    doc.setFontSize(12); doc.setFont("helvetica","bold");
-    const adrDeltaPct = adrMedio!=null&&adrPpto&&adrPpto>0 ? (adrMedio-adrPpto)/adrPpto*100 : null;
-    const adrBarCol = adrDeltaPct==null ? C_GRIS : adrDeltaPct>=0 ? C_VERDE : C_ROJO;
-    doc.setTextColor(...C_AZUL);
-    doc.text(adrMedio!=null?`€${Math.round(adrMedio)}`:"—", W/2, adrBy+14, { align:"center" });
-    // ADR bar
-    const adrBarY = adrBy+17;
-    doc.setFillColor(...C_BORDE); doc.roundedRect(bx, adrBarY, bw, bh, 1.5, 1.5, "F");
-    if (adrMedio!=null && adrPpto && adrPpto>0) {
-      const adrPctBar = Math.min(adrMedio/adrPpto, 1);
-      doc.setFillColor(...adrBarCol); doc.roundedRect(bx, adrBarY, Math.max(bw*adrPctBar, 2), bh, 1.5, 1.5, "F");
-      if (adrDeltaPct!=null) {
-        doc.setFontSize(7); doc.setFont("helvetica","bold"); doc.setTextColor(...adrBarCol);
-        doc.text(`${adrDeltaPct>=0?"+":""}${adrDeltaPct.toFixed(1)}% vs presupuesto`, W/2, adrBarY+7, { align:"center" });
+
+    // ── KPI cards: Media del mes vs Mes Anterior ───────
+    const kBy = by1 + 8;
+    doc.setDrawColor(...C_BORDE); doc.line(M+6, kBy, W-M-6, kBy);
+    doc.setFontSize(6.5); doc.setFont("helvetica","bold"); doc.setTextColor(...C_GRIS);
+    doc.text("MEDIA DEL MES", M+6, kBy+6);
+    doc.setFont("helvetica","normal"); doc.setTextColor(...C_GRISM);
+    doc.text("(vs Mes Anterior)", M+6+33, kBy+6);
+
+    const lmKpis = [
+      { lbl:"OCC MEDIA",   val: avg_occ!=null?parseFloat(avg_occ).toFixed(1)+"%":"—",      lm: lm_avg_occ,    delta: avg_occ!=null&&lm_avg_occ!=null ? avg_occ-lm_avg_occ : null,                             dfmt: n=>(n>=0?"+":"")+parseFloat(n).toFixed(1)+" pp" },
+      { lbl:"ADR MEDIO",   val: avg_adr!=null?`€${Math.round(avg_adr)}`:"—",               lm: lm_avg_adr,    delta: avg_adr!=null&&lm_avg_adr!=null ? avg_adr-lm_avg_adr : null,                             dfmt: n=>(n>=0?"+€":"-€")+Math.abs(n).toFixed(1) },
+      { lbl:"REVPAR MEDIO",val: avg_revpar!=null?`€${Math.round(avg_revpar)}`:"—",          lm: lm_avg_revpar, delta: avg_revpar!=null&&lm_avg_revpar!=null&&lm_avg_revpar>0?(avg_revpar-lm_avg_revpar)/lm_avg_revpar*100:null, dfmt: n=>(n>=0?"+":"")+parseFloat(n).toFixed(1)+"%" },
+      { lbl:"TREVPAR MEDIO",val: avg_trevpar!=null?`€${Math.round(avg_trevpar)}`:"—",      lm: lm_avg_trevpar,delta: avg_trevpar!=null&&lm_avg_trevpar!=null&&lm_avg_trevpar>0?(avg_trevpar-lm_avg_trevpar)/lm_avg_trevpar*100:null, dfmt: n=>(n>=0?"+":"")+parseFloat(n).toFixed(1)+"%" },
+    ];
+    const kColW = (W-M*2)/4;
+    lmKpis.forEach((k, i) => {
+      const kx = M + i*kColW + kColW/2;
+      if (i>0) { doc.setDrawColor(...C_BORDE); doc.line(M+i*kColW, kBy+10, M+i*kColW, kBy+38); }
+      doc.setFontSize(6); doc.setFont("helvetica","bold"); doc.setTextColor(...C_GRIS);
+      doc.text(k.lbl, kx, kBy+16, { align:"center" });
+      doc.setFontSize(11); doc.setFont("helvetica","bold"); doc.setTextColor(...C_AZUL);
+      doc.text(k.val, kx, kBy+25, { align:"center" });
+      if (k.delta!=null) {
+        const dc = k.delta>=0 ? C_VERDE : C_ROJO;
+        doc.setFontSize(7); doc.setFont("helvetica","bold"); doc.setTextColor(...dc);
+        doc.text(k.dfmt(k.delta), kx, kBy+32, { align:"center" });
       }
-    }
+    });
+
     y += pgH + 6;
   }
 
@@ -9996,12 +10000,16 @@ export default function App() {
                               const mesStr = String(mesActual).padStart(2,'0');
                               const inicioMes = `${anioActual}-${mesStr}-01`;
                               const inicioSig = mesActual===12 ? `${anioActual+1}-01-01` : `${anioActual}-${String(mesActual+1).padStart(2,'0')}-01`;
+                              const mesLM = mesActual===1 ? 12 : mesActual-1;
+                              const anioLM = mesActual===1 ? anioActual-1 : anioActual;
+                              const inicioMesLM = `${anioLM}-${String(mesLM).padStart(2,'0')}-01`;
                               const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-                              const [{ data: datosMes }, { data: pickupRows }, { data: pptoData }, { data: gruposRows }] = await Promise.all([
+                              const [{ data: datosMes }, { data: pickupRows }, { data: pptoData }, { data: gruposRows }, { data: datosLM }] = await Promise.all([
                                 supabase.from("produccion_diaria").select("fecha,hab_ocupadas,hab_disponibles,revenue_hab,revenue_fnb,revenue_total").eq("hotel_id", session.user.id).gte("fecha", inicioMes).lt("fecha", inicioSig).order("fecha", { ascending: true }),
                                 supabase.from("pickup_entries").select("canal,num_reservas,precio_total,estado").eq("hotel_id", session.user.id).eq("fecha_pickup", ultimoDia.fecha),
                                 supabase.from("presupuesto").select("rev_total_ppto,adr_ppto").eq("hotel_id", session.user.id).eq("mes", mesActual).eq("anio", anioActual).maybeSingle(),
                                 supabase.from("grupos_eventos").select("nombre,categoria,estado,fecha_inicio,fecha_fin,habitaciones,adr_grupo,revenue_fnb,revenue_sala").eq("hotel_id", session.user.id).neq("estado","cancelado").gte("fecha_fin", inicioMes).order("fecha_inicio"),
+                                supabase.from("produccion_diaria").select("hab_ocupadas,hab_disponibles,revenue_hab,revenue_fnb,revenue_total").eq("hotel_id", session.user.id).gte("fecha", inicioMesLM).lt("fecha", inicioMes),
                               ]);
                               let nuevas=0, cancels=0, revPickup=0;
                               for (const p of (pickupRows||[])) { const nr=p.num_reservas||1; if (p.estado==='cancelada') cancels+=nr; else { nuevas+=nr; revPickup+=p.precio_total||0; } }
@@ -10009,6 +10017,13 @@ export default function App() {
                               const revenueAcumulado = (datosMes||[]).map(d => { acum+=d.revenue_hab||0; return { dia: parseInt(d.fecha.split('-')[2]), acum: Math.round(acum) }; });
                               let totHabOcu=0, totHabDisp=0, totRevHab=0, totRevFnb=0, totRevTotal=0;
                               for (const d of (datosMes||[])) { if (d.hab_disponibles>0) { totHabOcu+=d.hab_ocupadas||0; totHabDisp+=d.hab_disponibles||0; totRevHab+=d.revenue_hab||0; totRevFnb+=d.revenue_fnb||0; totRevTotal+=d.revenue_total||0; } }
+                              let lmHabOcu=0, lmHabDisp=0, lmRevHab=0, lmRevFnb=0, lmRevTotal=0;
+                              for (const d of (datosLM||[])) { if (d.hab_disponibles>0) { lmHabOcu+=d.hab_ocupadas||0; lmHabDisp+=d.hab_disponibles||0; lmRevHab+=d.revenue_hab||0; lmRevFnb+=d.revenue_fnb||0; lmRevTotal+=d.revenue_total||0; } }
+                              const lmRevTotalEff = lmRevTotal || (lmRevHab+lmRevFnb) || 0;
+                              const lm_avg_occ    = lmHabDisp>0 ? lmHabOcu/lmHabDisp*100 : null;
+                              const lm_avg_adr    = lmHabOcu>0  ? lmRevHab/lmHabOcu : null;
+                              const lm_avg_revpar = lmHabDisp>0 ? lmRevHab/lmHabDisp : null;
+                              const lm_avg_trevpar= lmHabDisp>0&&lmRevTotalEff>0 ? lmRevTotalEff/lmHabDisp : null;
                               // Canales de ayer (solo las reservas nuevas del día)
                               const normCanalP = c => { const lc=(c||'').toLowerCase().trim(); if(lc.includes('directo')||lc.includes('teléfono')||lc.includes('telefono')||lc.includes('email')) return 'Directo'; if(lc.includes('web')) return 'Web'; if(lc.includes('empresa')||lc.includes('corporativo')) return 'Empresa'; if(lc.includes('mice')||lc.includes('evento')) return 'Eventos/MICE'; if(lc.includes('grupo')) return 'Grupos'; return c||'Otro'; };
                               const isOTA_p = c => !['directo','web','empresa','corporativo','grupo','mice','evento','tour','agencia','gds'].some(k=>(c||'').toLowerCase().includes(k));
@@ -10029,7 +10044,7 @@ export default function App() {
                               const revTotalEff = ultimoDia.revenue_total || ((ultimoDia.revenue_hab||0) + (ultimoDia.revenue_fnb||0)) || null;
                               const trevpar = ultimoDia.trevpar ?? (ultimoDia.hab_disponibles>0&&revTotalEff ? revTotalEff/ultimoDia.hab_disponibles : null);
                               const totRevTotalEff = totRevTotal || (totRevHab + totRevFnb) || 0;
-                              const kpisPayload = { fecha: ultimoDia.fecha, mesNombre: MESES[mesActual-1], occ, adr, revpar, trevpar, hab_ocupadas: ultimoDia.hab_ocupadas, hab_disponibles: ultimoDia.hab_disponibles, pickup_neto: nuevas, cancelaciones: cancels, revenue_pickup_ayer: revPickup||null, revenueAcumulado, presupuestoMensual: pptoData?.rev_total_ppto??null, avg_occ: totHabDisp>0?totHabOcu/totHabDisp*100:null, avg_adr: totHabOcu>0?totRevHab/totHabOcu:null, avg_revpar: totHabDisp>0?totRevHab/totHabDisp:null, avg_trevpar: totHabDisp>0&&totRevTotalEff>0?totRevTotalEff/totHabDisp:null, revHabAyer: ultimoDia.revenue_hab||0, revFnbAyer: ultimoDia.revenue_fnb||0, canalesRevenue, revGruposAyer: Math.round(revGruposAyer), revIndividualAyer: Math.round(Math.max(0, (ultimoDia.revenue_hab||0)-revGruposAyer)), adrPpto: pptoData?.adr_ppto??null, gruposProximos };
+                              const kpisPayload = { fecha: ultimoDia.fecha, mesNombre: MESES[mesActual-1], occ, adr, revpar, trevpar, hab_ocupadas: ultimoDia.hab_ocupadas, hab_disponibles: ultimoDia.hab_disponibles, pickup_neto: nuevas, cancelaciones: cancels, revenue_pickup_ayer: revPickup||null, revenueAcumulado, presupuestoMensual: pptoData?.rev_total_ppto??null, avg_occ: totHabDisp>0?totHabOcu/totHabDisp*100:null, avg_adr: totHabOcu>0?totRevHab/totHabOcu:null, avg_revpar: totHabDisp>0?totRevHab/totHabDisp:null, avg_trevpar: totHabDisp>0&&totRevTotalEff>0?totRevTotalEff/totHabDisp:null, lm_avg_occ, lm_avg_adr, lm_avg_revpar, lm_avg_trevpar, revHabAyer: ultimoDia.revenue_hab||0, revFnbAyer: ultimoDia.revenue_fnb||0, canalesRevenue, revGruposAyer: Math.round(revGruposAyer), revIndividualAyer: Math.round(Math.max(0, (ultimoDia.revenue_hab||0)-revGruposAyer)), adrPpto: pptoData?.adr_ppto??null, gruposProximos };
                               let pdfBase64 = null;
                               try {
                                 pdfBase64 = await generarInformeDiarioPDF(kpisPayload, datos.hotel?.nombre||null);
