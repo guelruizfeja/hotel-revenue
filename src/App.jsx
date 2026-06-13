@@ -1932,22 +1932,18 @@ function ImportarExcel({ onClose, session, onImportado, onProduccionDirecta, hot
       const fin7Date = new Date(hoyDate); fin7Date.setDate(fin7Date.getDate() + 7);
       const hoyMas7 = fin7Date.toISOString().slice(0, 10);
 
-      const [{ data: datosMes }, { data: pickupRows }, { data: pptoData }, { data: pickupMes }, { data: gruposMes }, { data: gruposProx }] = await Promise.all([
+      const [{ data: datosMes }, { data: pickupRows }, { data: pptoData }, { data: gruposMes }, { data: gruposProx }] = await Promise.all([
         supabase.from("produccion_diaria")
           .select("fecha,hab_ocupadas,hab_disponibles,revenue_hab,revenue_fnb,revenue_total")
           .eq("hotel_id", session.user.id).gte("fecha", inicioMes).lt("fecha", inicioSig)
           .order("fecha", { ascending: true }),
         supabase.from("pickup_entries")
-          .select("num_reservas,precio_total,estado")
+          .select("canal,num_reservas,precio_total,estado")
           .eq("hotel_id", session.user.id).eq("fecha_pickup", diaRow.fecha),
         supabase.from("presupuesto")
           .select("rev_total_ppto,adr_ppto")
           .eq("hotel_id", session.user.id).eq("mes", mesActual).eq("anio", anioActual)
           .maybeSingle(),
-        supabase.from("pickup_entries")
-          .select("canal,precio_total,num_reservas,estado")
-          .eq("hotel_id", session.user.id).gte("fecha_pickup", inicioMes).lt("fecha_pickup", inicioSig)
-          .neq("estado", "cancelada"),
         supabase.from("grupos_eventos")
           .select("habitaciones,adr_grupo,revenue_fnb,revenue_sala,fecha_inicio,fecha_fin,estado")
           .eq("hotel_id", session.user.id).neq("estado", "cancelado")
@@ -1987,23 +1983,23 @@ function ImportarExcel({ onClose, session, onImportado, onProduccionDirecta, hot
       const avgRevpar = totHabDisp > 0 ? totRevHab / totHabDisp : null;
       const avgTrevpar= totHabDisp > 0 ? totRevTotal / totHabDisp : null;
 
+      // Canales de ayer (nuevas reservas del día)
       const canalMap = {};
-      for (const p of (pickupMes || [])) {
+      let totalCanalRev = 0;
+      for (const p of (pickupRows || [])) {
+        if ((p.estado || '') === 'cancelada') continue;
         const peso = p.precio_total || (p.num_reservas || 1);
         const key = isOTA(p.canal) ? 'OTAs' : normCanal(p.canal);
         canalMap[key] = (canalMap[key] || 0) + peso;
+        totalCanalRev += peso;
       }
-      const canalesRevenue = Object.entries(canalMap).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]).map(([canal,revenue])=>({canal,revenue}));
+      const canalesRevenue = Object.entries(canalMap).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1])
+        .map(([canal,revenue])=>({ canal, revenue, pct: totalCanalRev>0 ? Math.round(revenue/totalCanalRev*100) : 0 }));
 
-      let revGrupos = 0;
-      for (const g of (gruposMes || [])) {
-        const ini = new Date(g.fecha_inicio + 'T00:00:00');
-        const fin = new Date(g.fecha_fin + 'T00:00:00');
-        const noches = Math.max(1, (fin - ini) / 86400000);
-        const peso = g.estado === 'cancelado' ? 0 : g.estado === 'cotizado' || g.estado === 'tentativo' ? 0.5 : 1.0;
-        revGrupos += ((g.habitaciones || 0) * (g.adr_grupo || 0) * noches + (g.revenue_fnb || 0) + (g.revenue_sala || 0)) * peso;
-      }
-      const revIndividual = Math.max(0, totRevHab - revGrupos);
+      // Grupos activos ayer (en casa) → revenue por habitación/noche
+      const gruposAyer = (gruposMes || []).filter(g => g.estado === 'confirmado' && g.fecha_inicio <= diaRow.fecha && g.fecha_fin > diaRow.fecha);
+      const revGruposAyer = gruposAyer.reduce((a,g) => a + (g.habitaciones||0) * (g.adr_grupo||0), 0);
+      const revIndividualAyer = Math.max(0, (diaRow.revenue_hab||0) - revGruposAyer);
 
       const occ    = diaRow.hab_disponibles > 0 ? diaRow.hab_ocupadas / diaRow.hab_disponibles * 100 : null;
       const adr    = diaRow.adr    ?? (diaRow.hab_ocupadas > 0 && diaRow.revenue_hab ? diaRow.revenue_hab / diaRow.hab_ocupadas : null);
@@ -2030,7 +2026,7 @@ function ImportarExcel({ onClose, session, onImportado, onProduccionDirecta, hot
             revenueAcumulado,
             presupuestoMensual: pptoData?.rev_total_ppto ?? null,
             avg_occ: avgOcc, avg_adr: avgAdr, avg_revpar: avgRevpar, avg_trevpar: avgTrevpar,
-            revHabMes: totRevHab, revFnbMes: totRevFnb, canalesRevenue, revGruposMes: revGrupos, revIndividualMes: revIndividual,
+            revHabAyer: diaRow.revenue_hab||0, revFnbAyer: diaRow.revenue_fnb||0, canalesRevenue, revGruposAyer, revIndividualAyer,
             adrPpto: pptoData?.adr_ppto ?? null, gruposProximos: gruposProx || [],
           },
         }),
@@ -3721,8 +3717,8 @@ async function generarInformeDiarioPDF(kpis, hotelNombre) {
     hab_ocupadas, hab_disponibles, pickup_neto,
     revenueAcumulado, presupuestoMensual,
     avg_occ, avg_adr, avg_revpar,
-    revHabMes, revFnbMes, canalesRevenue,
-    revGruposMes, revIndividualMes,
+    revHabAyer, revFnbAyer, canalesRevenue,
+    revGruposAyer, revIndividualAyer,
     adrPpto, gruposProximos,
   } = kpis;
 
@@ -3844,7 +3840,7 @@ async function generarInformeDiarioPDF(kpis, hotelNombre) {
   doc.setFontSize(8); doc.setFont("helvetica","bold"); doc.setTextColor(...C_GRIS);
   doc.text("MIX DE REVENUE", M, y);
   doc.setFont("helvetica","normal"); doc.setTextColor(...C_GRISM);
-  doc.text(`— ${mesNombre||"MES ACTUAL"}`.toUpperCase(), M+34, y);
+  doc.text("— AYER", M+34, y);
   y += 5;
 
   const mixH = 52;
@@ -3864,11 +3860,11 @@ async function generarInformeDiarioPDF(kpis, hotelNombre) {
   });
 
   // Donut 1: HAB vs F&B (navy large, gold small)
-  const totHF  = (revHabMes||0)+(revFnbMes||0);
-  const habPct = totHF>0 ? Math.round((revHabMes||0)/totHF*100) : null;
+  const totHF  = (revHabAyer||0)+(revFnbAyer||0);
+  const habPct = totHF>0 ? Math.round((revHabAyer||0)/totHF*100) : null;
   const cx1    = M + sW*0.36;
   addDonut(cx1, cymx, rMm, totHF>0
-    ? [{ value:revHabMes||0, color:"#0A2540" }, { value:revFnbMes||0, color:"#D4A017" }]
+    ? [{ value:revHabAyer||0, color:"#0A2540" }, { value:revFnbAyer||0, color:"#D4A017" }]
     : [{ value:1, color:"#CBD5E1" }]);
   const lx1 = cx1 + rMm + 3;
   if (habPct!=null) {
@@ -3900,18 +3896,18 @@ async function generarInformeDiarioPDF(kpis, hotelNombre) {
   }
 
   // Donut 3: Grupos vs Individual
-  const totGI  = (revGruposMes||0)+(revIndividualMes||0);
-  const gPct   = totGI>0 ? Math.round((revGruposMes||0)/totGI*100) : null;
+  const totGI  = (revGruposAyer||0)+(revIndividualAyer||0);
+  const gPct   = totGI>0 ? Math.round((revGruposAyer||0)/totGI*100) : null;
   const cx3    = M + sW*2 + sW*0.36;
   addDonut(cx3, cymx, rMm, totGI>0
-    ? [{ value:revGruposMes||0, color:"#7C3AED" }, { value:revIndividualMes||0, color:"#CBD5E1" }]
+    ? [{ value:revGruposAyer||0, color:"#7C3AED" }, { value:revIndividualAyer||0, color:"#CBD5E1" }]
     : [{ value:1, color:"#7C3AED" }]);
   const lx3 = cx3 + rMm + 3;
   legendSq(lx3, cymx-4, "#7C3AED");
   doc.setFontSize(6.5); doc.setFont("helvetica","normal"); doc.setTextColor(...C_NEGRO);
   doc.text(`Grupos ${gPct!=null?gPct:0}%`, lx3+4, cymx-4);
   legendSq(lx3, cymx+2, "#CBD5E1");
-  doc.text(`Individual ${gPct!=null?100-gPct:100}%`, lx3+4, cymx+2);
+  doc.text(`Individual ${gPct!=null?(100-gPct):100}%`, lx3+4, cymx+2);
 
   y += mixH + 6;
 
@@ -9281,13 +9277,18 @@ function ModalConfigUnificado({ datos, session, navHidden, toggleNavHidden, navR
                   const adr = ultimoDia.adr ?? (ultimoDia.hab_ocupadas>0&&ultimoDia.revenue_hab ? ultimoDia.revenue_hab/ultimoDia.hab_ocupadas : null);
                   const revpar = ultimoDia.revpar ?? (ultimoDia.hab_disponibles>0&&ultimoDia.revenue_hab ? ultimoDia.revenue_hab/ultimoDia.hab_disponibles : null);
                   const trevpar = ultimoDia.trevpar ?? (ultimoDia.hab_disponibles>0&&ultimoDia.revenue_total ? ultimoDia.revenue_total/ultimoDia.hab_disponibles : null);
+                  const isOTA_t=c=>!['directo','web','empresa','grupo','mice','tour','agencia','gds','evento'].some(k=>(c||'').toLowerCase().includes(k));
+                  const normC_t=c=>{const lc=(c||'').toLowerCase().trim();if(lc.includes('directo')||lc.includes('teléfono')||lc.includes('email'))return 'Directo';if(lc.includes('web'))return 'Web propia';if(lc.includes('empresa')||lc.includes('corporativo'))return 'Empresa';if(lc.includes('mice')||lc.includes('evento'))return 'Eventos/MICE';if(lc.includes('grupo'))return 'Grupos';return c||'Directo';};
+                  const cMap_t={};let totC_t=0;
+                  for(const p of(pickupRows||[])){if((p.estado||'')==='cancelada')continue;const peso=p.precio_total||(p.num_reservas||1);const key=isOTA_t(p.canal)?'OTAs':normC_t(p.canal);cMap_t[key]=(cMap_t[key]||0)+peso;totC_t+=peso;}
+                  const canalesRevenue_t=Object.entries(cMap_t).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]).map(([canal,revenue])=>({canal,revenue,pct:totC_t>0?Math.round(revenue/totC_t*100):0}));
                   const resp = await fetch('/api/daily-email', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
                     body: JSON.stringify({
                       email: session.user.email,
                       hotelNombre: datos.hotel?.nombre || null,
-                      kpis: { fecha: ultimoDia.fecha, mesNombre: MESES[mesActual-1], occ, adr, revpar, trevpar, hab_ocupadas: ultimoDia.hab_ocupadas, hab_disponibles: ultimoDia.hab_disponibles, pickup_neto: nuevas, cancelaciones: cancels, revenue_pickup_ayer: revPickup||null, revenueAcumulado, presupuestoMensual: pptoData?.rev_total_ppto??null, avg_occ: totHabDisp>0?totHabOcu/totHabDisp*100:null, avg_adr: totHabOcu>0?totRevHab/totHabOcu:null, avg_revpar: totHabDisp>0?totRevHab/totHabDisp:null, avg_trevpar: totHabDisp>0&&totRevTotal>0?totRevTotal/totHabDisp:null, revHabMes: totRevHab, revFnbMes: 0, canalesRevenue: [], revGruposMes: 0, revIndividualMes: totRevHab, adrPpto: pptoData?.adr_ppto??null, gruposProximos: [] },
+                      kpis: { fecha: ultimoDia.fecha, mesNombre: MESES[mesActual-1], occ, adr, revpar, trevpar, hab_ocupadas: ultimoDia.hab_ocupadas, hab_disponibles: ultimoDia.hab_disponibles, pickup_neto: nuevas, cancelaciones: cancels, revenue_pickup_ayer: revPickup||null, revenueAcumulado, presupuestoMensual: pptoData?.rev_total_ppto??null, avg_occ: totHabDisp>0?totHabOcu/totHabDisp*100:null, avg_adr: totHabOcu>0?totRevHab/totHabOcu:null, avg_revpar: totHabDisp>0?totRevHab/totHabDisp:null, avg_trevpar: totHabDisp>0&&totRevTotal>0?totRevTotal/totHabDisp:null, revHabAyer: ultimoDia.revenue_hab||0, revFnbAyer: ultimoDia.revenue_fnb||0, canalesRevenue: canalesRevenue_t, revGruposAyer: 0, revIndividualAyer: ultimoDia.revenue_hab||0, adrPpto: pptoData?.adr_ppto??null, gruposProximos: [] },
                     }),
                   });
                   const json = await resp.json();
@@ -10036,7 +10037,7 @@ export default function App() {
                               const adr = ultimoDia.adr ?? (ultimoDia.hab_ocupadas>0&&ultimoDia.revenue_hab ? ultimoDia.revenue_hab/ultimoDia.hab_ocupadas : null);
                               const revpar = ultimoDia.revpar ?? (ultimoDia.hab_disponibles>0&&ultimoDia.revenue_hab ? ultimoDia.revenue_hab/ultimoDia.hab_disponibles : null);
                               const trevpar = ultimoDia.trevpar ?? (ultimoDia.hab_disponibles>0&&ultimoDia.revenue_total ? ultimoDia.revenue_total/ultimoDia.hab_disponibles : null);
-                              const kpisPayload = { fecha: ultimoDia.fecha, mesNombre: MESES[mesActual-1], occ, adr, revpar, trevpar, hab_ocupadas: ultimoDia.hab_ocupadas, hab_disponibles: ultimoDia.hab_disponibles, pickup_neto: nuevas, cancelaciones: cancels, revenue_pickup_ayer: revPickup||null, revenueAcumulado, presupuestoMensual: pptoData?.rev_total_ppto??null, avg_occ: totHabDisp>0?totHabOcu/totHabDisp*100:null, avg_adr: totHabOcu>0?totRevHab/totHabOcu:null, avg_revpar: totHabDisp>0?totRevHab/totHabDisp:null, avg_trevpar: totHabDisp>0&&totRevTotal>0?totRevTotal/totHabDisp:null, revHabMes: Math.round(totRevHab), revFnbMes: Math.round(totRevFnb), canalesRevenue, revGruposMes: Math.round(revGruposMes), revIndividualMes: Math.round(Math.max(0, totRevHab-revGruposMes)), adrPpto: pptoData?.adr_ppto??null, gruposProximos };
+                              const kpisPayload = { fecha: ultimoDia.fecha, mesNombre: MESES[mesActual-1], occ, adr, revpar, trevpar, hab_ocupadas: ultimoDia.hab_ocupadas, hab_disponibles: ultimoDia.hab_disponibles, pickup_neto: nuevas, cancelaciones: cancels, revenue_pickup_ayer: revPickup||null, revenueAcumulado, presupuestoMensual: pptoData?.rev_total_ppto??null, avg_occ: totHabDisp>0?totHabOcu/totHabDisp*100:null, avg_adr: totHabOcu>0?totRevHab/totHabOcu:null, avg_revpar: totHabDisp>0?totRevHab/totHabDisp:null, avg_trevpar: totHabDisp>0&&totRevTotal>0?totRevTotal/totHabDisp:null, revHabAyer: ultimoDia.revenue_hab||0, revFnbAyer: ultimoDia.revenue_fnb||0, canalesRevenue, revGruposAyer: Math.round(revGruposMes), revIndividualAyer: Math.round(Math.max(0, totRevHab-revGruposMes)), adrPpto: pptoData?.adr_ppto??null, gruposProximos };
                               let pdfBase64 = null;
                               try {
                                 pdfBase64 = await generarInformeDiarioPDF(kpisPayload, datos.hotel?.nombre||null);
