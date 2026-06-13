@@ -6677,38 +6677,6 @@ function PickupView({ datos, onGuardado }) {
         </Card>{/* fin col derecha */}
       </div>{/* fin grid 2 cols */}
 
-      {/* ── GRUPOS / EVENTOS ── */}
-      {Object.keys(grupoVentanaStats).length > 0 && (
-        <div style={{ display:"flex", gap:12, flexWrap:"wrap" }}>
-          {["Grupos","Eventos / MICE"].filter(tipo => grupoVentanaStats[tipo]).map(tipo => {
-            const s = grupoVentanaStats[tipo];
-            const adrMed = s.nochesTot > 0 ? Math.round(s.revenue / s.nochesTot) : null;
-            const dot = CANAL_COLORS[tipo] || C.accent;
-            return (
-              <Card key={tipo} style={{ flex:1, minWidth:240 }}>
-                <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:14 }}>
-                  <div style={{ width:10, height:10, borderRadius:3, background:dot, flexShrink:0 }}/>
-                  <p style={{ fontWeight:700, fontSize:13, color:C.text }}>{tipo}</p>
-                </div>
-                <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:8 }}>
-                  {[
-                    { label:"Expedientes", val: s.count },
-                    { label:"Habitaciones", val: s.rooms },
-                    { label:"ADR medio", val: adrMed != null ? `€${adrMed}` : "—" },
-                    { label:"Revenue", val: s.revenue > 0 ? `€${Math.round(s.revenue).toLocaleString()}` : "—" },
-                  ].map(({ label, val }) => (
-                    <div key={label}>
-                      <p style={{ fontSize:10, color:C.textLight, fontWeight:600, textTransform:"uppercase", letterSpacing:"0.6px", marginBottom:4 }}>{label}</p>
-                      <p style={{ fontSize:17, fontWeight:700, color:C.text }}>{val}</p>
-                    </div>
-                  ))}
-                </div>
-              </Card>
-            );
-          })}
-        </div>
-      )}
-
       {/* ── PACE ── */}
       {(() => {
         const pad = n => String(n).padStart(2,"0");
@@ -8313,7 +8281,7 @@ function GruposView({ datos, onRecargar, onVolverHeatmap, subVistaExt, onCambiar
         const revEventos  = confEventos.reduce((a,g) => a+calcRevTotal(g), 0);
         const revSalas    = confGrupos.reduce((a,g)  => a+(g.revenue_sala||0), 0)
                           + confEventos.reduce((a,g) => a+(g.revenue_sala||0), 0);
-        const revSeccion  = revGrupos + revEventos;
+        const revSeccion  = revGrupos + revEventos + revSalas;
         const pct = totalRevProd > 0 ? (revSeccion / totalRevProd * 100) : null;
 
         const filas = [
@@ -8325,37 +8293,33 @@ function GruposView({ datos, onRecargar, onVolverHeatmap, subVistaExt, onCambiar
         return (
           <Card>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20 }}>
-              <div>
+              <div style={{ display:"flex", alignItems:"baseline", gap:10 }}>
                 <p style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontWeight:700, fontSize:18, color:C.text }}>Revenue confirmado</p>
-                <p style={{ fontSize:11, color:C.textLight, marginTop:3 }}>Grupos · Eventos · Salas — {t("meses_full")[mes]} {anio}</p>
+                <p style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontWeight:700, fontSize:18, color:C.textLight }}>Grupos · Eventos · Salas — {t("meses_full")[mes]} {anio}</p>
               </div>
-              <div style={{ display:"flex", gap:6 }}>
-                <select value={mes} onChange={e=>setMes(Number(e.target.value))}
-                  style={{ padding:"5px 10px", borderRadius:7, border:`1.5px solid ${C.border}`, fontSize:13, fontWeight:600, color:C.text, background:C.bg, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", outline:"none" }}>
-                  {MESES_FULL.map((m,i) => <option key={i} value={i}>{m}</option>)}
-                </select>
-                <select value={anio} onChange={e=>setAnio(Number(e.target.value))}
-                  style={{ padding:"5px 10px", borderRadius:7, border:`1.5px solid ${C.border}`, fontSize:13, fontWeight:600, color:C.text, background:C.bg, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", outline:"none" }}>
-                  {[...new Set([anio-1,anio,anio+1,...grupos.map(g=>parseInt(g.fecha_inicio?.slice(0,4))).filter(Boolean)])].sort().map(a=><option key={a} value={a}>{a}</option>)}
-                </select>
+              <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                {(() => {
+                  const prev = () => { if(mes===0){setMes(11);setAnio(a=>a-1);}else{setMes(m=>m-1);} };
+                  const next = () => { if(mes===11){setMes(0);setAnio(a=>a+1);}else{setMes(m=>m+1);} };
+                  const btn = { background:"none", border:`1.5px solid ${C.border}`, borderRadius:7, width:30, height:30, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", fontSize:15, color:C.text, fontWeight:700 };
+                  return (<>
+                    <button onClick={prev} style={btn}>‹</button>
+                    <span style={{ fontSize:13, fontWeight:600, color:C.text, fontFamily:"'Plus Jakarta Sans',sans-serif", minWidth:110, textAlign:"center" }}>{MESES_FULL[mes]} {anio}</span>
+                    <button onClick={next} style={btn}>›</button>
+                  </>);
+                })()}
               </div>
             </div>
 
             {/* KPI destacado */}
-            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:12, marginBottom:24 }}>
-              <div style={{ background:C.bg, borderRadius:10, padding:"16px 18px", border:`1px solid ${C.border}` }}>
-                <p style={{ fontSize:10, color:C.textLight, fontWeight:600, textTransform:"uppercase", letterSpacing:"1px", marginBottom:6 }}>Rev. confirmado sección</p>
-                <p style={{ fontSize:22, fontWeight:800, color:C.text, fontFamily:"'Plus Jakarta Sans',sans-serif" }}>€{Math.round(revSeccion).toLocaleString("es-ES")}</p>
+            <div style={{ display:"flex", gap:12, marginBottom:24 }}>
+              <div style={{ background:"#f5f5f5", borderRadius:8, padding:"14px 18px", border:"1.5px solid #111111", minWidth:180, boxShadow:"0 1px 4px rgba(0,0,0,0.06)" }}>
+                <p style={{ fontSize:11, color:C.text, fontWeight:700, textTransform:"uppercase", letterSpacing:"1.5px", marginBottom:6 }}>Ingresos confirmados</p>
+                <p style={{ fontSize:22, fontWeight:700, color:C.text, fontFamily:"'Plus Jakarta Sans',sans-serif", letterSpacing:"-1px" }}>€{Math.round(revSeccion).toLocaleString("es-ES")}</p>
               </div>
-              <div style={{ background:C.bg, borderRadius:10, padding:"16px 18px", border:`1px solid ${C.border}` }}>
-                <p style={{ fontSize:10, color:C.textLight, fontWeight:600, textTransform:"uppercase", letterSpacing:"1px", marginBottom:6 }}>Revenue total mes</p>
-                <p style={{ fontSize:22, fontWeight:800, color:C.text, fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
-                  {totalRevProd > 0 ? `€${Math.round(totalRevProd).toLocaleString("es-ES")}` : <span style={{ color:C.textLight, fontSize:14 }}>Sin datos</span>}
-                </p>
-              </div>
-              <div style={{ background: pct != null ? "#E6F7EE" : C.bg, borderRadius:10, padding:"16px 18px", border:`1px solid ${pct!=null?"#1A7A3C40":C.border}` }}>
-                <p style={{ fontSize:10, color:C.textLight, fontWeight:600, textTransform:"uppercase", letterSpacing:"1px", marginBottom:6 }}>% sobre total mes</p>
-                <p style={{ fontSize:22, fontWeight:800, color: pct!=null ? "#1A7A3C" : C.textLight, fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+              <div style={{ background:"#f5f5f5", borderRadius:8, padding:"14px 18px", border:"1.5px solid #111111", minWidth:220, boxShadow:"0 1px 4px rgba(0,0,0,0.06)" }}>
+                <p style={{ fontSize:11, color:C.text, fontWeight:700, textTransform:"uppercase", letterSpacing:"1.5px", marginBottom:6 }}>% sobre ingresos totales del mes</p>
+                <p style={{ fontSize:22, fontWeight:700, color: pct!=null ? "#1A7A3C" : C.textLight, fontFamily:"'Plus Jakarta Sans',sans-serif", letterSpacing:"-1px" }}>
                   {pct != null ? `${pct.toFixed(1)}%` : "—"}
                 </p>
               </div>
@@ -8365,7 +8329,7 @@ function GruposView({ datos, onRecargar, onVolverHeatmap, subVistaExt, onCambiar
             <table style={{ width:"100%", borderCollapse:"collapse", fontSize:14 }}>
               <thead>
                 <tr>
-                  {["Categoría","Confirmados","Revenue confirmado","% del total mes","Barra"].map(h => (
+                  {["Categoría","Confirmados","Revenue confirmado","% del total mes"].map(h => (
                     <th key={h} style={{ padding:"7px 14px", textAlign: h==="Revenue confirmado"||h==="% del total mes" ? "right" : "left", fontSize:10, fontWeight:600, color:C.textLight, textTransform:"uppercase", letterSpacing:"1px", borderBottom:`2px solid ${C.border}`, whiteSpace:"nowrap" }}>{h}</th>
                   ))}
                 </tr>
@@ -8376,10 +8340,7 @@ function GruposView({ datos, onRecargar, onVolverHeatmap, subVistaExt, onCambiar
                   return (
                     <tr key={f.label} style={{ borderBottom:`1px solid ${C.border}` }}>
                       <td style={{ padding:"12px 14px" }}>
-                        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                          <div style={{ width:10, height:10, borderRadius:2, background:f.color, flexShrink:0 }}/>
-                          <span style={{ fontWeight:600, color:C.text }}>{f.label}</span>
-                        </div>
+                        <span style={{ fontWeight:600, color:C.text }}>{f.label}</span>
                       </td>
                       <td style={{ padding:"12px 14px", color:C.textMid }}>
                         {f.count != null ? f.count : "—"}
@@ -8387,13 +8348,8 @@ function GruposView({ datos, onRecargar, onVolverHeatmap, subVistaExt, onCambiar
                       <td style={{ padding:"12px 14px", fontWeight:700, color:C.text, textAlign:"right" }}>
                         €{Math.round(f.rev).toLocaleString("es-ES")}
                       </td>
-                      <td style={{ padding:"12px 14px", textAlign:"right", fontWeight:700, color: pctFila>0 ? f.color : C.textLight }}>
+                      <td style={{ padding:"12px 14px", textAlign:"right", fontWeight:700, color:C.textMid }}>
                         {totalRevProd > 0 ? `${pctFila.toFixed(1)}%` : "—"}
-                      </td>
-                      <td style={{ padding:"12px 14px", width:160 }}>
-                        <div style={{ background:C.border, borderRadius:4, height:8, overflow:"hidden" }}>
-                          <div style={{ width:`${Math.min(100,pctFila)}%`, height:"100%", background:f.color, borderRadius:4, transition:"width 0.4s ease" }}/>
-                        </div>
                       </td>
                     </tr>
                   );
@@ -8403,11 +8359,6 @@ function GruposView({ datos, onRecargar, onVolverHeatmap, subVistaExt, onCambiar
                   <td style={{ padding:"12px 14px", fontWeight:700, color:C.text }} colSpan={2}>Total sección</td>
                   <td style={{ padding:"12px 14px", fontWeight:800, color:"#1A7A3C", textAlign:"right", fontSize:15 }}>€{Math.round(revSeccion).toLocaleString("es-ES")}</td>
                   <td style={{ padding:"12px 14px", fontWeight:800, color:"#1A7A3C", textAlign:"right" }}>{pct!=null?`${pct.toFixed(1)}%`:"—"}</td>
-                  <td style={{ padding:"12px 14px", width:160 }}>
-                    <div style={{ background:C.border, borderRadius:4, height:8, overflow:"hidden" }}>
-                      <div style={{ width:`${Math.min(100,pct||0)}%`, height:"100%", background:"#1A7A3C", borderRadius:4 }}/>
-                    </div>
-                  </td>
                 </tr>
               </tbody>
             </table>
