@@ -3735,11 +3735,11 @@ async function generarInformeDiarioPDF(kpis, hotelNombre) {
 
   const C_AZUL  = [10, 37, 64];
   const C_GOLD  = [212, 160, 23];
-  const C_GRIS  = [100, 116, 139];
+  const C_GRIS  = [51, 65, 85];
   const C_VERDE = [5, 150, 105];
   const C_ROJO  = [220, 38, 38];
   const C_GRISC = [245, 247, 250];
-  const C_GRISM = [148, 163, 184];
+  const C_GRISM = [100, 116, 139];
   const C_BORDE = [226, 232, 240];
   const C_NEGRO = [26, 26, 26];
 
