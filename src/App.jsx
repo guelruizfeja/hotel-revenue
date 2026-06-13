@@ -3968,15 +3968,15 @@ async function generarInformeDiarioPDF(kpis, hotelNombre) {
     const kColW = (W-M*2)/4;
     lmKpis.forEach((k, i) => {
       const kx = M + i*kColW + kColW/2;
-      if (i>0) { doc.setDrawColor(...C_BORDE); doc.line(M+i*kColW, kBy+10, M+i*kColW, kBy+38); }
+      if (i>0) { doc.setDrawColor(...C_BORDE); doc.line(M+i*kColW, kBy+10, M+i*kColW, kBy+36); }
       doc.setFontSize(6); doc.setFont("helvetica","bold"); doc.setTextColor(...C_GRIS);
-      doc.text(k.lbl, kx, kBy+16, { align:"center" });
+      doc.text(k.lbl, kx, kBy+15, { align:"center" });
       doc.setFontSize(11); doc.setFont("helvetica","bold"); doc.setTextColor(...C_AZUL);
-      doc.text(k.val, kx, kBy+25, { align:"center" });
+      doc.text(k.val, kx, kBy+23, { align:"center" });
       if (k.delta!=null) {
         const dc = k.delta>=0 ? C_VERDE : C_ROJO;
         doc.setFontSize(7); doc.setFont("helvetica","bold"); doc.setTextColor(...dc);
-        doc.text(k.dfmt(k.delta), kx, kBy+32, { align:"center" });
+        doc.text(k.dfmt(k.delta), kx, kBy+29, { align:"center" });
       }
     });
 
@@ -3984,67 +3984,45 @@ async function generarInformeDiarioPDF(kpis, hotelNombre) {
   }
 
   // ── GRUPOS & EVENTOS ─────────────────────────────────
-  const hasGruposSection = gruposProximos?.length || proximoConfirmado || gruposCotizacion?.length;
-  if (hasGruposSection) {
+  // helper: sección con cabecera estilo "GRUPOS & EVENTOS — SUBTÍTULO" + tabla
+  const drawGruposSeccion = (subtitulo, lista) => {
+    if (!lista?.length) return;
     doc.setFontSize(8); doc.setFont("helvetica","bold"); doc.setTextColor(...C_GRIS);
     doc.text("GRUPOS & EVENTOS", M, y);
-    y += 5;
+    doc.setFont("helvetica","normal");
+    doc.text(` — ${subtitulo}`, M + doc.getTextWidth("GRUPOS & EVENTOS"), y);
+    y += 4;
+    const tH = 9 + lista.length * 8;
+    doc.setFillColor(255,255,255); doc.setDrawColor(...C_BORDE);
+    doc.roundedRect(M, y, W-M*2, tH, 2, 2, "FD");
+    const cols = [{lbl:"NOMBRE",x:M+3},{lbl:"TIPO",x:M+52},{lbl:"FECHAS",x:M+80},{lbl:"HAB.",x:M+126},{lbl:"REVENUE",x:M+148}];
+    doc.setFontSize(6); doc.setFont("helvetica","bold"); doc.setTextColor(...C_GRIS);
+    cols.forEach(c => doc.text(c.lbl, c.x, y+6));
+    doc.setDrawColor(...C_BORDE); doc.line(M+3, y+8, W-M-3, y+8);
+    lista.forEach((g, i) => {
+      const ry = y + 14 + i*8;
+      doc.setFontSize(7); doc.setFont("helvetica","bold"); doc.setTextColor(...C_NEGRO);
+      doc.text((g.nombre||"—").slice(0,22), cols[0].x, ry);
+      doc.setFont("helvetica","normal"); doc.setTextColor(...C_GRIS);
+      doc.text((g.tipo||"").slice(0,13), cols[1].x, ry);
+      doc.text(`${fmtSD(g.fecha_inicio)} – ${fmtSD(g.fecha_fin)}`, cols[2].x, ry);
+      doc.text(g.habitaciones?`${g.habitaciones} hab.`:"—", cols[3].x, ry);
+      doc.setFont("helvetica","bold"); doc.setTextColor(...C_AZUL);
+      doc.text(g.revenue?`€${fmt(g.revenue)}`:"—", cols[4].x, ry);
+    });
+    y += tH + 6;
+  };
 
-    // helper: tabla de grupos
-    const drawGruposTable = (lista) => {
-      const tH = 9 + lista.length * 8;
-      doc.setFillColor(255,255,255); doc.setDrawColor(...C_BORDE);
-      doc.roundedRect(M, y, W-M*2, tH, 2, 2, "FD");
-      const cols = [{lbl:"NOMBRE",x:M+3},{lbl:"TIPO",x:M+52},{lbl:"FECHAS",x:M+80},{lbl:"HAB.",x:M+126},{lbl:"REVENUE",x:M+148}];
-      doc.setFontSize(6); doc.setFont("helvetica","bold"); doc.setTextColor(...C_GRIS);
-      cols.forEach(c => doc.text(c.lbl, c.x, y+6));
-      doc.setDrawColor(...C_BORDE); doc.line(M+3, y+8, W-M-3, y+8);
-      lista.forEach((g, i) => {
-        const ry = y + 14 + i*8;
-        doc.setFontSize(7); doc.setFont("helvetica","bold"); doc.setTextColor(...C_NEGRO);
-        doc.text((g.nombre||"—").slice(0,22), cols[0].x, ry);
-        doc.setFont("helvetica","normal"); doc.setTextColor(...C_GRIS);
-        doc.text((g.tipo||"").slice(0,13), cols[1].x, ry);
-        doc.text(`${fmtSD(g.fecha_inicio)} – ${fmtSD(g.fecha_fin)}`, cols[2].x, ry);
-        doc.text(g.habitaciones?`${g.habitaciones} hab.`:"—", cols[3].x, ry);
-        doc.setFont("helvetica","bold"); doc.setTextColor(...C_AZUL);
-        doc.text(g.revenue?`€${fmt(g.revenue)}`:"—", cols[4].x, ry);
-      });
-      y += tH + 4;
-    };
+  // Próximos 7 días confirmados
+  drawGruposSeccion("PRÓXIMOS 7 DÍAS", gruposProximos);
 
-    // Próximos 7 días confirmados
-    if (gruposProximos?.length) {
-      doc.setFontSize(7); doc.setFont("helvetica","normal"); doc.setTextColor(...C_GRISM);
-      doc.text("Próximos 7 días (confirmados)", M, y); y += 3;
-      drawGruposTable(gruposProximos);
-    }
-
-    // Próximo grupo confirmado (si no está ya en los 7 días)
-    if (proximoConfirmado && !gruposProximos?.find(g => g.fecha_inicio === proximoConfirmado.fecha_inicio && g.nombre === proximoConfirmado.nombre)) {
-      doc.setFontSize(7); doc.setFont("helvetica","normal"); doc.setTextColor(...C_GRISM);
-      doc.text("Próximo grupo confirmado", M, y); y += 3;
-      const cH = 18;
-      doc.setFillColor(245,250,255); doc.setDrawColor(...C_BORDE);
-      doc.roundedRect(M, y, W-M*2, cH, 2, 2, "FD");
-      doc.setFontSize(9); doc.setFont("helvetica","bold"); doc.setTextColor(...C_AZUL);
-      doc.text((proximoConfirmado.nombre||"—").slice(0,30), M+4, y+7);
-      doc.setFontSize(7); doc.setFont("helvetica","normal"); doc.setTextColor(...C_GRIS);
-      const info = [`${fmtSD(proximoConfirmado.fecha_inicio)} – ${fmtSD(proximoConfirmado.fecha_fin)}`, proximoConfirmado.tipo||"", proximoConfirmado.habitaciones?`${proximoConfirmado.habitaciones} hab.`:""].filter(Boolean).join("  ·  ");
-      doc.text(info, M+4, y+13);
-      if (proximoConfirmado.revenue) { doc.setFont("helvetica","bold"); doc.setTextColor(...C_AZUL); doc.text(`€${fmt(proximoConfirmado.revenue)}`, W-M-4, y+10, { align:"right" }); }
-      y += cH + 4;
-    }
-
-    // Grupos en cotización / tentativo
-    if (gruposCotizacion?.length) {
-      doc.setFontSize(7); doc.setFont("helvetica","normal"); doc.setTextColor(...C_GRISM);
-      doc.text("En cotización / tentativo", M, y); y += 3;
-      drawGruposTable(gruposCotizacion);
-    }
-
-    y += 2;
+  // Próximo confirmado (si está fuera de los 7 días)
+  if (proximoConfirmado && !gruposProximos?.find(g => g.nombre===proximoConfirmado.nombre && g.fecha_inicio===proximoConfirmado.fecha_inicio)) {
+    drawGruposSeccion("PRÓXIMO CONFIRMADO", [proximoConfirmado]);
   }
+
+  // En cotización / tentativo
+  drawGruposSeccion("EN COTIZACIÓN", gruposCotizacion);
 
   // ── FOOTER ──────────────────────────────────────────
   doc.setFillColor(...C_AZUL); doc.rect(0, 285, W, 12, "F");
