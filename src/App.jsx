@@ -10004,11 +10004,10 @@ export default function App() {
                               const inicioMes = `${anioActual}-${mesStr}-01`;
                               const inicioSig = mesActual===12 ? `${anioActual+1}-01-01` : `${anioActual}-${String(mesActual+1).padStart(2,'0')}-01`;
                               const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-                              const [{ data: datosMes }, { data: pickupRows }, { data: pptoData }, { data: canalesRows }, { data: gruposRows }] = await Promise.all([
+                              const [{ data: datosMes }, { data: pickupRows }, { data: pptoData }, { data: gruposRows }] = await Promise.all([
                                 supabase.from("produccion_diaria").select("fecha,hab_ocupadas,hab_disponibles,revenue_hab,revenue_fnb,revenue_total").eq("hotel_id", session.user.id).gte("fecha", inicioMes).lt("fecha", inicioSig).order("fecha", { ascending: true }),
-                                supabase.from("pickup_entries").select("num_reservas,precio_total,estado").eq("hotel_id", session.user.id).eq("fecha_pickup", ultimoDia.fecha),
+                                supabase.from("pickup_entries").select("canal,num_reservas,precio_total,estado").eq("hotel_id", session.user.id).eq("fecha_pickup", ultimoDia.fecha),
                                 supabase.from("presupuesto").select("rev_total_ppto,adr_ppto").eq("hotel_id", session.user.id).eq("mes", mesActual).eq("anio", anioActual).maybeSingle(),
-                                supabase.from("pickup_entries").select("canal,precio_total,num_reservas,estado").eq("hotel_id", session.user.id).gte("fecha_pickup", inicioMes).lt("fecha_pickup", inicioSig).neq("estado","cancelada"),
                                 supabase.from("grupos_eventos").select("nombre,categoria,estado,fecha_inicio,fecha_fin,habitaciones,adr_grupo,revenue_fnb,revenue_sala").eq("hotel_id", session.user.id).neq("estado","cancelado").gte("fecha_fin", inicioMes).order("fecha_inicio"),
                               ]);
                               let nuevas=0, cancels=0, revPickup=0;
@@ -10017,11 +10016,12 @@ export default function App() {
                               const revenueAcumulado = (datosMes||[]).map(d => { acum+=d.revenue_hab||0; return { dia: parseInt(d.fecha.split('-')[2]), acum: Math.round(acum) }; });
                               let totHabOcu=0, totHabDisp=0, totRevHab=0, totRevFnb=0, totRevTotal=0;
                               for (const d of (datosMes||[])) { if (d.hab_disponibles>0) { totHabOcu+=d.hab_ocupadas||0; totHabDisp+=d.hab_disponibles||0; totRevHab+=d.revenue_hab||0; totRevFnb+=d.revenue_fnb||0; totRevTotal+=d.revenue_total||0; } }
-                              // Canales revenue del mes
-                              const canalMap = {};
-                              for (const p of (canalesRows||[])) { const c = p.canal||"Otro"; canalMap[c] = (canalMap[c]||0) + (p.precio_total||0); }
-                              const totCanalRev = Object.values(canalMap).reduce((s,v) => s+v, 0);
-                              const canalesRevenue = Object.entries(canalMap).sort((a,b) => b[1]-a[1]).slice(0,4).map(([canal, revenue]) => ({ canal, revenue: Math.round(revenue), pct: totCanalRev>0 ? Math.round(revenue/totCanalRev*100) : 0 }));
+                              // Canales de ayer (solo las reservas nuevas del día)
+                              const normCanalP = c => { const lc=(c||'').toLowerCase().trim(); if(lc.includes('directo')||lc.includes('teléfono')||lc.includes('telefono')||lc.includes('email')) return 'Directo'; if(lc.includes('web')) return 'Web'; if(lc.includes('empresa')||lc.includes('corporativo')) return 'Empresa'; if(lc.includes('mice')||lc.includes('evento')) return 'Eventos/MICE'; if(lc.includes('grupo')) return 'Grupos'; return c||'Otro'; };
+                              const isOTA_p = c => !['directo','web','empresa','corporativo','grupo','mice','evento','tour','agencia','gds'].some(k=>(c||'').toLowerCase().includes(k));
+                              const canalMap = {}; let totCanalRev = 0;
+                              for (const p of (pickupRows||[])) { if((p.estado||'')==='cancelada') continue; const peso=p.precio_total||(p.num_reservas||1); const key=isOTA_p(p.canal)?'OTA':normCanalP(p.canal); canalMap[key]=(canalMap[key]||0)+peso; totCanalRev+=peso; }
+                              const canalesRevenue = Object.entries(canalMap).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]).map(([canal,revenue])=>({ canal, revenue:Math.round(revenue), pct:totCanalRev>0?Math.round(revenue/totCanalRev*100):0 }));
                               // Grupos del mes y próximos 7 días
                               let revGruposMes = 0;
                               for (const g of (gruposRows||[])) {
