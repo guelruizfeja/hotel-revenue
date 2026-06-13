@@ -3923,7 +3923,7 @@ async function generarInformeDiarioPDF(kpis, hotelNombre) {
     doc.text(`(${mesNombre||""})`, M+44, y);
     y += 4;
 
-    const pgH = 64;
+    const pgH = 70;
     doc.setFillColor(255,255,255); doc.setDrawColor(...C_BORDE);
     doc.roundedRect(M, y, W-M*2, pgH, 2, 2, "FD");
 
@@ -3988,9 +3988,11 @@ async function generarInformeDiarioPDF(kpis, hotelNombre) {
   const drawGruposSeccion = (subtitulo, lista) => {
     if (!lista?.length) return;
     doc.setFontSize(8); doc.setFont("helvetica","bold"); doc.setTextColor(...C_GRIS);
-    doc.text("GRUPOS & EVENTOS", M, y);
-    doc.setFont("helvetica","normal");
-    doc.text(` — ${subtitulo}`, M + doc.getTextWidth("GRUPOS & EVENTOS"), y);
+    const _geTxt = "GRUPOS & EVENTOS";
+    const _geW = doc.getTextWidth(_geTxt);
+    doc.text(_geTxt, M, y);
+    doc.setFont("helvetica","normal"); doc.setTextColor(...C_GRISM);
+    doc.text(` — ${subtitulo}`, M + _geW, y);
     y += 4;
     const tH = 9 + lista.length * 8;
     doc.setFillColor(255,255,255); doc.setDrawColor(...C_BORDE);
