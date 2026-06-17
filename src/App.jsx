@@ -3222,22 +3222,46 @@ function PickupView({ datos, onGuardado }) {
             [hoyISO, ayerStr].includes(String(e.fecha_pickup||"").slice(0,10))
           ).sort((a,b) => (b.fecha_pickup||"").localeCompare(a.fecha_pickup||"") || (a.fecha_llegada||"").localeCompare(b.fecha_llegada||""));
           if (detalleEntries.length === 0) return null;
+          const getSalida = e => {
+            if (e.fecha_salida) return String(e.fecha_salida).slice(0,10);
+            if (e.noches && e.fecha_llegada) {
+              const d = new Date(String(e.fecha_llegada).slice(0,10)+"T00:00:00");
+              d.setDate(d.getDate() + Number(e.noches));
+              return d.toISOString().slice(0,10);
+            }
+            return null;
+          };
+          const thS = { fontSize:10, fontWeight:700, color:C.textLight, textTransform:"uppercase", letterSpacing:0.7, padding:"6px 12px", textAlign:"left", borderBottom:`1px solid ${C.border}`, whiteSpace:"nowrap" };
+          const tdS = { fontSize:12, padding:"5px 12px", color:C.text, whiteSpace:"nowrap" };
           return (
             <div style={{ marginBottom:16, borderRadius:8, border:`1px solid ${C.border}`, overflow:"hidden" }}>
-              {detalleEntries.map((e, i) => {
-                const canal = normCanal(e.canal);
-                const color = CANAL_COLORS[canal] || C.accent;
-                const adr = e.noches > 0 ? Math.round((e.precio_total||0) / e.noches) : null;
-                return (
-                  <div key={i} style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 14px", borderBottom: i < detalleEntries.length-1 ? `1px solid ${C.border}` : "none", background: i%2===0 ? C.bg : "transparent" }}>
-                    <div style={{ width:8, height:8, borderRadius:"50%", background:color, flexShrink:0 }}/>
-                    <span style={{ fontSize:12, color:C.textMid, flex:1 }}>{e.canal || canal}</span>
-                    <span style={{ fontSize:11, color:C.text }}>llegada {fmtDatePU(String(e.fecha_llegada||"").slice(0,10))}</span>
-                    <span style={{ fontSize:11, color:C.textMid }}>{e.noches || "—"}n</span>
-                    {adr != null && <span style={{ fontSize:11, fontWeight:700, color:C.text }}>€{adr}/n</span>}
-                  </div>
-                );
-              })}
+              <table style={{ width:"100%", borderCollapse:"collapse" }}>
+                <thead><tr style={{ background:C.bg }}>
+                  <th style={thS}>Nº</th>
+                  <th style={thS}>Canal</th>
+                  <th style={thS}>Llegada</th>
+                  <th style={thS}>Salida</th>
+                  <th style={{ ...thS, textAlign:"center" }}>Noches</th>
+                  <th style={{ ...thS, textAlign:"right" }}>ADR</th>
+                </tr></thead>
+                <tbody>
+                  {detalleEntries.map((e, i) => {
+                    const noches = Number(e.noches) || 0;
+                    const adr = noches > 0 ? Math.round((e.precio_total||0) / noches) : null;
+                    const salida = getSalida(e);
+                    return (
+                      <tr key={i} style={{ borderBottom: i < detalleEntries.length-1 ? `1px solid ${C.border}` : "none", background: i%2===0 ? "transparent" : C.bg }}>
+                        <td style={{ ...tdS, color:C.textLight, fontVariantNumeric:"tabular-nums" }}>{e.numero_reserva || "—"}</td>
+                        <td style={{ ...tdS, fontWeight:500 }}>{e.canal || "—"}</td>
+                        <td style={tdS}>{fmtDatePU(String(e.fecha_llegada||"").slice(0,10))}</td>
+                        <td style={{ ...tdS, color:C.textMid }}>{salida ? fmtDatePU(salida) : "—"}</td>
+                        <td style={{ ...tdS, textAlign:"center", color:C.textMid }}>{noches || "—"}</td>
+                        <td style={{ ...tdS, textAlign:"right", fontWeight:700 }}>{adr != null ? `€${adr}` : "—"}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
           );
         })()}
