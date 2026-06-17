@@ -5518,7 +5518,7 @@ function GruposView({ datos, onRecargar, onVolverHeatmap, subVistaExt, onCambiar
                 })}
                 {/* Total row */}
                 <tr style={{ background:C.bg }}>
-                  <td style={{ padding:"12px 14px", fontWeight:700, color:C.text }} colSpan={2}>Total sección</td>
+                  <td style={{ padding:"12px 14px", fontWeight:700, color:C.text }} colSpan={2}>Total</td>
                   <td style={{ padding:"12px 14px", fontWeight:800, color:"#1A7A3C", textAlign:"right", fontSize:15 }}>€{Math.round(revSeccion).toLocaleString("es-ES")}</td>
                   <td style={{ padding:"12px 14px", fontWeight:800, color:"#1A7A3C", textAlign:"right" }}>{pct!=null?`${pct.toFixed(1)}%`:"—"}</td>
                 </tr>
