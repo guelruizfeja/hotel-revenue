@@ -3908,7 +3908,7 @@ function BudgetView({ datos, anio: anioProp }) {
   const pad = n => String(n).padStart(2, "0");
   const hoyStr = `${hoy.getFullYear()}-${pad(hoy.getMonth()+1)}-${pad(hoy.getDate())}`;
 
-  // ── FORECAST v2 (OTB en room-nights + ETP pace + cancel rate + ADR blended) ──
+  // ── FORECAST v3 (dedup snapshots + ETP como diferencia LY total - OTB LY) ──
   const calcForecastRevenue = (mesIdx, anioF) => {
     const primerDia   = new Date(anioF, mesIdx, 1);
     const ultimoDia   = new Date(anioF, mesIdx + 1, 0);
@@ -3917,7 +3917,6 @@ function BudgetView({ datos, anio: anioProp }) {
     const hoyMidnight = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
     if (ultimoDia < hoyMidnight) return null;
 
-    // Noches de una entrada de pickup (con fallbacks)
     const getNochas = e => {
       const n = Number(e.noches);
       if (n > 0) return n;
@@ -3928,66 +3927,82 @@ function BudgetView({ datos, anio: anioProp }) {
       return 1;
     };
 
-    // ── Producción LY ──
-    const diasLY    = (produccion || []).filter(r => String(r.fecha || "").slice(0,7) === mesStrLY);
-    const habOcuLY  = diasLY.reduce((a, r) => a + (r.hab_ocupadas || 0), 0);
-    const revHabLY  = diasLY.reduce((a, r) => a + (r.revenue_hab  || 0), 0);
-    const habDisLY  = diasLY.reduce((a, r) => a + (r.hab_disponibles || 0), 0);
-    const adrLY     = habOcuLY > 0 ? revHabLY / habOcuLY : null;
-    // Fallback hab_disponibles usando configuración del hotel
-    const habHotel  = datos?.hotel?.habitaciones || 0;
-    const habDis    = habDisLY > 0 ? habDisLY : habHotel * ultimoDia.getDate();
+    // Deduplica snapshots acumulados: conserva el más reciente por (llegada|canal|salida)
+    const getSalidaKey = e => {
+      if (e.fecha_salida) return String(e.fecha_salida).slice(0,10);
+      const n = Number(e.noches);
+      if (n > 0 && e.fecha_llegada) {
+        const d = new Date(String(e.fecha_llegada).slice(0,10)+"T00:00:00");
+        d.setDate(d.getDate() + n);
+        return d.toISOString().slice(0,10);
+      }
+      return "";
+    };
+    const dedup = (entries) => {
+      const map = {};
+      entries.forEach(e => {
+        const key = `${String(e.fecha_llegada||"").slice(0,10)}|${e.canal||""}|${getSalidaKey(e)}`;
+        const fp  = String(e.fecha_pickup||"").slice(0,10);
+        if (!map[key] || fp > map[key]._fp) map[key] = { ...e, _fp: fp };
+      });
+      return Object.values(map);
+    };
 
-    // ── Tasa de cancelación histórica (últimos 3 meses) ──
+    const sumNights  = arr => arr.reduce((a, e) => a + (e.num_reservas || 1) * getNochas(e), 0);
+    const sumRevenue = arr => arr.reduce((a, e) => a + (e.precio_total || 0), 0);
+
+    // ── Producción LY (fuente autorizada para ADR histórico) ──
+    const diasLY   = (produccion || []).filter(r => String(r.fecha || "").slice(0,7) === mesStrLY);
+    const habOcuLY = diasLY.reduce((a, r) => a + (r.hab_ocupadas || 0), 0);
+    const revHabLY = diasLY.reduce((a, r) => a + (r.revenue_hab  || 0), 0);
+    const habDisLY = diasLY.reduce((a, r) => a + (r.hab_disponibles || 0), 0);
+    const adrLY    = habOcuLY > 0 ? revHabLY / habOcuLY : null;
+    const habHotel = datos?.hotel?.habitaciones || 0;
+    const habDis   = habDisLY > 0 ? habDisLY : habHotel * ultimoDia.getDate();
+
+    // ── Tasa de cancelación histórica (últimos 3 meses, deduplicada) ──
     let canceladas = 0, totales = 0;
     for (let m = 1; m <= 3; m++) {
-      const ref = new Date(hoy.getFullYear(), hoy.getMonth() - m, 1);
+      const ref    = new Date(hoy.getFullYear(), hoy.getMonth() - m, 1);
       const refStr = `${ref.getFullYear()}-${pad(ref.getMonth() + 1)}`;
-      pickupEntries
-        .filter(e => String(e.fecha_llegada || "").slice(0,7) === refStr)
-        .forEach(e => {
-          totales++;
-          if ((e.estado || "confirmada") === "cancelada") canceladas++;
-        });
+      const mes3   = dedup(pickupEntries.filter(e => String(e.fecha_llegada || "").slice(0,7) === refStr));
+      mes3.forEach(e => { totales++; if ((e.estado || "confirmada") === "cancelada") canceladas++; });
     }
-    const cancelRate = totales > 30 ? canceladas / totales : 0.08; // default 8%
+    const cancelRate = totales > 20 ? canceladas / totales : 0.08;
 
-    // ── OTB actual en room-nights y revenue (solo confirmadas) ──
     const hoyLY    = `${anioF - 1}-${pad(hoy.getMonth() + 1)}-${pad(hoy.getDate())}`;
     const finMesLY = `${anioF - 1}-${pad(mesIdx + 1)}-${pad(ultimoDia.getDate())}`;
 
-    const otbEntries = pickupEntries.filter(e =>
+    // ── OTB actual: snapshot más reciente por reserva, pickup ≤ hoy ──
+    const otbEntries = dedup(pickupEntries.filter(e =>
       String(e.fecha_llegada || "").slice(0,7) === mesStr &&
       String(e.fecha_pickup  || "").slice(0,10) <= hoyStr &&
       (e.estado || "confirmada") !== "cancelada"
-    );
-    const otbNights  = otbEntries.reduce((a, e) => a + (e.num_reservas || 1) * getNochas(e), 0);
-    const otbRevenue = otbEntries.reduce((a, e) => a + (e.precio_total || 0), 0);
+    ));
+    const otbNights  = sumNights(otbEntries);
+    const otbRevenue = sumRevenue(otbEntries);
     const adrOTB     = otbNights > 0 && otbRevenue > 0 ? otbRevenue / otbNights : adrLY;
-
-    // OTB neto tras cancelaciones esperadas
     const netOTBNights  = otbNights  * (1 - cancelRate);
     const netOTBRevenue = otbRevenue * (1 - cancelRate);
 
-    // ── OTB LY en la misma fecha relativa (room-nights) ──
-    const otbLYEntries = pickupEntries.filter(e =>
+    // ── LY OTB a fecha equivalente (snapshot más reciente, pickup ≤ hoyLY) ──
+    const lyBase = pickupEntries.filter(e =>
       String(e.fecha_llegada || "").slice(0,7) === mesStrLY &&
-      String(e.fecha_pickup  || "").slice(0,10) <= hoyLY &&
       (e.estado || "confirmada") !== "cancelada"
     );
-    const otbNightsLY = otbLYEntries.reduce((a, e) => a + (e.num_reservas || 1) * getNochas(e), 0);
+    const lyOtbEntries  = dedup(lyBase.filter(e => String(e.fecha_pickup||"").slice(0,10) <= hoyLY));
+    const lyAllEntries  = dedup(lyBase.filter(e => String(e.fecha_pickup||"").slice(0,10) <= finMesLY));
 
-    // ── ETP: pickup LY desde hoy hasta fin de mes (room-nights y revenue) ──
-    const etpLYEntries = pickupEntries.filter(e => {
-      const fp = String(e.fecha_pickup || "").slice(0,10);
-      return String(e.fecha_llegada || "").slice(0,7) === mesStrLY &&
-        fp > hoyLY && fp <= finMesLY &&
-        (e.estado || "confirmada") !== "cancelada";
-    });
-    const etpNightsLY = etpLYEntries.reduce((a, e) => a + (e.num_reservas || 1) * getNochas(e), 0);
-    const etpRevLY    = etpLYEntries.reduce((a, e) => a + (e.precio_total || 0), 0);
+    const otbNightsLY   = sumNights(lyOtbEntries);
+    const lyTotalNights = sumNights(lyAllEntries);
+    const lyTotalRev    = sumRevenue(lyAllEntries);
+    const lyOtbRev      = sumRevenue(lyOtbEntries);
 
-    // ── Pace factor en room-nights (sin umbral duro, suavizado con raíz cuadrada) ──
+    // ETP LY = diferencia real entre total fin de mes LY y estado en fecha equivalente LY
+    const etpNightsLY = Math.max(0, lyTotalNights - otbNightsLY);
+    const etpRevLY    = Math.max(0, lyTotalRev    - lyOtbRev);
+
+    // ── Pace factor: ratio OTB actual vs OTB LY en la misma fecha relativa ──
     const paceRaw    = otbNightsLY > 3 ? otbNights / otbNightsLY : 1;
     const paceFactor = Math.min(1.5, Math.max(0.5, paceRaw));
     const hasLYData  = etpNightsLY > 0;
