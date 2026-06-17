@@ -3,6 +3,11 @@ import { LangContext, useT, TRANSLATIONS } from "./i18n";
 import { C, LOGO_B64, SALAS_FIJAS, dmy, MESES, MESES_CORTO, MESES_FULL, NET_HAB_FNB, NET_SALA, KPI_HELP, NAV, GRUPOS_SUB } from "./constants";
 import { buildHabEnCasaMap, calcHabEnCasa } from "./utils";
 import { supabase } from "./supabase";
+import { CustomSelect } from "./components/CustomSelect";
+import { AnimatedBar, SimpleBar, TOOLTIP_COLORS, CustomTooltip } from "./components/charts";
+import { Card, LoadingSpinner, EmptyState } from "./components/Card";
+import { KpiCard } from "./components/KpiCard";
+import { PeriodSelectorInline } from "./components/PeriodSelectorInline";
 import {
   AreaChart, Area, BarChart, Bar, LineChart, Line, ComposedChart,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
@@ -10,122 +15,7 @@ import {
 } from "recharts";
 
 
-function CustomSelect({ value, onChange, options, style }) {
-  const [open, setOpen] = React.useState(false);
-  const ref = React.useRef(null);
-  const selected = options.find(o => o.value === value) || options[0];
-  React.useEffect(() => {
-    if (!open) return;
-    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [open]);
-  return (
-    <div ref={ref} style={{ position:"relative", ...style }}>
-      <button type="button" onClick={() => setOpen(o => !o)}
-        style={{ width:"100%", display:"flex", alignItems:"center", justifyContent:"space-between", gap:8,
-          padding:"8px 10px", borderRadius:7, border:"1px solid #111111", background:"#fff",
-          cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:13, fontWeight:500,
-          color:"#1A1A1A", boxSizing:"border-box" }}>
-        <span style={{ display:"flex", alignItems:"center", gap:7 }}>
-          {selected.color && <span style={{ width:8, height:8, borderRadius:"50%", background:selected.color, flexShrink:0, display:"inline-block" }}/>}
-          <span style={{ color: selected.color || "#1A1A1A", fontWeight: selected.color ? 700 : 500 }}>{selected.label}</span>
-        </span>
-        <span style={{ fontSize:9, color:"#888", transform: open ? "rotate(180deg)" : "none", transition:"transform 0.15s" }}>▼</span>
-      </button>
-      {open && (
-        <div style={{ position:"absolute", top:"calc(100% + 4px)", left:0, right:0, zIndex:999,
-          background:"#fff", border:"1px solid #111111", borderRadius:8,
-          boxShadow:"0 4px 16px rgba(0,0,0,0.12)", overflow:"hidden" }}>
-          {options.map(o => (
-            <button key={o.value} type="button"
-              onClick={() => { onChange(o.value); setOpen(false); }}
-              style={{ width:"100%", display:"flex", alignItems:"center", gap:8, padding:"9px 12px",
-                background: o.value === value ? (o.bg || "#F5F5F5") : "transparent",
-                border:"none", cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif",
-                fontSize:13, fontWeight: o.value === value ? 700 : 500, color:"#1A1A1A",
-                textAlign:"left", transition:"background 0.12s" }}
-              onMouseEnter={e => { if (o.value !== value) e.currentTarget.style.background = "#F5F5F5"; }}
-              onMouseLeave={e => { e.currentTarget.style.background = o.value === value ? (o.bg || "#F5F5F5") : "transparent"; }}>
-              {o.color && <span style={{ width:8, height:8, borderRadius:"50%", background:o.color, flexShrink:0, display:"inline-block" }}/>}
-              <span style={{ color: o.color || "#1A1A1A", fontWeight: o.color ? 700 : 500 }}>{o.label}</span>
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
 
-const AnimatedBar = (props) => {
-  const { x, y, width, height, fill, onClick, highlighted } = props;
-  const [animKey, setAnimKey] = useState(0);
-  if (!height || height <= 0) return null;
-  return (
-    <g onClick={() => onClick && onClick(props)} style={{ cursor:"pointer", outline:"none" }}
-      onMouseEnter={() => setAnimKey(k => k + 1)}>
-      <rect x={x} y={y} width={width} height={height} rx={4} ry={4} fill={fill}
-        opacity={highlighted ? 1 : 0.82}
-        style={{ transition:"opacity 0.15s" }}/>
-      {highlighted && (
-        <rect x={x-1} y={y-1} width={width+2} height={height+1} rx={4} ry={4}
-          fill="none" stroke="#ffffff" strokeWidth={1.5} strokeOpacity={0.5}/>
-      )}
-      {animKey > 0 && (
-        <rect key={animKey} x={x} y={y} width={width} height={height} rx={4} ry={4} fill={fill}
-          style={{
-            transformBox:"fill-box",
-            transformOrigin:"bottom",
-            animation:"bar-fill-up 0.5s cubic-bezier(0.22,1,0.36,1) both",
-          }}/>
-      )}
-    </g>
-  );
-};
-
-
-const SimpleBar = ({ x, y, width, height, fill, fillOpacity }) => {
-  if (!height || height <= 0) return null;
-  return <rect x={x} y={y} width={width} height={height} rx={4} ry={4} fill={fill} fillOpacity={fillOpacity}/>;
-};
-
-const TOOLTIP_COLORS = {
-  "Ocupación":"#004B87","occ":"#004B87","OCC":"#004B87","Occupancy":"#004B87",
-  "ADR":"#004B87","adr":"#004B87",
-  "RevPAR":"#004B87","revpar":"#004B87",
-  "TRevPAR":"#004B87","trevpar":"#004B87",
-  "Hab.":"#1A7A3C","Habitaciones":"#1A7A3C","revHab":"#1A7A3C",
-  "F&B":"#E85D04","revFnb":"#E85D04",
-  "Grupos/Eventos":"#B8860B","revME":"#B8860B",
-  "Año anterior":"#D32F2F","ly":"#D32F2F",
-  "Ocup. LY":"#F87171","occLY":"#F87171",
-  "ADR LY":"#8B5CF6","adrLY":"#8B5CF6",
-};
-const CustomTooltip = ({ active, payload, label, unit }) => {
-  if (!active || !payload?.length) return null;
-  const OCC_NAMES = ["Ocupación","occ","OCC","Occupancy"];
-  const raw = payload[0]?.payload || {};
-  let displayLabel = raw.fecha || raw.mesNombre || label;
-  if (raw.mesNombre && raw.anioIdx) displayLabel = `${raw.mesNombre} ${raw.anioIdx}`;
-  return (
-    <div style={{ background:"#f5f5f5", border:"1.5px solid #111111", borderRadius:8, padding:"12px 16px", boxShadow:"0 1px 4px rgba(0,0,0,0.06)", minWidth:148 }}>
-      <p style={{ color:"#111111", fontSize:10, fontWeight:700, marginBottom:8, textTransform:"uppercase", letterSpacing:"1.5px" }}>{displayLabel}</p>
-      {payload.map((p, i) => {
-        const isOcc = unit === "%" || OCC_NAMES.includes(p.name);
-        const val = typeof p.value === 'number'
-          ? isOcc ? `${Math.round(p.value)}%` : `${Math.round(p.value).toLocaleString("es-ES")}€`
-          : p.value;
-        const color = (typeof p.color === "string" && !p.color.startsWith("url(")) ? p.color : (TOOLTIP_COLORS[p.name] || TOOLTIP_COLORS[p.dataKey] || "#7A9CC8");
-        return (
-          <div key={i} style={{ display:"flex", alignItems:"center", gap:7, margin:"3px 0" }}>
-            <span style={{ width:8, height:8, borderRadius:2, background:color, flexShrink:0, display:"inline-block" }}/>
-            <span style={{ color:"rgba(0,0,0,0.65)", fontSize:12 }}>{p.name}: <span style={{ color:"#111111", fontWeight:700 }}>{val}</span></span>
-          </div>
-        );
-      })}
-    </div>
-  );
-};
 
 function WeatherBar({ ciudad, datos, lang, occDeTicker, stickyTop = 52, barColor = "#1a1a1a" }) {
   const [weather, setWeather] = useState(null);
@@ -303,13 +193,6 @@ function WeatherBar({ ciudad, datos, lang, occDeTicker, stickyTop = 52, barColor
   );
 }
 
-function Card({ children, style = {}, onClick }) {
-  return (
-    <div onClick={onClick} style={{ background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: 10, padding: "22px 24px", width: "100%", ...style }}>
-      {children}
-    </div>
-  );
-}
 
 
 // ─── KPI MODAL ───────────────────────────────────────────────────
@@ -621,160 +504,12 @@ function KpiModal({ kpi, datos, mes, anio, onClose }) {
 }
 
 
-const KpiCard = React.memo(function KpiCard({ label, subtitle, value, changeLm, upLm, changeLy, upLy, i, onClick, accentColor }) {
-  const kpiAccent = accentColor || C.accent;
-  const pct = changeLm && changeLm !== "—" ? parseFloat(changeLm) : null;
-  const isFlat = pct !== null && Math.abs(pct) < 1;
-  const indicatorColor = pct === null ? null : isFlat ? "#B8860B" : upLm ? "#16a34a" : "#D32F2F";
-  const indicatorIcon  = pct === null ? null : isFlat ? "—" : upLm ? "↑" : "↓";
-  const [hovered, setHovered] = React.useState(false);
-  const [helpOpen, setHelpOpen] = React.useState(false);
-  const wrapRef = React.useRef(null);
-  const help = KPI_HELP[label];
-
-  React.useEffect(() => {
-    if (!helpOpen) return;
-    const handler = e => { if (wrapRef.current && !wrapRef.current.contains(e.target)) setHelpOpen(false); };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [helpOpen]);
-
-  return (
-    <div ref={wrapRef} style={{ position:"relative", height:"100%", animation:`fadeUp 0.5s ease ${i * 0.08}s both` }}>
-      <div onClick={onClick} style={{
-        background: "#f5f5f5", border: `1.5px solid #111111`, borderRadius: 8,
-        padding: "14px 18px",
-        position: "relative", overflow: "hidden",
-        boxShadow: "0 1px 4px rgba(0,0,0,0.06)", cursor: "pointer",
-        transition: "box-shadow 0.2s, transform 0.2s, border-color 0.2s, background 0.2s",
-        display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center",
-        height: "100%", boxSizing: "border-box",
-      }}
-      onMouseEnter={e=>{
-        setHovered(true);
-        e.currentTarget.style.boxShadow=`0 6px 24px rgba(0,0,0,0.18)`;
-        e.currentTarget.style.transform="translateY(-2px)";
-        e.currentTarget.style.borderColor="#111111";
-      }}
-      onMouseLeave={e=>{
-        setHovered(false);
-        e.currentTarget.style.boxShadow="0 1px 4px rgba(0,0,0,0.06)";
-        e.currentTarget.style.transform="translateY(0)";
-        e.currentTarget.style.borderColor="#111111";
-        e.currentTarget.style.background="#f5f5f5";
-      }}>
-        <p style={{ fontSize: 11, color: C.text, textTransform: "uppercase", letterSpacing: "1.5px", fontWeight: 700 }}>{label}</p>
-        {subtitle && <p style={{ fontSize: 9, color: C.textMid, marginTop: 1, letterSpacing: "0.5px", opacity: 0.7 }}>{subtitle}</p>}
-        <div style={{ position:"relative", margin:"5px 0 4px" }}>
-          <p style={{ textAlign:"center", fontSize:"clamp(18px,4vw,24px)", fontWeight:700, fontFamily:"'Plus Jakarta Sans', sans-serif", color:C.text, margin:0, letterSpacing:"-1px", lineHeight:1 }}>{value}</p>
-          {indicatorColor && (
-            <div style={{ position:"absolute", top:0, bottom:0, left:"calc(50% + 46px)", display:"flex", flexDirection:"column", justifyContent:"center", alignItems:"flex-start", gap:2 }}>
-              <span style={{ fontSize:13, fontWeight:800, color:indicatorColor, lineHeight:1, whiteSpace:"nowrap" }}>{indicatorIcon} <span style={{ fontSize:11, fontWeight:600 }}>{changeLm}</span></span>
-              <span style={{ fontSize:9, color:C.textLight, lineHeight:1 }}>vs LM</span>
-            </div>
-          )}
-        </div>
-        {help && (hovered || helpOpen) && (
-          <button onClick={e=>{ e.stopPropagation(); setHelpOpen(o=>!o); }}
-            style={{ position:"absolute", top:7, right:7, width:17, height:17, borderRadius:"50%", border:"1.5px solid #aaa", background:"#fff", color:"#666", fontSize:10, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", padding:0, lineHeight:1, transition:"all 0.15s" }}
-            onMouseEnter={e=>{ e.currentTarget.style.background="#111"; e.currentTarget.style.color="#fff"; e.currentTarget.style.borderColor="#111"; }}
-            onMouseLeave={e=>{ e.currentTarget.style.background="#fff"; e.currentTarget.style.color="#666"; e.currentTarget.style.borderColor="#aaa"; }}
-          >?</button>
-        )}
-      </div>
-      {helpOpen && help && (
-        <div style={{ position:"absolute", bottom:"calc(100% + 8px)", left:0, right:0, background:"#fff", border:"1.5px solid #111", borderRadius:10, padding:"14px 16px", zIndex:200, boxShadow:"0 8px 24px rgba(0,0,0,0.13)", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
-          <p style={{ fontSize:10, color:"#888", fontWeight:600, textTransform:"uppercase", letterSpacing:"1px", marginBottom:6 }}>Cómo se calcula</p>
-          <p style={{ fontSize:11, color:"#333", fontWeight:600, marginBottom:10, background:"#f5f5f5", padding:"6px 10px", borderRadius:6, fontFamily:"monospace" }}>{help.formula}</p>
-          <p style={{ fontSize:12, color:"#555", lineHeight:1.55, margin:0 }}>{help.desc}</p>
-        </div>
-      )}
-    </div>
-  );
-}, (prev, next) =>
-  prev.label === next.label && prev.subtitle === next.subtitle &&
-  prev.value === next.value && prev.changeLm === next.changeLm &&
-  prev.upLm === next.upLm && prev.changeLy === next.changeLy &&
-  prev.upLy === next.upLy && prev.i === next.i && prev.accentColor === next.accentColor
-);
-
-function PeriodSelectorInline({ mes, anio, onChange, aniosDisponibles, allowFuture = false }) {
-  const t = useT();
-  const hoy = new Date();
-  const anioMax = hoy.getFullYear();
-  const anios = aniosDisponibles && aniosDisponibles.length > 0 ? aniosDisponibles : [anioMax];
-  const MESES_C = t("meses_full");
-
-  const anioAnterior = () => {
-    const idx = anios.indexOf(anio);
-    if (idx > 0) onChange(mes, anios[idx-1]);
-  };
-  const anioSiguiente = () => {
-    const idx = anios.indexOf(anio);
-    if (idx < anios.length-1) onChange(mes, anios[idx+1]);
-  };
-  const puedeAnterior = anios.indexOf(anio) > 0;
-  const puedeSiguiente = anios.indexOf(anio) < anios.length-1;
-  const btnFlecha = (activo) => ({ background:"none", border:`1px solid ${activo?C.border:"transparent"}`, borderRadius:6, width:22, height:22, cursor:activo?"pointer":"default", color:activo?C.textMid:C.border, fontSize:13, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 });
-
-  return (
-    <div style={{ userSelect:"none" }}>
-      <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:10, marginBottom:8 }}>
-        <button onClick={anioAnterior} style={btnFlecha(puedeAnterior)}>‹</button>
-        <p style={{ fontSize:13, fontWeight:700, color:C.text, fontFamily:"'Plus Jakarta Sans',sans-serif", minWidth:36, textAlign:"center" }}>{anio}</p>
-        <button onClick={anioSiguiente} style={btnFlecha(puedeSiguiente)}>›</button>
-      </div>
-      <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:4 }}>
-        {MESES_C.map((m, i) => {
-          const futuro = !allowFuture && anio === anioMax && i > hoy.getMonth();
-          const activo = i === mes;
-          const esHoyMes = i === hoy.getMonth() && anio === hoy.getFullYear();
-          return (
-            <button key={i} onClick={() => !futuro && onChange(i, anio)}
-              style={{
-                padding: "5px 4px",
-                borderRadius: 6,
-                border: esHoyMes && !activo ? `1.5px solid ${C.text}44` : `1px solid ${activo?C.text:C.border}`,
-                background: activo ? C.text : "transparent",
-                color: futuro ? C.textLight : activo ? "#fff" : C.text,
-                fontSize: 11, fontWeight: activo ? 700 : 500, opacity: futuro ? 0.3 : 1,
-                cursor: futuro ? "not-allowed" : "pointer",
-                fontFamily: "'Plus Jakarta Sans',sans-serif",
-                textAlign: "center",
-                transition: "all 0.1s",
-              }}>
-              {m}
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
 
 
 
 
 
-function LoadingSpinner() {
-  const t = useT();
-  return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: 60 }}>
-      <div style={{ color: C.accent, fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 16 }}>{t("cargando_datos")}</div>
-    </div>
-  );
-}
 
-function EmptyState({ mensaje }) {
-  const t = useT();
-  return (
-    <div style={{ textAlign: "center", padding: 60 }}>
-
-      <p style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 18, fontWeight: 700, color: C.text, marginBottom: 8 }}>{t("sin_datos")}</p>
-      <p style={{ fontSize: 13, color: C.textLight }}>{mensaje || t("importa_excel")}</p>
-    </div>
-  );
-}
 
 // ─── IMPORTAR EXCEL ───────────────────────────────────────────────
 function ImportarExcel({ onClose, session, onImportado, onProduccionDirecta, hotelNombre: hotelNombreProp, fullPage = false }) {
