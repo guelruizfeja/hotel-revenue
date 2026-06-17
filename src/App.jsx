@@ -5487,20 +5487,6 @@ function GruposView({ datos, onRecargar, onVolverHeatmap, subVistaExt, onCambiar
               </div>
             </div>
 
-            {/* KPI destacado */}
-            <div style={{ display:"flex", gap:12, marginBottom:24 }}>
-              <div style={{ background:"#f5f5f5", borderRadius:8, padding:"14px 18px", border:"1.5px solid #111111", minWidth:180, boxShadow:"0 1px 4px rgba(0,0,0,0.06)" }}>
-                <p style={{ fontSize:11, color:C.text, fontWeight:700, textTransform:"uppercase", letterSpacing:"1.5px", marginBottom:6 }}>Ingresos confirmados</p>
-                <p style={{ fontSize:22, fontWeight:700, color:C.text, fontFamily:"'Plus Jakarta Sans',sans-serif", letterSpacing:"-1px" }}>€{Math.round(revSeccion).toLocaleString("es-ES")}</p>
-              </div>
-              <div style={{ background:"#f5f5f5", borderRadius:8, padding:"14px 18px", border:"1.5px solid #111111", minWidth:220, boxShadow:"0 1px 4px rgba(0,0,0,0.06)" }}>
-                <p style={{ fontSize:11, color:C.text, fontWeight:700, textTransform:"uppercase", letterSpacing:"1.5px", marginBottom:6 }}>% sobre ingresos totales del mes</p>
-                <p style={{ fontSize:22, fontWeight:700, color: pct!=null ? C.text : C.textLight, fontFamily:"'Plus Jakarta Sans',sans-serif", letterSpacing:"-1px" }}>
-                  {pct != null ? `${pct.toFixed(1)}%` : "—"}
-                </p>
-              </div>
-            </div>
-
             {/* Tabla desglose */}
             <table style={{ width:"100%", borderCollapse:"collapse", fontSize:14 }}>
               <thead>
