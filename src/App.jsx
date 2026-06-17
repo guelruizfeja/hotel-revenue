@@ -3908,68 +3908,122 @@ function BudgetView({ datos, anio: anioProp }) {
   const pad = n => String(n).padStart(2, "0");
   const hoyStr = `${hoy.getFullYear()}-${pad(hoy.getMonth()+1)}-${pad(hoy.getDate())}`;
 
-  // ── FORECAST (OTB + ETP) ──────────────────────────────────────
+  // ── FORECAST v2 (OTB en room-nights + ETP pace + cancel rate + ADR blended) ──
   const calcForecastRevenue = (mesIdx, anioF) => {
-    const primerDia = new Date(anioF, mesIdx, 1);
-    const ultimoDia = new Date(anioF, mesIdx + 1, 0);
-    const mesStr    = `${anioF}-${pad(mesIdx + 1)}`;
-    const mesStrLY  = `${anioF - 1}-${pad(mesIdx + 1)}`;
-
-    // Mes ya cerrado → no se recalcula; el forecast se recupera de localStorage
+    const primerDia   = new Date(anioF, mesIdx, 1);
+    const ultimoDia   = new Date(anioF, mesIdx + 1, 0);
+    const mesStr      = `${anioF}-${pad(mesIdx + 1)}`;
+    const mesStrLY    = `${anioF - 1}-${pad(mesIdx + 1)}`;
     const hoyMidnight = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
     if (ultimoDia < hoyMidnight) return null;
 
-    // ADR medio del año anterior para este mes
-    const diasLY = (produccion || []).filter(r => String(r.fecha || "").slice(0, 7) === mesStrLY);
-    const habOcuLY = diasLY.reduce((a, r) => a + (r.hab_ocupadas || 0), 0);
-    const revHabLY = diasLY.reduce((a, r) => a + (r.revenue_hab || 0), 0);
-    const adrLY = habOcuLY > 0 ? revHabLY / habOcuLY : null;
-    if (!adrLY) return null;
+    // Noches de una entrada de pickup (con fallbacks)
+    const getNochas = e => {
+      const n = Number(e.noches);
+      if (n > 0) return n;
+      if (e.fecha_salida && e.fecha_llegada) {
+        const d = (new Date(String(e.fecha_salida).slice(0,10)+"T00:00:00") - new Date(String(e.fecha_llegada).slice(0,10)+"T00:00:00")) / 86400000;
+        return d > 0 ? d : 1;
+      }
+      return 1;
+    };
 
-    // OTB actual: reservas en pickup con fecha_llegada en este mes y fecha_pickup <= hoy
-    const otbRes = pickupEntries
-      .filter(e => String(e.fecha_llegada || "").slice(0, 7) === mesStr && String(e.fecha_pickup || "").slice(0, 10) <= hoyStr)
-      .reduce((a, e) => a + (e.num_reservas || 1), 0);
+    // ── Producción LY ──
+    const diasLY    = (produccion || []).filter(r => String(r.fecha || "").slice(0,7) === mesStrLY);
+    const habOcuLY  = diasLY.reduce((a, r) => a + (r.hab_ocupadas || 0), 0);
+    const revHabLY  = diasLY.reduce((a, r) => a + (r.revenue_hab  || 0), 0);
+    const habDisLY  = diasLY.reduce((a, r) => a + (r.hab_disponibles || 0), 0);
+    const adrLY     = habOcuLY > 0 ? revHabLY / habOcuLY : null;
+    // Fallback hab_disponibles usando configuración del hotel
+    const habHotel  = datos?.hotel?.habitaciones || 0;
+    const habDis    = habDisLY > 0 ? habDisLY : habHotel * ultimoDia.getDate();
 
-    // OTB año anterior en la misma fecha relativa
-    const hoyLY = `${anioF - 1}-${pad(hoy.getMonth() + 1)}-${pad(hoy.getDate())}`;
-    const otbResLY = pickupEntries
-      .filter(e => String(e.fecha_llegada || "").slice(0, 7) === mesStrLY && String(e.fecha_pickup || "").slice(0, 10) <= hoyLY)
-      .reduce((a, e) => a + (e.num_reservas || 1), 0);
+    // ── Tasa de cancelación histórica (últimos 3 meses) ──
+    let canceladas = 0, totales = 0;
+    for (let m = 1; m <= 3; m++) {
+      const ref = new Date(hoy.getFullYear(), hoy.getMonth() - m, 1);
+      const refStr = `${ref.getFullYear()}-${pad(ref.getMonth() + 1)}`;
+      pickupEntries
+        .filter(e => String(e.fecha_llegada || "").slice(0,7) === refStr)
+        .forEach(e => {
+          totales++;
+          if ((e.estado || "confirmada") === "cancelada") canceladas++;
+        });
+    }
+    const cancelRate = totales > 30 ? canceladas / totales : 0.08; // default 8%
 
-    // ETP: pickup del año anterior desde hoy hasta fin de mes, ajustado por pace
+    // ── OTB actual en room-nights y revenue (solo confirmadas) ──
+    const hoyLY    = `${anioF - 1}-${pad(hoy.getMonth() + 1)}-${pad(hoy.getDate())}`;
     const finMesLY = `${anioF - 1}-${pad(mesIdx + 1)}-${pad(ultimoDia.getDate())}`;
-    const etpResLY = pickupEntries
-      .filter(e => {
-        const fp = String(e.fecha_pickup || "").slice(0, 10);
-        return String(e.fecha_llegada || "").slice(0, 7) === mesStrLY && fp > hoyLY && fp <= finMesLY;
-      })
-      .reduce((a, e) => a + (e.num_reservas || 1), 0);
 
-    // Factor pace — limitado a máx 1.5x para evitar distorsiones por falta de datos LY
-    const paceRaw = otbResLY > 20 ? otbRes / otbResLY : 1;
+    const otbEntries = pickupEntries.filter(e =>
+      String(e.fecha_llegada || "").slice(0,7) === mesStr &&
+      String(e.fecha_pickup  || "").slice(0,10) <= hoyStr &&
+      (e.estado || "confirmada") !== "cancelada"
+    );
+    const otbNights  = otbEntries.reduce((a, e) => a + (e.num_reservas || 1) * getNochas(e), 0);
+    const otbRevenue = otbEntries.reduce((a, e) => a + (e.precio_total || 0), 0);
+    const adrOTB     = otbNights > 0 && otbRevenue > 0 ? otbRevenue / otbNights : adrLY;
+
+    // OTB neto tras cancelaciones esperadas
+    const netOTBNights  = otbNights  * (1 - cancelRate);
+    const netOTBRevenue = otbRevenue * (1 - cancelRate);
+
+    // ── OTB LY en la misma fecha relativa (room-nights) ──
+    const otbLYEntries = pickupEntries.filter(e =>
+      String(e.fecha_llegada || "").slice(0,7) === mesStrLY &&
+      String(e.fecha_pickup  || "").slice(0,10) <= hoyLY &&
+      (e.estado || "confirmada") !== "cancelada"
+    );
+    const otbNightsLY = otbLYEntries.reduce((a, e) => a + (e.num_reservas || 1) * getNochas(e), 0);
+
+    // ── ETP: pickup LY desde hoy hasta fin de mes (room-nights y revenue) ──
+    const etpLYEntries = pickupEntries.filter(e => {
+      const fp = String(e.fecha_pickup || "").slice(0,10);
+      return String(e.fecha_llegada || "").slice(0,7) === mesStrLY &&
+        fp > hoyLY && fp <= finMesLY &&
+        (e.estado || "confirmada") !== "cancelada";
+    });
+    const etpNightsLY = etpLYEntries.reduce((a, e) => a + (e.num_reservas || 1) * getNochas(e), 0);
+    const etpRevLY    = etpLYEntries.reduce((a, e) => a + (e.precio_total || 0), 0);
+
+    // ── Pace factor en room-nights (sin umbral duro, suavizado con raíz cuadrada) ──
+    const paceRaw    = otbNightsLY > 3 ? otbNights / otbNightsLY : 1;
     const paceFactor = Math.min(1.5, Math.max(0.5, paceRaw));
-    const etpRes = Math.round(etpResLY * paceFactor);
+    const hasLYData  = etpNightsLY > 0;
 
-    // Forecast reservas totales = OTB + ETP
-    const forecastRes = otbRes + etpRes;
+    // ETP proyectado (LY ajustado por pace)
+    const etpNights = Math.round(etpNightsLY * paceFactor);
+    const etpRev    = etpRevLY > 0
+      ? Math.round(etpRevLY * paceFactor)
+      : (adrLY ? Math.round(etpNights * adrLY) : 0);
 
-    // Revenue forecast = reservas * ADR año anterior
-    const forecastRev = Math.round(forecastRes * adrLY);
+    // ── Revenue forecast = OTB neto + ETP ──
+    const forecastRev = Math.round(netOTBRevenue + etpRev);
+    if (forecastRev <= 0) return null;
 
-    // ADR forecast = ADR del año anterior (es el ADR implícito en el modelo)
-    const forecastAdr = Math.round(adrLY);
+    // ADR blended (ponderado por room-nights de cada parte)
+    const totalNights = netOTBNights + etpNights;
+    const forecastAdr = totalNights > 0
+      ? Math.round((netOTBRevenue + etpRev) / totalNights)
+      : Math.round(adrOTB || adrLY || 0);
 
-    // RevPAR forecast = forecastRev / hab_disponibles del año anterior
-    const habDisLY = diasLY.reduce((a, r) => a + (r.hab_disponibles || 0), 0);
-    const forecastRevpar = habDisLY > 0 ? Math.round(forecastRev / habDisLY) : null;
+    const forecastRevpar = habDis > 0 ? Math.round(forecastRev / habDis) : null;
 
-    // Confianza: % del mes transcurrido
-    const diasMes    = ultimoDia.getDate();
-    const diaActual  = primerDia > hoy ? 0 : Math.min(hoy.getDate(), diasMes);
-    const confianza  = Math.round((diaActual / diasMes) * 100);
+    // ── Confianza: % del mes + penalización por falta de datos ──
+    const diasMes   = ultimoDia.getDate();
+    const diaActual = primerDia > hoy ? 0 : Math.min(hoy.getDate(), diasMes);
+    const basePct   = Math.round((diaActual / diasMes) * 100);
+    const confianza = Math.max(5, basePct + (hasLYData ? 0 : -20) + (otbNights > 5 ? 0 : -10));
 
-    return { forecastRev, forecastAdr, forecastRevpar, otbRes, etpRes, paceFactor: paceFactor.toFixed(2), confianza };
+    return {
+      forecastRev, forecastAdr, forecastRevpar,
+      otbNights: Math.round(otbNights), etpNights,
+      netOTBNights: Math.round(netOTBNights),
+      cancelRate: Math.round(cancelRate * 100),
+      paceFactor: paceFactor.toFixed(2),
+      confianza, hasLYData,
+    };
   };
 
   // ── REALES POR MES ────────────────────────────────────────────
