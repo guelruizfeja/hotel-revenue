@@ -6678,6 +6678,88 @@ function PickupView({ datos, onGuardado }) {
         </Card>{/* fin col derecha */}
       </div>{/* fin grid 2 cols */}
 
+      {/* ── GASTOS DE DISTRIBUCIÓN ── */}
+      {(() => {
+        const comisionesConfig = datos.hotel?.comisiones_canales || {};
+        const DEFAULT_COM = {
+          "Booking.com": 15, "Expedia": 18, "Hotels.com": 15, "Airbnb": 3,
+          "Hotelbeds": 20, "Agoda": 18, "Trip.com": 15, "Directo": 0,
+          "Web propia": 2, "Tour operador": 20, "Agencia de viajes": 10,
+          "GDS": 12, "Empresa": 0, "Grupos": 0, "Eventos / MICE": 0,
+        };
+        const mesD = reservasMesFiltro
+          ? { mes: reservasMesFiltro.mes + 1, anio: reservasMesFiltro.anio }
+          : { mes: hoy.getMonth() + 1, anio: hoy.getFullYear() };
+        const mesStr = `${mesD.anio}-${String(mesD.mes).padStart(2,"0")}`;
+        const MESES_NOM = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+        const mesLabel = `${MESES_NOM[mesD.mes-1]} ${mesD.anio}`;
+
+        const revPorCanal = {};
+        pickupEntries.forEach(e => {
+          if ((e.estado||"confirmada") === "cancelada") return;
+          const fl = String(e.fecha_llegada||"").slice(0,7);
+          if (fl !== mesStr) return;
+          const c = normCanal(e.canal);
+          revPorCanal[c] = (revPorCanal[c]||0) + (e.precio_total||0);
+        });
+
+        if (Object.keys(revPorCanal).length === 0) return null;
+
+        const filas = Object.entries(revPorCanal)
+          .sort((a,b) => b[1]-a[1])
+          .map(([canal, revenue]) => {
+            const pct = comisionesConfig[canal] ?? DEFAULT_COM[canal] ?? 0;
+            const coste = revenue * pct / 100;
+            return { canal, revenue, pct, coste, neto: revenue - coste };
+          })
+          .filter(f => f.pct > 0);
+
+        if (filas.length === 0) return null;
+
+        const totRev   = filas.reduce((a,r)=>a+r.revenue, 0);
+        const totCoste = filas.reduce((a,r)=>a+r.coste, 0);
+        const totNeto  = totRev - totCoste;
+        const fmt = v => Math.round(v).toLocaleString("es-ES");
+
+        return (
+          <div style={{ background:C.bgCard, border:`1px solid ${C.border}`, borderRadius:12, overflow:"hidden", marginBottom:20 }}>
+            <div style={{ padding:"18px 24px 12px", borderBottom:`1px solid ${C.border}`, display:"flex", alignItems:"baseline", gap:10 }}>
+              <h3 style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:16, fontWeight:700, color:C.text, margin:0 }}>Gastos de Distribución · {mesLabel}</h3>
+            </div>
+            <div style={{ overflowX:"auto" }}>
+              <table style={{ width:"100%", borderCollapse:"collapse", fontSize:12 }}>
+                <thead>
+                  <tr style={{ background:C.bg }}>
+                    <th style={{ padding:"9px 16px", textAlign:"left",  color:C.textLight, fontWeight:600, fontSize:10, textTransform:"uppercase", letterSpacing:1, whiteSpace:"nowrap" }}>Canal</th>
+                    <th style={{ padding:"9px 12px", textAlign:"right", color:C.textLight, fontWeight:600, fontSize:10, textTransform:"uppercase", letterSpacing:1 }}>Revenue bruto</th>
+                    <th style={{ padding:"9px 12px", textAlign:"right", color:C.textLight, fontWeight:600, fontSize:10, textTransform:"uppercase", letterSpacing:1 }}>Coste dist.</th>
+                    <th style={{ padding:"9px 16px", textAlign:"right", color:C.textLight, fontWeight:600, fontSize:10, textTransform:"uppercase", letterSpacing:1 }}>Revenue neto</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filas.map((f, i) => (
+                    <tr key={f.canal} style={{ borderBottom: i < filas.length-1 ? `1px solid ${C.border}` : "none" }}>
+                      <td style={{ padding:"9px 16px", color:C.text, fontWeight:500, whiteSpace:"nowrap" }}>{f.canal}</td>
+                      <td style={{ padding:"9px 12px", textAlign:"right", color:C.textMid }}>€{fmt(f.revenue)}</td>
+                      <td style={{ padding:"9px 12px", textAlign:"right", color: f.coste > 0 ? "#C0392B" : C.textLight }}>{f.coste > 0 ? `-€${fmt(f.coste)}` : "—"}</td>
+                      <td style={{ padding:"9px 16px", textAlign:"right", color:C.text, fontWeight:600 }}>€{fmt(f.neto)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr style={{ background:C.bg, borderTop:`2px solid ${C.border}` }}>
+                    <td style={{ padding:"10px 16px", color:C.text, fontWeight:700, fontSize:11, textTransform:"uppercase", letterSpacing:0.8 }}>Total</td>
+                    <td style={{ padding:"10px 12px", textAlign:"right", color:C.text, fontWeight:700 }}>€{fmt(totRev)}</td>
+                    <td style={{ padding:"10px 12px", textAlign:"right", color:"#C0392B", fontWeight:700 }}>-€{fmt(totCoste)}</td>
+                    <td style={{ padding:"10px 16px", textAlign:"right", color:C.text, fontWeight:700 }}>€{fmt(totNeto)}</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+        );
+      })()}
+
       {/* ── PACE ── */}
       {(() => {
         const pad = n => String(n).padStart(2,"0");
@@ -6756,13 +6838,13 @@ function PickupView({ datos, onGuardado }) {
               <table style={{ width:"100%", borderCollapse:"collapse", fontSize:12 }}>
                 <thead>
                   <tr style={{ background:C.bg }}>
-                    <th style={{ padding:"9px 16px", textAlign:"left",   color:C.text, fontWeight:600, fontSize:11, textTransform:"uppercase", letterSpacing:0.8, whiteSpace:"nowrap" }}>Mes</th>
-                    <th style={{ padding:"9px 12px", textAlign:"right",  color:C.text, fontWeight:600, fontSize:11, textTransform:"uppercase", letterSpacing:0.8 }}>OTB Res.</th>
-                    <th style={{ padding:"9px 12px", textAlign:"right",  color:C.text, fontWeight:700, fontSize:11, textTransform:"uppercase", letterSpacing:0.8 }}>OCC OTB</th>
-                    <th style={{ padding:"9px 12px", textAlign:"right",  color:C.text, fontWeight:600, fontSize:11, textTransform:"uppercase", letterSpacing:0.8 }}>OCC LY</th>
-                    <th style={{ padding:"9px 12px", textAlign:"right",  color:C.text, fontWeight:600, fontSize:11, textTransform:"uppercase", letterSpacing:0.8 }}>OCC Ppto</th>
-                    <th style={{ padding:"9px 12px", textAlign:"right",  color:C.text, fontWeight:600, fontSize:11, textTransform:"uppercase", letterSpacing:0.8 }}>vs LYTD</th>
-                    <th style={{ padding:"9px 16px", textAlign:"right",  color:C.text, fontWeight:600, fontSize:11, textTransform:"uppercase", letterSpacing:0.8 }}>vs Ppto</th>
+                    <th style={{ padding:"9px 16px", textAlign:"left",   color:C.textLight, fontWeight:600, fontSize:10, textTransform:"uppercase", letterSpacing:1, whiteSpace:"nowrap" }}>Mes</th>
+                    <th style={{ padding:"9px 12px", textAlign:"right",  color:C.textLight, fontWeight:600, fontSize:10, textTransform:"uppercase", letterSpacing:1 }}>OTB Res.</th>
+                    <th style={{ padding:"9px 12px", textAlign:"right",  color:C.textLight, fontWeight:600, fontSize:10, textTransform:"uppercase", letterSpacing:1 }}>OCC OTB</th>
+                    <th style={{ padding:"9px 12px", textAlign:"right",  color:C.textLight, fontWeight:600, fontSize:10, textTransform:"uppercase", letterSpacing:1 }}>OCC LY</th>
+                    <th style={{ padding:"9px 12px", textAlign:"right",  color:C.textLight, fontWeight:600, fontSize:10, textTransform:"uppercase", letterSpacing:1 }}>OCC Ppto</th>
+                    <th style={{ padding:"9px 12px", textAlign:"right",  color:C.textLight, fontWeight:600, fontSize:10, textTransform:"uppercase", letterSpacing:1 }}>vs LYTD</th>
+                    <th style={{ padding:"9px 16px", textAlign:"right",  color:C.textLight, fontWeight:600, fontSize:10, textTransform:"uppercase", letterSpacing:1 }}>vs Ppto</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -9170,6 +9252,19 @@ function ModalConfigUnificado({ datos, session, navHidden, toggleNavHidden, navR
   const [showPinKey, setShowPinKey] = React.useState(null);
   const [rememberSettings, setRememberSettings] = React.useState(false);
 
+  const DEFAULT_COMMISSIONS_CFG = {
+    "Booking.com": 15, "Expedia": 18, "Hotels.com": 15, "Airbnb": 3,
+    "Hotelbeds": 20, "Agoda": 18, "Trip.com": 15, "Directo": 0,
+    "Web propia": 2, "Tour operador": 20, "Agencia de viajes": 10,
+    "GDS": 12, "Empresa": 0, "Grupos": 0, "Eventos / MICE": 0,
+  };
+  const [comisiones, setComisiones] = React.useState(() => ({
+    ...DEFAULT_COMMISSIONS_CFG,
+    ...(datos.hotel?.comisiones_canales || {}),
+  }));
+  const [comisionesGuardando, setComisionesGuardando] = React.useState(false);
+  const [comisionesOk, setComisionesOk] = React.useState(false);
+
   const inp = { width:"100%", padding:"9px 12px", borderRadius:8, border:`1px solid ${C.border}`, background:C.bg, color:C.text, fontSize:13, fontFamily:"'Plus Jakarta Sans',sans-serif", boxSizing:"border-box", outline:"none" };
 
   const verificarPin = async () => {
@@ -9205,6 +9300,7 @@ function ModalConfigUnificado({ datos, session, navHidden, toggleNavHidden, navR
   const TABS_CONFIG = [
     { key: "datos", label: "Datos del hotel" },
     { key: "personalizacion", label: "Personalización" },
+    { key: "canales", label: "Canales" },
     { key: "restricciones", label: "Restricciones" },
   ];
 
@@ -9339,6 +9435,49 @@ function ModalConfigUnificado({ datos, session, navHidden, toggleNavHidden, navR
                 );
               })}
             </div>
+          </div>
+        )}
+
+        {/* Pestaña: Canales */}
+        {tab === "canales" && (
+          <div style={{ display:"flex", flexDirection:"column", gap:0 }}>
+            <p style={{ fontSize:12, color:C.textMid, marginBottom:16 }}>Configura el % de comisión de cada canal. Se usa para calcular el coste neto de distribución en Reservas.</p>
+            <div style={{ border:`1px solid ${C.border}`, borderRadius:10, overflow:"hidden", marginBottom:16 }}>
+              <table style={{ width:"100%", borderCollapse:"collapse" }}>
+                <thead>
+                  <tr style={{ background:C.bg }}>
+                    <th style={{ padding:"8px 14px", textAlign:"left", fontSize:10, color:C.textLight, fontWeight:600, textTransform:"uppercase", letterSpacing:"1px" }}>Canal</th>
+                    <th style={{ padding:"8px 14px", textAlign:"right", fontSize:10, color:C.textLight, fontWeight:600, textTransform:"uppercase", letterSpacing:"1px" }}>Comisión %</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {Object.entries(comisiones).map(([canal, pct], i, arr) => (
+                    <tr key={canal} style={{ borderBottom: i < arr.length-1 ? `1px solid ${C.border}` : "none" }}>
+                      <td style={{ padding:"9px 14px", fontSize:13, color:C.text, fontWeight:500 }}>{canal}</td>
+                      <td style={{ padding:"7px 14px", textAlign:"right" }}>
+                        <div style={{ display:"flex", alignItems:"center", justifyContent:"flex-end", gap:4 }}>
+                          <input type="number" min="0" max="100" step="0.5"
+                            value={pct}
+                            onChange={e => setComisiones(c => ({...c, [canal]: parseFloat(e.target.value)||0}))}
+                            style={{ width:60, padding:"5px 8px", borderRadius:6, border:`1px solid ${C.border}`, background:C.bg, color:C.text, fontSize:13, textAlign:"right", fontFamily:"'Plus Jakarta Sans',sans-serif", outline:"none" }}
+                          />
+                          <span style={{ fontSize:12, color:C.textMid, width:14 }}>%</span>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <button disabled={comisionesGuardando||comisionesOk} onClick={async()=>{
+              setComisionesGuardando(true);
+              await supabase.from("hoteles").update({ comisiones_canales: comisiones }).eq("id", session.user.id);
+              setComisionesGuardando(false); setComisionesOk(true);
+              onGuardado(true);
+              setTimeout(()=>{ setComisionesOk(false); }, 1500);
+            }} style={{ width:"100%", padding:"11px", borderRadius:9, border:"none", background:comisionesOk?"#059669":C.accent, color:"#fff", fontSize:14, fontWeight:700, cursor:comisionesGuardando||comisionesOk?"not-allowed":"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", transition:"background 0.2s" }}>
+              {comisionesGuardando ? "Guardando..." : comisionesOk ? "✓ Guardado" : "Guardar comisiones"}
+            </button>
           </div>
         )}
 
@@ -9586,7 +9725,7 @@ export default function App() {
     const [{ data: produccion }, { data: presupuesto }, { data: hotelData }, { data: gruposData }] = await Promise.all([
       supabase.from("produccion_diaria").select("*").eq("hotel_id", session.user.id).order("fecha"),
       supabase.from("presupuesto").select("*").eq("hotel_id", session.user.id).order("mes"),
-      supabase.from("hoteles").select("nombre, ciudad, habitaciones").eq("id", session.user.id).maybeSingle(),
+      supabase.from("hoteles").select("nombre, ciudad, habitaciones, comisiones_canales").eq("id", session.user.id).maybeSingle(),
       supabase.from("grupos_eventos").select("*").eq("hotel_id", session.user.id).order("fecha_inicio"),
     ]);
     // Pickup separado — carga en paralelo para máxima velocidad
