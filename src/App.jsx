@@ -5495,7 +5495,7 @@ function GruposView({ datos, onRecargar, onVolverHeatmap, subVistaExt, onCambiar
               </div>
               <div style={{ background:"#f5f5f5", borderRadius:8, padding:"14px 18px", border:"1.5px solid #111111", minWidth:220, boxShadow:"0 1px 4px rgba(0,0,0,0.06)" }}>
                 <p style={{ fontSize:11, color:C.text, fontWeight:700, textTransform:"uppercase", letterSpacing:"1.5px", marginBottom:6 }}>% sobre ingresos totales del mes</p>
-                <p style={{ fontSize:22, fontWeight:700, color: pct!=null ? "#1A7A3C" : C.textLight, fontFamily:"'Plus Jakarta Sans',sans-serif", letterSpacing:"-1px" }}>
+                <p style={{ fontSize:22, fontWeight:700, color: pct!=null ? C.text : C.textLight, fontFamily:"'Plus Jakarta Sans',sans-serif", letterSpacing:"-1px" }}>
                   {pct != null ? `${pct.toFixed(1)}%` : "—"}
                 </p>
               </div>
