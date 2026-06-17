@@ -2803,7 +2803,7 @@ function PickupView({ datos, onGuardado }) {
   const refDia = hayHoy ? hoyISO : (ultDia >= ayerStr ? ultDia : "");
   const reservasUltDia = refDia ? pickupEntries.filter(e => !esGrupoEvento(e) && String(e.fecha_pickup||"").slice(0,10) === refDia && (e.estado||"confirmada") !== "cancelada").sort((a,b)=>(a.fecha_llegada||"").localeCompare(b.fecha_llegada||"")) : [];
   const ultDiaTotal = reservasUltDia.reduce((a,e) => a + (e.num_reservas||1), 0);
-  const tituloBloque = refDia === hoyISO ? "Reservas captadas hoy" : "Reservas captadas ayer";
+  const tituloBloque = refDia === hoyISO ? "Reservas de hoy" : "Reservas de ayer";
   const fmtDatePU = d => { if (!d) return "—"; const p=d.split("-"); return p.length===3?`${p[2]}/${p[1]}/${p[0]}`:d; };
 
   const reservasAyer = pickupEntries.filter(e => String(e.fecha_pickup||"").slice(0,10) === ayerStr);
@@ -3352,94 +3352,6 @@ function PickupView({ datos, onGuardado }) {
         })()}
       </Card>
 
-      {/* Selector año */}
-      <div style={{ display:"flex", justifyContent:"flex-end" }}>
-        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-          <button
-            onClick={()=>setAnioGuardado(aniosDisp[Math.max(0,aniosDisp.indexOf(anio)-1)])}
-            disabled={aniosDisp.indexOf(anio)===0}
-            style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, width:28, height:28, cursor: aniosDisp.indexOf(anio)===0?"default":"pointer", fontSize:15, color: aniosDisp.indexOf(anio)===0?C.border:C.textMid, display:"flex", alignItems:"center", justifyContent:"center" }}>‹</button>
-          <span style={{ fontWeight:700, fontSize:16, color:C.text, minWidth:44, textAlign:"center", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>{anio}</span>
-          <button
-            onClick={()=>setAnioGuardado(aniosDisp[Math.min(aniosDisp.length-1,aniosDisp.indexOf(anio)+1)])}
-            disabled={aniosDisp.indexOf(anio)===aniosDisp.length-1}
-            style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, width:28, height:28, cursor: aniosDisp.indexOf(anio)===aniosDisp.length-1?"default":"pointer", fontSize:15, color: aniosDisp.indexOf(anio)===aniosDisp.length-1?C.border:C.textMid, display:"flex", alignItems:"center", justifyContent:"center" }}>›</button>
-        </div>
-      </div>
-
-      {/* PICKUP TRIMESTRAL — ancho completo */}
-      <Card style={{ position:"relative" }}>
-        <div ref={trimTipRef} style={{ position:"fixed", display: trimTip ? "block" : "none", background:"#f5f5f5", border:"1.5px solid #111111", borderRadius:8, padding:"12px 16px", boxShadow:"0 1px 4px rgba(0,0,0,0.06)", pointerEvents:"none", zIndex:9999, minWidth:148 }}>
-          {trimTip && <>
-            <p style={{ color:"#111111", fontSize:10, fontWeight:700, marginBottom:6, textTransform:"uppercase", letterSpacing:"1px" }}>{trimTip.mes}</p>
-            {trimTip.otb  != null && <div style={{ display:"flex", alignItems:"center", gap:7, margin:"2px 0" }}><span style={{ width:8, height:8, borderRadius:2, background:COL_OTB, flexShrink:0, display:"inline-block", border:"1px solid rgba(0,0,0,0.15)" }}/><span style={{ color:"rgba(0,0,0,0.75)", fontSize:12 }}>{t("otb_actual")}: <span style={{ color:"#111111", fontWeight:700 }}>{trimTip.otb}</span></span></div>}
-            {trimTip.ppto != null && <div style={{ display:"flex", alignItems:"center", gap:7, margin:"2px 0" }}><span style={{ width:8, height:8, borderRadius:2, background:COL_PPTO, flexShrink:0, display:"inline-block", border:"1px solid rgba(0,0,0,0.15)" }}/><span style={{ color:"rgba(0,0,0,0.75)", fontSize:12 }}>{t("nav_budget")}: <span style={{ color:"#111111", fontWeight:700 }}>{trimTip.ppto}</span></span></div>}
-            {trimTip.ly   != null && <div style={{ display:"flex", alignItems:"center", gap:7, margin:"2px 0" }}><span style={{ width:8, height:8, borderRadius:2, background:COL_LY,  flexShrink:0, display:"inline-block", border:"1px solid rgba(0,0,0,0.15)" }}/><span style={{ color:"rgba(0,0,0,0.75)", fontSize:12 }}>{t("anio_anterior")}: <span style={{ color:"#111111", fontWeight:700 }}>{trimTip.ly}</span></span></div>}
-          </>}
-        </div>
-        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:24, flexWrap:"wrap", gap:8 }}>
-          <div style={{ display:"flex", gap:20, flexWrap:"wrap" }}>
-            {[[t("otb_actual"), COL_OTB], [t("nav_budget"), COL_PPTO], [t("anio_anterior"), COL_LY]].map(([label, color]) => (
-              <div key={label} style={{ display:"flex", alignItems:"center", gap:7 }}>
-                <div style={{ width:14, height:14, background:color, borderRadius:2 }} />
-                <span style={{ fontSize:12, fontWeight:600, color:C.textMid }}>{label}</span>
-              </div>
-            ))}
-          </div>
-          {trimSel !== null && (
-            <button onClick={() => setTrimSel(null)}
-              style={{ display:"flex", alignItems:"center", gap:6, background:"none", border:`1px solid ${C.border}`, borderRadius:6, padding:"4px 12px", cursor:"pointer", fontSize:11, color:C.textMid, fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
-              ← Volver
-            </button>
-          )}
-        </div>
-
-        {!hayDatos ? (
-          <div style={{ textAlign:"center", padding:"60px 0", color:C.textLight, fontSize:13 }}>
-            {t("sin_datos_pickup")}
-          </div>
-        ) : (() => {
-          const vista = trimSel !== null ? datosDetalle : datosGrafica;
-          const vMax  = Math.ceil(Math.max(...vista.map(d => Math.max(d.otb||0, d.ppto||0, d.ly||0)), 10) * 1.15 / 10) * 10;
-          const bH    = (val) => val && vMax > 0 ? `${Math.min((val/vMax)*100, 100)}%` : "0%";
-          return (
-          <div style={{ display:"flex", gap:0, alignItems:"flex-end", height:340, position:"relative" }}>
-            {[0,25,50,75,100].map(p => (
-              <div key={p} style={{ position:"absolute", left:0, right:0, bottom:`${p}%`, display:"flex", alignItems:"center" }}>
-                <span style={{ fontSize:10, color:C.textLight, lineHeight:1, width:36, flexShrink:0 }}>{Math.round(vMax * p / 100)}</span>
-              </div>
-            ))}
-            <div style={{ display:"flex", flex:1, alignItems:"flex-end", height:"100%", paddingLeft:40, gap: trimSel !== null ? 48 : 32 }}>
-              {vista.map((d, i) => (
-                <div key={i}
-                  onClick={() => trimSel === null && setTrimSel(i)}
-                  onMouseEnter={(e) => { setTrimTip(d); if (trimTipRef.current) { trimTipRef.current.style.top=`${e.clientY-10}px`; trimTipRef.current.style.left=`${e.clientX+14}px`; } }}
-                  onMouseMove={(e)  => { if (trimTipRef.current) { trimTipRef.current.style.top=`${e.clientY-10}px`; trimTipRef.current.style.left=`${e.clientX+14}px`; } }}
-                  onMouseLeave={() => setTrimTip(null)}
-                  style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", height:"100%", justifyContent:"flex-end", gap:2, cursor: trimSel === null ? "pointer" : "default" }}>
-                  <div style={{ display:"flex", alignItems:"flex-end", gap:3, width:"100%", height:"calc(100% - 22px)", justifyContent:"center" }}>
-                    <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"flex-end", height:"100%" }}>
-                      {d.otb > 0 && <span style={{ fontSize:9, fontWeight:700, color:COL_OTB, marginBottom:2, lineHeight:1 }}>{d.otb}</span>}
-                      <div style={{ width:"100%", height:bH(d.otb), background:`linear-gradient(to top, ${COL_OTB}88, ${COL_OTB})`, borderRadius:"4px 4px 0 0", minHeight:d.otb>0?4:0, transition:"height 0.3s" }} />
-                    </div>
-                    <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"flex-end", height:"100%" }}>
-                      {d.ppto > 0 && <span style={{ fontSize:9, fontWeight:700, color:COL_PPTO, marginBottom:2, lineHeight:1 }}>{d.ppto}</span>}
-                      <div style={{ width:"100%", height:bH(d.ppto), background:`linear-gradient(to top, ${COL_PPTO}88, ${COL_PPTO})`, borderRadius:"4px 4px 0 0", minHeight:d.ppto>0?4:0, transition:"height 0.3s" }} />
-                    </div>
-                    <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"flex-end", height:"100%" }}>
-                      {d.ly > 0 && <span style={{ fontSize:9, fontWeight:700, color:COL_LY, marginBottom:2, lineHeight:1 }}>{d.ly}</span>}
-                      <div style={{ width:"100%", height:bH(d.ly), background:`linear-gradient(to top, ${COL_LY}88, ${COL_LY})`, borderRadius:"4px 4px 0 0", minHeight:d.ly>0?4:0, transition:"height 0.3s" }} />
-                    </div>
-                  </div>
-                  <span style={{ fontSize:11, fontWeight:700, marginTop:6, color: trimSel === null ? COL_OTB : C.textLight }}>{d.mes}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-          );
-        })()}
-      </Card>
-
       {/* ── FECHAS CALIENTES + CANCELACIONES | PRECIO MEDIO CANAL ── */}
       <div style={{ display:"grid", gridTemplateColumns:"280px 1fr", gap:16, alignItems:"start" }}>
 
@@ -3666,6 +3578,94 @@ function PickupView({ datos, onGuardado }) {
           })()}
         </Card>{/* fin col derecha */}
       </div>{/* fin grid 2 cols */}
+
+      {/* Selector año */}
+      <div style={{ display:"flex", justifyContent:"flex-end" }}>
+        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+          <button
+            onClick={()=>setAnioGuardado(aniosDisp[Math.max(0,aniosDisp.indexOf(anio)-1)])}
+            disabled={aniosDisp.indexOf(anio)===0}
+            style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, width:28, height:28, cursor: aniosDisp.indexOf(anio)===0?"default":"pointer", fontSize:15, color: aniosDisp.indexOf(anio)===0?C.border:C.textMid, display:"flex", alignItems:"center", justifyContent:"center" }}>‹</button>
+          <span style={{ fontWeight:700, fontSize:16, color:C.text, minWidth:44, textAlign:"center", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>{anio}</span>
+          <button
+            onClick={()=>setAnioGuardado(aniosDisp[Math.min(aniosDisp.length-1,aniosDisp.indexOf(anio)+1)])}
+            disabled={aniosDisp.indexOf(anio)===aniosDisp.length-1}
+            style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, width:28, height:28, cursor: aniosDisp.indexOf(anio)===aniosDisp.length-1?"default":"pointer", fontSize:15, color: aniosDisp.indexOf(anio)===aniosDisp.length-1?C.border:C.textMid, display:"flex", alignItems:"center", justifyContent:"center" }}>›</button>
+        </div>
+      </div>
+
+      {/* PICKUP TRIMESTRAL — ancho completo */}
+      <Card style={{ position:"relative" }}>
+        <div ref={trimTipRef} style={{ position:"fixed", display: trimTip ? "block" : "none", background:"#f5f5f5", border:"1.5px solid #111111", borderRadius:8, padding:"12px 16px", boxShadow:"0 1px 4px rgba(0,0,0,0.06)", pointerEvents:"none", zIndex:9999, minWidth:148 }}>
+          {trimTip && <>
+            <p style={{ color:"#111111", fontSize:10, fontWeight:700, marginBottom:6, textTransform:"uppercase", letterSpacing:"1px" }}>{trimTip.mes}</p>
+            {trimTip.otb  != null && <div style={{ display:"flex", alignItems:"center", gap:7, margin:"2px 0" }}><span style={{ width:8, height:8, borderRadius:2, background:COL_OTB, flexShrink:0, display:"inline-block", border:"1px solid rgba(0,0,0,0.15)" }}/><span style={{ color:"rgba(0,0,0,0.75)", fontSize:12 }}>{t("otb_actual")}: <span style={{ color:"#111111", fontWeight:700 }}>{trimTip.otb}</span></span></div>}
+            {trimTip.ppto != null && <div style={{ display:"flex", alignItems:"center", gap:7, margin:"2px 0" }}><span style={{ width:8, height:8, borderRadius:2, background:COL_PPTO, flexShrink:0, display:"inline-block", border:"1px solid rgba(0,0,0,0.15)" }}/><span style={{ color:"rgba(0,0,0,0.75)", fontSize:12 }}>{t("nav_budget")}: <span style={{ color:"#111111", fontWeight:700 }}>{trimTip.ppto}</span></span></div>}
+            {trimTip.ly   != null && <div style={{ display:"flex", alignItems:"center", gap:7, margin:"2px 0" }}><span style={{ width:8, height:8, borderRadius:2, background:COL_LY,  flexShrink:0, display:"inline-block", border:"1px solid rgba(0,0,0,0.15)" }}/><span style={{ color:"rgba(0,0,0,0.75)", fontSize:12 }}>{t("anio_anterior")}: <span style={{ color:"#111111", fontWeight:700 }}>{trimTip.ly}</span></span></div>}
+          </>}
+        </div>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:24, flexWrap:"wrap", gap:8 }}>
+          <div style={{ display:"flex", gap:20, flexWrap:"wrap" }}>
+            {[[t("otb_actual"), COL_OTB], [t("nav_budget"), COL_PPTO], [t("anio_anterior"), COL_LY]].map(([label, color]) => (
+              <div key={label} style={{ display:"flex", alignItems:"center", gap:7 }}>
+                <div style={{ width:14, height:14, background:color, borderRadius:2 }} />
+                <span style={{ fontSize:12, fontWeight:600, color:C.textMid }}>{label}</span>
+              </div>
+            ))}
+          </div>
+          {trimSel !== null && (
+            <button onClick={() => setTrimSel(null)}
+              style={{ display:"flex", alignItems:"center", gap:6, background:"none", border:`1px solid ${C.border}`, borderRadius:6, padding:"4px 12px", cursor:"pointer", fontSize:11, color:C.textMid, fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+              ← Volver
+            </button>
+          )}
+        </div>
+
+        {!hayDatos ? (
+          <div style={{ textAlign:"center", padding:"60px 0", color:C.textLight, fontSize:13 }}>
+            {t("sin_datos_pickup")}
+          </div>
+        ) : (() => {
+          const vista = trimSel !== null ? datosDetalle : datosGrafica;
+          const vMax  = Math.ceil(Math.max(...vista.map(d => Math.max(d.otb||0, d.ppto||0, d.ly||0)), 10) * 1.15 / 10) * 10;
+          const bH    = (val) => val && vMax > 0 ? `${Math.min((val/vMax)*100, 100)}%` : "0%";
+          return (
+          <div style={{ display:"flex", gap:0, alignItems:"flex-end", height:340, position:"relative" }}>
+            {[0,25,50,75,100].map(p => (
+              <div key={p} style={{ position:"absolute", left:0, right:0, bottom:`${p}%`, display:"flex", alignItems:"center" }}>
+                <span style={{ fontSize:10, color:C.textLight, lineHeight:1, width:36, flexShrink:0 }}>{Math.round(vMax * p / 100)}</span>
+              </div>
+            ))}
+            <div style={{ display:"flex", flex:1, alignItems:"flex-end", height:"100%", paddingLeft:40, gap: trimSel !== null ? 48 : 32 }}>
+              {vista.map((d, i) => (
+                <div key={i}
+                  onClick={() => trimSel === null && setTrimSel(i)}
+                  onMouseEnter={(e) => { setTrimTip(d); if (trimTipRef.current) { trimTipRef.current.style.top=`${e.clientY-10}px`; trimTipRef.current.style.left=`${e.clientX+14}px`; } }}
+                  onMouseMove={(e)  => { if (trimTipRef.current) { trimTipRef.current.style.top=`${e.clientY-10}px`; trimTipRef.current.style.left=`${e.clientX+14}px`; } }}
+                  onMouseLeave={() => setTrimTip(null)}
+                  style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", height:"100%", justifyContent:"flex-end", gap:2, cursor: trimSel === null ? "pointer" : "default" }}>
+                  <div style={{ display:"flex", alignItems:"flex-end", gap:3, width:"100%", height:"calc(100% - 22px)", justifyContent:"center" }}>
+                    <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"flex-end", height:"100%" }}>
+                      {d.otb > 0 && <span style={{ fontSize:9, fontWeight:700, color:COL_OTB, marginBottom:2, lineHeight:1 }}>{d.otb}</span>}
+                      <div style={{ width:"100%", height:bH(d.otb), background:`linear-gradient(to top, ${COL_OTB}88, ${COL_OTB})`, borderRadius:"4px 4px 0 0", minHeight:d.otb>0?4:0, transition:"height 0.3s" }} />
+                    </div>
+                    <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"flex-end", height:"100%" }}>
+                      {d.ppto > 0 && <span style={{ fontSize:9, fontWeight:700, color:COL_PPTO, marginBottom:2, lineHeight:1 }}>{d.ppto}</span>}
+                      <div style={{ width:"100%", height:bH(d.ppto), background:`linear-gradient(to top, ${COL_PPTO}88, ${COL_PPTO})`, borderRadius:"4px 4px 0 0", minHeight:d.ppto>0?4:0, transition:"height 0.3s" }} />
+                    </div>
+                    <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"flex-end", height:"100%" }}>
+                      {d.ly > 0 && <span style={{ fontSize:9, fontWeight:700, color:COL_LY, marginBottom:2, lineHeight:1 }}>{d.ly}</span>}
+                      <div style={{ width:"100%", height:bH(d.ly), background:`linear-gradient(to top, ${COL_LY}88, ${COL_LY})`, borderRadius:"4px 4px 0 0", minHeight:d.ly>0?4:0, transition:"height 0.3s" }} />
+                    </div>
+                  </div>
+                  <span style={{ fontSize:11, fontWeight:700, marginTop:6, color: trimSel === null ? COL_OTB : C.textLight }}>{d.mes}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          );
+        })()}
+      </Card>
 
       {/* ── GASTOS DE DISTRIBUCIÓN ── */}
       {(() => {
