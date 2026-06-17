@@ -5121,7 +5121,7 @@ function GruposView({ datos, onRecargar, onVolverHeatmap, subVistaExt, onCambiar
       })()}
 
       {/* ── Pipeline de conversión ── */}
-      {subVista === "pipeline" && (() => {
+      {(subVista === "pipeline" || subVista === "revenue") && (() => {
         const hoy = new Date().toISOString().slice(0,10);
         const anioStr = String(anio);
 
@@ -5276,6 +5276,70 @@ function GruposView({ datos, onRecargar, onVolverHeatmap, subVistaExt, onCambiar
               </Card>
 
             </div>
+
+            {/* ── Revenue por categoría (mensual) ── */}
+            {(() => {
+              const datosMesRev = produccion.filter(d => d.fecha.startsWith(mesStr));
+              const totalRevProd = datosMesRev.reduce((a,d) => a+(d.revenue_total||0), 0);
+              const confGrupos  = confirmados.filter(g => g.categoria !== "evento");
+              const confEventos = confirmados.filter(g => g.categoria === "evento");
+              const revGrupos   = confGrupos.reduce((a,g)  => a+calcRevTotal(g), 0);
+              const revEventos  = confEventos.reduce((a,g) => a+calcRevTotal(g), 0);
+              const revSalas    = confGrupos.reduce((a,g)  => a+(g.revenue_sala||0), 0)
+                                + confEventos.reduce((a,g) => a+(g.revenue_sala||0), 0);
+              const revSeccion  = revGrupos + revEventos + revSalas;
+              const pct = totalRevProd > 0 ? (revSeccion / totalRevProd * 100) : null;
+              const filas = [
+                { label:"Grupos",  rev:revGrupos,  count:confGrupos.length  },
+                { label:"Eventos", rev:revEventos, count:confEventos.length },
+                { label:"Salas",   rev:revSalas,   count:null               },
+              ];
+              return (
+                <Card>
+                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20 }}>
+                    <p style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontWeight:700, fontSize:16, color:C.text }}>
+                      Revenue confirmado — {MESES_FULL[mes]} {anio}
+                    </p>
+                    <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                      {(() => {
+                        const prev = () => { if(mes===0){setMes(11);setAnio(a=>a-1);}else{setMes(m=>m-1);} };
+                        const next = () => { if(mes===11){setMes(0);setAnio(a=>a+1);}else{setMes(m=>m+1);} };
+                        const btn = { background:"none", border:`1.5px solid ${C.border}`, borderRadius:7, width:30, height:30, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", fontSize:15, color:C.text, fontWeight:700 };
+                        return (<><button onClick={prev} style={btn}>‹</button><button onClick={next} style={btn}>›</button></>);
+                      })()}
+                    </div>
+                  </div>
+                  <table style={{ width:"100%", borderCollapse:"collapse", fontSize:14 }}>
+                    <thead>
+                      <tr>
+                        {["Categoría","Confirmados","Revenue confirmado","% del total mes"].map(h => (
+                          <th key={h} style={{ padding:"7px 14px", textAlign:h==="Revenue confirmado"||h==="% del total mes"?"right":"left", fontSize:10, fontWeight:600, color:C.textLight, textTransform:"uppercase", letterSpacing:"1px", borderBottom:`2px solid ${C.border}`, whiteSpace:"nowrap" }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filas.map(f => {
+                        const pctFila = totalRevProd > 0 ? f.rev / totalRevProd * 100 : 0;
+                        return (
+                          <tr key={f.label} style={{ borderBottom:`1px solid ${C.border}` }}>
+                            <td style={{ padding:"12px 14px", fontWeight:600, color:C.text }}>{f.label}</td>
+                            <td style={{ padding:"12px 14px", color:C.textMid }}>{f.count != null ? f.count : "—"}</td>
+                            <td style={{ padding:"12px 14px", fontWeight:700, color:C.text, textAlign:"right" }}>€{Math.round(f.rev).toLocaleString("es-ES")}</td>
+                            <td style={{ padding:"12px 14px", textAlign:"right", fontWeight:700, color:C.textMid }}>{totalRevProd > 0 ? `${pctFila.toFixed(1)}%` : "—"}</td>
+                          </tr>
+                        );
+                      })}
+                      <tr style={{ background:C.bg }}>
+                        <td style={{ padding:"12px 14px", fontWeight:700, color:C.text }} colSpan={2}>Total</td>
+                        <td style={{ padding:"12px 14px", fontWeight:800, color:"#1A7A3C", textAlign:"right", fontSize:15 }}>€{Math.round(revSeccion).toLocaleString("es-ES")}</td>
+                        <td style={{ padding:"12px 14px", fontWeight:800, color:"#1A7A3C", textAlign:"right" }}>{pct!=null?`${pct.toFixed(1)}%`:"—"}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </Card>
+              );
+            })()}
+
           </div>
         );
       })()}
@@ -5446,87 +5510,6 @@ function GruposView({ datos, onRecargar, onVolverHeatmap, subVistaExt, onCambiar
         );
       })()}
 
-      {/* ── Revenue ── */}
-      {subVista === "revenue" && (() => {
-        const datosMesRev = produccion.filter(d => d.fecha.startsWith(mesStr));
-        const totalRevProd = datosMesRev.reduce((a,d) => a+(d.revenue_total||0), 0);
-
-        const confGrupos  = confirmados.filter(g => g.categoria !== "evento");
-        const confEventos = confirmados.filter(g => g.categoria === "evento");
-        const revGrupos   = confGrupos.reduce((a,g)  => a+calcRevTotal(g), 0);
-        const revEventos  = confEventos.reduce((a,g) => a+calcRevTotal(g), 0);
-        const revSalas    = confGrupos.reduce((a,g)  => a+(g.revenue_sala||0), 0)
-                          + confEventos.reduce((a,g) => a+(g.revenue_sala||0), 0);
-        const revSeccion  = revGrupos + revEventos + revSalas;
-        const pct = totalRevProd > 0 ? (revSeccion / totalRevProd * 100) : null;
-
-        const filas = [
-          { label:"Grupos",  color:"#2B7EC1", bg:"#EBF4FC", rev:revGrupos,  count:confGrupos.length  },
-          { label:"Eventos", color:"#E85D04", bg:"#FEF0E7", rev:revEventos, count:confEventos.length },
-          { label:"Salas",   color:"#7C3AED", bg:"#F3EFFE", rev:revSalas,   count:null               },
-        ];
-
-        return (
-          <Card>
-            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20 }}>
-              <div style={{ display:"flex", alignItems:"baseline", gap:10 }}>
-                <p style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontWeight:700, fontSize:18, color:C.text }}>Revenue confirmado</p>
-                <p style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontWeight:700, fontSize:18, color:C.textLight }}>Grupos · Eventos · Salas — {t("meses_full")[mes]} {anio}</p>
-              </div>
-              <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-                {(() => {
-                  const prev = () => { if(mes===0){setMes(11);setAnio(a=>a-1);}else{setMes(m=>m-1);} };
-                  const next = () => { if(mes===11){setMes(0);setAnio(a=>a+1);}else{setMes(m=>m+1);} };
-                  const btn = { background:"none", border:`1.5px solid ${C.border}`, borderRadius:7, width:30, height:30, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", fontSize:15, color:C.text, fontWeight:700 };
-                  return (<>
-                    <button onClick={prev} style={btn}>‹</button>
-                    <span style={{ fontSize:13, fontWeight:600, color:C.text, fontFamily:"'Plus Jakarta Sans',sans-serif", minWidth:110, textAlign:"center" }}>{MESES_FULL[mes]} {anio}</span>
-                    <button onClick={next} style={btn}>›</button>
-                  </>);
-                })()}
-              </div>
-            </div>
-
-            {/* Tabla desglose */}
-            <table style={{ width:"100%", borderCollapse:"collapse", fontSize:14 }}>
-              <thead>
-                <tr>
-                  {["Categoría","Confirmados","Revenue confirmado","% del total mes"].map(h => (
-                    <th key={h} style={{ padding:"7px 14px", textAlign: h==="Revenue confirmado"||h==="% del total mes" ? "right" : "left", fontSize:10, fontWeight:600, color:C.textLight, textTransform:"uppercase", letterSpacing:"1px", borderBottom:`2px solid ${C.border}`, whiteSpace:"nowrap" }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {filas.map(f => {
-                  const pctFila = totalRevProd > 0 ? f.rev / totalRevProd * 100 : 0;
-                  return (
-                    <tr key={f.label} style={{ borderBottom:`1px solid ${C.border}` }}>
-                      <td style={{ padding:"12px 14px" }}>
-                        <span style={{ fontWeight:600, color:C.text }}>{f.label}</span>
-                      </td>
-                      <td style={{ padding:"12px 14px", color:C.textMid }}>
-                        {f.count != null ? f.count : "—"}
-                      </td>
-                      <td style={{ padding:"12px 14px", fontWeight:700, color:C.text, textAlign:"right" }}>
-                        €{Math.round(f.rev).toLocaleString("es-ES")}
-                      </td>
-                      <td style={{ padding:"12px 14px", textAlign:"right", fontWeight:700, color:C.textMid }}>
-                        {totalRevProd > 0 ? `${pctFila.toFixed(1)}%` : "—"}
-                      </td>
-                    </tr>
-                  );
-                })}
-                {/* Total row */}
-                <tr style={{ background:C.bg }}>
-                  <td style={{ padding:"12px 14px", fontWeight:700, color:C.text }} colSpan={2}>Total</td>
-                  <td style={{ padding:"12px 14px", fontWeight:800, color:"#1A7A3C", textAlign:"right", fontSize:15 }}>€{Math.round(revSeccion).toLocaleString("es-ES")}</td>
-                  <td style={{ padding:"12px 14px", fontWeight:800, color:"#1A7A3C", textAlign:"right" }}>{pct!=null?`${pct.toFixed(1)}%`:"—"}</td>
-                </tr>
-              </tbody>
-            </table>
-          </Card>
-        );
-      })()}
 
       {/* ── PANEL DETALLE EVENTO (desde calendario) ── */}
       {detalleGrupo !== null && (

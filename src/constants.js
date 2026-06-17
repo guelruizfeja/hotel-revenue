@@ -46,6 +46,5 @@ export const GRUPOS_SUB = [
   { key: "pipeline", label: "Resumen" },
   { key: "grupos",   label: "Grupos" },
   { key: "eventos",  label: "Eventos" },
-  { key: "revenue",  label: "Revenue" },
   { key: "salas",    label: "Gestión de salas" },
 ];
