@@ -3219,8 +3219,8 @@ function PickupView({ datos, onGuardado }) {
           const detalleEntries = pickupEntries.filter(e =>
             !esGrupoEvento(e) &&
             (e.estado||"confirmada") !== "cancelada" &&
-            [hoyISO, ayerStr].includes(String(e.fecha_pickup||"").slice(0,10))
-          ).sort((a,b) => (b.fecha_pickup||"").localeCompare(a.fecha_pickup||"") || (a.fecha_llegada||"").localeCompare(b.fecha_llegada||""));
+            String(e.fecha_pickup||"").slice(0,10) === refDia
+          ).sort((a,b) => (a.fecha_llegada||"").localeCompare(b.fecha_llegada||""));
           if (detalleEntries.length === 0) return null;
           const getSalida = e => {
             if (e.fecha_salida) return String(e.fecha_salida).slice(0,10);
@@ -3251,7 +3251,7 @@ function PickupView({ datos, onGuardado }) {
                     const salida = getSalida(e);
                     return (
                       <tr key={i} style={{ borderBottom: i < detalleEntries.length-1 ? `1px solid ${C.border}` : "none", background: i%2===0 ? "transparent" : C.bg }}>
-                        <td style={{ ...tdS, color:C.textLight, fontVariantNumeric:"tabular-nums" }}>{e.numero_reserva || "—"}</td>
+                        <td style={{ ...tdS, color:C.textLight, fontVariantNumeric:"tabular-nums" }}>{e.numero_reserva ?? (i + 1)}</td>
                         <td style={{ ...tdS, fontWeight:500 }}>{e.canal || "—"}</td>
                         <td style={tdS}>{fmtDatePU(String(e.fecha_llegada||"").slice(0,10))}</td>
                         <td style={{ ...tdS, color:C.textMid }}>{salida ? fmtDatePU(salida) : "—"}</td>
