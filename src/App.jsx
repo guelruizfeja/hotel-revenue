@@ -3238,6 +3238,7 @@ function PickupView({ datos, onGuardado }) {
               <table style={{ width:"100%", borderCollapse:"collapse" }}>
                 <thead><tr style={{ background:C.bg }}>
                   <th style={thS}>Nº</th>
+                  <th style={thS}>Creación</th>
                   <th style={thS}>Canal</th>
                   <th style={thS}>Llegada</th>
                   <th style={thS}>Salida</th>
@@ -3251,7 +3252,8 @@ function PickupView({ datos, onGuardado }) {
                     const salida = getSalida(e);
                     return (
                       <tr key={i} style={{ borderBottom: i < detalleEntries.length-1 ? `1px solid ${C.border}` : "none", background: i%2===0 ? "transparent" : C.bg }}>
-                        <td style={{ ...tdS, color:C.textLight, fontVariantNumeric:"tabular-nums" }}>{e.numero_reserva ?? (i + 1)}</td>
+                        <td style={{ ...tdS, color:C.textLight, fontVariantNumeric:"tabular-nums" }}>{e.numero_reserva ?? "—"}</td>
+                        <td style={{ ...tdS, color:C.textMid }}>{fmtDatePU(String(e.fecha_pickup||"").slice(0,10))}</td>
                         <td style={{ ...tdS, fontWeight:500 }}>{e.canal || "—"}</td>
                         <td style={tdS}>{fmtDatePU(String(e.fecha_llegada||"").slice(0,10))}</td>
                         <td style={{ ...tdS, color:C.textMid }}>{salida ? fmtDatePU(salida) : "—"}</td>
