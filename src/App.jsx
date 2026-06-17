@@ -1042,44 +1042,84 @@ function KpiModal({ kpi, datos, mes, anio, onClose }) {
   );
 }
 
+const KPI_HELP = {
+  "Ocupación":       { formula: "Hab. ocupadas ÷ Hab. disponibles × 100", desc: "De cada 10 habitaciones que tienes, cuántas has vendido. Si está baja, te sobran habitaciones vacías. Si está muy alta y el precio es bajo, estás dejando dinero sobre la mesa." },
+  "ADR":             { formula: "Revenue habitaciones ÷ Hab. ocupadas", desc: "Lo que cobras de media por cada habitación que vendes. Si sube mientras la ocupación se mantiene, estás vendiendo mejor. Si baja, puede que estés tirando el precio para llenar." },
+  "RevPAR":          { formula: "Revenue habitaciones ÷ Hab. disponibles", desc: "Lo que ingresa cada habitación de tu hotel, esté vendida o no. Es el número que mejor resume si tu hotel va bien: sube cuando vendes más habitaciones o a mejor precio." },
+  "TRevPAR":         { formula: "Revenue total ÷ Hab. disponibles", desc: "Como el RevPAR, pero contando todo lo que genera el hotel: restaurante, eventos, extras… Si es muy superior al RevPAR, tienes fuentes de ingreso más allá de las habitaciones que funcionan bien." },
+  "Revenue Diario":  { formula: "Suma del revenue del día seleccionado", desc: "Todo lo que ha facturado el hotel ese día. Útil para comparar días concretos o detectar si un día puntual fue especialmente bueno o malo." },
+  "Revenue Mensual": { formula: "Suma acumulada desde el 1 del mes", desc: "Lo que llevas facturado en el mes hasta hoy. Compáralo con el presupuesto y con el mismo punto del año pasado para saber si el mes va por buen camino." },
+  "Revenue Total":   { formula: "Revenue hab. + F&B + otros ingresos", desc: "La facturación completa del período, sumando todos los departamentos. Es lo que entra en caja antes de costes." },
+};
+
 const KpiCard = React.memo(function KpiCard({ label, subtitle, value, changeLm, upLm, changeLy, upLy, i, onClick, accentColor }) {
   const kpiAccent = accentColor || C.accent;
   const pct = changeLm && changeLm !== "—" ? parseFloat(changeLm) : null;
   const isFlat = pct !== null && Math.abs(pct) < 1;
   const indicatorColor = pct === null ? null : isFlat ? "#B8860B" : upLm ? "#16a34a" : "#D32F2F";
   const indicatorIcon  = pct === null ? null : isFlat ? "—" : upLm ? "↑" : "↓";
+  const [hovered, setHovered] = React.useState(false);
+  const [helpOpen, setHelpOpen] = React.useState(false);
+  const wrapRef = React.useRef(null);
+  const help = KPI_HELP[label];
+
+  React.useEffect(() => {
+    if (!helpOpen) return;
+    const handler = e => { if (wrapRef.current && !wrapRef.current.contains(e.target)) setHelpOpen(false); };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [helpOpen]);
+
   return (
-    <div onClick={onClick} style={{
-      background: "#f5f5f5", border: `1.5px solid #111111`, borderRadius: 8,
-      padding: "14px 18px", animation: `fadeUp 0.5s ease ${i * 0.08}s both`,
-      position: "relative", overflow: "hidden",
-      boxShadow: "0 1px 4px rgba(0,0,0,0.06)", cursor: "pointer",
-      transition: "box-shadow 0.2s, transform 0.2s, border-color 0.2s, background 0.2s",
-      display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center",
-      height: "100%", boxSizing: "border-box",
-    }}
-    onMouseEnter={e=>{
-      e.currentTarget.style.boxShadow=`0 6px 24px rgba(0,0,0,0.18)`;
-      e.currentTarget.style.transform="translateY(-2px)";
-      e.currentTarget.style.borderColor="#111111";
-    }}
-    onMouseLeave={e=>{
-      e.currentTarget.style.boxShadow="0 1px 4px rgba(0,0,0,0.06)";
-      e.currentTarget.style.transform="translateY(0)";
-      e.currentTarget.style.borderColor="#111111";
-      e.currentTarget.style.background="#f5f5f5";
-    }}>
-      <p style={{ fontSize: 11, color: C.text, textTransform: "uppercase", letterSpacing: "1.5px", fontWeight: 700 }}>{label}</p>
-      {subtitle && <p style={{ fontSize: 9, color: C.textMid, marginTop: 1, letterSpacing: "0.5px", opacity: 0.7 }}>{subtitle}</p>}
-      <div style={{ position:"relative", margin:"5px 0 4px" }}>
-        <p style={{ textAlign:"center", fontSize:"clamp(18px,4vw,24px)", fontWeight:700, fontFamily:"'Plus Jakarta Sans', sans-serif", color:C.text, margin:0, letterSpacing:"-1px", lineHeight:1 }}>{value}</p>
-        {indicatorColor && (
-          <div style={{ position:"absolute", top:0, bottom:0, left:"calc(50% + 46px)", display:"flex", flexDirection:"column", justifyContent:"center", alignItems:"flex-start", gap:2 }}>
-            <span style={{ fontSize:13, fontWeight:800, color:indicatorColor, lineHeight:1, whiteSpace:"nowrap" }}>{indicatorIcon} <span style={{ fontSize:11, fontWeight:600 }}>{changeLm}</span></span>
-            <span style={{ fontSize:9, color:C.textLight, lineHeight:1 }}>vs LM</span>
-          </div>
+    <div ref={wrapRef} style={{ position:"relative", height:"100%", animation:`fadeUp 0.5s ease ${i * 0.08}s both` }}>
+      <div onClick={onClick} style={{
+        background: "#f5f5f5", border: `1.5px solid #111111`, borderRadius: 8,
+        padding: "14px 18px",
+        position: "relative", overflow: "hidden",
+        boxShadow: "0 1px 4px rgba(0,0,0,0.06)", cursor: "pointer",
+        transition: "box-shadow 0.2s, transform 0.2s, border-color 0.2s, background 0.2s",
+        display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center",
+        height: "100%", boxSizing: "border-box",
+      }}
+      onMouseEnter={e=>{
+        setHovered(true);
+        e.currentTarget.style.boxShadow=`0 6px 24px rgba(0,0,0,0.18)`;
+        e.currentTarget.style.transform="translateY(-2px)";
+        e.currentTarget.style.borderColor="#111111";
+      }}
+      onMouseLeave={e=>{
+        setHovered(false);
+        e.currentTarget.style.boxShadow="0 1px 4px rgba(0,0,0,0.06)";
+        e.currentTarget.style.transform="translateY(0)";
+        e.currentTarget.style.borderColor="#111111";
+        e.currentTarget.style.background="#f5f5f5";
+      }}>
+        <p style={{ fontSize: 11, color: C.text, textTransform: "uppercase", letterSpacing: "1.5px", fontWeight: 700 }}>{label}</p>
+        {subtitle && <p style={{ fontSize: 9, color: C.textMid, marginTop: 1, letterSpacing: "0.5px", opacity: 0.7 }}>{subtitle}</p>}
+        <div style={{ position:"relative", margin:"5px 0 4px" }}>
+          <p style={{ textAlign:"center", fontSize:"clamp(18px,4vw,24px)", fontWeight:700, fontFamily:"'Plus Jakarta Sans', sans-serif", color:C.text, margin:0, letterSpacing:"-1px", lineHeight:1 }}>{value}</p>
+          {indicatorColor && (
+            <div style={{ position:"absolute", top:0, bottom:0, left:"calc(50% + 46px)", display:"flex", flexDirection:"column", justifyContent:"center", alignItems:"flex-start", gap:2 }}>
+              <span style={{ fontSize:13, fontWeight:800, color:indicatorColor, lineHeight:1, whiteSpace:"nowrap" }}>{indicatorIcon} <span style={{ fontSize:11, fontWeight:600 }}>{changeLm}</span></span>
+              <span style={{ fontSize:9, color:C.textLight, lineHeight:1 }}>vs LM</span>
+            </div>
+          )}
+        </div>
+        {help && (hovered || helpOpen) && (
+          <button onClick={e=>{ e.stopPropagation(); setHelpOpen(o=>!o); }}
+            style={{ position:"absolute", top:7, right:7, width:17, height:17, borderRadius:"50%", border:"1.5px solid #aaa", background:"#fff", color:"#666", fontSize:10, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", padding:0, lineHeight:1, transition:"all 0.15s" }}
+            onMouseEnter={e=>{ e.currentTarget.style.background="#111"; e.currentTarget.style.color="#fff"; e.currentTarget.style.borderColor="#111"; }}
+            onMouseLeave={e=>{ e.currentTarget.style.background="#fff"; e.currentTarget.style.color="#666"; e.currentTarget.style.borderColor="#aaa"; }}
+          >?</button>
         )}
       </div>
+      {helpOpen && help && (
+        <div style={{ position:"absolute", bottom:"calc(100% + 8px)", left:0, right:0, background:"#fff", border:"1.5px solid #111", borderRadius:10, padding:"14px 16px", zIndex:200, boxShadow:"0 8px 24px rgba(0,0,0,0.13)", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+          <p style={{ fontSize:10, color:"#888", fontWeight:600, textTransform:"uppercase", letterSpacing:"1px", marginBottom:6 }}>Cómo se calcula</p>
+          <p style={{ fontSize:11, color:"#333", fontWeight:600, marginBottom:10, background:"#f5f5f5", padding:"6px 10px", borderRadius:6, fontFamily:"monospace" }}>{help.formula}</p>
+          <p style={{ fontSize:12, color:"#555", lineHeight:1.55, margin:0 }}>{help.desc}</p>
+        </div>
+      )}
     </div>
   );
 }, (prev, next) =>
