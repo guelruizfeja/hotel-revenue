@@ -1,4 +1,7 @@
-import React, { useState, useEffect, useRef, useMemo, useCallback, createContext, useContext } from "react";
+import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { LangContext, useT, TRANSLATIONS } from "./i18n";
+import { C, LOGO_B64, SALAS_FIJAS, dmy, MESES, MESES_CORTO, MESES_FULL, NET_HAB_FNB, NET_SALA, KPI_HELP, NAV, GRUPOS_SUB } from "./constants";
+import { buildHabEnCasaMap, calcHabEnCasa } from "./utils";
 import { supabase } from "./supabase";
 import {
   AreaChart, Area, BarChart, Bar, LineChart, Line, ComposedChart,
@@ -6,357 +9,6 @@ import {
   PieChart, Pie, Cell,
 } from "recharts";
 
-const LOGO_B64 = "/fastrev-logo.png";
-const SALAS_FIJAS = ["Salón Principal", "Sala de Reuniones", "Terraza"];
-const C = {
-  bg: "#FDFDFD", bgCard: "#FFFFFF", bgDeep: "#0A2540",
-  accent: "#004B87", accentLight: "#E8F0F9", accentDark: "#003366",
-  text: "#1A1A1A", textMid: "#555555", textLight: "#888888",
-  border: "#E0E0E0", green: "#009F4D", greenLight: "#E6F7EE",
-  red: "#D32F2F", redLight: "#FDECEA", blue: "#004B87",
-};
-
-const dmy = iso => { if (!iso) return "—"; const s = String(iso).slice(0,10); const [y,m,d] = s.split("-"); return `${d}/${m}/${y}`; };
-
-const LangContext = createContext("es");
-const useT = () => { const lang = useContext(LangContext); return (k) => (TRANSLATIONS[lang] || TRANSLATIONS.es)[k] ?? k; };
-const TRANSLATIONS = {
-  es: {
-    // Nav & topbar
-    nav_dashboard:"Dashboard", nav_pickup:"Reservas", nav_budget:"Forecast", nav_grupos:"Grupos/Eventos", nav_salas:"Salas", nav_gestion:"Gestión de datos",
-    importar:"Importar", mi_perfil:"Mi perfil", cerrar_sesion:"Cerrar sesión",
-    suscripcion:"Suscripción", extranets:"Extranets", informe_mensual:"Informe mensual",
-    conectado_como:"Conectado como", cargando:"Cargando...",
-    // Onboarding
-    ob_paso:"Paso", ob_de:"de", ob_omitir:"Omitir", ob_siguiente:"Siguiente →", ob_empezar:"¡Empezar!",
-    ob0_title:"Importa tus datos", ob0_text:"Descarga la plantilla Excel, rellénala con tus datos de producción y súbela aquí. En segundos tendrás el dashboard activo.",
-    ob1_title:"Dashboard", ob1_text:"Visualiza tus KPIs principales: RevPAR, ADR y ocupación comparados con el año anterior.",
-    ob2_title:"Pickup", ob2_text:"Analiza el ritmo de nuevas reservas día a día y detecta tendencias de cara al mes.",
-    ob3_title:"Forecast", ob3_text:"Compara producción real vs objetivo mensual y proyecta el cierre del año.",
-    ob4_title:"Grupos/Eventos", ob4_text:"Gestiona grupos y eventos: confirmados, tentativos y pipeline de negocio.",
-    // KPIs
-    kpi_ocupacion:"Ocupación", kpi_adr:"ADR", kpi_revpar:"RevPAR", kpi_trevpar:"TRevPAR",
-    kpi_rev_diario:"Revenue Diario", kpi_rev_mensual:"Revenue Mensual", kpi_rev_hab:"Rev. Hab.", kpi_rev_total:"Rev. Total",
-    sin_datos_prev:"Sin datos prev.", vs_mes_ant:"vs mes ant.", vs_anio_ant:"vs año ant.",
-    // Empty & loading
-    sin_datos:"Sin datos todavía", importa_excel:"Importa tu plantilla Excel para ver los datos aquí",
-    cargando_datos:"Cargando datos...", cargando_pickup:"Cargando pickup...",
-    // Months
-    meses_full:["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"],
-    meses_corto:["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"],
-    dias_semana:["L","M","X","J","V","S","D"],
-    dias_abrev:["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"],
-    // Dashboard
-    bienvenido:"Bienvenido", ocup_mensual:"Ocupación mensual", adr_ocupacion:"ADR, RevPAR & Ocupación",
-    ultimos_12m:"Últimos 12 meses", sin_datos_mes:"Sin datos para este mes",
-    adr_ocup_diaria:"ADR, RevPAR & Ocupación diaria", otb:"OTB",
-    // Table headers
-    th_anio:"Año", th_mes:"Mes", th_ocup:"Ocup.", th_adr:"ADR",
-    th_revpar:"RevPAR", th_trevpar:"TRevPAR", th_rev_hab:"Rev. Hab.", th_rev_total:"Rev. Total",
-    th_fecha:"Fecha", th_hab_ocup:"Hab. Ocup.", th_rev_day:"Rev. Total",
-    th_ocup_media:"Ocupación media", th_adr_medio:"ADR medio", th_revpar_medio:"RevPAR medio",
-    th_rev_hab_total:"Rev. Hab. total", detalle_diario:"Detalle diario",
-    dias_con_datos:"días con datos", total_mes:"TOTAL MES", volver:"← Volver",
-    // Pickup
-    reservas_ayer:"Reservas de ayer", reservas_captadas:"reservas captadas",
-    no_reservas_ayer:"No hay reservas registradas para ayer",
-    por_mes_llegada:"Por mes de llegada", por_canal:"Por canal", por_mes_afectado:"Por mes afectado",
-    cancelaciones_ayer:"Cancelaciones de ayer", cancelaciones:"cancelaciones",
-    sin_cancelaciones:"Sin cancelaciones ayer", cancel_abrev:"cancel.",
-    duracion_media:"Duración media", noches_reserva:"Noches por reserva confirmada",
-    noches_media:"noches media", precio_medio_reserva:"Precio medio reserva",
-    revenue_medio:"Revenue medio por reserva confirmada", precio_medio:"precio medio",
-    dia_pico:"Día pico", res_abrev:"res.",
-    fechas_calientes:"Fechas Calientes", sin_futuras:"Sin reservas futuras",
-    ventana_reserva:"Ventana de reserva", dias_label:"días",
-    este_mes_label:"Este mes", anio_ant_abrev:"Año ant.", variacion_label:"Variación",
-    demanda_debil:"↓ Señal de demanda débil", demanda_adelantada:"↑ Demanda adelantada",
-    analisis_desplazamiento:"Análisis de Desplazamiento",
-    contrib_grupo:"Contrib. grupo", coste_desplaz:"Coste desplaz.", valor_neto:"Valor neto",
-    adr_transient_ref:"ADR transient ref.", occ_hist_ly:"Occ. hist. LY",
-    adr_minimo_rentable:"ADR mínimo rentable", acepta_grupo:"✓ Aceptar", revisar_grupo:"⚠ Revisar",
-    sin_datos_ly:"Sin datos LY — usando ppto.", fuente_ppto:"fuente: ppto.",
-    // Budget
-    rev_real_ytd:"Revenue Real YTD", forecast_cierre_anio:"Forecast Cierre Año",
-    presupuesto_anio:"Presupuesto Año", detalle_mensual:"Detalle mensual",
-    th_adr_ppto:"ADR Ppto.", th_adr_real:"ADR Real", th_desv_adr:"Desv. ADR",
-    th_revpar_ppto:"RevPAR Ppto.", th_revpar_real:"RevPAR Real", th_desv_revpar:"Desv. RevPAR",
-    th_rev_ppto:"Rev. Ppto.", th_rev_real:"Rev. Real", th_desv_rev:"Desv. Rev.",
-    th_forecast:"Forecast Cierre", total_ytd:"TOTAL YTD", vs_ppto:"vs ppto",
-    confianza:"confianza", real_badge:"✓ Real",
-    // Grupos
-    nuevo_evento:"+ Nuevo evento", sin_eventos:"Sin grupos/eventos", rev_estimado:"Revenue estimado",
-    editar_evento:"Editar evento", nuevo_evento_title:"Nuevo evento",
-    nuevo_grupo_title:"Nuevo grupo", editar_grupo:"Editar grupo",
-    eliminar_grupo:"¿Eliminar este grupo?", eliminar_evento:"¿Eliminar este evento?",
-    form_hora_inicio:"Hora inicio", form_hora_fin:"Hora fin", form_sala_nombre:"Sala / Espacio",
-    form_servicio_incluido:"Servicio incluido",
-    vista_calendario:"Calendario", vista_lista:"Lista", vista_pipeline:"Resumen", vista_tabla:"Tabla",
-    rev_confirmado:"Revenue confirmado", rev_tentativo:"Revenue tentativo (50%)",
-    pipeline_cotizacion:"Pipeline en cotización", cancelados_perdidos:"Cancelados / Perdidos",
-    cat_corporativo:"Corporativo", cat_boda:"Boda / Social", cat_feria:"Feria / Congreso",
-    cat_deportivo:"Deportivo", cat_otros:"Otros",
-    estado_confirmado:"Confirmado", estado_cotizacion:"Cotizado", estado_cancelado:"Cancelado",
-    form_nombre:"Nombre del evento *", form_categoria:"Categoría", form_estado:"Estado",
-    form_segmento:"Segmento", seg_deportivo:"Deportivo", seg_negocio:"Negocio", seg_turistico:"Turístico", seg_congreso:"Congreso", seg_social:"Social", seg_otros:"Otros",
-    form_fecha_entrada:"Fecha entrada *", form_fecha_salida:"Fecha salida *", form_fecha_confirmacion:"Fecha confirmación",
-    form_habitaciones:"Habitaciones", form_adr:"ADR Grupo", form_fnb:"Revenue F&B",
-    form_sala:"Revenue Sala", form_notas:"Notas", form_motivo:"Motivo de pérdida",
-    form_guardar:"Guardar", form_cancelar:"Cancelar", form_eliminar:"Eliminar", guardando_btn:"Guardando...",
-    noche:"noche", noches:"noches", hab_abrev:"hab.",
-    // Importar
-    importar_title:"Importar datos", importar_sub:"Sube tu plantilla Excel de FastRev",
-    vaciar_datos:"Vaciar todos los datos importados", vaciar_confirm:"¿Vaciar todos los datos?",
-    vaciar_desc:"Se eliminarán producción, pickup y presupuesto. Esta acción no se puede deshacer.",
-    vaciando:"Vaciando...", si_vaciar:"Sí, vaciar todo",
-    haz_clic:"Haz clic para seleccionar el archivo", formato_xlsx:"Formato .xlsx · Plantilla FastRev",
-    importando_xlsx:"Al importar se reemplazarán los datos anteriores",
-    importado_ok:"¡Datos importados correctamente!", ver_dashboard:"Ver dashboard",
-    dias_produccion:"días de producción importados", reservas_pickup:"reservas de pickup importadas",
-    meses_presupuesto:"meses de presupuesto importados",
-    leyendo:"Leyendo archivo...", procesando:"Procesando hojas...",
-    limpiando:"Limpiando datos anteriores...", guardando:"Guardando datos...",
-    imp_datos_title:"Datos & Pickup", imp_datos_sub:"Producción diaria + reservas pickup",
-    imp_ppto_title:"Presupuesto", imp_ppto_sub:"Sólo hoja 💰 Presupuesto",
-    imp_ppto_ok:"Presupuesto actualizado",
-    // Suscripción
-    empieza_gratis:"Empieza gratis 30 días",
-    acceso_completo:"Acceso completo a FastRev durante 30 días sin coste.",
-    precio_sub:"Después, solo €49/mes + IVA. Cancela cuando quieras.",
-    empezar_prueba:"Empezar prueba gratuita →", redirigiendo:"Redirigiendo...",
-    feat_dashboard:"Dashboard con KPIs en tiempo real", feat_pickup:"Análisis de pickup y forecast",
-    feat_presupuesto:"Forecast vs real mensual", feat_pdf:"Informes PDF mensuales",
-    ver_pickup:"→ Ver Pickup", importar_datos:"→ Importar datos", ver_mas:"→ Ver más",
-    prox_semana:"Próx. semana", prox_mes:"Próx. mes", anio_actual:"Año actual",
-    otb_actual:"OTB Actual", anio_anterior:"Año Anterior",
-    pace_title:"Pace — Próximos 6 meses", pace_sub:"OCC en cartera vs Presupuesto y Año Anterior",
-    sin_datos_pickup:"Sin datos de pickup",
-    budget_empty:"Importa tu plantilla Excel con los datos de la hoja 💰 Presupuesto para ver el análisis aquí",
-    rev_total_label:"Revenue Total", ppto_abrev:"Ppto.", real_label:"Real",
-    chart_rev:"Forecast",
-    chart_adr:"ADR — Ppto. vs Real", chart_revpar:"RevPAR — Ppto. vs Real",
-    // General
-    generando:"Generando...", cancelar:"Cancelar", guardar:"Guardar", eliminar:"Eliminar",
-    si:"Sí", no:"No", todos:"Todos",
-  },
-  en: {
-    nav_dashboard:"Dashboard", nav_pickup:"Reservas", nav_budget:"Budget", nav_grupos:"Grupos/Eventos", nav_salas:"Rooms", nav_gestion:"Data management",
-    importar:"Import", mi_perfil:"My profile", cerrar_sesion:"Log out",
-    suscripcion:"Subscription", extranets:"Extranets", informe_mensual:"Monthly report",
-    conectado_como:"Signed in as", cargando:"Loading...",
-    ob_paso:"Step", ob_de:"of", ob_omitir:"Skip", ob_siguiente:"Next →", ob_empezar:"Get started!",
-    ob0_title:"Import your data", ob0_text:"Download the Excel template, fill it with your production data and upload it here. Your dashboard will be ready in seconds.",
-    ob1_title:"Dashboard", ob1_text:"View your main KPIs: RevPAR, ADR and occupancy compared to the previous year.",
-    ob2_title:"Pickup", ob2_text:"Analyze the pace of new reservations day by day and detect trends for the month.",
-    ob3_title:"Budget", ob3_text:"Compare real production vs monthly target and project year-end results.",
-    ob4_title:"Grupos/Eventos", ob4_text:"Manage groups and events: confirmed, tentative and business pipeline.",
-    kpi_ocupacion:"Occupancy", kpi_adr:"ADR", kpi_revpar:"RevPAR", kpi_trevpar:"TRevPAR",
-    kpi_rev_diario:"Daily Revenue", kpi_rev_mensual:"Monthly Revenue", kpi_rev_hab:"Room Rev.", kpi_rev_total:"Total Rev.",
-    sin_datos_prev:"No prev. data", vs_mes_ant:"vs prev. month", vs_anio_ant:"vs prev. year",
-    sin_datos:"No data yet", importa_excel:"Import your Excel template to see your data here",
-    cargando_datos:"Loading data...", cargando_pickup:"Loading pickup...",
-    meses_full:["January","February","March","April","May","June","July","August","September","October","November","December"],
-    meses_corto:["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],
-    dias_semana:["M","T","W","T","F","S","S"],
-    dias_abrev:["Sun","Mon","Tue","Wed","Thu","Fri","Sat"],
-    bienvenido:"Welcome", ocup_mensual:"Monthly Occupancy", adr_ocupacion:"ADR, RevPAR & Occupancy",
-    ultimos_12m:"Last 12 months", sin_datos_mes:"No data for this month",
-    adr_ocup_diaria:"Daily ADR, RevPAR & Occupancy", otb:"OTB",
-    th_anio:"Year", th_mes:"Month", th_ocup:"Occup.", th_adr:"ADR",
-    th_revpar:"RevPAR", th_trevpar:"TRevPAR", th_rev_hab:"Room Rev.", th_rev_total:"Total Rev.",
-    th_fecha:"Date", th_hab_ocup:"Occ. Rooms", th_rev_day:"Total Rev.",
-    th_ocup_media:"Avg Occupancy", th_adr_medio:"Avg ADR", th_revpar_medio:"Avg RevPAR",
-    th_rev_hab_total:"Total Room Rev.", detalle_diario:"Daily detail",
-    dias_con_datos:"days with data", total_mes:"MONTH TOTAL", volver:"← Back",
-    reservas_ayer:"Yesterday's bookings", reservas_captadas:"bookings captured",
-    no_reservas_ayer:"No bookings registered for yesterday",
-    por_mes_llegada:"By arrival month", por_canal:"By channel", por_mes_afectado:"By affected month",
-    cancelaciones_ayer:"Yesterday's cancellations", cancelaciones:"cancellations",
-    sin_cancelaciones:"No cancellations yesterday", cancel_abrev:"cancel.",
-    duracion_media:"Average stay", noches_reserva:"Nights per confirmed booking",
-    noches_media:"avg nights", precio_medio_reserva:"Average booking price",
-    revenue_medio:"Average revenue per confirmed booking", precio_medio:"avg price",
-    dia_pico:"Peak day", res_abrev:"bkgs.",
-    fechas_calientes:"Hot Dates", sin_futuras:"No future bookings",
-    ventana_reserva:"Booking window", dias_label:"days",
-    este_mes_label:"This month", anio_ant_abrev:"Prev. year", variacion_label:"Change",
-    demanda_debil:"↓ Weaker demand signal", demanda_adelantada:"↑ Stronger demand",
-    analisis_desplazamiento:"Displacement Analysis",
-    contrib_grupo:"Group contrib.", coste_desplaz:"Displacement cost", valor_neto:"Net value",
-    adr_transient_ref:"Transient ADR ref.", occ_hist_ly:"Hist. occ. LY",
-    adr_minimo_rentable:"Min. profitable ADR", acepta_grupo:"✓ Accept", revisar_grupo:"⚠ Review",
-    sin_datos_ly:"No LY data — using budget", fuente_ppto:"source: budget",
-    rev_real_ytd:"Actual Revenue YTD", forecast_cierre_anio:"Year-End Forecast",
-    presupuesto_anio:"Annual Budget", detalle_mensual:"Monthly detail",
-    th_adr_ppto:"Budget ADR", th_adr_real:"Actual ADR", th_desv_adr:"ADR Dev.",
-    th_revpar_ppto:"Budget RevPAR", th_revpar_real:"Actual RevPAR", th_desv_revpar:"RevPAR Dev.",
-    th_rev_ppto:"Budget Rev.", th_rev_real:"Actual Rev.", th_desv_rev:"Rev. Dev.",
-    th_forecast:"Closing Forecast", total_ytd:"TOTAL YTD", vs_ppto:"vs budget",
-    confianza:"confidence", real_badge:"✓ Actual",
-    nuevo_evento:"+ New event", sin_eventos:"No groups/events", rev_estimado:"Estimated revenue",
-    editar_evento:"Edit event", nuevo_evento_title:"New event",
-    nuevo_grupo_title:"New group", editar_grupo:"Edit group",
-    eliminar_grupo:"Delete this group?", eliminar_evento:"Delete this event?",
-    form_hora_inicio:"Start time", form_hora_fin:"End time", form_sala_nombre:"Room / Space",
-    form_servicio_incluido:"Service included",
-    vista_calendario:"Calendar", vista_lista:"List", vista_pipeline:"Resumen", vista_tabla:"Table",
-    rev_confirmado:"Confirmed revenue", rev_tentativo:"Tentative revenue (50%)",
-    pipeline_cotizacion:"Quotation pipeline", cancelados_perdidos:"Cancelled / Lost",
-    cat_corporativo:"Corporate", cat_boda:"Wedding / Social", cat_feria:"Trade Fair / Congress",
-    cat_deportivo:"Sports", cat_otros:"Others",
-    estado_confirmado:"Confirmed", estado_cotizacion:"Quoted", estado_cancelado:"Cancelled",
-    form_nombre:"Event name *", form_categoria:"Category", form_estado:"Status",
-    form_segmento:"Segment", seg_deportivo:"Sports", seg_negocio:"Business", seg_turistico:"Tourism", seg_congreso:"Congress", seg_social:"Social", seg_otros:"Others",
-    form_fecha_entrada:"Check-in date *", form_fecha_salida:"Check-out date *", form_fecha_confirmacion:"Confirmation date",
-    form_habitaciones:"Rooms", form_adr:"Group ADR", form_fnb:"F&B Revenue",
-    form_sala:"Meeting Room Revenue", form_notas:"Notes", form_motivo:"Reason for loss",
-    form_guardar:"Save", form_cancelar:"Cancel", form_eliminar:"Delete", guardando_btn:"Saving...",
-    noche:"night", noches:"nights", hab_abrev:"rms.",
-    importar_title:"Import data", importar_sub:"Upload your FastRev Excel template",
-    vaciar_datos:"Clear all imported data", vaciar_confirm:"Clear all data?",
-    vaciar_desc:"Production, pickup and budget data will be deleted. This action cannot be undone.",
-    vaciando:"Clearing...", si_vaciar:"Yes, clear all",
-    haz_clic:"Click to select file", formato_xlsx:"Format .xlsx · FastRev template",
-    importando_xlsx:"Importing will replace previous data",
-    importado_ok:"Data imported successfully!", ver_dashboard:"View dashboard",
-    dias_produccion:"production days imported", reservas_pickup:"pickup bookings imported",
-    meses_presupuesto:"budget months imported",
-    imp_datos_title:"Data & Pickup", imp_datos_sub:"Daily production + pickup bookings",
-    imp_ppto_title:"Budget", imp_ppto_sub:"Only 💰 Budget sheet",
-    imp_ppto_ok:"Budget updated",
-    leyendo:"Reading file...", procesando:"Processing sheets...",
-    limpiando:"Clearing previous data...", guardando:"Saving data...",
-    empieza_gratis:"Start free for 30 days",
-    acceso_completo:"Full access to FastRev for 30 days at no cost.",
-    precio_sub:"Then just €49/month + VAT. Cancel anytime.",
-    empezar_prueba:"Start free trial →", redirigiendo:"Redirecting...",
-    feat_dashboard:"Real-time KPI dashboard", feat_pickup:"Pickup and forecast analysis",
-    feat_presupuesto:"Budget vs actual monthly", feat_pdf:"Monthly PDF reports",
-    ver_pickup:"→ View Pickup", importar_datos:"→ Import data", ver_mas:"→ See more",
-    prox_semana:"Next week", prox_mes:"Next month", anio_actual:"Current year",
-    otb_actual:"Current OTB", anio_anterior:"Previous Year",
-    pace_title:"Pace — Next 6 months", pace_sub:"OCC pipeline vs Budget and Previous Year",
-    sin_datos_pickup:"No pickup data",
-    budget_empty:"Import your Excel template with the 💰 Budget sheet data to see the analysis here",
-    rev_total_label:"Total Revenue", ppto_abrev:"Budget", real_label:"Actual",
-    chart_rev:"Forecast",
-    chart_adr:"ADR — Budget vs Actual", chart_revpar:"RevPAR — Budget vs Actual",
-    generando:"Generating...", cancelar:"Cancel", guardar:"Save", eliminar:"Delete",
-    si:"Yes", no:"No", todos:"All",
-  },
-  fr: {
-    nav_dashboard:"Dashboard", nav_pickup:"Reservas", nav_budget:"Budget", nav_grupos:"Grupos/Eventos", nav_salas:"Salles", nav_gestion:"Gestion des données",
-    importar:"Importer", mi_perfil:"Mon profil", cerrar_sesion:"Déconnexion",
-    suscripcion:"Abonnement", extranets:"Extranets", informe_mensual:"Rapport mensuel",
-    conectado_como:"Connecté en tant que", cargando:"Chargement...",
-    ob_paso:"Étape", ob_de:"sur", ob_omitir:"Ignorer", ob_siguiente:"Suivant →", ob_empezar:"Commencer !",
-    ob0_title:"Importez vos données", ob0_text:"Téléchargez le modèle Excel, remplissez-le avec vos données de production et importez-le ici.",
-    ob1_title:"Dashboard", ob1_text:"Visualisez vos KPIs principaux : RevPAR, ADR et occupation comparés à l'année précédente.",
-    ob2_title:"Pickup", ob2_text:"Analysez le rythme des nouvelles réservations jour par jour et détectez les tendances.",
-    ob3_title:"Budget", ob3_text:"Comparez la production réelle vs l'objectif mensuel et projetez la clôture annuelle.",
-    ob4_title:"Grupos/Eventos", ob4_text:"Gérez les groupes et événements : confirmés, tentatifs et pipeline.",
-    kpi_ocupacion:"Occupation", kpi_adr:"ADR", kpi_revpar:"RevPAR", kpi_trevpar:"TRevPAR",
-    kpi_rev_diario:"Revenu Journalier", kpi_rev_mensual:"Revenu Mensuel", kpi_rev_hab:"Rev. Ch.", kpi_rev_total:"Rev. Total",
-    sin_datos_prev:"Pas de données préc.", vs_mes_ant:"vs mois préc.", vs_anio_ant:"vs année préc.",
-    sin_datos:"Aucune donnée", importa_excel:"Importez votre modèle Excel pour voir vos données ici",
-    cargando_datos:"Chargement...", cargando_pickup:"Chargement pickup...",
-    meses_full:["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"],
-    meses_corto:["Jan","Fév","Mar","Avr","Mai","Jun","Jul","Aoû","Sep","Oct","Nov","Déc"],
-    dias_semana:["L","M","M","J","V","S","D"],
-    dias_abrev:["Dim","Lun","Mar","Mer","Jeu","Ven","Sam"],
-    bienvenido:"Bienvenue", ocup_mensual:"Occupation mensuelle", adr_ocupacion:"ADR, RevPAR & Occupation",
-    ultimos_12m:"12 derniers mois", sin_datos_mes:"Pas de données pour ce mois",
-    adr_ocup_diaria:"ADR, RevPAR & Occupation journalière", otb:"OTB",
-    th_anio:"Année", th_mes:"Mois", th_ocup:"Occup.", th_adr:"ADR",
-    th_revpar:"RevPAR", th_trevpar:"TRevPAR", th_rev_hab:"Rev. Ch.", th_rev_total:"Rev. Total",
-    th_fecha:"Date", th_hab_ocup:"Ch. Occup.", th_rev_day:"Rev. Total",
-    th_ocup_media:"Occup. moy.", th_adr_medio:"ADR moy.", th_revpar_medio:"RevPAR moy.",
-    th_rev_hab_total:"Rev. Ch. total", detalle_diario:"Détail journalier",
-    dias_con_datos:"jours avec données", total_mes:"TOTAL MOIS", volver:"← Retour",
-    reservas_ayer:"Réservations d'hier", reservas_captadas:"réservations captées",
-    no_reservas_ayer:"Aucune réservation enregistrée hier",
-    por_mes_llegada:"Par mois d'arrivée", por_canal:"Par canal", por_mes_afectado:"Par mois concerné",
-    cancelaciones_ayer:"Annulations d'hier", cancelaciones:"annulations",
-    sin_cancelaciones:"Aucune annulation hier", cancel_abrev:"annul.",
-    duracion_media:"Durée moyenne", noches_reserva:"Nuits par réservation confirmée",
-    noches_media:"nuits moy.", precio_medio_reserva:"Prix moyen réservation",
-    revenue_medio:"Revenu moyen par réservation confirmée", precio_medio:"prix moy.",
-    dia_pico:"Jour pic", res_abrev:"rés.",
-    fechas_calientes:"Dates Chaudes", sin_futuras:"Aucune réservation future",
-    ventana_reserva:"Fenêtre de réservation", dias_label:"jours",
-    este_mes_label:"Ce mois", anio_ant_abrev:"Année préc.", variacion_label:"Variation",
-    demanda_debil:"↓ Signal de demande faible", demanda_adelantada:"↑ Demande anticipée",
-    analisis_desplazamiento:"Analyse de Déplacement",
-    contrib_grupo:"Contrib. groupe", coste_desplaz:"Coût déplac.", valor_neto:"Valeur nette",
-    adr_transient_ref:"ADR transient réf.", occ_hist_ly:"Occ. hist. LY",
-    adr_minimo_rentable:"ADR min. rentable", acepta_grupo:"✓ Accepter", revisar_grupo:"⚠ Réviser",
-    sin_datos_ly:"Pas de données LY — budget utilisé", fuente_ppto:"source : budget",
-    rev_real_ytd:"Revenu Réel YTD", forecast_cierre_anio:"Prévision Clôture Année",
-    presupuesto_anio:"Budget Annuel", detalle_mensual:"Détail mensuel",
-    th_adr_ppto:"ADR Budget", th_adr_real:"ADR Réel", th_desv_adr:"Écart ADR",
-    th_revpar_ppto:"RevPAR Budget", th_revpar_real:"RevPAR Réel", th_desv_revpar:"Écart RevPAR",
-    th_rev_ppto:"Rev. Budget", th_rev_real:"Rev. Réelle", th_desv_rev:"Écart Rev.",
-    th_forecast:"Prévision Clôture", total_ytd:"TOTAL YTD", vs_ppto:"vs budget",
-    confianza:"confiance", real_badge:"✓ Réel",
-    nuevo_evento:"+ Nouvel événement", sin_eventos:"Aucun groupe/événement", rev_estimado:"Chiffre d'affaires estimé",
-    editar_evento:"Modifier l'événement", nuevo_evento_title:"Nouvel événement",
-    nuevo_grupo_title:"Nouveau groupe", editar_grupo:"Modifier le groupe",
-    eliminar_grupo:"Supprimer ce groupe ?", eliminar_evento:"Supprimer cet événement ?",
-    form_hora_inicio:"Heure début", form_hora_fin:"Heure fin", form_sala_nombre:"Salle / Espace",
-    form_servicio_incluido:"Service inclus",
-    vista_calendario:"Calendrier", vista_lista:"Liste", vista_pipeline:"Resumen", vista_tabla:"Tableau",
-    rev_confirmado:"Revenu confirmé", rev_tentativo:"Revenu tentative (50%)",
-    pipeline_cotizacion:"Pipeline en devis", cancelados_perdidos:"Annulés / Perdus",
-    cat_corporativo:"Corporatif", cat_boda:"Mariage / Social", cat_feria:"Foire / Congrès",
-    cat_deportivo:"Sportif", cat_otros:"Autres",
-    estado_confirmado:"Confirmé", estado_cotizacion:"Devis", estado_cancelado:"Annulé",
-    form_nombre:"Nom de l'événement *", form_categoria:"Catégorie", form_estado:"Statut",
-    form_segmento:"Segment", seg_deportivo:"Sportif", seg_negocio:"Affaires", seg_turistico:"Tourisme", seg_congreso:"Congrès", seg_social:"Social", seg_otros:"Autres",
-    form_fecha_entrada:"Date d'arrivée *", form_fecha_salida:"Date de départ *", form_fecha_confirmacion:"Date de confirmation",
-    form_habitaciones:"Chambres", form_adr:"ADR Groupe", form_fnb:"Revenu F&B",
-    form_sala:"Revenu Salle", form_notas:"Notes", form_motivo:"Motif de perte",
-    form_guardar:"Enregistrer", form_cancelar:"Annuler", form_eliminar:"Supprimer", guardando_btn:"Enregistrement...",
-    noche:"nuit", noches:"nuits", hab_abrev:"ch.",
-    importar_title:"Importer des données", importar_sub:"Téléchargez votre modèle Excel FastRev",
-    vaciar_datos:"Effacer toutes les données importées", vaciar_confirm:"Effacer toutes les données ?",
-    vaciar_desc:"Les données de production, pickup et budget seront supprimées. Cette action est irréversible.",
-    vaciando:"Effacement...", si_vaciar:"Oui, tout effacer",
-    haz_clic:"Cliquez pour sélectionner le fichier", formato_xlsx:"Format .xlsx · Modèle FastRev",
-    importando_xlsx:"L'importation remplacera les données précédentes",
-    importado_ok:"Données importées avec succès !", ver_dashboard:"Voir le dashboard",
-    dias_produccion:"jours de production importés", reservas_pickup:"réservations pickup importées",
-    meses_presupuesto:"mois de budget importés",
-    leyendo:"Lecture du fichier...", procesando:"Traitement des feuilles...",
-    limpiando:"Suppression des données précédentes...", guardando:"Sauvegarde...",
-    imp_datos_title:"Données & Pickup", imp_datos_sub:"Production journalière + réservations pickup",
-    imp_ppto_title:"Budget", imp_ppto_sub:"Uniquement la feuille 💰 Budget",
-    imp_ppto_ok:"Budget mis à jour",
-    empieza_gratis:"Commencez gratuitement 30 jours",
-    acceso_completo:"Accès complet à FastRev pendant 30 jours sans frais.",
-    precio_sub:"Ensuite, seulement 49€/mois + TVA. Annulez quand vous voulez.",
-    empezar_prueba:"Démarrer l'essai gratuit →", redirigiendo:"Redirection...",
-    feat_dashboard:"Dashboard KPIs en temps réel", feat_pickup:"Analyse pickup et prévisions",
-    feat_presupuesto:"Budget vs réel mensuel", feat_pdf:"Rapports PDF mensuels",
-    ver_pickup:"→ Voir Pickup", importar_datos:"→ Importer données", ver_mas:"→ Voir plus",
-    prox_semana:"Sem. prochaine", prox_mes:"Mois prochain", anio_actual:"Année en cours",
-    otb_actual:"OTB Actuel", anio_anterior:"Année Précédente",
-    pace_title:"Pace — 6 prochains mois", pace_sub:"OCC en portefeuille vs Budget et Année Précédente",
-    sin_datos_pickup:"Pas de données pickup",
-    budget_empty:"Importez votre modèle Excel avec les données de la feuille 💰 Budget pour voir l'analyse ici",
-    rev_total_label:"Revenu Total", ppto_abrev:"Budget", real_label:"Réel",
-    chart_rev:"Forecast",
-    chart_adr:"ADR — Budget vs Réel", chart_revpar:"RevPAR — Budget vs Réel",
-    generando:"Génération...", cancelar:"Annuler", guardar:"Enregistrer", eliminar:"Supprimer",
-    si:"Oui", no:"Non", todos:"Tous",
-  },
-};
-
-const MESES = ["Enero","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
-const MESES_CORTO = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
-const MESES_FULL = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
-
-const NET_HAB_FNB = 1 / 1.10; // Deduce IVA 10% (alojamiento y F&B)
-const NET_SALA    = 1 / 1.21; // Deduce IVA 21% (salas)
 
 function CustomSelect({ value, onChange, options, style }) {
   const [open, setOpen] = React.useState(false);
@@ -431,80 +83,6 @@ const AnimatedBar = (props) => {
   );
 };
 
-// Construye mapa {fecha→habitaciones} en un solo paso — usar para lookups masivos
-function buildHabEnCasaMap(pickupEntries, grupos) {
-  const map = {};
-  const pad = n => String(n).padStart(2,"0");
-  const isoL = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
-  const addRange = (fl, fs, nr) => {
-    let d = new Date(fl+"T00:00:00");
-    const end = new Date(fs+"T00:00:00");
-    while (d < end) { const iso=isoL(d); map[iso]=(map[iso]||0)+nr; d.setDate(d.getDate()+1); }
-  };
-  (grupos||[]).filter(g=>g.estado==="confirmado"&&g.habitaciones>0&&g.fecha_inicio&&g.fecha_fin)
-    .forEach(g=>addRange(g.fecha_inicio,g.fecha_fin,g.habitaciones));
-  const _isGrCan = c => { const lc=(c||"").toLowerCase(); return lc.includes("grupo")||lc.includes("mice")||lc.includes("evento"); };
-  const dd = {};
-  (pickupEntries||[]).forEach(e=>{
-    if(e._grupo)return;
-    const est=e.estado||"confirmada";
-    if(est==="cancelada"||est==="tentativo")return;
-    if(_isGrCan(e.canal))return;
-    const fl=String(e.fecha_llegada||"").slice(0,10);
-    const fs=e.fecha_salida?String(e.fecha_salida).slice(0,10)
-      :(fl?(()=>{const d=new Date(fl+"T00:00:00");d.setDate(d.getDate()+Math.max(1,Number(e.noches)||1));return isoL(d);})():null);
-    if(!fl||!fs)return;
-    if(e.es_individual){addRange(fl,fs,e.num_reservas||1);return;}
-    const key=`${fl}|${e.canal||""}|${fs}`;
-    const fp=String(e.fecha_pickup||"").slice(0,10);
-    if(!dd[key]||fp>dd[key]._fp)dd[key]={fl,fs,nr:e.num_reservas||1,_fp:fp};
-  });
-  Object.values(dd).forEach(({fl,fs,nr})=>addRange(fl,fs,nr));
-  return map;
-}
-
-// Habitaciones pernoctando en diaIso — fuente única de verdad usada por heatmap y ticker
-function calcHabEnCasa(pickupEntries, grupos, diaIso) {
-  const pad = n => String(n).padStart(2,"0");
-  const isoL = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
-  let total = 0;
-  // 1) Grupos confirmados
-  (grupos||[]).filter(g => g.estado==="confirmado" && g.habitaciones>0 && g.fecha_inicio && g.fecha_fin)
-    .forEach(g => {
-      let d = new Date(g.fecha_inicio+"T00:00:00");
-      const fin = new Date(g.fecha_fin+"T00:00:00");
-      while (d < fin) {
-        const iso = isoL(d);
-        if (iso === diaIso) { total += g.habitaciones; break; }
-        if (iso > diaIso) break;
-        d.setDate(d.getDate()+1);
-      }
-    });
-  // 2) Pickup reports — dedup por fl|canal|fs conservando el más reciente
-  //    Reservas individuales (es_individual=true) se cuentan sin deduplicar
-  const dd = {};
-  let contInd = 0;
-  (pickupEntries||[]).forEach(e => {
-    if (e._grupo) return;
-    const est = e.estado||"confirmada";
-    if (est==="cancelada"||est==="tentativo") return;
-    const fl = String(e.fecha_llegada||"").slice(0,10);
-    const fs = e.fecha_salida ? String(e.fecha_salida).slice(0,10)
-      : (fl ? (() => { const d=new Date(fl+"T00:00:00"); d.setDate(d.getDate()+Math.max(1,Number(e.noches)||1)); return isoL(d); })() : null);
-    if (!fl||!fs) return;
-    if (e.es_individual) {
-      if (fl <= diaIso && fs > diaIso) contInd += (e.num_reservas||1);
-      return;
-    }
-    const key = `${fl}|${e.canal||""}|${fs}`;
-    const fp  = String(e.fecha_pickup||"").slice(0,10);
-    if (!dd[key]||fp>dd[key]._fp) dd[key]={...e,_fp:fp,_fs:fs};
-  });
-  total += contInd + Object.values(dd)
-    .filter(e => String(e.fecha_llegada||"").slice(0,10)<=diaIso && e._fs>diaIso)
-    .reduce((a,e)=>a+(e.num_reservas||1),0);
-  return total;
-}
 
 const SimpleBar = ({ x, y, width, height, fill, fillOpacity }) => {
   if (!height || height <= 0) return null;
@@ -1042,15 +620,6 @@ function KpiModal({ kpi, datos, mes, anio, onClose }) {
   );
 }
 
-const KPI_HELP = {
-  "Ocupación":       { formula: "Hab. ocupadas ÷ Hab. disponibles × 100", desc: "De cada 10 habitaciones que tienes, cuántas has vendido. Si está baja, te sobran habitaciones vacías. Si está muy alta y el precio es bajo, estás dejando dinero sobre la mesa." },
-  "ADR":             { formula: "Revenue habitaciones ÷ Hab. ocupadas", desc: "Lo que cobras de media por cada habitación que vendes. Si sube mientras la ocupación se mantiene, estás vendiendo mejor. Si baja, puede que estés tirando el precio para llenar." },
-  "RevPAR":          { formula: "Revenue habitaciones ÷ Hab. disponibles", desc: "Lo que ingresa cada habitación de tu hotel, esté vendida o no. Es el número que mejor resume si tu hotel va bien: sube cuando vendes más habitaciones o a mejor precio." },
-  "TRevPAR":         { formula: "Revenue total ÷ Hab. disponibles", desc: "Como el RevPAR, pero contando todo lo que genera el hotel: restaurante, eventos, extras… Si es muy superior al RevPAR, tienes fuentes de ingreso más allá de las habitaciones que funcionan bien." },
-  "Revenue Diario":  { formula: "Suma del revenue del día seleccionado", desc: "Todo lo que ha facturado el hotel ese día. Útil para comparar días concretos o detectar si un día puntual fue especialmente bueno o malo." },
-  "Revenue Mensual": { formula: "Suma acumulada desde el 1 del mes", desc: "Lo que llevas facturado en el mes hasta hoy. Compáralo con el presupuesto y con el mismo punto del año pasado para saber si el mes va por buen camino." },
-  "Revenue Total":   { formula: "Revenue hab. + F&B + otros ingresos", desc: "La facturación completa del período, sumando todos los departamentos. Es lo que entra en caja antes de costes." },
-};
 
 const KpiCard = React.memo(function KpiCard({ label, subtitle, value, changeLm, upLm, changeLy, upLy, i, onClick, accentColor }) {
   const kpiAccent = accentColor || C.accent;
@@ -5426,16 +4995,16 @@ const [metricaSel, setMetricaSel] = useState(() => localStorage.getItem("fr_metr
       })()}
 
 
-      <Card>
-        <p style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 700, fontSize: 20, color: C.text, marginBottom: 16 }}>
-          {t("ultimos_12m")}
-        </p>
+      <div style={{ background:C.bgCard, border:`1px solid ${C.border}`, borderRadius:12, overflow:"hidden" }}>
+        <div style={{ padding:"18px 24px 12px", borderBottom:`1px solid ${C.border}` }}>
+          <h3 style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:16, fontWeight:700, color:C.text, margin:0 }}>{t("ultimos_12m")}</h3>
+        </div>
         <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
             <thead>
-              <tr>
+              <tr style={{ background:C.bg }}>
                 {[t("th_anio"),t("th_mes"),t("th_ocup"),t("th_adr"),t("th_revpar"),t("th_trevpar"),t("th_rev_hab"),t("th_rev_total")].map((h,hi) => (
-                  <th key={h} style={{ padding: "10px 14px", textAlign: hi<=1?"left":"right", fontSize: 10, color: C.textLight, textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600, borderBottom: `2px solid ${C.border}`, whiteSpace: "nowrap" }}>{h}</th>
+                  <th key={h} style={{ padding: "9px 14px", textAlign: hi<=1?"left":"right", fontSize: 10, color: C.textLight, textTransform: "uppercase", letterSpacing: 1, fontWeight: 600, borderBottom: `2px solid ${C.border}`, whiteSpace: "nowrap" }}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -5455,7 +5024,7 @@ const [metricaSel, setMetricaSel] = useState(() => localStorage.getItem("fr_metr
             </tbody>
           </table>
         </div>
-      </Card>
+      </div>
       {kpiModal && <KpiModal kpi={kpiModal} datos={datos} mes={mes} anio={anio} onClose={()=>setKpiModal(null)} />}
 
       {/* ── MODAL DIARIO ADR & OCUPACIÓN ── */}
@@ -9129,22 +8698,6 @@ function SalasView({ datos, onRecargar, onVolver, onVerEventos, salaDetalle, set
   );
 }
 
-const NAV = [
-  { key: "dashboard",  icon: "◈",  labelKey: "nav_dashboard" },
-  { key: "pickup",                  labelKey: "nav_pickup" },
-  { key: "budget",     icon: "💰", labelKey: "nav_budget" },
-  { key: "grupos",     labelKey: "nav_grupos" },
-  { key: "gestion",    labelKey: "nav_gestion" },
-];
-
-const GRUPOS_SUB = [
-  { key: "semana",   label: "Calendario" },
-  { key: "pipeline", label: "Resumen" },
-  { key: "grupos",   label: "Grupos" },
-  { key: "eventos",  label: "Eventos" },
-  { key: "revenue",  label: "Revenue" },
-  { key: "salas",    label: "Gestión de salas" },
-];
 
 
 function PantallaSubscripcion({ session, onPagar }) {
@@ -10117,8 +9670,11 @@ export default function App() {
               return (
                 <button key={n.key} id={`ob-nav-${n.key}`}
                   draggable
+                  onMouseDown={e => { e.currentTarget.style.cursor = "grabbing"; }}
+                  onMouseUp={e => { e.currentTarget.style.cursor = "pointer"; }}
+                  onMouseLeave={e => { e.currentTarget.style.cursor = "pointer"; }}
                   onDragStart={e => { dragNavKey.current = n.key; e.dataTransfer.effectAllowed = "move"; setTimeout(() => setDraggingNavKey(n.key), 0); }}
-                  onDragEnd={() => { if (dragNavKey.current !== null && navPreview) { setNavOrder(navPreview); localStorage.setItem("fr_nav_order", JSON.stringify(navPreview)); } dragNavKey.current = null; setNavPreview(null); setDraggingNavKey(null); }}
+                  onDragEnd={e => { e.currentTarget.style.cursor = "pointer"; if (dragNavKey.current !== null && navPreview) { setNavOrder(navPreview); localStorage.setItem("fr_nav_order", JSON.stringify(navPreview)); } dragNavKey.current = null; setNavPreview(null); setDraggingNavKey(null); }}
                   onDragOver={e => {
                     e.preventDefault();
                     const from = dragNavKey.current;
@@ -10139,7 +9695,7 @@ export default function App() {
                     dragNavKey.current = null;
                   }}
                   onClick={() => { navigateTo(n.key); }}
-                  style={{ padding: "6px clamp(6px,2vw,16px)", borderRadius: 7, border: "none", cursor: "grab", background: isActive ? "rgba(255,255,255,0.12)" : "transparent", color: "#fff", fontSize: "clamp(11px,2.5vw,13px)", fontWeight: isActive ? 700 : 400, fontFamily: "'Plus Jakarta Sans', sans-serif", transition: "background 0.1s", whiteSpace: "nowrap", outline: isActive ? `1.5px solid rgba(255,255,255,0.3)` : "1.5px solid transparent", visibility: draggingNavKey === n.key ? "hidden" : "visible" }}>
+                  style={{ padding: "6px clamp(6px,2vw,16px)", borderRadius: 7, border: "none", cursor: "pointer", background: isActive ? "rgba(255,255,255,0.12)" : "transparent", color: "#fff", fontSize: "clamp(11px,2.5vw,13px)", fontWeight: isActive ? 700 : 400, fontFamily: "'Plus Jakarta Sans', sans-serif", transition: "background 0.1s", whiteSpace: "nowrap", outline: isActive ? `1.5px solid rgba(255,255,255,0.3)` : "1.5px solid transparent", visibility: draggingNavKey === n.key ? "hidden" : "visible" }}>
                   <span className="topbar-nav-label">{t(n.labelKey)}</span>
                   <span style={{ display:"none" }} className="topbar-nav-icon">{t(n.labelKey).slice(0,3)}</span>
                 </button>
@@ -10303,8 +9859,11 @@ export default function App() {
             return (
               <button key={key}
                 draggable
+                onMouseDown={e => { e.currentTarget.style.cursor = "grabbing"; }}
+                onMouseUp={e => { e.currentTarget.style.cursor = "pointer"; }}
+                onMouseLeave={e => { e.currentTarget.style.cursor = "pointer"; }}
                 onDragStart={e => { dragGruposSubKey.current = key; e.dataTransfer.effectAllowed = "move"; setTimeout(() => setDraggingGruposSubKey(key), 0); }}
-                onDragEnd={() => { if (dragGruposSubKey.current !== null && gruposSubPreviewRef.current) { setGruposSubOrder(gruposSubPreviewRef.current); localStorage.setItem("fr_grupos_sub_order", JSON.stringify(gruposSubPreviewRef.current)); } dragGruposSubKey.current = null; setGruposSubPreview(null); setDraggingGruposSubKey(null); }}
+                onDragEnd={e => { e.currentTarget.style.cursor = "pointer"; if (dragGruposSubKey.current !== null && gruposSubPreviewRef.current) { setGruposSubOrder(gruposSubPreviewRef.current); localStorage.setItem("fr_grupos_sub_order", JSON.stringify(gruposSubPreviewRef.current)); } dragGruposSubKey.current = null; setGruposSubPreview(null); setDraggingGruposSubKey(null); }}
                 onDragOver={e => {
                   e.preventDefault();
                   const from = dragGruposSubKey.current;
@@ -10325,7 +9884,7 @@ export default function App() {
                   dragGruposSubKey.current = null;
                 }}
                 onClick={() => cambiarGruposSubVista(key)}
-                style={{ padding:"6px clamp(6px,2vw,16px)", borderRadius:7, border:"none", cursor:"grab", background: activo ? "rgba(255,255,255,0.12)" : "transparent", color:"#fff", fontSize:"clamp(11px,2.5vw,13px)", fontWeight: activo ? 700 : 400, fontFamily:"'Plus Jakarta Sans',sans-serif", transition:"all 0.15s", whiteSpace:"nowrap", outline: activo ? "1.5px solid rgba(255,255,255,0.3)" : "1.5px solid transparent", visibility: draggingGruposSubKey === key ? "hidden" : "visible" }}>
+                style={{ padding:"6px clamp(6px,2vw,16px)", borderRadius:7, border:"none", cursor:"pointer", background: activo ? "rgba(255,255,255,0.12)" : "transparent", color:"#fff", fontSize:"clamp(11px,2.5vw,13px)", fontWeight: activo ? 700 : 400, fontFamily:"'Plus Jakarta Sans',sans-serif", transition:"all 0.15s", whiteSpace:"nowrap", outline: activo ? "1.5px solid rgba(255,255,255,0.3)" : "1.5px solid transparent", visibility: draggingGruposSubKey === key ? "hidden" : "visible" }}>
                 {label}
               </button>
             );
