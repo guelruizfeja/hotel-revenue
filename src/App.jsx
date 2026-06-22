@@ -773,16 +773,16 @@ async function generarInformeDiarioPDF(kpis, hotelNombre) {
   }
 
   // ── HEADER ──────────────────────────────────────────
-  doc.setFillColor(...C_AZUL); doc.rect(0, 0, W, 32, "F");
-  doc.setFillColor(...C_GOLD); doc.rect(0, 30, W, 2, "F");
-  try { doc.addImage(LOGO_B64, "PNG", M, 8, 40, 15); } catch(_) {}
-  doc.setFontSize(6.5); doc.setFont("helvetica","normal"); doc.setTextColor(180,200,220);
-  doc.text("INFORME DIARIO DE REVENUE", W-M, 11, { align:"right" });
-  doc.setFontSize(13); doc.setFont("helvetica","bold"); doc.setTextColor(255,255,255);
-  doc.text(hotelNombre || "Mi Hotel", W-M, 20, { align:"right" });
-  doc.setFontSize(8); doc.setFont("helvetica","normal"); doc.setTextColor(180,200,220);
-  doc.text(fmtD(fecha), W-M, 27, { align:"right" });
-  y = 39;
+  doc.setFillColor(15,15,15); doc.rect(0, 0, W, 36, "F");
+  doc.setFillColor(...C_GOLD); doc.rect(0, 34, W, 2, "F");
+  try { doc.addImage(LOGO_B64, "PNG", M, 6, 52, 22); } catch(_) {}
+  doc.setFontSize(6.5); doc.setFont("helvetica","normal"); doc.setTextColor(160,160,160);
+  doc.text("INFORME DIARIO DE REVENUE", W-M, 12, { align:"right" });
+  doc.setFontSize(14); doc.setFont("helvetica","bold"); doc.setTextColor(255,255,255);
+  doc.text(hotelNombre || "Mi Hotel", W-M, 22, { align:"right" });
+  doc.setFontSize(8); doc.setFont("helvetica","normal"); doc.setTextColor(160,160,160);
+  doc.text(fmtD(fecha), W-M, 30, { align:"right" });
+  y = 43;
 
   // ── RESUMEN DE AYER ────────────────────────────────
   doc.setFontSize(8); doc.setFont("helvetica","bold"); doc.setTextColor(...C_GRIS);
@@ -837,9 +837,9 @@ async function generarInformeDiarioPDF(kpis, hotelNombre) {
   ];
   pickRows.forEach((r, i) => {
     const ry = y + 18 + i*8;
-    doc.setFontSize(6); doc.setFont("helvetica","normal"); doc.setTextColor(...C_GRISM);
+    doc.setFontSize(7); doc.setFont("helvetica", r.bold?"bold":"normal"); doc.setTextColor(...C_NEGRO);
     doc.text(r.lbl, pickX+3, ry);
-    doc.setFontSize(7); doc.setFont("helvetica", r.bold?"bold":"normal"); doc.setTextColor(...r.color);
+    doc.setFontSize(7.5); doc.setFont("helvetica", r.bold?"bold":"normal"); doc.setTextColor(...r.color);
     doc.text(r.val+" hab.", pickX+kColW-2, ry, { align:"right" });
   });
   y += kH + 6;
