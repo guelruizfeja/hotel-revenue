@@ -832,7 +832,7 @@ async function generarInformeDiarioPDF(kpis, hotelNombre) {
   const neto = nuevas - cancels;
   const pickRows = [
     { lbl:"Nuevas habs",    val:`+${nuevas}`, color:C_VERDE },
-    { lbl:"Cancelaciones",  val:`-${cancels}`, color:C_ROJO },
+    { lbl:"Cancelaciones",  val:cancels>0?`-${cancels}`:"—", color:cancels>0?C_ROJO:C_GRIS },
     { lbl:"Pick up neto",   val:(neto>=0?"+":"")+neto, color:neto>0?C_VERDE:neto<0?C_ROJO:C_GRIS, bold:true },
   ];
   pickRows.forEach((r, i) => {
