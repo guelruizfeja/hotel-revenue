@@ -790,8 +790,8 @@ async function generarInformeDiarioPDF(kpis, hotelNombre) {
     const id = cx2.getImageData(0,0,cv.width,cv.height);
     for (let i=0; i<id.data.length; i+=4) { if(id.data[i+3]>10){ id.data[i]=255; id.data[i+1]=255; id.data[i+2]=255; } }
     cx2.putImageData(id,0,0);
-    const lW=12, lH=12;
-    doc.addImage(cv.toDataURL("image/png"), "PNG", W-lW, (hdrH-lH)/2, lW, lH);
+    const lW=9, lH=9;
+    doc.addImage(cv.toDataURL("image/png"), "PNG", W-lW-3, 3, lW, lH);
   } catch(_) {}
   y = hdrH + 1 + 6;
 
