@@ -773,16 +773,31 @@ async function generarInformeDiarioPDF(kpis, hotelNombre) {
   }
 
   // ── HEADER ──────────────────────────────────────────
-  doc.setFillColor(15,15,15); doc.rect(0, 0, W, 36, "F");
-  doc.setFillColor(...C_GOLD); doc.rect(0, 34, W, 2, "F");
-  try { doc.addImage(LOGO_B64, "PNG", M, 6, 52, 22); } catch(_) {}
+  doc.setFillColor(15,15,15); doc.rect(0, 0, W, 34, "F");
+  // Banda degradado gris: de oscuro (15) a blanco
+  const gSteps = 16; const gH = 5;
+  for (let i = 0; i < gSteps; i++) {
+    const v = Math.round(15 + (i / (gSteps-1)) * 240);
+    doc.setFillColor(v,v,v); doc.rect(0, 34 + i*(gH/gSteps), W, gH/gSteps+0.1, "F");
+  }
+  // Logo en blanco (pixel manipulation via canvas)
+  try {
+    const img = new Image();
+    await new Promise((res, rej) => { img.onload=res; img.onerror=rej; img.src=LOGO_B64; });
+    const cv = document.createElement("canvas"); cv.width=img.width; cv.height=img.height;
+    const cx2 = cv.getContext("2d"); cx2.drawImage(img,0,0);
+    const id = cx2.getImageData(0,0,cv.width,cv.height);
+    for (let i=0; i<id.data.length; i+=4) { if(id.data[i+3]>10){ id.data[i]=255; id.data[i+1]=255; id.data[i+2]=255; } }
+    cx2.putImageData(id,0,0);
+    doc.addImage(cv.toDataURL("image/png"), "PNG", M, 5, 52, 22);
+  } catch(_) {}
   doc.setFontSize(6.5); doc.setFont("helvetica","normal"); doc.setTextColor(160,160,160);
   doc.text("INFORME DIARIO DE REVENUE", W-M, 12, { align:"right" });
   doc.setFontSize(14); doc.setFont("helvetica","bold"); doc.setTextColor(255,255,255);
   doc.text(hotelNombre || "Mi Hotel", W-M, 22, { align:"right" });
   doc.setFontSize(8); doc.setFont("helvetica","normal"); doc.setTextColor(160,160,160);
   doc.text(fmtD(fecha), W-M, 30, { align:"right" });
-  y = 43;
+  y = 44;
 
   // ── RESUMEN DE AYER ────────────────────────────────
   doc.setFontSize(8); doc.setFont("helvetica","bold"); doc.setTextColor(...C_GRIS);
