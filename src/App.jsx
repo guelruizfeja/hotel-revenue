@@ -784,13 +784,13 @@ async function generarInformeDiarioPDF(kpis, hotelNombre) {
   // Solo logo derecha en blanco
   try {
     const img = new Image();
-    await new Promise((res, rej) => { img.onload=res; img.onerror=rej; img.src=LOGO_B64; });
+    await new Promise((res, rej) => { img.onload=res; img.onerror=rej; img.src="/fastrev-icon.png"; });
     const cv = document.createElement("canvas"); cv.width=img.width; cv.height=img.height;
     const cx2 = cv.getContext("2d"); cx2.drawImage(img,0,0);
     const id = cx2.getImageData(0,0,cv.width,cv.height);
     for (let i=0; i<id.data.length; i+=4) { if(id.data[i+3]>10){ id.data[i]=255; id.data[i+1]=255; id.data[i+2]=255; } }
     cx2.putImageData(id,0,0);
-    const lW=42, lH=17;
+    const lW=18, lH=18;
     doc.addImage(cv.toDataURL("image/png"), "PNG", W-M-lW, (hdrH-lH)/2, lW, lH);
   } catch(_) {}
   y = hdrH + 1 + 6;
