@@ -802,7 +802,7 @@ async function generarInformeDiarioPDF(kpis, hotelNombre) {
   doc.text("(vs. Media del Mes)", M+39, y);
   y += 4;
 
-  const kH = 38;
+  const kH = 32;
   doc.setFillColor(255,255,255); doc.setDrawColor(...C_BORDE);
   doc.roundedRect(M, y, W-M*2, kH, 2, 2, "FD");
 
@@ -820,16 +820,16 @@ async function generarInformeDiarioPDF(kpis, hotelNombre) {
     const kx = M + i*kColW + kColW/2;
     if (i>0) { doc.setDrawColor(...C_BORDE); doc.line(M+i*kColW, y+5, M+i*kColW, y+kH-5); }
     doc.setFontSize(6.5); doc.setFont("helvetica","bold"); doc.setTextColor(...C_GRIS);
-    doc.text(k.lbl, kx, y+8, { align:"center" });
+    doc.text(k.lbl, kx, y+6, { align:"center" });
     doc.setFontSize(13); doc.setFont("helvetica","bold"); doc.setTextColor(...(k.vc||C_AZUL));
-    doc.text(k.val, kx, y+18, { align:"center" });
+    doc.text(k.val, kx, y+15, { align:"center" });
     if (k.delta!=null) {
       doc.setFontSize(7); doc.setFont("helvetica","bold"); doc.setTextColor(...(k.delta>=0?C_VERDE:C_ROJO));
-      doc.text(k.dfmt(k.delta), kx, y+26, { align:"center" });
+      doc.text(k.dfmt(k.delta), kx, y+22, { align:"center" });
     }
     if (k.sub) {
       doc.setFontSize(6); doc.setFont("helvetica","normal"); doc.setTextColor(...C_GRIS);
-      doc.text(k.sub, kx, k.delta!=null?y+33:y+26, { align:"center" });
+      doc.text(k.sub, kx, k.delta!=null?y+28:y+22, { align:"center" });
     }
   });
   // Columna PICK UP con desglose
@@ -837,7 +837,7 @@ async function generarInformeDiarioPDF(kpis, hotelNombre) {
   doc.setDrawColor(...C_BORDE); doc.line(pickX, y+5, pickX, y+kH-5);
   const pickCx = pickX + kColW/2;
   doc.setFontSize(6.5); doc.setFont("helvetica","bold"); doc.setTextColor(...C_GRIS);
-  doc.text("PICK UP", pickCx, y+8, { align:"center" });
+  doc.text("PICK UP", pickCx, y+6, { align:"center" });
   const nuevas = pickup_neto || 0;
   const cancels = cancelaciones || 0;
   const neto = nuevas - cancels;
@@ -847,7 +847,7 @@ async function generarInformeDiarioPDF(kpis, hotelNombre) {
     { lbl:"Pick up neto",   val:(neto>=0?"+":"")+neto, color:neto>0?C_VERDE:neto<0?C_ROJO:C_GRIS, bold:true },
   ];
   pickRows.forEach((r, i) => {
-    const ry = y + 16 + i*7;
+    const ry = y + 13 + i*6;
     doc.setFontSize(7); doc.setFont("helvetica", r.bold?"bold":"normal"); doc.setTextColor(...C_NEGRO);
     doc.text(r.lbl, pickX+3, ry);
     doc.setFontSize(7.5); doc.setFont("helvetica", r.bold?"bold":"normal"); doc.setTextColor(...r.color);
