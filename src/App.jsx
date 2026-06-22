@@ -6620,6 +6620,7 @@ export default function App() {
   const [confirmCancelar, setConfirmCancelar] = useState(false);
   const [cancelandoSub, setCancelandoSub] = useState(false);
   const [enviandoInformePrueba, setEnviandoInformePrueba] = useState(false);
+  const [previsualizandoDiario, setPrevisualizandoDiario] = useState(false);
   const [okInformePrueba, setOkInformePrueba] = useState(false);
   const [errorInformePrueba, setErrorInformePrueba] = useState("");
   const [toast, setToast] = useState(null); // { msg, ok }
@@ -7196,6 +7197,7 @@ export default function App() {
                       { label:t("suscripcion"),           key:"suscripcion" },
                       { label:t("extranets"),             key:"extranets" },
                       { label:t("informe_mensual"),       key:"informe" },
+                      { label:"Vista previa informe diario", key:"preview_diario" },
                       { label:"Enviar informe diario",    key:"informe_diario" },
                     ].map(op => (
                       <button key={op.key} onClick={async () => {
@@ -7277,6 +7279,66 @@ export default function App() {
                               if (!resp.ok) throw new Error(json.error || `HTTP ${resp.status}`);
                               showToast("✓ Informe enviado a " + session.user.email, true);
                             } catch(e) { showToast("Error: " + e.message, false); }
+                          } else if (op.key === "preview_diario") {
+                            setMostrarPerfil(false);
+                            setPrevisualizandoDiario(true);
+                            try {
+                              const { data: ultimoDia } = await supabase.from("produccion_diaria").select("*").eq("hotel_id", session.user.id).order("fecha", { ascending: false }).limit(1).maybeSingle();
+                              if (!ultimoDia) throw new Error("Sin datos de producción registrados");
+                              const mesActual = parseInt(ultimoDia.fecha.split('-')[1]);
+                              const anioActual = parseInt(ultimoDia.fecha.split('-')[0]);
+                              const mesStr = String(mesActual).padStart(2,'0');
+                              const inicioMes = `${anioActual}-${mesStr}-01`;
+                              const inicioSig = mesActual===12 ? `${anioActual+1}-01-01` : `${anioActual}-${String(mesActual+1).padStart(2,'0')}-01`;
+                              const mesLM = mesActual===1 ? 12 : mesActual-1;
+                              const anioLM = mesActual===1 ? anioActual-1 : anioActual;
+                              const inicioMesLM = `${anioLM}-${String(mesLM).padStart(2,'0')}-01`;
+                              const MESES_ES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+                              const [{ data: datosMes }, { data: pickupRows }, { data: pptoData }, { data: gruposRows }, { data: datosLM }] = await Promise.all([
+                                supabase.from("produccion_diaria").select("fecha,hab_ocupadas,hab_disponibles,revenue_hab,revenue_fnb,revenue_total").eq("hotel_id", session.user.id).gte("fecha", inicioMes).lt("fecha", inicioSig).order("fecha", { ascending: true }),
+                                supabase.from("pickup_entries").select("canal,num_reservas,precio_total,estado").eq("hotel_id", session.user.id).eq("fecha_pickup", ultimoDia.fecha),
+                                supabase.from("presupuesto").select("rev_total_ppto,adr_ppto").eq("hotel_id", session.user.id).eq("mes", mesActual).eq("anio", anioActual).maybeSingle(),
+                                supabase.from("grupos_eventos").select("nombre,categoria,estado,fecha_inicio,fecha_fin,habitaciones,adr_grupo,revenue_fnb,revenue_sala").eq("hotel_id", session.user.id).neq("estado","cancelado").gte("fecha_fin", ultimoDia.fecha).order("fecha_inicio"),
+                                supabase.from("produccion_diaria").select("hab_ocupadas,hab_disponibles,revenue_hab,revenue_fnb,revenue_total").eq("hotel_id", session.user.id).gte("fecha", inicioMesLM).lt("fecha", inicioMes),
+                              ]);
+                              let nuevas=0, cancels=0, revPickup=0;
+                              for (const p of (pickupRows||[])) { const nr=p.num_reservas||1; if (p.estado==='cancelada') cancels+=nr; else { nuevas+=nr; revPickup+=p.precio_total||0; } }
+                              let acum=0;
+                              const revenueAcumulado = (datosMes||[]).map(d => { acum+=d.revenue_hab||0; return { dia: parseInt(d.fecha.split('-')[2]), acum: Math.round(acum) }; });
+                              let totHabOcu=0, totHabDisp=0, totRevHab=0, totRevFnb=0, totRevTotal=0;
+                              for (const d of (datosMes||[])) { if (d.hab_disponibles>0) { totHabOcu+=d.hab_ocupadas||0; totHabDisp+=d.hab_disponibles||0; totRevHab+=d.revenue_hab||0; totRevFnb+=d.revenue_fnb||0; totRevTotal+=d.revenue_total||0; } }
+                              let lmHabOcu=0, lmHabDisp=0, lmRevHab=0, lmRevFnb=0, lmRevTotal=0;
+                              for (const d of (datosLM||[])) { if (d.hab_disponibles>0) { lmHabOcu+=d.hab_ocupadas||0; lmHabDisp+=d.hab_disponibles||0; lmRevHab+=d.revenue_hab||0; lmRevFnb+=d.revenue_fnb||0; lmRevTotal+=d.revenue_total||0; } }
+                              const lmRevTotalEff = lmRevTotal || (lmRevHab+lmRevFnb) || 0;
+                              const normCanalP = c => { const lc=(c||'').toLowerCase().trim(); if(lc.includes('directo')||lc.includes('teléfono')||lc.includes('telefono')||lc.includes('email')) return 'Directo'; if(lc.includes('web')) return 'Web'; if(lc.includes('empresa')||lc.includes('corporativo')) return 'Empresa'; if(lc.includes('mice')||lc.includes('evento')) return 'Eventos/MICE'; if(lc.includes('grupo')) return 'Grupos'; return c||'Otro'; };
+                              const isOTA_p = c => !['directo','web','empresa','corporativo','grupo','mice','evento','tour','agencia','gds'].some(k=>(c||'').toLowerCase().includes(k));
+                              const canalMap = {}; let totCanalRev = 0;
+                              for (const p of (pickupRows||[])) { if((p.estado||'')==='cancelada') continue; const peso=p.precio_total||(p.num_reservas||1); const key=isOTA_p(p.canal)?'OTA':normCanalP(p.canal); canalMap[key]=(canalMap[key]||0)+peso; totCanalRev+=peso; }
+                              const canalesRevenue = Object.entries(canalMap).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]).map(([canal,revenue])=>({ canal, revenue:Math.round(revenue), pct:totCanalRev>0?Math.round(revenue/totCanalRev*100):0 }));
+                              const gruposAyer = (gruposRows||[]).filter(g => g.estado==='confirmado' && g.fecha_inicio<=ultimoDia.fecha && g.fecha_fin>ultimoDia.fecha);
+                              const revGruposAyer = gruposAyer.reduce((s,g) => s+(g.habitaciones||0)*(g.adr_grupo||0), 0);
+                              const mkGrupo = g => { const noches=Math.max(1,(new Date(g.fecha_fin+'T00:00:00')-new Date(g.fecha_inicio+'T00:00:00'))/86400000); return { nombre:g.nombre, tipo:g.categoria||"", estado:g.estado, fecha_inicio:g.fecha_inicio, fecha_fin:g.fecha_fin, habitaciones:g.habitaciones||0, revenue:Math.round((g.habitaciones||0)*(g.adr_grupo||0)*noches+(g.revenue_fnb||0)+(g.revenue_sala||0)) }; };
+                              const en7Str = new Date(new Date(ultimoDia.fecha+'T00:00:00').getTime()+7*86400000).toISOString().split('T')[0];
+                              const gruposProximos = (gruposRows||[]).filter(g => g.estado==='confirmado' && g.fecha_inicio>ultimoDia.fecha && g.fecha_inicio<=en7Str).map(mkGrupo);
+                              const proximoConfirmado = (() => { const g=(gruposRows||[]).filter(g=>g.estado==='confirmado'&&g.fecha_inicio>ultimoDia.fecha).sort((a,b)=>a.fecha_inicio.localeCompare(b.fecha_inicio))[0]; return g?mkGrupo(g):null; })();
+                              const gruposCotizacion = (gruposRows||[]).filter(g=>(g.estado==='cotizado'||g.estado==='tentativo')&&g.fecha_fin>ultimoDia.fecha).sort((a,b)=>a.fecha_inicio.localeCompare(b.fecha_inicio)).map(mkGrupo);
+                              const occ = ultimoDia.hab_disponibles>0 ? ultimoDia.hab_ocupadas/ultimoDia.hab_disponibles*100 : null;
+                              const adr = ultimoDia.adr ?? (ultimoDia.hab_ocupadas>0&&ultimoDia.revenue_hab ? ultimoDia.revenue_hab/ultimoDia.hab_ocupadas : null);
+                              const revpar = ultimoDia.revpar ?? (ultimoDia.hab_disponibles>0&&ultimoDia.revenue_hab ? ultimoDia.revenue_hab/ultimoDia.hab_disponibles : null);
+                              const revTotalEff = ultimoDia.revenue_total || ((ultimoDia.revenue_hab||0) + (ultimoDia.revenue_fnb||0)) || null;
+                              const trevpar = ultimoDia.trevpar ?? (ultimoDia.hab_disponibles>0&&revTotalEff ? revTotalEff/ultimoDia.hab_disponibles : null);
+                              const totRevTotalEff = totRevTotal || (totRevHab + totRevFnb) || 0;
+                              const kpisPayload = { fecha: ultimoDia.fecha, mesNombre: MESES_ES[mesActual-1], occ, adr, revpar, trevpar, hab_ocupadas: ultimoDia.hab_ocupadas, hab_disponibles: ultimoDia.hab_disponibles, pickup_neto: nuevas, cancelaciones: cancels, revenue_pickup_ayer: revPickup||null, revenueAcumulado, presupuestoMensual: pptoData?.rev_total_ppto??null, avg_occ: totHabDisp>0?totHabOcu/totHabDisp*100:null, avg_adr: totHabOcu>0?totRevHab/totHabOcu:null, avg_revpar: totHabDisp>0?totRevHab/totHabDisp:null, avg_trevpar: totHabDisp>0&&totRevTotalEff>0?totRevTotalEff/totHabDisp:null, lm_avg_occ: lmHabDisp>0?lmHabOcu/lmHabDisp*100:null, lm_avg_adr: lmHabOcu>0?lmRevHab/lmHabOcu:null, lm_avg_revpar: lmHabDisp>0?lmRevHab/lmHabDisp:null, lm_avg_trevpar: lmHabDisp>0&&lmRevTotalEff>0?lmRevTotalEff/lmHabDisp:null, revHabAyer: ultimoDia.revenue_hab||0, revFnbAyer: ultimoDia.revenue_fnb||0, canalesRevenue, revGruposAyer: Math.round(revGruposAyer), revIndividualAyer: Math.round(Math.max(0, (ultimoDia.revenue_hab||0)-revGruposAyer)), adrPpto: pptoData?.adr_ppto??null, gruposProximos, proximoConfirmado, gruposCotizacion };
+                              const pdfBase64 = await generarInformeDiarioPDF(kpisPayload, datos.hotel?.nombre||null);
+                              if (!pdfBase64) throw new Error("PDF vacío");
+                              const bytes = atob(pdfBase64);
+                              const buf = new Uint8Array(bytes.length);
+                              for (let i=0; i<bytes.length; i++) buf[i] = bytes.charCodeAt(i);
+                              const blob = new Blob([buf], { type:"application/pdf" });
+                              const url = URL.createObjectURL(blob);
+                              window.open(url, "_blank");
+                            } catch(e) { showToast("Error: " + e.message, false); }
+                            finally { setPrevisualizandoDiario(false); }
                           } else if (op.key === "hotel") {
                             setConfigInitialTab("datos");
                             setPerfilSeccion("config");
@@ -7289,7 +7351,7 @@ export default function App() {
                         style={{ width:"100%", padding:"9px 18px", background:"transparent", border:"none", cursor:"pointer", fontSize:13, fontWeight:500, color:"#1A1A1A", textAlign:"left" }}
                         onMouseEnter={e=>e.currentTarget.style.background="#F7F7F7"}
                         onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
-                        {op.key === "informe" && generandoPDF ? t("generando") : op.key === "informe_diario" && enviandoInformePrueba ? "Enviando..." : op.key === "informe_diario" && okInformePrueba ? "✓ Enviado" : op.label}
+                        {op.key === "informe" && generandoPDF ? t("generando") : op.key === "preview_diario" && previsualizandoDiario ? "Generando..." : op.key === "informe_diario" && enviandoInformePrueba ? "Enviando..." : op.key === "informe_diario" && okInformePrueba ? "✓ Enviado" : op.label}
                       </button>
                     ))}
                   </div>
