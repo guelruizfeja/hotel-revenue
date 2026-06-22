@@ -6624,6 +6624,8 @@ export default function App() {
   const [errorInformePrueba, setErrorInformePrueba] = useState("");
   const [toast, setToast] = useState(null); // { msg, ok }
   const showToast = (msg, ok=true) => { setToast({ msg, ok }); setTimeout(() => setToast(null), ok ? 3500 : 6000); };
+  const [alertasDismissed, setAlertasDismissed] = useState(() => sessionStorage.getItem("fr_alertas_dismissed") === "1");
+  const [alertasExpanded, setAlertasExpanded] = useState(false);
   const [datos, setDatos] = useState(() => {
     try {
       const cached = sessionStorage.getItem("fr_datos_cache_v4");
@@ -6632,6 +6634,30 @@ export default function App() {
     return { produccion: [], presupuesto: [] };
   });
   const [cargandoDatos, setCargandoDatos] = useState(false);
+
+  const alertasFaltantes = useMemo(() => {
+    const produccion = datos.produccion || [];
+    const pickup = (datos.pickupEntries || []).filter(e => !e._grupo);
+    const pad2 = n => String(n).padStart(2, "0");
+    const fechasProd = new Set(produccion.map(d => d.fecha));
+    const fechasPickup = new Set(pickup.map(e => e.fecha_pickup).filter(Boolean));
+    const todas = [...fechasProd, ...fechasPickup].sort();
+    const fechaRef = todas[0];
+    if (!fechaRef) return [];
+    const hoyD = new Date();
+    const result = [];
+    for (let i = 1; i <= 30; i++) {
+      const d = new Date(hoyD);
+      d.setDate(hoyD.getDate() - i);
+      const f = `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
+      if (f < fechaRef) break;
+      const sinProd = !fechasProd.has(f);
+      const sinPick = !fechasPickup.has(f);
+      if (!sinProd && !sinPick) break;
+      result.unshift({ fecha: f, sinProd, sinPick });
+    }
+    return result;
+  }, [datos.produccion, datos.pickupEntries]);
 
   // Restaurar scroll al montar
   useEffect(() => {
@@ -7343,6 +7369,47 @@ export default function App() {
       {/* Main */}
       <main id="main-scroll" onScroll={e => localStorage.setItem("fr_scroll", e.currentTarget.scrollTop)} style={{ padding: "clamp(14px,4vw,28px) clamp(12px,4vw,32px)", width: "100%", boxSizing: "border-box" }}>
 
+        {/* Banner datos faltantes */}
+        {!cargandoDatos && !alertasDismissed && alertasFaltantes.length > 0 && (
+          <div style={{ display:"inline-block", marginBottom:20, fontFamily:"'Plus Jakarta Sans',sans-serif", minWidth:0 }}>
+            <div style={{ background:"#FFF1F0", border:"1.5px solid #E53935", borderRadius:10, overflow:"hidden" }}>
+              {/* Cabecera clicable */}
+              <button
+                onClick={() => setAlertasExpanded(v => !v)}
+                style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 14px", background:"none", border:"none", cursor:"pointer", textAlign:"left", whiteSpace:"nowrap" }}
+              >
+                <span style={{ fontWeight:700, fontSize:13, color:"#B71C1C" }}>
+                  {alertasFaltantes.length === 1 ? "Falta importar 1 día" : `Faltan importar ${alertasFaltantes.length} días`}
+                </span>
+                <span style={{ fontSize:11, color:"#C62828", marginLeft:8 }}>{alertasExpanded ? "Ocultar" : "Ver detalle"}</span>
+                <span style={{ fontSize:11, color:"#C62828", transform: alertasExpanded ? "rotate(180deg)" : "none", transition:"transform 0.2s", display:"inline-block" }}>▼</span>
+                <button
+                  onClick={e => { e.stopPropagation(); setAlertasDismissed(true); sessionStorage.setItem("fr_alertas_dismissed", "1"); }}
+                  style={{ background:"none", border:"none", cursor:"pointer", fontSize:14, color:"#C62828", lineHeight:1, padding:"0 0 0 10px" }}
+                  title="Cerrar"
+                >✕</button>
+              </button>
+              {/* Detalle desplegable */}
+              {alertasExpanded && (
+                <div style={{ borderTop:"1px solid #FFCDD2", padding:"8px 14px 12px" }}>
+                  {alertasFaltantes.map(({ fecha, sinProd, sinPick }) => {
+                    const d = new Date(fecha + "T00:00:00");
+                    const label = d.toLocaleDateString("es-ES", { weekday:"long", day:"2-digit", month:"long" });
+                    return (
+                      <div key={fecha} style={{ display:"flex", alignItems:"center", gap:10, padding:"5px 0", borderBottom:"1px solid #FFEBEE" }}>
+                        <span style={{ fontSize:12, color:"#B71C1C", fontWeight:600, minWidth:160, textTransform:"capitalize" }}>{label}</span>
+                        <div style={{ display:"flex", gap:6 }}>
+                          {sinProd && <span style={{ fontSize:11, fontWeight:600, background:"#FFEBEE", color:"#C62828", border:"1px solid #EF9A9A", borderRadius:5, padding:"2px 8px" }}>Sin producción</span>}
+                          {sinPick && <span style={{ fontSize:11, fontWeight:600, background:"#FFEBEE", color:"#C62828", border:"1px solid #EF9A9A", borderRadius:5, padding:"2px 8px" }}>Sin pick up</span>}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Gestión siempre montada para no perder estado al cambiar de pestaña */}
         <div style={{ display: !cargandoDatos && !mesDetalle && !desgloseMovimiento && view === "gestion" ? "block" : "none", width:"100%" }}>
@@ -7352,6 +7419,8 @@ export default function App() {
             onImportado={() => {
               sessionStorage.removeItem("fr_datos_cache_v4");
               sessionStorage.removeItem("fr_datos_ts_v4");
+              sessionStorage.removeItem("fr_alertas_dismissed");
+              setAlertasDismissed(false);
               localStorage.removeItem("fr_scroll");
               Object.keys(localStorage).filter(k => k.startsWith("fr_kpis_")).forEach(k => localStorage.removeItem(k));
               setDatos(d => ({ produccion:[], presupuesto:[], pickupEntries:[], grupos:[], hotel:d.hotel, session }));
