@@ -773,10 +773,15 @@ async function generarInformeDiarioPDF(kpis, hotelNombre) {
   }
 
   // ── HEADER ──────────────────────────────────────────
-  const hdrH = 27;
-  doc.setFillColor(15,15,15); doc.rect(0, 0, W, hdrH, "F");
-  doc.setFillColor(140,140,140); doc.rect(0, hdrH, W, 1.5, "F");
-  // Logo blanco arriba izquierda (pequeño)
+  const hdrH = 26;
+  doc.setFillColor(15, 23, 42); doc.rect(0, 0, W, hdrH, "F");
+  doc.setFillColor(60, 70, 85); doc.rect(0, hdrH, W, 1, "F");
+  // Nombre hotel izquierda
+  doc.setFontSize(15); doc.setFont("helvetica","bold"); doc.setTextColor(255,255,255);
+  doc.text((hotelNombre || "Mi Hotel").toUpperCase(), M, hdrH/2+2, { baseline:"middle" });
+  doc.setFontSize(7); doc.setFont("helvetica","normal"); doc.setTextColor(140,155,175);
+  doc.text(`Informe Diario de Revenue — ${fmtD(fecha)}`, M, hdrH/2+8, { baseline:"middle" });
+  // Logo blanco derecha
   try {
     const img = new Image();
     await new Promise((res, rej) => { img.onload=res; img.onerror=rej; img.src=LOGO_B64; });
@@ -785,15 +790,9 @@ async function generarInformeDiarioPDF(kpis, hotelNombre) {
     const id = cx2.getImageData(0,0,cv.width,cv.height);
     for (let i=0; i<id.data.length; i+=4) { if(id.data[i+3]>10){ id.data[i]=255; id.data[i+1]=255; id.data[i+2]=255; } }
     cx2.putImageData(id,0,0);
-    doc.addImage(cv.toDataURL("image/png"), "PNG", M, 2, 34, 14);
+    const lW=42, lH=17;
+    doc.addImage(cv.toDataURL("image/png"), "PNG", W-M-lW, (hdrH-lH)/2, lW, lH);
   } catch(_) {}
-  // Texto centrado
-  doc.setFontSize(6.5); doc.setFont("helvetica","bold"); doc.setTextColor(230,230,230);
-  doc.text("INFORME DIARIO DE REVENUE", W/2, hdrH/2-5, { align:"center" });
-  doc.setFontSize(14); doc.setFont("helvetica","bold"); doc.setTextColor(255,255,255);
-  doc.text(hotelNombre || "Mi Hotel", W/2, hdrH/2+3, { align:"center" });
-  doc.setFontSize(7.5); doc.setFont("helvetica","normal"); doc.setTextColor(180,180,180);
-  doc.text(fmtD(fecha), W/2, hdrH/2+10, { align:"center" });
   y = hdrH + 1.5 + 6;
 
   // ── RESUMEN DE AYER ────────────────────────────────
