@@ -811,7 +811,7 @@ async function generarInformeDiarioPDF(kpis, hotelNombre) {
   const rvpΔ  = revpar!=null&&avg_revpar!=null&&avg_revpar>0 ? (revpar-avg_revpar)/avg_revpar*100 : null;
   const kpiDefs = [
     { lbl:"OCUPACIÓN", val: occ!=null?parseFloat(occ).toFixed(1)+"%":"—",  delta:occΔ, dfmt:n=>(n>=0?"+":"")+parseFloat(n).toFixed(1)+" pp", sub:hab_ocupadas!=null?`${hab_ocupadas}/${hab_disponibles} hab.`:null, vc:null },
-    { lbl:"ADR",       val: adr!=null?`€${Math.round(adr)}`:"—",           delta:adrΔ, dfmt:n=>(n>=0?"+":"")+`€${Math.abs(n).toFixed(1)}`,   sub:null, vc:null },
+    { lbl:"ADR",       val: adr!=null?`€${Math.round(adr)}`:"—",           delta:adrΔ, dfmt:n=>(n>=0?"+€":"-€")+Math.abs(n).toFixed(1),        sub:null, vc:null },
     { lbl:"REVPAR",    val: revpar!=null?`€${Math.round(revpar)}`:"—",      delta:rvpΔ, dfmt:n=>(n>=0?"+":"")+parseFloat(n).toFixed(1)+"%",   sub:null, vc:null },
     { lbl:"TREVPAR",   val: trevpar!=null?`€${Math.round(trevpar)}`:"—",    delta:trevpar!=null&&avg_trevpar!=null&&avg_trevpar>0?(trevpar-avg_trevpar)/avg_trevpar*100:null, dfmt:n=>(n>=0?"+":"")+parseFloat(n).toFixed(1)+"%", sub:null, vc:null },
   ];
@@ -841,18 +841,12 @@ async function generarInformeDiarioPDF(kpis, hotelNombre) {
   const nuevas = pickup_neto || 0;
   const cancels = cancelaciones || 0;
   const neto = nuevas - cancels;
-  const pickRows = [
-    { lbl:"Nuevas habs",    val:`+${nuevas}`, color:C_VERDE },
-    { lbl:"Cancelaciones",  val:cancels>0?`-${cancels}`:"—", color:cancels>0?C_ROJO:C_GRIS },
-    { lbl:"Pick up neto",   val:(neto>=0?"+":"")+neto, color:neto>0?C_VERDE:neto<0?C_ROJO:C_GRIS, bold:true },
-  ];
-  pickRows.forEach((r, i) => {
-    const ry = y + 13 + i*6;
-    doc.setFontSize(7); doc.setFont("helvetica", r.bold?"bold":"normal"); doc.setTextColor(...C_NEGRO);
-    doc.text(r.lbl, pickX+3, ry);
-    doc.setFontSize(7.5); doc.setFont("helvetica", r.bold?"bold":"normal"); doc.setTextColor(...r.color);
-    doc.text(r.val+" hab.", pickX+kColW-2, ry, { align:"right" });
-  });
+  // Valor principal: pick up neto
+  doc.setFontSize(15); doc.setFont("helvetica","bold"); doc.setTextColor(...(neto>0?[2,110,75]:neto<0?[180,20,20]:C_NEGRO));
+  doc.text((neto>=0?"+":"")+neto+" hab.", pickCx, y+15, { align:"center" });
+  // Sub-línea: desglose nuevas / cancelaciones
+  doc.setFontSize(6.5); doc.setFont("helvetica","normal"); doc.setTextColor(...C_GRIS);
+  doc.text(`+${nuevas} nuevas · ${cancels>0?`-${cancels}`:"0"} cancels`, pickCx, y+23, { align:"center" });
   y += kH + 6;
 
   // ── MIX DE REVENUE ──────────────────────────────────
@@ -888,12 +882,12 @@ async function generarInformeDiarioPDF(kpis, hotelNombre) {
   const lx1 = cx1 + rMm + 3;
   if (habPct!=null) {
     legendSq(lx1, cymx-4, "#0A2540");
-    doc.setFontSize(6.5); doc.setFont("helvetica","normal"); doc.setTextColor(...C_NEGRO);
+    doc.setFontSize(8); doc.setFont("helvetica","bold"); doc.setTextColor(...C_NEGRO);
     doc.text(`Habitaciones ${habPct}%`, lx1+4, cymx-4);
-    legendSq(lx1, cymx+2, "#D4A017");
-    doc.text(`F&B ${100-habPct}%`, lx1+4, cymx+2);
+    legendSq(lx1, cymx+3, "#D4A017");
+    doc.text(`F&B ${100-habPct}%`, lx1+4, cymx+3);
   } else {
-    doc.setFontSize(6.5); doc.setTextColor(...C_GRISM); doc.text("Sin datos", lx1, cymx);
+    doc.setFontSize(7); doc.setTextColor(...C_GRIS); doc.text("Sin datos", lx1, cymx);
   }
 
   // Donut 2: Procedencia
@@ -906,9 +900,9 @@ async function generarInformeDiarioPDF(kpis, hotelNombre) {
   const lx2 = cx2 + rMm + 3;
   if (canales.length>0) {
     canales.slice(0,3).forEach((c,i) => {
-      legendSq(lx2, cymx - 4 + i*6, canalColors[i%canalColors.length]);
-      doc.setFontSize(6.5); doc.setFont("helvetica","normal"); doc.setTextColor(...C_NEGRO);
-      doc.text(`${c.canal} ${c.pct}%`, lx2+4, cymx - 4 + i*6);
+      legendSq(lx2, cymx - 4 + i*7, canalColors[i%canalColors.length]);
+      doc.setFontSize(8); doc.setFont("helvetica","bold"); doc.setTextColor(...C_NEGRO);
+      doc.text(`${c.canal} ${c.pct}%`, lx2+4, cymx - 4 + i*7);
     });
   } else {
     doc.setFontSize(6.5); doc.setTextColor(...C_GRISM); doc.text("Sin datos", lx2, cymx);
@@ -923,10 +917,10 @@ async function generarInformeDiarioPDF(kpis, hotelNombre) {
     : [{ value:1, color:"#7C3AED" }]);
   const lx3 = cx3 + rMm + 3;
   legendSq(lx3, cymx-4, "#7C3AED");
-  doc.setFontSize(6.5); doc.setFont("helvetica","normal"); doc.setTextColor(...C_NEGRO);
+  doc.setFontSize(8); doc.setFont("helvetica","bold"); doc.setTextColor(...C_NEGRO);
   doc.text(`Grupos ${gPct!=null?gPct:0}%`, lx3+4, cymx-4);
-  legendSq(lx3, cymx+2, "#CBD5E1");
-  doc.text(`Individual ${gPct!=null?(100-gPct):100}%`, lx3+4, cymx+2);
+  legendSq(lx3, cymx+3, "#CBD5E1");
+  doc.text(`Individual ${gPct!=null?(100-gPct):100}%`, lx3+4, cymx+3);
 
   y += mixH + 6;
 
@@ -939,7 +933,7 @@ async function generarInformeDiarioPDF(kpis, hotelNombre) {
 
     doc.setFontSize(8); doc.setFont("helvetica","bold"); doc.setTextColor(...C_GRIS);
     doc.text("PROGRESO MENSUAL", M, y);
-    doc.setFont("helvetica","bold"); doc.setTextColor(...C_GRIS);
+    doc.setFontSize(9); doc.setFont("helvetica","bold"); doc.setTextColor(...C_NEGRO);
     doc.text(`(${mesNombre||""})`, M+44, y);
     y += 4;
 
