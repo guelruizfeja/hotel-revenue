@@ -939,7 +939,7 @@ async function generarInformeDiarioPDF(kpis, hotelNombre) {
 
     doc.setFontSize(8); doc.setFont("helvetica","bold"); doc.setTextColor(...C_GRIS);
     doc.text("PROGRESO MENSUAL", M, y);
-    doc.setFont("helvetica","normal"); doc.setTextColor(...C_GRISM);
+    doc.setFont("helvetica","bold"); doc.setTextColor(...C_GRIS);
     doc.text(`(${mesNombre||""})`, M+44, y);
     y += 4;
 
@@ -959,7 +959,7 @@ async function generarInformeDiarioPDF(kpis, hotelNombre) {
       if (i>0) { doc.setDrawColor(...C_BORDE); doc.line(M+i*pgCW, y+3, M+i*pgCW, y+22); }
       doc.setFontSize(6.5); doc.setFont("helvetica","bold"); doc.setTextColor(...C_GRIS);
       doc.text(col.lbl, px3, y+8, { align:"center" });
-      doc.setFontSize(13); doc.setFont("helvetica","bold"); doc.setTextColor(...col.vc);
+      doc.setFontSize(15); doc.setFont("helvetica","bold"); doc.setTextColor(...(col.vc===C_AZUL?C_NEGRO:col.vc));
       doc.text(col.val, px3, y+18, { align:"center" });
     });
 
@@ -976,7 +976,7 @@ async function generarInformeDiarioPDF(kpis, hotelNombre) {
     doc.setDrawColor(...C_BORDE); doc.line(M+6, kBy, W-M-6, kBy);
     doc.setFontSize(6.5); doc.setFont("helvetica","bold"); doc.setTextColor(...C_GRIS);
     doc.text("MEDIA DEL MES", M+6, kBy+6);
-    doc.setFont("helvetica","normal"); doc.setTextColor(...C_GRISM);
+    doc.setFont("helvetica","bold"); doc.setTextColor(...C_GRIS);
     doc.text("(vs Mes Anterior)", M+6+33, kBy+6);
 
     const lmKpis = [
@@ -989,14 +989,13 @@ async function generarInformeDiarioPDF(kpis, hotelNombre) {
     lmKpis.forEach((k, i) => {
       const kx = M + i*kColW + kColW/2;
       if (i>0) { doc.setDrawColor(...C_BORDE); doc.line(M+i*kColW, kBy+10, M+i*kColW, kBy+36); }
-      doc.setFontSize(6); doc.setFont("helvetica","bold"); doc.setTextColor(...C_GRIS);
+      doc.setFontSize(6.5); doc.setFont("helvetica","bold"); doc.setTextColor(...C_GRIS);
       doc.text(k.lbl, kx, kBy+15, { align:"center" });
-      doc.setFontSize(11); doc.setFont("helvetica","bold"); doc.setTextColor(...C_AZUL);
+      doc.setFontSize(13); doc.setFont("helvetica","bold"); doc.setTextColor(...C_NEGRO);
       doc.text(k.val, kx, kBy+23, { align:"center" });
       if (k.delta!=null) {
-        const dc = k.delta>=0 ? C_VERDE : C_ROJO;
-        doc.setFontSize(7); doc.setFont("helvetica","bold"); doc.setTextColor(...dc);
-        doc.text(k.dfmt(k.delta), kx, kBy+29, { align:"center" });
+        doc.setFontSize(8.5); doc.setFont("helvetica","bold"); doc.setTextColor(...(k.delta>=0?[2,110,75]:[180,20,20]));
+        doc.text(k.dfmt(k.delta), kx, kBy+30, { align:"center" });
       }
     });
 
@@ -1011,25 +1010,25 @@ async function generarInformeDiarioPDF(kpis, hotelNombre) {
     const _geTxt = "GRUPOS & EVENTOS";
     const _geW = doc.getTextWidth(_geTxt);
     doc.text(_geTxt, M, y);
-    doc.setFont("helvetica","normal"); doc.setTextColor(...C_GRISM);
+    doc.setFont("helvetica","bold"); doc.setTextColor(...C_GRIS);
     doc.text(` — ${subtitulo}`, M + _geW, y);
     y += 4;
     const tH = 9 + lista.length * 8;
     doc.setFillColor(255,255,255); doc.setDrawColor(...C_BORDE);
     doc.roundedRect(M, y, W-M*2, tH, 2, 2, "FD");
     const cols = [{lbl:"NOMBRE",x:M+3},{lbl:"TIPO",x:M+52},{lbl:"FECHAS",x:M+80},{lbl:"HAB.",x:M+126},{lbl:"REVENUE",x:M+148}];
-    doc.setFontSize(6); doc.setFont("helvetica","bold"); doc.setTextColor(...C_GRIS);
+    doc.setFontSize(7); doc.setFont("helvetica","bold"); doc.setTextColor(...C_GRIS);
     cols.forEach(c => doc.text(c.lbl, c.x, y+6));
     doc.setDrawColor(...C_BORDE); doc.line(M+3, y+8, W-M-3, y+8);
     lista.forEach((g, i) => {
       const ry = y + 14 + i*8;
-      doc.setFontSize(7); doc.setFont("helvetica","bold"); doc.setTextColor(...C_NEGRO);
+      doc.setFontSize(7.5); doc.setFont("helvetica","bold"); doc.setTextColor(...C_NEGRO);
       doc.text((g.nombre||"—").slice(0,22), cols[0].x, ry);
-      doc.setFont("helvetica","normal"); doc.setTextColor(...C_GRIS);
+      doc.setFont("helvetica","normal"); doc.setTextColor(...C_NEGRO);
       doc.text((g.tipo||"").slice(0,13), cols[1].x, ry);
       doc.text(`${fmtSD(g.fecha_inicio)} – ${fmtSD(g.fecha_fin)}`, cols[2].x, ry);
       doc.text(g.habitaciones?`${g.habitaciones} hab.`:"—", cols[3].x, ry);
-      doc.setFont("helvetica","bold"); doc.setTextColor(...C_AZUL);
+      doc.setFont("helvetica","bold"); doc.setTextColor(...C_NEGRO);
       doc.text(g.revenue?`€${fmt(g.revenue)}`:"—", cols[4].x, ry);
     });
     y += tH + 6;
