@@ -701,7 +701,7 @@ async function generarInformeDiarioPDF(kpis, hotelNombre) {
   const MESES_S   = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
   const {
     fecha, mesNombre, occ, adr, revpar, trevpar,
-    hab_ocupadas, hab_disponibles, pickup_neto,
+    hab_ocupadas, hab_disponibles, pickup_neto, cancelaciones,
     revenueAcumulado, presupuestoMensual,
     avg_occ, avg_adr, avg_revpar, avg_trevpar,
     lm_avg_occ, lm_avg_adr, lm_avg_revpar, lm_avg_trevpar,
@@ -775,13 +775,13 @@ async function generarInformeDiarioPDF(kpis, hotelNombre) {
   // ── HEADER ──────────────────────────────────────────
   doc.setFillColor(...C_AZUL); doc.rect(0, 0, W, 32, "F");
   doc.setFillColor(...C_GOLD); doc.rect(0, 30, W, 2, "F");
-  doc.setTextColor(255,255,255);
-  doc.setFontSize(7); doc.setFont("helvetica","bold");
-  doc.text("INFORME DIARIO DE REVENUE", W/2, 9, { align:"center" });
-  doc.setFontSize(15); doc.setFont("helvetica","bold");
-  doc.text(hotelNombre || "Mi Hotel", W/2, 19, { align:"center" });
-  doc.setFontSize(9); doc.setFont("helvetica","normal"); doc.setTextColor(180,200,220);
-  doc.text(fmtD(fecha), W/2, 26, { align:"center" });
+  try { doc.addImage(LOGO_B64, "PNG", M, 8, 40, 15); } catch(_) {}
+  doc.setFontSize(6.5); doc.setFont("helvetica","normal"); doc.setTextColor(180,200,220);
+  doc.text("INFORME DIARIO DE REVENUE", W-M, 11, { align:"right" });
+  doc.setFontSize(13); doc.setFont("helvetica","bold"); doc.setTextColor(255,255,255);
+  doc.text(hotelNombre || "Mi Hotel", W-M, 20, { align:"right" });
+  doc.setFontSize(8); doc.setFont("helvetica","normal"); doc.setTextColor(180,200,220);
+  doc.text(fmtD(fecha), W-M, 27, { align:"right" });
   y = 39;
 
   // ── RESUMEN DE AYER ────────────────────────────────
@@ -791,7 +791,7 @@ async function generarInformeDiarioPDF(kpis, hotelNombre) {
   doc.text("(vs. Media del Mes)", M+39, y);
   y += 4;
 
-  const kH = 38;
+  const kH = 44;
   doc.setFillColor(255,255,255); doc.setDrawColor(...C_BORDE);
   doc.roundedRect(M, y, W-M*2, kH, 2, 2, "FD");
 
@@ -799,11 +799,10 @@ async function generarInformeDiarioPDF(kpis, hotelNombre) {
   const adrΔ  = adr!=null&&avg_adr!=null ? adr-avg_adr : null;
   const rvpΔ  = revpar!=null&&avg_revpar!=null&&avg_revpar>0 ? (revpar-avg_revpar)/avg_revpar*100 : null;
   const kpiDefs = [
-    { lbl:"OCUPACIÓN",   val: occ!=null?parseFloat(occ).toFixed(1)+"%":"—",    delta:occΔ, dfmt:n=>(n>=0?"+":"")+parseFloat(n).toFixed(1)+" pp", sub:hab_ocupadas!=null?`${hab_ocupadas}/${hab_disponibles} hab.`:null, vc:null },
-    { lbl:"ADR",         val: adr!=null?`€${Math.round(adr)}`:"—",             delta:adrΔ, dfmt:n=>(n>=0?"+":"")+`€${Math.abs(n).toFixed(1)}`,   sub:null, vc:null },
-    { lbl:"REVPAR",      val: revpar!=null?`€${Math.round(revpar)}`:"—",        delta:rvpΔ, dfmt:n=>(n>=0?"+":"")+parseFloat(n).toFixed(1)+"%",   sub:null, vc:null },
-    { lbl:"TREVPAR",     val: trevpar!=null?`€${Math.round(trevpar)}`:"—",       delta:trevpar!=null&&avg_trevpar!=null&&avg_trevpar>0?(trevpar-avg_trevpar)/avg_trevpar*100:null, dfmt:n=>(n>=0?"+":"")+parseFloat(n).toFixed(1)+"%", sub:null, vc:null },
-    { lbl:"PICKUP NETO", val: pickup_neto!=null?(pickup_neto>=0?"+":"")+pickup_neto+" hab.":"—", delta:null, dfmt:null, sub:null, vc:pickup_neto>0?C_VERDE:pickup_neto<0?C_ROJO:C_AZUL },
+    { lbl:"OCUPACIÓN", val: occ!=null?parseFloat(occ).toFixed(1)+"%":"—",  delta:occΔ, dfmt:n=>(n>=0?"+":"")+parseFloat(n).toFixed(1)+" pp", sub:hab_ocupadas!=null?`${hab_ocupadas}/${hab_disponibles} hab.`:null, vc:null },
+    { lbl:"ADR",       val: adr!=null?`€${Math.round(adr)}`:"—",           delta:adrΔ, dfmt:n=>(n>=0?"+":"")+`€${Math.abs(n).toFixed(1)}`,   sub:null, vc:null },
+    { lbl:"REVPAR",    val: revpar!=null?`€${Math.round(revpar)}`:"—",      delta:rvpΔ, dfmt:n=>(n>=0?"+":"")+parseFloat(n).toFixed(1)+"%",   sub:null, vc:null },
+    { lbl:"TREVPAR",   val: trevpar!=null?`€${Math.round(trevpar)}`:"—",    delta:trevpar!=null&&avg_trevpar!=null&&avg_trevpar>0?(trevpar-avg_trevpar)/avg_trevpar*100:null, dfmt:n=>(n>=0?"+":"")+parseFloat(n).toFixed(1)+"%", sub:null, vc:null },
   ];
   const kColW = (W-M*2)/5;
   kpiDefs.forEach((k, i) => {
@@ -812,15 +811,36 @@ async function generarInformeDiarioPDF(kpis, hotelNombre) {
     doc.setFontSize(6.5); doc.setFont("helvetica","bold"); doc.setTextColor(...C_GRIS);
     doc.text(k.lbl, kx, y+9, { align:"center" });
     doc.setFontSize(13); doc.setFont("helvetica","bold"); doc.setTextColor(...(k.vc||C_AZUL));
-    doc.text(k.val, kx, y+20, { align:"center" });
+    doc.text(k.val, kx, y+21, { align:"center" });
     if (k.delta!=null) {
       doc.setFontSize(7); doc.setFont("helvetica","bold"); doc.setTextColor(...(k.delta>=0?C_VERDE:C_ROJO));
-      doc.text(k.dfmt(k.delta), kx, y+27, { align:"center" });
+      doc.text(k.dfmt(k.delta), kx, y+29, { align:"center" });
     }
     if (k.sub) {
       doc.setFontSize(6); doc.setFont("helvetica","normal"); doc.setTextColor(...C_GRIS);
-      doc.text(k.sub, kx, k.delta!=null?y+33:y+28, { align:"center" });
+      doc.text(k.sub, kx, k.delta!=null?y+36:y+29, { align:"center" });
     }
+  });
+  // Columna PICK UP con desglose
+  const pickX = M + 4*kColW;
+  doc.setDrawColor(...C_BORDE); doc.line(pickX, y+5, pickX, y+kH-5);
+  const pickCx = pickX + kColW/2;
+  doc.setFontSize(6.5); doc.setFont("helvetica","bold"); doc.setTextColor(...C_GRIS);
+  doc.text("PICK UP", pickCx, y+9, { align:"center" });
+  const nuevas = pickup_neto || 0;
+  const cancels = cancelaciones || 0;
+  const neto = nuevas - cancels;
+  const pickRows = [
+    { lbl:"Nuevas habs",    val:`+${nuevas}`, color:C_VERDE },
+    { lbl:"Cancelaciones",  val:`-${cancels}`, color:C_ROJO },
+    { lbl:"Pick up neto",   val:(neto>=0?"+":"")+neto, color:neto>0?C_VERDE:neto<0?C_ROJO:C_GRIS, bold:true },
+  ];
+  pickRows.forEach((r, i) => {
+    const ry = y + 18 + i*8;
+    doc.setFontSize(6); doc.setFont("helvetica","normal"); doc.setTextColor(...C_GRISM);
+    doc.text(r.lbl, pickX+3, ry);
+    doc.setFontSize(7); doc.setFont("helvetica", r.bold?"bold":"normal"); doc.setTextColor(...r.color);
+    doc.text(r.val+" hab.", pickX+kColW-2, ry, { align:"right" });
   });
   y += kH + 6;
 
