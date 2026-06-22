@@ -773,15 +773,15 @@ async function generarInformeDiarioPDF(kpis, hotelNombre) {
   }
 
   // ── HEADER ──────────────────────────────────────────
-  const hdrH = 26;
+  const hdrH = 32;
   doc.setFillColor(15, 23, 42); doc.rect(0, 0, W, hdrH, "F");
   doc.setFillColor(60, 70, 85); doc.rect(0, hdrH, W, 1, "F");
-  // Nombre hotel izquierda
+  // Hotel + fecha izquierda, mismo estilo
   doc.setFontSize(15); doc.setFont("helvetica","bold"); doc.setTextColor(255,255,255);
-  doc.text((hotelNombre || "Mi Hotel").toUpperCase(), M, hdrH/2+2, { baseline:"middle" });
-  doc.setFontSize(7); doc.setFont("helvetica","normal"); doc.setTextColor(140,155,175);
-  doc.text(`Informe Diario de Revenue — ${fmtD(fecha)}`, M, hdrH/2+8, { baseline:"middle" });
-  // Logo blanco derecha
+  doc.text((hotelNombre || "Mi Hotel").toUpperCase(), M, 13);
+  doc.setFontSize(15); doc.setFont("helvetica","bold"); doc.setTextColor(255,255,255);
+  doc.text(fmtD(fecha), M, 23);
+  // Solo logo derecha (icono F + texto FASTREVENUE en blanco)
   try {
     const img = new Image();
     await new Promise((res, rej) => { img.onload=res; img.onerror=rej; img.src=LOGO_B64; });
@@ -793,7 +793,7 @@ async function generarInformeDiarioPDF(kpis, hotelNombre) {
     const lW=42, lH=17;
     doc.addImage(cv.toDataURL("image/png"), "PNG", W-M-lW, (hdrH-lH)/2, lW, lH);
   } catch(_) {}
-  y = hdrH + 1.5 + 6;
+  y = hdrH + 1 + 6;
 
   // ── RESUMEN DE AYER ────────────────────────────────
   doc.setFontSize(8); doc.setFont("helvetica","bold"); doc.setTextColor(...C_GRIS);
