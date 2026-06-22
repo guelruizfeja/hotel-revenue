@@ -798,7 +798,7 @@ async function generarInformeDiarioPDF(kpis, hotelNombre) {
   // ── RESUMEN DE AYER ────────────────────────────────
   doc.setFontSize(8); doc.setFont("helvetica","bold"); doc.setTextColor(...C_GRIS);
   doc.text("RESUMEN DE AYER", M, y);
-  doc.setFont("helvetica","normal"); doc.setTextColor(...C_GRISM);
+  doc.setFont("helvetica","bold"); doc.setTextColor(...C_GRIS);
   doc.text("(vs. Media del Mes)", M+39, y);
   y += 4;
 
@@ -821,15 +821,15 @@ async function generarInformeDiarioPDF(kpis, hotelNombre) {
     if (i>0) { doc.setDrawColor(...C_BORDE); doc.line(M+i*kColW, y+5, M+i*kColW, y+kH-5); }
     doc.setFontSize(6.5); doc.setFont("helvetica","bold"); doc.setTextColor(...C_GRIS);
     doc.text(k.lbl, kx, y+6, { align:"center" });
-    doc.setFontSize(13); doc.setFont("helvetica","bold"); doc.setTextColor(...(k.vc||C_AZUL));
+    doc.setFontSize(15); doc.setFont("helvetica","bold"); doc.setTextColor(...(k.vc||C_NEGRO));
     doc.text(k.val, kx, y+15, { align:"center" });
     if (k.delta!=null) {
-      doc.setFontSize(7); doc.setFont("helvetica","bold"); doc.setTextColor(...(k.delta>=0?C_VERDE:C_ROJO));
-      doc.text(k.dfmt(k.delta), kx, y+22, { align:"center" });
+      doc.setFontSize(8.5); doc.setFont("helvetica","bold"); doc.setTextColor(...(k.delta>=0?[2,110,75]:[180,20,20]));
+      doc.text(k.dfmt(k.delta), kx, y+23, { align:"center" });
     }
     if (k.sub) {
-      doc.setFontSize(6); doc.setFont("helvetica","normal"); doc.setTextColor(...C_GRIS);
-      doc.text(k.sub, kx, k.delta!=null?y+28:y+22, { align:"center" });
+      doc.setFontSize(6.5); doc.setFont("helvetica","normal"); doc.setTextColor(...C_GRIS);
+      doc.text(k.sub, kx, k.delta!=null?y+29:y+23, { align:"center" });
     }
   });
   // Columna PICK UP con desglose
@@ -858,7 +858,7 @@ async function generarInformeDiarioPDF(kpis, hotelNombre) {
   // ── MIX DE REVENUE ──────────────────────────────────
   doc.setFontSize(8); doc.setFont("helvetica","bold"); doc.setTextColor(...C_GRIS);
   doc.text("MIX DE REVENUE", M, y);
-  doc.setFont("helvetica","normal"); doc.setTextColor(...C_GRISM);
+  doc.setFont("helvetica","bold"); doc.setTextColor(...C_GRIS);
   doc.text("— AYER", M+34, y);
   y += 5;
 
