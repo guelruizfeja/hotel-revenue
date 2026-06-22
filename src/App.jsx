@@ -982,9 +982,9 @@ async function generarInformeDiarioPDF(kpis, hotelNombre) {
     // 3-col header row: Acumulado / Cumplimiento / Presupuesto
     const pgCols = [
       { lbl:`ACUMULADO DÍA ${lastDay}`, val:`€${fmt(acum)}`,                                          vc:C_NEGRO },
-      { lbl:"PREVISIÓN",                val:forecastMes?`€${fmt(forecastMes)}`:"—",                   vc:C_NEGRO },
       { lbl:"CUMPLIMIENTO",             val:pct!=null?`${pct}%`:"—",                                  vc:barCol  },
       { lbl:"PRESUPUESTO",              val:presupuestoMensual?`€${fmt(presupuestoMensual)}`:"—",      vc:C_NEGRO },
+      { lbl:"PREVISIÓN",                val:forecastMes?`€${fmt(forecastMes)}`:"—",                   vc:C_NEGRO },
     ];
     const pgCW = (W-M*2)/4;
     pgCols.forEach((col, i) => {
