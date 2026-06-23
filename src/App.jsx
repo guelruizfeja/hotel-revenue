@@ -738,11 +738,11 @@ async function generarInformeDiarioPDF(kpis, hotelNombre) {
   const MESES_S   = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
   const {
     fecha, mesNombre, occ, adr, revpar, trevpar,
-    hab_ocupadas, hab_disponibles, pickup_neto, cancelaciones,
+    hab_ocupadas, hab_disponibles, pickup_neto, cancelaciones, revenue_pickup_ayer,
     revenueAcumulado, presupuestoMensual,
     avg_occ, avg_adr, avg_revpar, avg_trevpar,
     lm_avg_occ, lm_avg_adr, lm_avg_revpar, lm_avg_trevpar,
-    revHabAyer, revFnbAyer, canalesRevenue,
+    revHabAyer, revFnbAyer, canalesRevenue, canalesPickup, canalesRevMix,
     revGruposAyer, revIndividualAyer,
     adrPpto, gruposProximos, proximoConfirmado, gruposCotizacion,
     forecastMes,
@@ -811,14 +811,17 @@ async function generarInformeDiarioPDF(kpis, hotelNombre) {
   }
 
   // ── HEADER ──────────────────────────────────────────
-  const hdrH = 32;
+  const hdrH = 26;
   doc.setFillColor(15, 23, 42); doc.rect(0, 0, W, hdrH, "F");
-  doc.setFillColor(60, 70, 85); doc.rect(0, hdrH, W, 1, "F");
-  // Hotel + fecha izquierda, mismo estilo
+  // Label superior centrado
+  doc.setFontSize(6.5); doc.setFont("helvetica","normal"); doc.setTextColor(130,145,165);
+  doc.text("INFORME DIARIO DE REVENUE", W/2, 7, { align:"center" });
+  // Hotel centrado y grande
   doc.setFontSize(15); doc.setFont("helvetica","bold"); doc.setTextColor(255,255,255);
-  doc.text((hotelNombre || "Mi Hotel").toUpperCase(), M, 13);
-  doc.setFontSize(15); doc.setFont("helvetica","bold"); doc.setTextColor(255,255,255);
-  doc.text(fmtD(fecha), M, 23);
+  doc.text((hotelNombre || "Mi Hotel").toUpperCase(), W/2, 16, { align:"center" });
+  // Fecha centrada debajo
+  doc.setFontSize(8); doc.setFont("helvetica","normal"); doc.setTextColor(160,175,190);
+  doc.text(fmtD(fecha), W/2, 23, { align:"center" });
   // Solo logo derecha en blanco
   try {
     const img = new Image();
@@ -840,6 +843,7 @@ async function generarInformeDiarioPDF(kpis, hotelNombre) {
   doc.text("(vs. Media del Mes)", M+39, y);
   y += 4;
 
+  // ── Tarjeta KPIs (4 columnas) ──
   const kH = 32;
   doc.setFillColor(255,255,255); doc.setDrawColor(...C_BORDE);
   doc.roundedRect(M, y, W-M*2, kH, 2, 2, "FD");
@@ -853,7 +857,7 @@ async function generarInformeDiarioPDF(kpis, hotelNombre) {
     { lbl:"REVPAR",    val: revpar!=null?`€${Math.round(revpar)}`:"—",      delta:rvpΔ, dfmt:n=>(n>=0?"+":"")+parseFloat(n).toFixed(1)+"%",   sub:null, vc:null },
     { lbl:"TREVPAR",   val: trevpar!=null?`€${Math.round(trevpar)}`:"—",    delta:trevpar!=null&&avg_trevpar!=null&&avg_trevpar>0?(trevpar-avg_trevpar)/avg_trevpar*100:null, dfmt:n=>(n>=0?"+":"")+parseFloat(n).toFixed(1)+"%", sub:null, vc:null },
   ];
-  const kColW = (W-M*2)/5;
+  const kColW = (W-M*2)/4;
   kpiDefs.forEach((k, i) => {
     const kx = M + i*kColW + kColW/2;
     if (i>0) { doc.setDrawColor(...C_BORDE); doc.line(M+i*kColW, y+5, M+i*kColW, y+kH-5); }
@@ -870,97 +874,105 @@ async function generarInformeDiarioPDF(kpis, hotelNombre) {
       doc.text(k.sub, kx, k.delta!=null?y+29:y+23, { align:"center" });
     }
   });
-  // Columna PICK UP con desglose
-  const pickX = M + 4*kColW;
-  doc.setDrawColor(...C_BORDE); doc.line(pickX, y+5, pickX, y+kH-5);
-  const pickCx = pickX + kColW/2;
-  doc.setFontSize(6.5); doc.setFont("helvetica","bold"); doc.setTextColor(...C_GRIS);
-  doc.text("PICK UP", pickCx, y+6, { align:"center" });
+  y += kH + 4;
+
+  // ── Tarjeta Pick Up desglosada ──
   const nuevas = pickup_neto || 0;
   const cancels = cancelaciones || 0;
   const neto = nuevas - cancels;
-  // Valor principal: pick up neto
-  doc.setFontSize(15); doc.setFont("helvetica","bold"); doc.setTextColor(...(neto>0?[2,110,75]:neto<0?[180,20,20]:C_NEGRO));
-  doc.text((neto>=0?"+":"")+neto+" hab.", pickCx, y+15, { align:"center" });
-  // Sub-línea: desglose nuevas / cancelaciones
-  doc.setFontSize(6.5); doc.setFont("helvetica","normal"); doc.setTextColor(...C_GRIS);
-  doc.text(`+${nuevas} nuevas · ${cancels>0?`-${cancels}`:"0"} cancels`, pickCx, y+23, { align:"center" });
-  y += kH + 6;
+  const canalesPick = (canalesPickup || []).slice(0, 6);
+  const pickH = canalesPick.length > 0 ? 46 : 36;
+  doc.setFillColor(255,255,255); doc.setDrawColor(...C_BORDE);
+  doc.roundedRect(M, y, W-M*2, pickH, 2, 2, "FD");
+  // Título
+  doc.setFontSize(6.5); doc.setFont("helvetica","bold"); doc.setTextColor(...C_GRIS);
+  doc.text("PICK UP AYER", M+4, y+7);
+  doc.setDrawColor(...C_BORDE); doc.line(M, y+10, M+W-M*2, y+10);
+  // 3 columnas: NUEVAS | CANCELACIONES | NETO
+  const pColW = (W-M*2)/3;
+  const pLabels = ["NUEVAS RESERVAS","CANCELACIONES","NETO"];
+  const pVals   = [`+${nuevas} hab.`, `-${cancels} hab.`, (neto>=0?"+":"")+neto+" hab."];
+  const pColors = [[2,110,75], cancels>0?[180,20,20]:C_GRIS, neto>0?[2,110,75]:neto<0?[180,20,20]:C_NEGRO];
+  pLabels.forEach((lbl, i) => {
+    const px = M + i*pColW + pColW/2;
+    if (i>0) { doc.setDrawColor(...C_BORDE); doc.line(M+i*pColW, y+12, M+i*pColW, y+28); }
+    doc.setFontSize(6); doc.setFont("helvetica","bold"); doc.setTextColor(...C_GRIS);
+    doc.text(lbl, px, y+16, { align:"center" });
+    doc.setFontSize(13); doc.setFont("helvetica","bold"); doc.setTextColor(...pColors[i]);
+    doc.text(pVals[i], px, y+25, { align:"center" });
+  });
+  // Procedencia por canal con reservas
+  if (canalesPick.length > 0) {
+    doc.setDrawColor(...C_BORDE); doc.line(M, y+30, M+W-M*2, y+30);
+    const dotColors = ["#0A2540","#D4A017","#059669","#7C3AED","#F472B6","#94A3B8"];
+    let cx2 = M + 4;
+    const py2 = y + 39;
+    doc.setFontSize(6.5); doc.setFont("helvetica","bold"); doc.setTextColor(...C_GRIS);
+    doc.text("PROCEDENCIA:", cx2, py2); cx2 += 28;
+    canalesPick.forEach((c, i) => {
+      const [r2,g2,b2] = dotColors[i].match(/\w\w/g).map(h=>parseInt(h,16));
+      doc.setFillColor(r2,g2,b2); doc.circle(cx2+1.2, py2-1.5, 1.5, "F");
+      doc.setFontSize(6.5); doc.setFont("helvetica","bold"); doc.setTextColor(...C_NEGRO);
+      const label = `${c.canal} (${c.reservas})`;
+      doc.text(label, cx2+4, py2);
+      cx2 += doc.getTextWidth(label) + 9;
+    });
+  }
+  y += pickH + 6;
 
   // ── MIX DE REVENUE ──────────────────────────────────
   doc.setFontSize(8); doc.setFont("helvetica","bold"); doc.setTextColor(...C_GRIS);
   doc.text("MIX DE REVENUE", M, y);
-  doc.setFont("helvetica","bold"); doc.setTextColor(...C_GRIS);
+  doc.setFont("helvetica","normal"); doc.setTextColor(...C_GRISM);
   doc.text("— AYER", M+34, y);
   y += 5;
 
-  const mixH = 52;
+  // Helper: barra horizontal con etiqueta y cifra
+  function addBar(x, bY, totalW, label, value, maxVal, hexColor) {
+    const barH = 3.5; const lblW = 28; const valW = 20;
+    const barW = totalW - lblW - valW;
+    const pct = maxVal > 0 ? Math.min(value / maxVal, 1) : 0;
+    doc.setFontSize(7); doc.setFont("helvetica","normal"); doc.setTextColor(...C_NEGRO);
+    doc.text(label, x, bY, { maxWidth: lblW - 1 });
+    doc.setFillColor(235, 240, 245); doc.rect(x + lblW, bY - 3.2, barW, barH, "F");
+    if (pct > 0) {
+      const [r,g,b] = hexColor.match(/\w\w/g).map(h => parseInt(h, 16));
+      doc.setFillColor(r, g, b); doc.rect(x + lblW, bY - 3.2, barW * pct, barH, "F");
+    }
+    doc.setFontSize(7); doc.setFont("helvetica","bold"); doc.setTextColor(...C_NEGRO);
+    doc.text(`€${Math.round(value).toLocaleString("es-ES")}`, x + lblW + barW + 1, bY);
+  }
+
+  // Dos paneles iguales: HAB vs F&B | Grupos vs Individual
+  const panelW  = (W - M * 2) / 2;
+  const barRowH = 7;
+  const mixH    = 4 + 7 + 2 * barRowH + 4;
+
   doc.setFillColor(255,255,255); doc.setDrawColor(...C_BORDE);
-  doc.roundedRect(M, y, W-M*2, mixH, 2, 2, "FD");
+  doc.roundedRect(M, y, W - M * 2, mixH, 2, 2, "FD");
+  doc.setDrawColor(...C_BORDE);
+  doc.line(M + panelW, y + 3, M + panelW, y + mixH - 3);
 
-  const sW   = (W-M*2)/3;
-  const rMm  = 13;
-  const cymx = y + mixH/2 + 2;
+  // Panel izquierdo — HAB. VS F&B
+  const lx = M + 3;
+  let ly = y + 5;
+  doc.setFontSize(6); doc.setFont("helvetica","bold"); doc.setTextColor(...C_GRIS);
+  doc.text("HAB. VS F&B", lx, ly); ly += 7;
+  const totHF = (revHabAyer || 0) + (revFnbAyer || 0);
+  addBar(lx, ly, panelW - 6, "Habitaciones", revHabAyer || 0, totHF || 1, "#0A2540"); ly += barRowH;
+  addBar(lx, ly, panelW - 6, "F&B",          revFnbAyer  || 0, totHF || 1, "#D4A017");
 
-  // Sub-headers
-  ["HAB. VS F&B","PROCEDENCIA","GRUPOS VS INDIVIDUAL"].forEach((lbl, i) => {
-    const sx = M + i*sW;
-    doc.setFontSize(6); doc.setFont("helvetica","bold"); doc.setTextColor(...C_GRIS);
-    doc.text(lbl, sx+4, y+7);
-    if (i>0) { doc.setDrawColor(...C_BORDE); doc.line(sx, y+3, sx, y+mixH-3); }
-  });
-
-  // Donut 1: HAB vs F&B (navy large, gold small)
-  const totHF  = (revHabAyer||0)+(revFnbAyer||0);
-  const habPct = totHF>0 ? Math.round((revHabAyer||0)/totHF*100) : null;
-  const cx1    = M + sW*0.36;
-  addDonut(cx1, cymx, rMm, totHF>0
-    ? [{ value:revHabAyer||0, color:"#0A2540" }, { value:revFnbAyer||0, color:"#D4A017" }]
-    : [{ value:1, color:"#CBD5E1" }]);
-  const lx1 = cx1 + rMm + 3;
-  if (habPct!=null) {
-    legendSq(lx1, cymx-4, "#0A2540");
-    doc.setFontSize(8); doc.setFont("helvetica","bold"); doc.setTextColor(...C_NEGRO);
-    doc.text(`Habitaciones ${habPct}%`, lx1+4, cymx-4);
-    legendSq(lx1, cymx+3, "#D4A017");
-    doc.text(`F&B ${100-habPct}%`, lx1+4, cymx+3);
-  } else {
-    doc.setFontSize(7); doc.setTextColor(...C_GRIS); doc.text("Sin datos", lx1, cymx);
-  }
-
-  // Donut 2: Procedencia
-  const canalColors = ["#94A3B8","#D4A017","#0A2540","#F472B6","#34D399"];
-  const cx2 = M + sW + sW*0.36;
-  const canales = (canalesRevenue||[]).filter(c => c.revenue>0);
-  addDonut(cx2, cymx, rMm, canales.length>0
-    ? canales.map((c,i) => ({ value:c.revenue, color:canalColors[i%canalColors.length] }))
-    : [{ value:1, color:"#CBD5E1" }]);
-  const lx2 = cx2 + rMm + 3;
-  if (canales.length>0) {
-    canales.slice(0,3).forEach((c,i) => {
-      legendSq(lx2, cymx - 4 + i*7, canalColors[i%canalColors.length]);
-      doc.setFontSize(8); doc.setFont("helvetica","bold"); doc.setTextColor(...C_NEGRO);
-      doc.text(`${c.canal} ${c.pct}%`, lx2+4, cymx - 4 + i*7);
-    });
-  } else {
-    doc.setFontSize(6.5); doc.setTextColor(...C_GRISM); doc.text("Sin datos", lx2, cymx);
-  }
-
-  // Donut 3: Grupos vs Individual
-  const totGI  = (revGruposAyer||0)+(revIndividualAyer||0);
-  const gPct   = totGI>0 ? Math.round((revGruposAyer||0)/totGI*100) : null;
-  const cx3    = M + sW*2 + sW*0.36;
-  addDonut(cx3, cymx, rMm, totGI>0
-    ? [{ value:revGruposAyer||0, color:"#7C3AED" }, { value:revIndividualAyer||0, color:"#CBD5E1" }]
-    : [{ value:1, color:"#7C3AED" }]);
-  const lx3 = cx3 + rMm + 3;
-  legendSq(lx3, cymx-4, "#7C3AED");
-  doc.setFontSize(8); doc.setFont("helvetica","bold"); doc.setTextColor(...C_NEGRO);
-  doc.text(`Grupos ${gPct!=null?gPct:0}%`, lx3+4, cymx-4);
-  legendSq(lx3, cymx+3, "#CBD5E1");
-  doc.text(`Individual ${gPct!=null?(100-gPct):100}%`, lx3+4, cymx+3);
+  // Panel derecho — GRUPOS VS INDIVIDUAL
+  const rx = M + panelW + 3;
+  let ry = y + 5;
+  doc.setFontSize(6); doc.setFont("helvetica","bold"); doc.setTextColor(...C_GRIS);
+  doc.text("GRUPOS VS INDIVIDUAL", rx, ry); ry += 7;
+  const totGI = (revGruposAyer || 0) + (revIndividualAyer || 0);
+  addBar(rx, ry, panelW - 6, "Grupos",     revGruposAyer     || 0, totGI || 1, "#7C3AED"); ry += barRowH;
+  addBar(rx, ry, panelW - 6, "Individual", revIndividualAyer || 0, totGI || 1, "#94A3B8");
 
   y += mixH + 6;
+
 
   // ── PROGRESO MENSUAL ────────────────────────────────
   if (revenueAcumulado?.length) {
@@ -975,16 +987,15 @@ async function generarInformeDiarioPDF(kpis, hotelNombre) {
     doc.text(`(${mesNombre||""})`, M+44, y);
     y += 4;
 
-    const pgH = 70;
+    const pgH = 60;
     doc.setFillColor(255,255,255); doc.setDrawColor(...C_BORDE);
     doc.roundedRect(M, y, W-M*2, pgH, 2, 2, "FD");
 
-    // 3-col header row: Acumulado / Cumplimiento / Presupuesto
     const pgCols = [
-      { lbl:`ACUMULADO DÍA ${lastDay}`, val:`€${fmt(acum)}`,                                          vc:C_NEGRO },
-      { lbl:"CUMPLIMIENTO",             val:pct!=null?`${pct}%`:"—",                                  vc:barCol  },
-      { lbl:"PRESUPUESTO",              val:presupuestoMensual?`€${fmt(presupuestoMensual)}`:"—",      vc:C_NEGRO },
-      { lbl:"PREVISIÓN",                val:forecastMes?`€${fmt(forecastMes)}`:"—",                   vc:C_NEGRO },
+      { lbl:`ACUMULADO DÍA ${lastDay}`, val:`€${fmt(acum)}`,                                     vc:C_NEGRO },
+      { lbl:"CUMPLIMIENTO",             val:pct!=null?`${pct}%`:"—",                             vc:barCol  },
+      { lbl:"PRESUPUESTO",              val:presupuestoMensual?`€${fmt(presupuestoMensual)}`:"—", vc:C_NEGRO },
+      { lbl:"PREVISIÓN",                val:forecastMes?`€${fmt(forecastMes)}`:"—",              vc:C_NEGRO },
     ];
     const pgCW = (W-M*2)/4;
     pgCols.forEach((col, i) => {
@@ -996,16 +1007,8 @@ async function generarInformeDiarioPDF(kpis, hotelNombre) {
       doc.text(col.val, px3, y+18, { align:"center" });
     });
 
-    // Revenue progress bar
-    const bx = M+6, bw = W-M*2-12, bh = 3.5;
-    const by1 = y+24;
-    doc.setFillColor(...C_BORDE); doc.roundedRect(bx, by1, bw, bh, 1.5, 1.5, "F");
-    if (pct!=null) {
-      doc.setFillColor(...barCol); doc.roundedRect(bx, by1, Math.max(bw*Math.min(pct,100)/100, 2), bh, 1.5, 1.5, "F");
-    }
-
-    // ── KPI cards: Media del mes vs Mes Anterior ───────
-    const kBy = by1 + 8;
+    // ── Media del mes vs Mes Anterior ───────
+    const kBy = y + 24;
     doc.setDrawColor(...C_BORDE); doc.line(M+6, kBy, W-M-6, kBy);
     doc.setFontSize(6.5); doc.setFont("helvetica","bold"); doc.setTextColor(...C_GRIS);
     doc.text("MEDIA DEL MES", M+6, kBy+6);
@@ -1013,15 +1016,15 @@ async function generarInformeDiarioPDF(kpis, hotelNombre) {
     doc.text("(vs Mes Anterior)", M+6+33, kBy+6);
 
     const lmKpis = [
-      { lbl:"OCC MEDIA",   val: avg_occ!=null?parseFloat(avg_occ).toFixed(1)+"%":"—",      lm: lm_avg_occ,    delta: avg_occ!=null&&lm_avg_occ!=null ? avg_occ-lm_avg_occ : null,                             dfmt: n=>(n>=0?"+":"")+parseFloat(n).toFixed(1)+" pp" },
-      { lbl:"ADR MEDIO",   val: avg_adr!=null?`€${Math.round(avg_adr)}`:"—",               lm: lm_avg_adr,    delta: avg_adr!=null&&lm_avg_adr!=null ? avg_adr-lm_avg_adr : null,                             dfmt: n=>(n>=0?"+€":"-€")+Math.abs(n).toFixed(1) },
-      { lbl:"REVPAR MEDIO",val: avg_revpar!=null?`€${Math.round(avg_revpar)}`:"—",          lm: lm_avg_revpar, delta: avg_revpar!=null&&lm_avg_revpar!=null&&lm_avg_revpar>0?(avg_revpar-lm_avg_revpar)/lm_avg_revpar*100:null, dfmt: n=>(n>=0?"+":"")+parseFloat(n).toFixed(1)+"%" },
-      { lbl:"TREVPAR MEDIO",val: avg_trevpar!=null?`€${Math.round(avg_trevpar)}`:"—",      lm: lm_avg_trevpar,delta: avg_trevpar!=null&&lm_avg_trevpar!=null&&lm_avg_trevpar>0?(avg_trevpar-lm_avg_trevpar)/lm_avg_trevpar*100:null, dfmt: n=>(n>=0?"+":"")+parseFloat(n).toFixed(1)+"%" },
+      { lbl:"OCC MEDIA",    val: avg_occ!=null?parseFloat(avg_occ).toFixed(1)+"%":"—",        delta: avg_occ!=null&&lm_avg_occ!=null?avg_occ-lm_avg_occ:null,                                                         dfmt: n=>(n>=0?"+":"")+parseFloat(n).toFixed(1)+" pp" },
+      { lbl:"ADR MEDIO",    val: avg_adr!=null?`€${Math.round(avg_adr)}`:"—",                 delta: avg_adr!=null&&lm_avg_adr!=null?avg_adr-lm_avg_adr:null,                                                         dfmt: n=>(n>=0?"+€":"-€")+Math.abs(n).toFixed(1) },
+      { lbl:"REVPAR MEDIO", val: avg_revpar!=null?`€${Math.round(avg_revpar)}`:"—",            delta: avg_revpar!=null&&lm_avg_revpar!=null&&lm_avg_revpar>0?(avg_revpar-lm_avg_revpar)/lm_avg_revpar*100:null,        dfmt: n=>(n>=0?"+":"")+parseFloat(n).toFixed(1)+"%" },
+      { lbl:"TREVPAR MEDIO",val: avg_trevpar!=null?`€${Math.round(avg_trevpar)}`:"—",          delta: avg_trevpar!=null&&lm_avg_trevpar!=null&&lm_avg_trevpar>0?(avg_trevpar-lm_avg_trevpar)/lm_avg_trevpar*100:null,  dfmt: n=>(n>=0?"+":"")+parseFloat(n).toFixed(1)+"%" },
     ];
-    const kColW = (W-M*2)/4;
+    const kColW2 = (W-M*2)/4;
     lmKpis.forEach((k, i) => {
-      const kx = M + i*kColW + kColW/2;
-      if (i>0) { doc.setDrawColor(...C_BORDE); doc.line(M+i*kColW, kBy+10, M+i*kColW, kBy+36); }
+      const kx = M + i*kColW2 + kColW2/2;
+      if (i>0) { doc.setDrawColor(...C_BORDE); doc.line(M+i*kColW2, kBy+10, M+i*kColW2, kBy+36); }
       doc.setFontSize(6.5); doc.setFont("helvetica","bold"); doc.setTextColor(...C_GRIS);
       doc.text(k.lbl, kx, kBy+15, { align:"center" });
       doc.setFontSize(13); doc.setFont("helvetica","bold"); doc.setTextColor(...C_NEGRO);
@@ -1077,13 +1080,6 @@ async function generarInformeDiarioPDF(kpis, hotelNombre) {
 
   // En cotización / tentativo
   drawGruposSeccion("EN COTIZACIÓN", gruposCotizacion);
-
-  // ── FOOTER ──────────────────────────────────────────
-  doc.setFillColor(...C_AZUL); doc.rect(0, 285, W, 12, "F");
-  doc.setFontSize(8); doc.setFont("helvetica","normal"); doc.setTextColor(180,200,220);
-  doc.text("FastRevenue — fastrevenue.app", M, 292);
-  doc.setTextColor(...C_GOLD);
-  doc.text("info@fastrevenue.app", W-M, 292, { align:"right" });
 
   return doc.output("datauristring").split(",")[1];
 }
@@ -4988,7 +4984,7 @@ function GruposView({ datos, onRecargar, onVolverHeatmap, subVistaExt, onCambiar
   // ── Cálculos KPIs del mes activo ──
   const gruposAnio = grupos.filter(g => g.fecha_inicio?.slice(0,4) === String(anio) || g.fecha_fin?.slice(0,4) === String(anio));
   const mesStr = String(anio) + "-" + String(mes + 1).padStart(2, "0");
-  const gruposMes = grupos.filter(g => g.fecha_inicio?.slice(0,7) === mesStr || g.fecha_fin?.slice(0,7) === mesStr);
+  const gruposMes = grupos.filter(g => g.fecha_inicio?.slice(0,7) === mesStr);
   const confirmados = gruposMes.filter(g => g.estado === "confirmado");
   const cancelados  = gruposMes.filter(g => g.estado === "cancelado");
 
@@ -5344,8 +5340,9 @@ function GruposView({ datos, onRecargar, onVolverHeatmap, subVistaExt, onCambiar
             {(() => {
               const datosMesRev = produccion.filter(d => d.fecha.startsWith(mesStr));
               const totalRevProd = datosMesRev.reduce((a,d) => a+(d.revenue_total||0), 0);
-              const confGrupos  = confirmados.filter(g => g.categoria !== "evento");
-              const confEventos = confirmados.filter(g => g.categoria === "evento");
+              const confMes     = confirmados.filter(g => g.fecha_inicio?.slice(0,7) === mesStr);
+              const confGrupos  = confMes.filter(g => g.categoria !== "evento");
+              const confEventos = confMes.filter(g => g.categoria === "evento");
               const revGrupos   = confGrupos.reduce((a,g)  => a+calcRevTotal(g), 0);
               const revEventos  = confEventos.reduce((a,g) => a+calcRevTotal(g), 0);
               const revSalas    = confGrupos.reduce((a,g)  => a+(g.revenue_sala||0), 0)
@@ -7310,6 +7307,12 @@ export default function App() {
                               const canalMap = {}; let totCanalRev = 0;
                               for (const p of (pickupRows||[])) { if((p.estado||'')==='cancelada') continue; const peso=p.precio_total||(p.num_reservas||1); const key=isOTA_p(p.canal)?'OTA':normCanalP(p.canal); canalMap[key]=(canalMap[key]||0)+peso; totCanalRev+=peso; }
                               const canalesRevenue = Object.entries(canalMap).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]).map(([canal,revenue])=>({ canal, revenue:Math.round(revenue), pct:totCanalRev>0?Math.round(revenue/totCanalRev*100):0 }));
+                              const canalPickupMap = {};
+                              for (const p of (pickupRows||[])) { if((p.estado||'')==='cancelada') continue; const key=normCanalP(p.canal); canalPickupMap[key]=(canalPickupMap[key]||0)+(p.num_reservas||1); }
+                              const canalesPickup = Object.entries(canalPickupMap).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]).map(([canal,reservas])=>({ canal, reservas }));
+                              const canalRevMixMap = {};
+                              for (const p of (pickupRows||[])) { if((p.estado||'')==='cancelada') continue; const key=normCanalP(p.canal); canalRevMixMap[key]=(canalRevMixMap[key]||0)+(p.precio_total||0); }
+                              const canalesRevMix = Object.entries(canalRevMixMap).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]).map(([canal,revenue])=>({ canal, revenue:Math.round(revenue) }));
                               // Grupos en casa ayer (1 noche)
                               const gruposAyer = (gruposRows||[]).filter(g => g.estado==='confirmado' && g.fecha_inicio<=ultimoDia.fecha && g.fecha_fin>ultimoDia.fecha);
                               const revGruposAyer = gruposAyer.reduce((s,g) => s+(g.habitaciones||0)*(g.adr_grupo||0), 0);
@@ -7325,7 +7328,7 @@ export default function App() {
                               const trevpar = ultimoDia.trevpar ?? (ultimoDia.hab_disponibles>0&&revTotalEff ? revTotalEff/ultimoDia.hab_disponibles : null);
                               const totRevTotalEff = totRevTotal || (totRevHab + totRevFnb) || 0;
                               const forecastMes = calcForecastRevStandalone(mesActual-1, anioActual, datos.produccion, datos.pickupEntries, datos.hotel);
-                              const kpisPayload = { fecha: ultimoDia.fecha, mesNombre: MESES[mesActual-1], occ, adr, revpar, trevpar, hab_ocupadas: ultimoDia.hab_ocupadas, hab_disponibles: ultimoDia.hab_disponibles, pickup_neto: nuevas, cancelaciones: cancels, revenue_pickup_ayer: revPickup||null, revenueAcumulado, presupuestoMensual: pptoData?.rev_total_ppto??null, avg_occ: totHabDisp>0?totHabOcu/totHabDisp*100:null, avg_adr: totHabOcu>0?totRevHab/totHabOcu:null, avg_revpar: totHabDisp>0?totRevHab/totHabDisp:null, avg_trevpar: totHabDisp>0&&totRevTotalEff>0?totRevTotalEff/totHabDisp:null, lm_avg_occ, lm_avg_adr, lm_avg_revpar, lm_avg_trevpar, revHabAyer: ultimoDia.revenue_hab||0, revFnbAyer: ultimoDia.revenue_fnb||0, canalesRevenue, revGruposAyer: Math.round(revGruposAyer), revIndividualAyer: Math.round(Math.max(0, (ultimoDia.revenue_hab||0)-revGruposAyer)), adrPpto: pptoData?.adr_ppto??null, gruposProximos, proximoConfirmado, gruposCotizacion, forecastMes };
+                              const kpisPayload = { fecha: ultimoDia.fecha, mesNombre: MESES[mesActual-1], occ, adr, revpar, trevpar, hab_ocupadas: ultimoDia.hab_ocupadas, hab_disponibles: ultimoDia.hab_disponibles, pickup_neto: nuevas, cancelaciones: cancels, revenue_pickup_ayer: revPickup||null, revenueAcumulado, presupuestoMensual: pptoData?.rev_total_ppto??null, avg_occ: totHabDisp>0?totHabOcu/totHabDisp*100:null, avg_adr: totHabOcu>0?totRevHab/totHabOcu:null, avg_revpar: totHabDisp>0?totRevHab/totHabDisp:null, avg_trevpar: totHabDisp>0&&totRevTotalEff>0?totRevTotalEff/totHabDisp:null, lm_avg_occ, lm_avg_adr, lm_avg_revpar, lm_avg_trevpar, revHabAyer: ultimoDia.revenue_hab||0, revFnbAyer: ultimoDia.revenue_fnb||0, canalesRevenue, canalesPickup, canalesRevMix, revGruposAyer: Math.round(revGruposAyer), revIndividualAyer: Math.round(Math.max(0, (ultimoDia.revenue_hab||0)-revGruposAyer)), adrPpto: pptoData?.adr_ppto??null, gruposProximos, proximoConfirmado, gruposCotizacion, forecastMes };
                               let pdfBase64 = null;
                               try {
                                 pdfBase64 = await generarInformeDiarioPDF(kpisPayload, datos.hotel?.nombre||null);
@@ -7379,6 +7382,12 @@ export default function App() {
                               const canalMap = {}; let totCanalRev = 0;
                               for (const p of (pickupRows||[])) { if((p.estado||'')==='cancelada') continue; const peso=p.precio_total||(p.num_reservas||1); const key=isOTA_p(p.canal)?'OTA':normCanalP(p.canal); canalMap[key]=(canalMap[key]||0)+peso; totCanalRev+=peso; }
                               const canalesRevenue = Object.entries(canalMap).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]).map(([canal,revenue])=>({ canal, revenue:Math.round(revenue), pct:totCanalRev>0?Math.round(revenue/totCanalRev*100):0 }));
+                              const canalPickupMap = {};
+                              for (const p of (pickupRows||[])) { if((p.estado||'')==='cancelada') continue; const key=normCanalP(p.canal); canalPickupMap[key]=(canalPickupMap[key]||0)+(p.num_reservas||1); }
+                              const canalesPickup = Object.entries(canalPickupMap).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]).map(([canal,reservas])=>({ canal, reservas }));
+                              const canalRevMixMap = {};
+                              for (const p of (pickupRows||[])) { if((p.estado||'')==='cancelada') continue; const key=normCanalP(p.canal); canalRevMixMap[key]=(canalRevMixMap[key]||0)+(p.precio_total||0); }
+                              const canalesRevMix = Object.entries(canalRevMixMap).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]).map(([canal,revenue])=>({ canal, revenue:Math.round(revenue) }));
                               const gruposAyer = (gruposRows||[]).filter(g => g.estado==='confirmado' && g.fecha_inicio<=ultimoDia.fecha && g.fecha_fin>ultimoDia.fecha);
                               const revGruposAyer = gruposAyer.reduce((s,g) => s+(g.habitaciones||0)*(g.adr_grupo||0), 0);
                               const mkGrupo = g => { const noches=Math.max(1,(new Date(g.fecha_fin+'T00:00:00')-new Date(g.fecha_inicio+'T00:00:00'))/86400000); return { nombre:g.nombre, tipo:g.categoria||"", estado:g.estado, fecha_inicio:g.fecha_inicio, fecha_fin:g.fecha_fin, habitaciones:g.habitaciones||0, revenue:Math.round((g.habitaciones||0)*(g.adr_grupo||0)*noches+(g.revenue_fnb||0)+(g.revenue_sala||0)) }; };
@@ -7393,7 +7402,7 @@ export default function App() {
                               const trevpar = ultimoDia.trevpar ?? (ultimoDia.hab_disponibles>0&&revTotalEff ? revTotalEff/ultimoDia.hab_disponibles : null);
                               const totRevTotalEff = totRevTotal || (totRevHab + totRevFnb) || 0;
                               const forecastMes = calcForecastRevStandalone(mesActual-1, anioActual, datos.produccion, datos.pickupEntries, datos.hotel);
-                              const kpisPayload = { fecha: ultimoDia.fecha, mesNombre: MESES_ES[mesActual-1], occ, adr, revpar, trevpar, hab_ocupadas: ultimoDia.hab_ocupadas, hab_disponibles: ultimoDia.hab_disponibles, pickup_neto: nuevas, cancelaciones: cancels, revenue_pickup_ayer: revPickup||null, revenueAcumulado, presupuestoMensual: pptoData?.rev_total_ppto??null, avg_occ: totHabDisp>0?totHabOcu/totHabDisp*100:null, avg_adr: totHabOcu>0?totRevHab/totHabOcu:null, avg_revpar: totHabDisp>0?totRevHab/totHabDisp:null, avg_trevpar: totHabDisp>0&&totRevTotalEff>0?totRevTotalEff/totHabDisp:null, lm_avg_occ: lmHabDisp>0?lmHabOcu/lmHabDisp*100:null, lm_avg_adr: lmHabOcu>0?lmRevHab/lmHabOcu:null, lm_avg_revpar: lmHabDisp>0?lmRevHab/lmHabDisp:null, lm_avg_trevpar: lmHabDisp>0&&lmRevTotalEff>0?lmRevTotalEff/lmHabDisp:null, revHabAyer: ultimoDia.revenue_hab||0, revFnbAyer: ultimoDia.revenue_fnb||0, canalesRevenue, revGruposAyer: Math.round(revGruposAyer), revIndividualAyer: Math.round(Math.max(0, (ultimoDia.revenue_hab||0)-revGruposAyer)), adrPpto: pptoData?.adr_ppto??null, gruposProximos, proximoConfirmado, gruposCotizacion, forecastMes };
+                              const kpisPayload = { fecha: ultimoDia.fecha, mesNombre: MESES_ES[mesActual-1], occ, adr, revpar, trevpar, hab_ocupadas: ultimoDia.hab_ocupadas, hab_disponibles: ultimoDia.hab_disponibles, pickup_neto: nuevas, cancelaciones: cancels, revenue_pickup_ayer: revPickup||null, revenueAcumulado, presupuestoMensual: pptoData?.rev_total_ppto??null, avg_occ: totHabDisp>0?totHabOcu/totHabDisp*100:null, avg_adr: totHabOcu>0?totRevHab/totHabOcu:null, avg_revpar: totHabDisp>0?totRevHab/totHabDisp:null, avg_trevpar: totHabDisp>0&&totRevTotalEff>0?totRevTotalEff/totHabDisp:null, lm_avg_occ: lmHabDisp>0?lmHabOcu/lmHabDisp*100:null, lm_avg_adr: lmHabOcu>0?lmRevHab/lmHabOcu:null, lm_avg_revpar: lmHabDisp>0?lmRevHab/lmHabDisp:null, lm_avg_trevpar: lmHabDisp>0&&lmRevTotalEff>0?lmRevTotalEff/lmHabDisp:null, revHabAyer: ultimoDia.revenue_hab||0, revFnbAyer: ultimoDia.revenue_fnb||0, canalesRevenue, canalesPickup, canalesRevMix, revGruposAyer: Math.round(revGruposAyer), revIndividualAyer: Math.round(Math.max(0, (ultimoDia.revenue_hab||0)-revGruposAyer)), adrPpto: pptoData?.adr_ppto??null, gruposProximos, proximoConfirmado, gruposCotizacion, forecastMes };
                               const pdfBase64 = await generarInformeDiarioPDF(kpisPayload, datos.hotel?.nombre||null);
                               if (!pdfBase64) throw new Error("PDF vacío");
                               const bytes = atob(pdfBase64);

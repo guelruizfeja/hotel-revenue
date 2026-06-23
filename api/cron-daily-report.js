@@ -107,8 +107,9 @@ function buildHtml(hotel, kpis) {
 <tr><td align="center">
 <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;">
   <tr><td style="background:#0A2540;border-radius:10px 10px 0 0;padding:22px 28px 18px;text-align:center;">
-    <p style="margin:0 0 6px;font-size:17px;font-weight:700;color:#FFFFFF;letter-spacing:2px;text-transform:uppercase;">Informe Diario de Revenue</p>
-    <p style="margin:0;font-size:12px;color:rgba(255,255,255,0.55);">FastRevenue &nbsp;&#8212;&nbsp; <strong style="color:#FFFFFF;font-size:14px;">${hotel}</strong> &nbsp;&#8212;&nbsp; ${fmtDate(fecha)}</p>
+    <p style="margin:0 0 4px;font-size:11px;font-weight:600;color:rgba(255,255,255,0.45);letter-spacing:2px;text-transform:uppercase;">FastRevenue · Informe Diario</p>
+    <p style="margin:0 0 6px;font-size:22px;font-weight:700;color:#FFFFFF;letter-spacing:0.5px;">${hotel}</p>
+    <p style="margin:0;font-size:12px;color:rgba(255,255,255,0.55);">${fmtDate(fecha)}</p>
     <div style="height:2px;background:linear-gradient(90deg,transparent,#D4A017,transparent);margin-top:16px;"></div>
   </td></tr>
   <tr><td style="background:#FFFFFF;border:1px solid #E2E8F0;border-top:none;padding:0;">
