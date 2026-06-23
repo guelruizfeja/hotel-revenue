@@ -7498,12 +7498,12 @@ export default function App() {
 
         {/* Banner datos faltantes */}
         {!cargandoDatos && !alertasDismissed && alertasFaltantes.length > 0 && (
-          <div style={{ display:"inline-block", marginBottom:20, fontFamily:"'Plus Jakarta Sans',sans-serif", minWidth:0 }}>
-            <div style={{ background:"#FFF1F0", border:"1.5px solid #E53935", borderRadius:10, overflow:"hidden" }}>
+          <div style={{ display:"inline-block", marginBottom:20, fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+            <div style={{ background:"#FFF1F0", border:"1.5px solid #E53935", borderRadius:10 }}>
               {/* Cabecera clicable */}
               <button
                 onClick={() => setAlertasExpanded(v => !v)}
-                style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 14px", background:"none", border:"none", cursor:"pointer", textAlign:"left", whiteSpace:"nowrap" }}
+                style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 14px", background:"none", border:"none", cursor:"pointer", textAlign:"left", whiteSpace:"nowrap", outline:"none" }}
               >
                 <span style={{ fontWeight:700, fontSize:13, color:"#B71C1C" }}>
                   {alertasFaltantes.length === 1 ? "Falta importar 1 día" : `Faltan importar ${alertasFaltantes.length} días`}
@@ -7516,24 +7516,22 @@ export default function App() {
                   title="Cerrar"
                 >✕</button>
               </button>
-              {/* Detalle desplegable */}
-              {alertasExpanded && (
-                <div style={{ borderTop:"1px solid #FFCDD2", padding:"8px 14px 12px" }}>
-                  {alertasFaltantes.map(({ fecha, sinProd, sinPick }) => {
-                    const d = new Date(fecha + "T00:00:00");
-                    const label = d.toLocaleDateString("es-ES", { weekday:"long", day:"2-digit", month:"long" });
-                    return (
-                      <div key={fecha} style={{ display:"flex", alignItems:"center", gap:10, padding:"5px 0", borderBottom:"1px solid #FFEBEE" }}>
-                        <span style={{ fontSize:12, color:"#B71C1C", fontWeight:600, minWidth:160, textTransform:"capitalize" }}>{label}</span>
-                        <div style={{ display:"flex", gap:6 }}>
-                          {sinProd && <span style={{ fontSize:11, fontWeight:600, background:"#FFEBEE", color:"#C62828", border:"1px solid #EF9A9A", borderRadius:5, padding:"2px 8px" }}>Sin producción</span>}
-                          {sinPick && <span style={{ fontSize:11, fontWeight:600, background:"#FFEBEE", color:"#C62828", border:"1px solid #EF9A9A", borderRadius:5, padding:"2px 8px" }}>Sin pick up</span>}
-                        </div>
+              {/* Detalle — siempre renderizado para fijar el ancho, oculto cuando colapsado */}
+              <div style={{ borderTop: alertasExpanded ? "1px solid #FFCDD2" : "none", padding: alertasExpanded ? "8px 14px 12px" : 0, maxHeight: alertasExpanded ? 500 : 0, overflow:"hidden", transition:"max-height 0.2s ease" }}>
+                {alertasFaltantes.map(({ fecha, sinProd, sinPick }) => {
+                  const d = new Date(fecha + "T00:00:00");
+                  const label = d.toLocaleDateString("es-ES", { weekday:"long", day:"2-digit", month:"long" });
+                  return (
+                    <div key={fecha} style={{ display:"flex", alignItems:"center", gap:10, padding:"5px 0", borderBottom:"1px solid #FFEBEE" }}>
+                      <span style={{ fontSize:12, color:"#B71C1C", fontWeight:600, minWidth:160, textTransform:"capitalize" }}>{label}</span>
+                      <div style={{ display:"flex", gap:6 }}>
+                        {sinProd && <span style={{ fontSize:11, fontWeight:600, background:"#FFEBEE", color:"#C62828", border:"1px solid #EF9A9A", borderRadius:5, padding:"2px 8px" }}>Sin producción</span>}
+                        {sinPick && <span style={{ fontSize:11, fontWeight:600, background:"#FFEBEE", color:"#C62828", border:"1px solid #EF9A9A", borderRadius:5, padding:"2px 8px" }}>Sin pick up</span>}
                       </div>
-                    );
-                  })}
-                </div>
-              )}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
         )}
