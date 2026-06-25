@@ -126,7 +126,7 @@
   }
   /* Tarjeta "Descubre FastRevenue" */
   .hero-discover {
-    flex: 0 0 auto;
+    flex: 1 1 0;
     display: flex; align-items: center; justify-content: center; gap: 10px;
     font-size: 15px; font-weight: 600; color: #ffffff;
     background: rgba(5,12,30,0.82);
@@ -134,11 +134,10 @@
     border-radius: 10px; padding: 14px 20px;
     cursor: pointer;
     backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-    user-select: none; white-space: nowrap;
-    transition: border-color 0.2s ease, opacity 0.35s ease;
+    user-select: none; white-space: nowrap; overflow: hidden;
+    transition: border-color 0.2s ease, width 0.48s cubic-bezier(0.4,0,0.2,1);
   }
   .hero-discover:hover { border-color: rgba(255,255,255,0.6); }
-  .hero-discover.done { opacity: 0; pointer-events: none; }
   @keyframes featureSlideIn {
     from { opacity: 0; transform: translateX(40px); }
     to   { opacity: 1; transform: translateX(0); }
@@ -1235,13 +1234,28 @@ window.scrollToSection = function(id) {
   let revealed = 0;
   const N = features.length;
 
+  // Medir ancho natural del texto (sin flex stretch)
+  const clone = discover.cloneNode(true);
+  clone.style.cssText = 'position:fixed;top:-9999px;left:-9999px;flex:none;width:auto;visibility:hidden;pointer-events:none;';
+  document.body.appendChild(clone);
+  const naturalWidth = clone.offsetWidth;
+  clone.remove();
+
   discover.addEventListener('click', function () {
     if (revealed >= N) return;
     features[revealed].classList.add('revealed');
     revealed++;
+
     if (revealed >= N) {
-      discover.classList.add('done');
-      setTimeout(function () { discover.style.display = 'none'; }, 380);
+      // Congelar ancho actual y animar hasta el tamaño compacto del texto
+      const currentWidth = discover.offsetWidth;
+      discover.style.flex = 'none';
+      discover.style.width = currentWidth + 'px';
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () {
+          discover.style.width = naturalWidth + 'px';
+        });
+      });
     }
   });
 })();
