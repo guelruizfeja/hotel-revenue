@@ -100,12 +100,13 @@
   .hero-actions { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
   .hero-features {
     list-style: none;
-    display: flex; flex-direction: row; flex-wrap: wrap; gap: 10px;
+    display: flex; flex-direction: row; flex-wrap: nowrap; gap: 10px;
     padding-left: 0; width: 100%;
   }
-  .hero-features li {
-    flex: 1 1 calc(20% - 8px);
-    display: flex; align-items: flex-start; gap: 12px;
+  /* Feature cards — ocultas hasta que se revelan */
+  .hero-feature-item {
+    display: none;
+    flex: 1 1 0; align-items: flex-start; gap: 12px;
     font-size: 14px; color: #ffffff;
     font-weight: 400; line-height: 1.45;
     background: rgba(5,12,30,0.82);
@@ -113,11 +114,34 @@
     border-radius: 10px; padding: 14px 16px;
     backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
   }
-  .hero-features li::before {
+  .hero-feature-item.revealed {
+    display: flex;
+    animation: featureSlideIn 0.42s cubic-bezier(0.4,0,0.2,1) forwards;
+  }
+  .hero-feature-item::before {
     content: ''; width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0; margin-top: 0;
     background: rgba(52,211,153,0.18);
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 22 22'%3E%3Cpath d='M5 11l4.5 4.5L17 7' stroke='%2334D399' stroke-width='1.8' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
     background-repeat: no-repeat; background-position: center;
+  }
+  /* Tarjeta "Descubre FastRevenue" */
+  .hero-discover {
+    flex: 1 1 0;
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    font-size: 15px; font-weight: 600; color: #ffffff;
+    background: rgba(5,12,30,0.82);
+    border: 1px solid rgba(255,255,255,0.32);
+    border-radius: 10px; padding: 14px 20px;
+    cursor: pointer;
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    user-select: none; white-space: nowrap;
+    transition: border-color 0.2s ease, opacity 0.35s ease;
+  }
+  .hero-discover:hover { border-color: rgba(255,255,255,0.6); }
+  .hero-discover.done { opacity: 0; pointer-events: none; }
+  @keyframes featureSlideIn {
+    from { opacity: 0; transform: translateX(40px); }
+    to   { opacity: 1; transform: translateX(0); }
   }
   .btn-gold {
     background: white; color: var(--navy);
@@ -553,7 +577,9 @@
     /* Hero */
     .hero { padding: 110px 6vw 60px; align-items: flex-start; }
     .hero-inner { gap: 28px; }
-    .hero-features li { flex: 1 1 calc(50% - 5px); }
+    .hero-features { flex-wrap: wrap; }
+    .hero-feature-item.revealed { flex: 1 1 calc(50% - 5px); }
+    .hero-discover { flex: 1 1 100%; }
 
     /* Stats */
     .stats-inner { grid-template-columns: 1fr; gap: 0; }
@@ -778,12 +804,13 @@
         <a href="#consulta" class="btn-gold" onclick="event.preventDefault(); window.scrollToSection('consulta');">Solicitar primera consulta →</a>
       </div>
     </div>
-    <ul class="hero-features">
-      <li>Control de todos los datos y KPIs de tu hotel en un único espacio</li>
-      <li>Gestión del rendimiento de tu hotel</li>
-      <li>Observa la demanda de tu hotel y anticípate</li>
-      <li>Todos los datos que necesitas para la toma de decisiones</li>
-      <li>Instalación y gestión sencilla</li>
+    <ul class="hero-features" id="heroFeatures">
+      <li class="hero-feature-item">Control de todos los datos y KPIs de tu hotel en un único espacio</li>
+      <li class="hero-feature-item">Gestión del rendimiento de tu hotel</li>
+      <li class="hero-feature-item">Observa la demanda de tu hotel y anticípate</li>
+      <li class="hero-feature-item">Todos los datos que necesitas para la toma de decisiones</li>
+      <li class="hero-feature-item">Instalación y gestión sencilla</li>
+      <li class="hero-discover" id="heroDiscover">Descubre FastRevenue <span style="font-size:17px;opacity:0.6;">→</span></li>
     </ul>
   </div>
 </section>
@@ -1199,6 +1226,25 @@ window.scrollToSection = function(id) {
   const el = document.getElementById(id) || document.querySelector('.' + id);
   if (el) el.scrollIntoView({ behavior: 'smooth' });
 };
+
+/* ── Descubre FastRevenue: revelar tarjetas una a una ── */
+(function () {
+  const features = Array.from(document.querySelectorAll('.hero-feature-item'));
+  const discover = document.getElementById('heroDiscover');
+  if (!discover) return;
+  let revealed = 0;
+  const N = features.length;
+
+  discover.addEventListener('click', function () {
+    if (revealed >= N) return;
+    features[revealed].classList.add('revealed');
+    revealed++;
+    if (revealed >= N) {
+      discover.classList.add('done');
+      setTimeout(function () { discover.style.display = 'none'; }, 380);
+    }
+  });
+})();
 
 /* ── Launch offer popup ── */
 (function () {
