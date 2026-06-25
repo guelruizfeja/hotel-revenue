@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useT } from "../i18n";
-import { C, NET_HAB_FNB, NET_SALA, dmy } from "../constants";
+import { C, NET_HAB_FNB, NET_SALA, dmy, MESES_FULL } from "../constants";
 import { supabase } from "../supabase";
 import { CustomSelect } from "./CustomSelect";
 import { PeriodSelectorInline } from "./PeriodSelectorInline";
@@ -79,6 +79,15 @@ export function ImportarExcel({ onClose, session, onImportado, onProduccionDirec
   const [eliminandoHistorico, setEliminandoHistorico] = useState(false);
   const [eliminandoPresupuesto, setEliminandoPresupuesto] = useState(false);
   const [showPptoZone, setShowPptoZone] = useState(true);
+  // Tabla presupuesto editable (12 meses)
+  const [pptoTablaAnio, setPptoTablaAnio] = useState(() => new Date().getFullYear());
+  const [pptoTablaData, setPptoTablaData] = useState(() =>
+    Array.from({length:12}, (_,i) => ({ mes:i+1, occ_ppto:"", adr_ppto:"", revpar_ppto:"", rev_total_ppto:"" }))
+  );
+  const [pptoTablaLoading, setPptoTablaLoading] = useState(false);
+  const [pptoTablaOk, setPptoTablaOk] = useState(false);
+  const [pptoTablaError, setPptoTablaError] = useState("");
+  const [pptoTablaLoadingData, setPptoTablaLoadingData] = useState(false);
 
   // Comprobar si ya hay datos importados al montar
   useEffect(() => {
@@ -94,6 +103,8 @@ export function ImportarExcel({ onClose, session, onImportado, onProduccionDirec
     };
     checkImports();
   }, []);
+
+  useEffect(() => { cargarPptoTabla(pptoTablaAnio); }, [pptoTablaAnio]); // eslint-disable-line
 
   const vaciarDatos = async () => {
     setVaciando(true);
@@ -438,6 +449,46 @@ export function ImportarExcel({ onClose, session, onImportado, onProduccionDirec
       if (onImportado) onImportado();
     } catch(e) { setErrorEditPpto("Error: " + e.message); }
     setPptoEditLoading(false);
+  };
+
+  // ── Cargar los 12 meses de un año para la tabla ──
+  const cargarPptoTabla = async (anio) => {
+    setPptoTablaLoadingData(true);
+    const { data } = await supabase.from("presupuesto")
+      .select("mes,occ_ppto,adr_ppto,revpar_ppto,rev_total_ppto")
+      .eq("hotel_id", session.user.id).eq("anio", anio).order("mes");
+    setPptoTablaData(Array.from({length:12}, (_,i) => {
+      const r = data?.find(r => r.mes === i+1);
+      return { mes:i+1, occ_ppto:r?.occ_ppto??'', adr_ppto:r?.adr_ppto??'', revpar_ppto:r?.revpar_ppto??'', rev_total_ppto:r?.rev_total_ppto??'' };
+    }));
+    setPptoTablaLoadingData(false);
+  };
+
+  // ── Guardar los 12 meses de la tabla ──
+  const guardarPptoTabla = async () => {
+    setPptoTablaLoading(true); setPptoTablaError(""); setPptoTablaOk(false);
+    try {
+      await supabase.from("presupuesto").delete().eq("hotel_id", session.user.id).eq("anio", pptoTablaAnio);
+      const rows = pptoTablaData
+        .filter(r => r.occ_ppto!=='' || r.adr_ppto!=='' || r.revpar_ppto!=='' || r.rev_total_ppto!=='')
+        .map(r => ({
+          hotel_id: session.user.id, anio: pptoTablaAnio, mes: r.mes,
+          occ_ppto:       r.occ_ppto!==''       ? parseFloat(r.occ_ppto)       : null,
+          adr_ppto:       r.adr_ppto!==''       ? parseFloat(r.adr_ppto)       : null,
+          revpar_ppto:    r.revpar_ppto!==''    ? parseFloat(r.revpar_ppto)    : null,
+          rev_total_ppto: r.rev_total_ppto!=='' ? parseFloat(r.rev_total_ppto) : null,
+        }));
+      if (rows.length > 0) {
+        const { error } = await supabase.from("presupuesto").insert(rows);
+        if (error) throw new Error(error.message);
+      }
+      setPptoTablaOk(true); setTimeout(() => setPptoTablaOk(false), 3000);
+      const ts = new Date().toLocaleString("es-ES", { day:"2-digit", month:"2-digit", year:"numeric", hour:"2-digit", minute:"2-digit" });
+      localStorage.setItem(`fr_import_ppto_${session.user.id}`, ts);
+      setImportStatusPresupuesto({ fecha: ts, count: rows.length });
+      if (onImportado) onImportado();
+    } catch(e) { setPptoTablaError("Error: " + e.message); }
+    setPptoTablaLoading(false);
   };
 
   const procesarPresupuesto = async (file) => {
@@ -1297,124 +1348,106 @@ export function ImportarExcel({ onClose, session, onImportado, onProduccionDirec
           {/* ── PRESUPUESTO ── */}
           {activeBlock === "presupuesto" && (
             <div>
-              {/* Banner datos ya importados */}
-              {importStatusPresupuesto && modoPpto === "status" && !confirmEliminarPresupuesto && (
-                <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", flexWrap:"wrap", gap:10, background:"rgba(0,159,77,0.07)", border:"1px solid rgba(0,159,77,0.25)", borderRadius:10, padding:"12px 16px", marginBottom:16 }}>
-                  <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={H.green} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                    <div>
-                      <p style={{ fontSize:13, fontWeight:700, color:H.green, margin:0 }}>Datos ya importados</p>
-                      {importStatusPresupuesto.fecha && <p style={{ fontSize:11, color:H.textMid, margin:0, marginTop:2 }}>{importStatusPresupuesto.fecha}</p>}
-                    </div>
-                  </div>
-                  <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
-                    <button onClick={() => { setModoPpto("edit"); cargarMesPpto(pptoEditAnio, pptoEditMes); }}
-                      style={{ padding:"6px 12px", borderRadius:6, border:`1px solid ${H.border}`, background:"none", color:H.text, fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
-                      Editar datos
+              {/* Selector de año */}
+              <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:16 }}>
+                <span style={{ fontSize:10, fontWeight:700, color:H.textMid, textTransform:"uppercase", letterSpacing:"0.8px" }}>Año</span>
+                <div style={{ display:"flex", gap:4 }}>
+                  {[new Date().getFullYear()-1, new Date().getFullYear(), new Date().getFullYear()+1].map(a => (
+                    <button key={a} onClick={() => { setPptoTablaAnio(a); cargarPptoTabla(a); }}
+                      style={{ padding:"4px 14px", borderRadius:6, border:`1.5px solid ${a===pptoTablaAnio ? H.blue : H.border}`, background: a===pptoTablaAnio ? "#EEF4FF" : "none", color: a===pptoTablaAnio ? H.blue : H.textMid, fontWeight: a===pptoTablaAnio ? 700 : 400, fontSize:12, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+                      {a}
                     </button>
-                    <button onClick={() => setModoPpto("upload")}
-                      style={{ padding:"6px 12px", borderRadius:6, border:`1px solid ${H.blue}`, background:"none", color:H.blue, fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
-                      Importar nuevos datos
-                    </button>
-                    <button onClick={() => setConfirmEliminarPresupuesto(true)}
-                      style={{ padding:"6px 12px", borderRadius:6, border:`1px solid rgba(211,47,47,0.4)`, background:"none", color:H.red, fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
-                      Eliminar datos
-                    </button>
-                  </div>
+                  ))}
+                </div>
+                {pptoTablaOk && <span style={{ fontSize:11, color:H.green, fontWeight:600 }}>✓ Guardado</span>}
+                {importStatusPresupuesto?.fecha && !pptoTablaOk && (
+                  <span style={{ fontSize:11, color:H.textMid, marginLeft:"auto" }}>Último guardado: {importStatusPresupuesto.fecha}</span>
+                )}
+              </div>
+
+              {/* Tabla de 12 meses */}
+              {pptoTablaLoadingData ? (
+                <p style={{ fontSize:12, color:H.textMid, padding:"20px 0" }}>Cargando…</p>
+              ) : (
+                <div style={{ overflowX:"auto", borderRadius:10, border:`1px solid ${H.border}` }}>
+                  <table style={{ width:"100%", borderCollapse:"collapse", fontSize:12 }}>
+                    <thead>
+                      <tr style={{ background:"#F5F7FA", borderBottom:`1px solid ${H.border}` }}>
+                        <th style={{ textAlign:"left", padding:"8px 12px", fontSize:10, fontWeight:700, color:H.textMid, textTransform:"uppercase", letterSpacing:"0.8px", width:110 }}>Mes</th>
+                        <th style={{ textAlign:"right", padding:"8px 10px", fontSize:10, fontWeight:700, color:H.textMid, textTransform:"uppercase", letterSpacing:"0.8px", whiteSpace:"nowrap" }}>OCC %</th>
+                        <th style={{ textAlign:"right", padding:"8px 10px", fontSize:10, fontWeight:700, color:H.textMid, textTransform:"uppercase", letterSpacing:"0.8px", whiteSpace:"nowrap" }}>ADR €</th>
+                        <th style={{ textAlign:"right", padding:"8px 10px", fontSize:10, fontWeight:700, color:H.textMid, textTransform:"uppercase", letterSpacing:"0.8px", whiteSpace:"nowrap" }}>RevPAR €</th>
+                        <th style={{ textAlign:"right", padding:"8px 10px", fontSize:10, fontWeight:700, color:H.textMid, textTransform:"uppercase", letterSpacing:"0.8px", whiteSpace:"nowrap" }}>Revenue Total €</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {MESES_FULL.map((mes, i) => (
+                        <tr key={i} style={{ borderBottom: i < 11 ? `1px solid ${H.border}` : "none", background: i % 2 === 0 ? H.card : "#FAFBFC" }}>
+                          <td style={{ padding:"5px 12px", fontWeight:600, color:H.text, fontSize:12, whiteSpace:"nowrap" }}>{mes}</td>
+                          {[
+                            { key:"occ_ppto",       placeholder:"72.5",  step:"0.1" },
+                            { key:"adr_ppto",       placeholder:"120.00", step:"0.01" },
+                            { key:"revpar_ppto",    placeholder:"86.40",  step:"0.01" },
+                            { key:"rev_total_ppto", placeholder:"250000", step:"1" },
+                          ].map(({ key, placeholder, step }) => (
+                            <td key={key} style={{ padding:"3px 6px" }}>
+                              <input
+                                type="number" min="0" step={step}
+                                value={pptoTablaData[i][key]}
+                                placeholder={placeholder}
+                                onChange={e => {
+                                  const v = e.target.value;
+                                  setPptoTablaData(prev => prev.map((r, idx) => idx === i ? {...r, [key]: v} : r));
+                                }}
+                                style={{ width:"100%", minWidth:72, padding:"5px 7px", border:`1px solid ${H.border}`, borderRadius:5, fontSize:12, fontFamily:"'Plus Jakarta Sans',sans-serif", background:"#fff", color:H.text, textAlign:"right", boxSizing:"border-box", outline:"none" }}
+                              />
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               )}
 
-              {/* Confirmación eliminar presupuesto */}
-              {confirmEliminarPresupuesto && (
-                <div style={{ background:"rgba(211,47,47,0.08)", border:"1px solid rgba(211,47,47,0.25)", borderRadius:10, padding:"14px 16px", marginBottom:16 }}>
+              {/* Guardar */}
+              <div style={{ display:"flex", alignItems:"center", gap:10, marginTop:14 }}>
+                {pptoTablaError && <span style={{ fontSize:11, color:H.red }}>{pptoTablaError}</span>}
+                <button onClick={guardarPptoTabla} disabled={pptoTablaLoading || pptoTablaLoadingData}
+                  style={{ marginLeft:"auto", padding:"10px 22px", background:H.blue, color:"#fff", border:"none", borderRadius:8, fontSize:13, fontWeight:700, cursor:(pptoTablaLoading||pptoTablaLoadingData)?"not-allowed":"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+                  {pptoTablaLoading ? "Guardando…" : `Guardar presupuesto ${pptoTablaAnio}`}
+                </button>
+              </div>
+
+              {/* Importar desde Excel (opción secundaria) */}
+              <div style={{ marginTop:24, paddingTop:16, borderTop:`1px solid ${H.border}` }}>
+                <p style={{ fontSize:11, color:H.textMid, marginBottom:10 }}>O importa desde la hoja <strong>💰 Presupuesto</strong> del Excel FastRevenue:</p>
+                <UploadZone
+                  id="excel-input-ppto"
+                  loading={loadingPpto} resultado={resultadoPpto ? true : null} error={errorPpto}
+                  progreso={progresoPpto} progresoPct={progresoPctPpto}
+                  onFile={async (file) => { await procesarPresupuesto(file); await cargarPptoTabla(pptoTablaAnio); }}
+                  okContent={<p style={{ color:H.green, fontSize:12 }}>✓ {resultadoPpto?.presupuesto} {t("meses_presupuesto")}</p>}
+                />
+              </div>
+
+              {/* Eliminar datos */}
+              {confirmEliminarPresupuesto ? (
+                <div style={{ background:"rgba(211,47,47,0.08)", border:"1px solid rgba(211,47,47,0.25)", borderRadius:10, padding:"14px 16px", marginTop:12 }}>
                   <p style={{ fontSize:13, fontWeight:700, color:H.red, marginBottom:4 }}>¿Eliminar los datos de presupuesto?</p>
                   <p style={{ fontSize:11, color:H.textMid, marginBottom:12 }}>Se eliminarán todos los datos de presupuesto. Esta acción no se puede deshacer.</p>
                   <div style={{ display:"flex", gap:8 }}>
                     <button onClick={() => setConfirmEliminarPresupuesto(false)} style={{ padding:"6px 14px", borderRadius:6, border:`1px solid ${H.border}`, background:H.card2, color:H.textMid, fontSize:11, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>Cancelar</button>
-                    <button onClick={eliminarPresupuesto} disabled={eliminandoPresupuesto} style={{ padding:"6px 14px", borderRadius:6, border:"none", background:H.red, color:"#fff", fontSize:11, fontWeight:700, cursor:eliminandoPresupuesto?"not-allowed":"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+                    <button onClick={async () => { await eliminarPresupuesto(); await cargarPptoTabla(pptoTablaAnio); }} disabled={eliminandoPresupuesto} style={{ padding:"6px 14px", borderRadius:6, border:"none", background:H.red, color:"#fff", fontSize:11, fontWeight:700, cursor:eliminandoPresupuesto?"not-allowed":"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
                       {eliminandoPresupuesto ? "Eliminando…" : "Sí, eliminar"}
                     </button>
                   </div>
                 </div>
-              )}
-
-              {/* Zona de subida */}
-              {(!importStatusPresupuesto || modoPpto === "upload") && !confirmEliminarPresupuesto && modoPpto !== "edit" && (
-                <div>
-                  {modoPpto === "upload" && (
-                    <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:12 }}>
-                      <button onClick={() => setModoPpto("status")} style={{ padding:"5px 12px", borderRadius:6, border:`1px solid ${H.border}`, background:"none", color:H.textMid, fontSize:11, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>← Volver</button>
-                      <span style={{ fontSize:12, fontWeight:600, color:H.text }}>Importar nuevos datos de presupuesto</span>
-                    </div>
-                  )}
-                  {importStatusPresupuesto === null && (
-                    <p style={{ fontSize:12, color:H.textMid, marginBottom:12 }}>Comprobando datos…</p>
-                  )}
-                  {importStatusPresupuesto !== null && (
-                    <>
-                      <p style={{ fontSize:12, color:H.textMid, marginBottom:16, lineHeight:1.5 }}>{t("imp_ppto_sub")}</p>
-                      <UploadZone
-                        id="excel-input-ppto"
-                        loading={loadingPpto} resultado={resultadoPpto ? true : null} error={errorPpto}
-                        progreso={progresoPpto} progresoPct={progresoPctPpto}
-                        onFile={procesarPresupuesto}
-                        okContent={<p style={{ color:H.green, fontSize:12 }}>✓ {resultadoPpto?.presupuesto} {t("meses_presupuesto")}</p>}
-                      />
-                    </>
-                  )}
-                </div>
-              )}
-
-              {/* ── Editar mes de presupuesto ── */}
-              {modoPpto === "edit" && !confirmEliminarPresupuesto && (
-                <div>
-                  <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:14 }}>
-                    <button onClick={() => setModoPpto("status")} style={{ padding:"5px 12px", borderRadius:6, border:`1px solid ${H.border}`, background:"none", color:H.textMid, fontSize:11, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>← Volver</button>
-                    <span style={{ fontSize:12, fontWeight:600, color:H.text }}>Editar datos de presupuesto</span>
-                  </div>
-                  <p style={{ fontSize:12, color:H.textMid, marginBottom:14 }}>Selecciona el año y mes para editar sus objetivos. Si no existe, se creará.</p>
-
-                  {/* Selección año/mes */}
-                  <div style={{ display:"flex", gap:8, marginBottom:14 }}>
-                    <div style={{ flex:1 }}>
-                      <label style={labelStyle}>Año</label>
-                      <select value={pptoEditAnio} onChange={e => { const a = parseInt(e.target.value); setPptoEditAnio(a); cargarMesPpto(a, pptoEditMes); }} style={{...inputStyle, cursor:"pointer"}}>
-                        {[new Date().getFullYear()-1, new Date().getFullYear(), new Date().getFullYear()+1].map(a => <option key={a} value={a}>{a}</option>)}
-                      </select>
-                    </div>
-                    <div style={{ flex:2 }}>
-                      <label style={labelStyle}>Mes</label>
-                      <select value={pptoEditMes} onChange={e => { const m = parseInt(e.target.value); setPptoEditMes(m); cargarMesPpto(pptoEditAnio, m); }} style={{...inputStyle, cursor:"pointer"}}>
-                        {["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"].map((mn,i) => <option key={i+1} value={i+1}>{mn}</option>)}
-                      </select>
-                    </div>
-                  </div>
-
-                  {/* Campos */}
-                  <div style={{ background:H.card2, border:`1px solid ${H.border}`, borderRadius:10, padding:"14px" }}>
-                    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"8px 12px", marginBottom:12 }}>
-                      {[
-                        { label:"OCC % objetivo",       key:"occ_ppto",       placeholder:"72.5" },
-                        { label:"ADR € objetivo",        key:"adr_ppto",       placeholder:"120.00" },
-                        { label:"RevPAR € objetivo",     key:"revpar_ppto",    placeholder:"86.40" },
-                        { label:"Revenue Total € objetivo", key:"rev_total_ppto", placeholder:"250000" },
-                      ].map(({ label, key, placeholder }) => (
-                        <div key={key}>
-                          <label style={labelStyle}>{label}</label>
-                          <input type="number" min="0" step="0.01" value={pptoEditValues[key]} placeholder={placeholder}
-                            onChange={e => setPptoEditValues(v => ({...v, [key]: e.target.value}))}
-                            style={inputStyle} />
-                        </div>
-                      ))}
-                    </div>
-                    {okEditPpto && <p style={{ fontSize:11, color:H.green, marginBottom:8 }}>✓ Datos guardados</p>}
-                    {errorEditPpto && <p style={{ fontSize:11, color:H.red, marginBottom:8 }}>{errorEditPpto}</p>}
-                    <button onClick={guardarMesPpto} disabled={pptoEditLoading}
-                      style={{ width:"100%", padding:"9px", background:H.blue, color:"#fff", border:"none", borderRadius:7, fontSize:12, fontWeight:700, cursor:pptoEditLoading?"not-allowed":"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
-                      {pptoEditLoading ? "Guardando…" : "Guardar cambios"}
-                    </button>
-                  </div>
-                </div>
+              ) : (
+                <button onClick={() => setConfirmEliminarPresupuesto(true)}
+                  style={{ width:"100%", padding:"7px", borderRadius:7, border:"1px solid rgba(211,47,47,0.2)", background:"none", color:"rgba(211,47,47,0.5)", cursor:"pointer", fontSize:11, fontFamily:"'Plus Jakarta Sans',sans-serif", marginTop:12 }}>
+                  Eliminar datos de presupuesto
+                </button>
               )}
             </div>
           )}
