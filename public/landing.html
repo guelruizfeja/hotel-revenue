@@ -9,7 +9,7 @@
 <meta name="theme-color" content="#000000" />
 <link rel="preload" as="video" href="/features-video.mp4" type="video/mp4">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;0,800;1,400;1,600&family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;0,800;1,400;1,600&family=Plus+Jakarta+Sans:wght@300;400;500;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -106,9 +106,10 @@
   /* Feature cards — ocultas hasta que se revelan */
   .hero-feature-item {
     display: none;
-    flex: 1 1 0; align-items: flex-start; gap: 12px;
-    font-size: 14px; color: #ffffff;
-    font-weight: 400; line-height: 1.45;
+    flex: 1 1 0; align-items: center; justify-content: center;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px; color: #ffffff;
+    font-weight: 400; line-height: 1.45; text-align: center;
     background: rgba(5,12,30,0.82);
     border: 1px solid rgba(255,255,255,0.18);
     border-radius: 10px; padding: 14px 16px;
@@ -118,15 +119,9 @@
     display: flex;
     animation: featureSlideIn 0.42s cubic-bezier(0.4,0,0.2,1) forwards;
   }
-  .hero-feature-item::before {
-    content: ''; width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0; margin-top: 0;
-    background: rgba(52,211,153,0.18);
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 22 22'%3E%3Cpath d='M5 11l4.5 4.5L17 7' stroke='%2334D399' stroke-width='1.8' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-    background-repeat: no-repeat; background-position: center;
-  }
   /* Tarjeta "Descubre FastRevenue" */
   .hero-discover {
-    flex: 1 1 0;
+    flex: 0 0 auto;
     display: flex; align-items: center; justify-content: center; gap: 10px;
     font-size: 15px; font-weight: 600; color: #ffffff;
     background: rgba(5,12,30,0.82);
@@ -134,8 +129,8 @@
     border-radius: 10px; padding: 14px 20px;
     cursor: pointer;
     backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-    user-select: none; white-space: nowrap; overflow: hidden;
-    transition: border-color 0.2s ease, width 0.48s cubic-bezier(0.4,0,0.2,1);
+    user-select: none; white-space: nowrap;
+    transition: border-color 0.2s ease;
   }
   .hero-discover:hover { border-color: rgba(255,255,255,0.6); }
   @keyframes featureSlideIn {
@@ -1234,29 +1229,10 @@ window.scrollToSection = function(id) {
   let revealed = 0;
   const N = features.length;
 
-  // Medir ancho natural del texto (sin flex stretch)
-  const clone = discover.cloneNode(true);
-  clone.style.cssText = 'position:fixed;top:-9999px;left:-9999px;flex:none;width:auto;visibility:hidden;pointer-events:none;';
-  document.body.appendChild(clone);
-  const naturalWidth = clone.offsetWidth;
-  clone.remove();
-
   discover.addEventListener('click', function () {
     if (revealed >= N) return;
     features[revealed].classList.add('revealed');
     revealed++;
-
-    if (revealed >= N) {
-      // Congelar ancho actual y animar hasta el tamaño compacto del texto
-      const currentWidth = discover.offsetWidth;
-      discover.style.flex = 'none';
-      discover.style.width = currentWidth + 'px';
-      requestAnimationFrame(function () {
-        requestAnimationFrame(function () {
-          discover.style.width = naturalWidth + 'px';
-        });
-      });
-    }
   });
 })();
 
