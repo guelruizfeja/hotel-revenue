@@ -123,10 +123,10 @@
   .hero-discover {
     flex: 0 0 auto;
     display: flex; align-items: center; justify-content: center; gap: 10px;
-    font-size: 15px; font-weight: 600; color: #ffffff;
+    font-size: 17px; font-weight: 600; color: #ffffff;
     background: rgba(5,12,30,0.82);
     border: 1px solid rgba(255,255,255,0.32);
-    border-radius: 10px; padding: 14px 20px;
+    border-radius: 10px; padding: 18px 28px;
     cursor: pointer;
     backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
     user-select: none; white-space: nowrap;
@@ -1233,6 +1233,14 @@ window.scrollToSection = function(id) {
     if (revealed >= N) return;
     features[revealed].classList.add('revealed');
     revealed++;
+    if (revealed >= N) {
+      discover.style.transition = 'opacity 0.35s ease, max-width 0.45s ease, padding 0.45s ease';
+      discover.style.opacity = '0';
+      discover.style.maxWidth = '0';
+      discover.style.padding = '0';
+      discover.style.overflow = 'hidden';
+      setTimeout(function () { discover.style.display = 'none'; }, 480);
+    }
   });
 })();
 
