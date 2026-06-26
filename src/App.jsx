@@ -7192,6 +7192,7 @@ export default function App() {
             <span style={{ fontSize: 16, fontWeight: 800, color: "#ffffff", letterSpacing: 0.5, fontFamily: "'Plus Jakarta Sans', sans-serif", whiteSpace: "nowrap" }}>
               FAST<span style={{ fontWeight: 400 }}>REVENUE</span>
             </span>
+            <span style={{ fontSize: 9, fontWeight: 700, color: "rgba(255,255,255,0.55)", letterSpacing: "1.5px", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 4, padding: "2px 5px", lineHeight: 1, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>BETA</span>
           </div>
 
           {/* Nav links — arrastrables para reordenar */}
