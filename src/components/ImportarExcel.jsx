@@ -6,7 +6,7 @@ import { CustomSelect } from "./CustomSelect";
 import { PeriodSelectorInline } from "./PeriodSelectorInline";
 import { Card } from "./Card";
 
-export function ImportarExcel({ onClose, session, onImportado, onProduccionDirecta, hotelNombre: hotelNombreProp, fullPage = false }) {
+export function ImportarExcel({ onClose, session, onImportado, onProduccionDirecta, hotelNombre: hotelNombreProp, fullPage = false, produccion = [], hotelHab = 0 }) {
   const t = useT();
   // Pestaña activa (persiste entre navegaciones)
   const [activeBlock, setActiveBlock] = useState(() => localStorage.getItem("fr_gestion_tab") || "presupuesto");
@@ -1366,24 +1366,57 @@ export function ImportarExcel({ onClose, session, onImportado, onProduccionDirec
               </div>
 
               {/* Tabla de 12 meses */}
-              {pptoTablaLoadingData ? (
-                <p style={{ fontSize:12, color:H.textMid, padding:"20px 0" }}>Cargando…</p>
-              ) : (
+              {(() => {
+                // Reales por mes para el año seleccionado
+                const realesMes = Array.from({ length: 12 }, (_, i) => {
+                  const dias = (produccion || []).filter(r => {
+                    const f = new Date(r.fecha + "T00:00:00");
+                    return f.getMonth() === i && f.getFullYear() === pptoTablaAnio;
+                  });
+                  if (dias.length === 0) return null;
+                  const habOcu = dias.reduce((a, r) => a + (r.hab_ocupadas || 0), 0);
+                  const habDis = dias.reduce((a, r) => a + (r.hab_disponibles || (hotelHab || 0)), 0);
+                  const revH   = dias.reduce((a, r) => a + (r.revenue_hab || 0), 0);
+                  const revT   = dias.reduce((a, r) => a + (r.revenue_total || 0), 0);
+                  return {
+                    occ_ppto:       habDis > 0 ? habOcu / habDis * 100 : null,
+                    adr_ppto:       habOcu > 0 ? revH / habOcu : null,
+                    revpar_ppto:    habDis > 0 ? revH / habDis : null,
+                    rev_total_ppto: revT > 0 ? revT : null,
+                  };
+                });
+                const cellBg = (mesIdx, key) => {
+                  const real = realesMes[mesIdx];
+                  if (!real || real[key] == null) return "#fff";
+                  const ppto = parseFloat(pptoTablaData[mesIdx][key]);
+                  if (!ppto) return "#fff";
+                  return real[key] >= ppto ? "#F0FBF4" : "#FEF2F2";
+                };
+                const cellBorder = (mesIdx, key) => {
+                  const real = realesMes[mesIdx];
+                  if (!real || real[key] == null) return `1px solid ${H.border}`;
+                  const ppto = parseFloat(pptoTablaData[mesIdx][key]);
+                  if (!ppto) return `1px solid ${H.border}`;
+                  return real[key] >= ppto ? "1px solid #86EFAC" : "1px solid #FCA5A5";
+                };
+                return pptoTablaLoadingData ? (
+                  <p style={{ fontSize:12, color:H.textMid, padding:"20px 0" }}>Cargando…</p>
+                ) : (
                 <div style={{ overflowX:"auto", borderRadius:10, border:`1px solid ${H.border}` }}>
                   <table style={{ width:"100%", borderCollapse:"collapse", fontSize:12 }}>
                     <thead>
                       <tr style={{ background:"#F5F7FA", borderBottom:`1px solid ${H.border}` }}>
-                        <th style={{ textAlign:"left", padding:"8px 12px", fontSize:10, fontWeight:700, color:H.textMid, textTransform:"uppercase", letterSpacing:"0.8px", width:110 }}>Mes</th>
-                        <th style={{ textAlign:"right", padding:"8px 10px", fontSize:10, fontWeight:700, color:H.textMid, textTransform:"uppercase", letterSpacing:"0.8px", whiteSpace:"nowrap" }}>OCC %</th>
-                        <th style={{ textAlign:"right", padding:"8px 10px", fontSize:10, fontWeight:700, color:H.textMid, textTransform:"uppercase", letterSpacing:"0.8px", whiteSpace:"nowrap" }}>ADR €</th>
-                        <th style={{ textAlign:"right", padding:"8px 10px", fontSize:10, fontWeight:700, color:H.textMid, textTransform:"uppercase", letterSpacing:"0.8px", whiteSpace:"nowrap" }}>RevPAR €</th>
-                        <th style={{ textAlign:"right", padding:"8px 10px", fontSize:10, fontWeight:700, color:H.textMid, textTransform:"uppercase", letterSpacing:"0.8px", whiteSpace:"nowrap" }}>Revenue Total €</th>
+                        <th style={{ textAlign:"center", padding:"8px 12px", fontSize:10, fontWeight:700, color:H.textMid, textTransform:"uppercase", letterSpacing:"0.8px", width:110 }}>Mes</th>
+                        <th style={{ textAlign:"center", padding:"8px 10px", fontSize:10, fontWeight:700, color:H.textMid, textTransform:"uppercase", letterSpacing:"0.8px", whiteSpace:"nowrap" }}>OCC %</th>
+                        <th style={{ textAlign:"center", padding:"8px 10px", fontSize:10, fontWeight:700, color:H.textMid, textTransform:"uppercase", letterSpacing:"0.8px", whiteSpace:"nowrap" }}>ADR €</th>
+                        <th style={{ textAlign:"center", padding:"8px 10px", fontSize:10, fontWeight:700, color:H.textMid, textTransform:"uppercase", letterSpacing:"0.8px", whiteSpace:"nowrap" }}>RevPAR €</th>
+                        <th style={{ textAlign:"center", padding:"8px 10px", fontSize:10, fontWeight:700, color:H.textMid, textTransform:"uppercase", letterSpacing:"0.8px", whiteSpace:"nowrap" }}>Revenue Total €</th>
                       </tr>
                     </thead>
                     <tbody>
                       {MESES_FULL.map((mes, i) => (
                         <tr key={i} style={{ borderBottom: i < 11 ? `1px solid ${H.border}` : "none", background: i % 2 === 0 ? H.card : "#FAFBFC" }}>
-                          <td style={{ padding:"5px 12px", fontWeight:600, color:H.text, fontSize:12, whiteSpace:"nowrap" }}>{mes}</td>
+                          <td style={{ padding:"5px 12px", fontWeight:600, color:H.text, fontSize:12, whiteSpace:"nowrap", textAlign:"center" }}>{mes}</td>
                           {[
                             { key:"occ_ppto",       placeholder:"72.5",  step:"0.1" },
                             { key:"adr_ppto",       placeholder:"120.00", step:"0.01" },
@@ -1399,7 +1432,7 @@ export function ImportarExcel({ onClose, session, onImportado, onProduccionDirec
                                   const v = e.target.value;
                                   setPptoTablaData(prev => prev.map((r, idx) => idx === i ? {...r, [key]: v} : r));
                                 }}
-                                style={{ width:"100%", minWidth:72, padding:"5px 7px", border:`1px solid ${H.border}`, borderRadius:5, fontSize:12, fontFamily:"'Plus Jakarta Sans',sans-serif", background:"#fff", color:H.text, textAlign:"right", boxSizing:"border-box", outline:"none" }}
+                                style={{ width:"100%", minWidth:72, padding:"5px 7px", border:cellBorder(i, key), borderRadius:5, fontSize:12, fontFamily:"'Plus Jakarta Sans',sans-serif", background:cellBg(i, key), color:"#111111", textAlign:"center", boxSizing:"border-box", outline:"none" }}
                               />
                             </td>
                           ))}
@@ -1408,7 +1441,8 @@ export function ImportarExcel({ onClose, session, onImportado, onProduccionDirec
                     </tbody>
                   </table>
                 </div>
-              )}
+              );
+              })()}
 
               {/* Guardar */}
               <div style={{ display:"flex", alignItems:"center", gap:10, marginTop:14 }}>

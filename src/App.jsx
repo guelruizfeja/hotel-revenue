@@ -7549,7 +7549,7 @@ export default function App() {
         <div style={{ display: !cargandoDatos && !mesDetalle && !desgloseMovimiento && view === "gestion" ? "block" : "none", width:"100%" }}>
           <ImportarExcel fullPage
             onClose={() => { setView("dashboard"); localStorage.setItem("fr_view","dashboard"); }}
-            session={session} hotelNombre={datos.hotel?.nombre||''}
+            session={session} hotelNombre={datos.hotel?.nombre||''} produccion={datos.produccion||[]} hotelHab={datos.hotel?.habitaciones||0}
             onImportado={() => {
               sessionStorage.removeItem("fr_datos_cache_v4");
               sessionStorage.removeItem("fr_datos_ts_v4");
