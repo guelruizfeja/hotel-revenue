@@ -63,10 +63,8 @@ export const KpiCard = React.memo(function KpiCard({ label, subtitle, value, cha
         )}
       </div>
       {helpOpen && help && (
-        <div style={{ position:"absolute", bottom:"calc(100% + 8px)", left:0, right:0, background:"#fff", border:"1.5px solid #111", borderRadius:10, padding:"14px 16px", zIndex:200, boxShadow:"0 8px 24px rgba(0,0,0,0.13)", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
-          <p style={{ fontSize:10, color:"#888", fontWeight:600, textTransform:"uppercase", letterSpacing:"1px", marginBottom:6 }}>Cómo se calcula</p>
-          <p style={{ fontSize:11, color:"#333", fontWeight:600, marginBottom:10, background:"#f5f5f5", padding:"6px 10px", borderRadius:6, fontFamily:"monospace" }}>{help.formula}</p>
-          <p style={{ fontSize:12, color:"#555", lineHeight:1.55, margin:0 }}>{help.desc}</p>
+        <div style={{ position:"absolute", bottom:"calc(100% + 8px)", left:0, right:0, background:"#fff", border:"1.5px solid #111", borderRadius:8, padding:"12px 14px", zIndex:200, boxShadow:"0 6px 20px rgba(0,0,0,0.12)", fontFamily:"'Inter',sans-serif" }}>
+          <p style={{ fontSize:11.5, color:"#222", lineHeight:1.45, margin:0, fontWeight:400 }}>{help.desc}</p>
         </div>
       )}
     </div>

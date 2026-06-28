@@ -24,13 +24,13 @@ export const NET_HAB_FNB = 1 / 1.10;
 export const NET_SALA    = 1 / 1.21;
 
 export const KPI_HELP = {
-  "Ocupación":       { formula: "Hab. ocupadas ÷ Hab. disponibles × 100", desc: "De cada 10 habitaciones que tienes, cuántas has vendido. Si está baja, te sobran habitaciones vacías. Si está muy alta y el precio es bajo, estás dejando dinero sobre la mesa." },
-  "ADR":             { formula: "Revenue habitaciones ÷ Hab. ocupadas", desc: "Lo que cobras de media por cada habitación que vendes. Si sube mientras la ocupación se mantiene, estás vendiendo mejor. Si baja, puede que estés tirando el precio para llenar." },
-  "RevPAR":          { formula: "Revenue habitaciones ÷ Hab. disponibles", desc: "Lo que ingresa cada habitación de tu hotel, esté vendida o no. Es el número que mejor resume si tu hotel va bien: sube cuando vendes más habitaciones o a mejor precio." },
-  "TRevPAR":         { formula: "Revenue total ÷ Hab. disponibles", desc: "Como el RevPAR, pero contando todo lo que genera el hotel: restaurante, eventos, extras… Si es muy superior al RevPAR, tienes fuentes de ingreso más allá de las habitaciones que funcionan bien." },
-  "Revenue Diario":  { formula: "Suma del revenue del día seleccionado", desc: "Todo lo que ha facturado el hotel ese día. Útil para comparar días concretos o detectar si un día puntual fue especialmente bueno o malo." },
-  "Revenue Mensual": { formula: "Suma acumulada desde el 1 del mes", desc: "Lo que llevas facturado en el mes hasta hoy. Compáralo con el presupuesto y con el mismo punto del año pasado para saber si el mes va por buen camino." },
-  "Revenue Total":   { formula: "Revenue hab. + F&B + otros ingresos", desc: "La facturación completa del período, sumando todos los departamentos. Es lo que entra en caja antes de costes." },
+  "Ocupación":       { formula: "Hab. ocupadas ÷ Hab. disponibles × 100", desc: "% de habitaciones vendidas sobre el total disponible." },
+  "ADR":             { formula: "Revenue habitaciones ÷ Hab. ocupadas",    desc: "Precio medio cobrado por cada habitación ocupada." },
+  "RevPAR":          { formula: "Revenue habitaciones ÷ Hab. disponibles", desc: "Ingreso por habitación disponible, vendida o no." },
+  "TRevPAR":         { formula: "Revenue total ÷ Hab. disponibles",        desc: "Ingreso total del hotel (hab. + F&B + extras) por habitación disponible." },
+  "Revenue Diario":  { formula: "Σ revenue del día",                       desc: "Facturación total del hotel en el día seleccionado." },
+  "Revenue Mensual": { formula: "Σ acumulada desde el día 1 del mes",      desc: "Facturación acumulada desde el 1 del mes hasta hoy." },
+  "Revenue Total":   { formula: "Revenue hab. + F&B + otros",              desc: "Suma de todos los ingresos del período seleccionado." },
 };
 
 export const NAV = [
