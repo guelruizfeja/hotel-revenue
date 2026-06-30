@@ -27,7 +27,7 @@ export function PeriodSelectorInline({ mes, anio, onChange, aniosDisponibles, al
         <p style={{ fontSize:13, fontWeight:700, color:C.text, fontFamily:"'Plus Jakarta Sans',sans-serif", minWidth:36, textAlign:"center" }}>{anio}</p>
         <button onClick={anioSiguiente} style={btnFlecha(puedeSiguiente)}>›</button>
       </div>
-      <div style={{ display:"grid", gridTemplateColumns:"repeat(6,1fr)", gap:4 }}>
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:4 }}>
         {MESES_C.map((m, i) => {
           const futuro = !allowFuture && anio === anioMax && i > hoy.getMonth();
           const activo = i === mes;
@@ -35,19 +35,18 @@ export function PeriodSelectorInline({ mes, anio, onChange, aniosDisponibles, al
           return (
             <button key={i} onClick={() => !futuro && onChange(i, anio)}
               style={{
-                padding: "4px 2px",
+                padding: "5px 4px",
                 borderRadius: 6,
                 border: esHoyMes && !activo ? `1.5px solid ${C.text}44` : `1px solid ${activo?C.text:C.border}`,
                 background: activo ? C.text : "transparent",
                 color: futuro ? C.textLight : activo ? "#fff" : C.text,
-                fontSize: 10, fontWeight: activo ? 700 : 500, opacity: futuro ? 0.3 : 1,
+                fontSize: 11, fontWeight: activo ? 700 : 500, opacity: futuro ? 0.3 : 1,
                 cursor: futuro ? "not-allowed" : "pointer",
                 fontFamily: "'Plus Jakarta Sans',sans-serif",
                 textAlign: "center",
                 transition: "all 0.1s",
-                whiteSpace: "nowrap",
               }}>
-              {m.slice(0, 3)}
+              {m}
             </button>
           );
         })}
