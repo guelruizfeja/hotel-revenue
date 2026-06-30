@@ -622,36 +622,60 @@
     .stat-item { padding: 24px 0; }
     .stat-item + .stat-item { border-left: none; border-top: 1px solid rgba(184,134,11,0.15); }
 
-    /* Features: deshabilitar sticky, mostrar tarjetas estáticas */
-    .features-section { min-height: auto; overflow: hidden; }
+    /* Features: carrusel horizontal en móvil */
+    .features-section { min-height: auto; overflow: visible; }
     .features-sticky-wrap {
       position: static;
       width: 100%;
       height: auto;
       grid-template-columns: 1fr;
-      gap: 24px;
-      padding: 90px 6vw 60px;
+      gap: 20px;
+      padding: 72px 0 48px;
     }
     .features-left-inner { opacity: 1 !important; transform: none !important; }
+    .features-left { padding: 0 6vw; }
     .features-right {
       position: static;
       height: auto;
-      overflow: visible;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
+      overflow-x: auto;
+      overflow-y: visible;
+      display: flex;
+      flex-direction: row;
+      scroll-snap-type: x mandatory;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      gap: 12px;
       margin-top: 0;
-      padding-left: 0;
+      padding: 4px 6vw 8px;
     }
+    .features-right::-webkit-scrollbar { display: none; }
     .fsi-item {
       position: static !important;
       opacity: 1 !important;
       transform: none !important;
       pointer-events: auto;
-      padding: 20px 18px 20px 22px;
+      padding: 24px 20px;
+      flex: 0 0 82vw;
+      scroll-snap-align: start;
+      text-align: center;
     }
-    .fsi-title { font-size: 22px; }
-    .fsi-desc li { font-size: 12px; }
+    .fsi-title { font-size: 26px; }
+    .fsi-desc li { font-size: 12.5px; }
+
+    /* Dots: horizontal bajo el carrusel */
+    .fsi-dots {
+      display: flex !important;
+      position: static !important;
+      flex-direction: row !important;
+      justify-content: center;
+      top: unset !important; right: unset !important;
+      transform: none !important;
+      opacity: 1 !important;
+      pointer-events: none;
+      margin-top: 16px;
+      gap: 8px;
+    }
+    .fsi-dots::before { display: none; }
 
     /* Mockup */
     .mockup-inner { grid-template-columns: 1fr !important; gap: 32px !important; }
@@ -684,8 +708,6 @@
     /* Dashboard mock KPIs */
     .mock-kpis { grid-template-columns: repeat(2,1fr); }
     .mock-charts { grid-template-columns: 1fr; }
-
-    .fsi-dots { display: none; }
 
     /* Secciones */
     .pricing-section { padding: 72px 6vw; }
@@ -861,12 +883,6 @@
   <video class="features-video" autoplay muted loop playsinline preload="auto" poster="/features-video-poster.jpg">
     <source src="/features-video.mp4" type="video/mp4">
   </video>
-  <div class="fsi-dots" id="fsiDots">
-    <span class="fsi-dot"></span>
-    <span class="fsi-dot"></span>
-    <span class="fsi-dot"></span>
-    <span class="fsi-dot"></span>
-  </div>
   <div class="features-sticky-wrap">
     <div class="features-left">
       <div class="features-left-inner">
@@ -911,6 +927,12 @@
           <li>Evalúa el resumen del revenue de grupos por segmentos</li>
         </ul>
       </div>
+    </div>
+    <div class="fsi-dots" id="fsiDots">
+      <span class="fsi-dot"></span>
+      <span class="fsi-dot"></span>
+      <span class="fsi-dot"></span>
+      <span class="fsi-dot"></span>
     </div>
   </div>
 </section>
@@ -1114,7 +1136,25 @@ document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
     });
   }
 
-  if (mq.matches) { applyMobile(); return; }
+  if (mq.matches) {
+    applyMobile();
+    // Carrusel móvil: actualizar puntos al deslizar
+    const rightEl = document.querySelector('.features-right');
+    if (dotsEl && rightEl) {
+      dotsEl.classList.add('visible');
+      if (dots[0]) dots[0].classList.add('active');
+      const obs = new IntersectionObserver((entries) => {
+        entries.forEach(e => {
+          if (e.isIntersecting && e.intersectionRatio >= 0.5) {
+            const idx = items.indexOf(e.target);
+            if (idx >= 0) dots.forEach((d, i) => d.classList.toggle('active', i === idx));
+          }
+        });
+      }, { root: rightEl, threshold: 0.5 });
+      items.forEach(item => obs.observe(item));
+    }
+    return;
+  }
 
   mq.addEventListener('change', e => { if (e.matches) applyMobile(); else resetDesktop(); });
 
