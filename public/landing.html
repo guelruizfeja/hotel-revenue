@@ -383,7 +383,7 @@
     pointer-events: none;
     background: rgba(5,12,30,0.55);
     border: 1px solid rgba(255,255,255,0.16);
-    border-radius: 18px;
+    border-radius: 0;
     padding: 32px 28px;
     box-shadow: 0 16px 48px rgba(0,0,0,0.40), inset 0 1px 0 rgba(255,255,255,0.08);
     backdrop-filter: blur(22px);
@@ -392,6 +392,46 @@
   }
   .fsi-item.ptr-on { pointer-events: auto; }
   .fsi-num { display: none; }
+
+  /* ── DOTS GUIDE ── */
+  .fsi-dots {
+    position: fixed;
+    right: 2.5vw;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    z-index: 50;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s ease;
+  }
+  .fsi-dots.visible { opacity: 1; }
+  .fsi-dots::before {
+    content: '';
+    position: absolute;
+    top: 3.5px; bottom: 3.5px;
+    left: 50%; transform: translateX(-50%);
+    width: 1px;
+    background: rgba(255,255,255,0.2);
+  }
+  .fsi-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.15);
+    border: 1.5px solid rgba(255,255,255,0.35);
+    transition: all 0.35s ease;
+    position: relative; z-index: 1;
+    flex-shrink: 0;
+  }
+  .fsi-dot.active {
+    background: #ffffff;
+    border-color: #ffffff;
+    transform: scale(1.5);
+    box-shadow: 0 0 10px rgba(255,255,255,0.55);
+  }
   .fsi-title {
     font-family: 'Cormorant Garamond', serif;
     font-size: 38px; font-weight: 700;
@@ -645,6 +685,8 @@
     .mock-kpis { grid-template-columns: repeat(2,1fr); }
     .mock-charts { grid-template-columns: 1fr; }
 
+    .fsi-dots { display: none; }
+
     /* Secciones */
     .pricing-section { padding: 72px 6vw; }
     .contact-section { padding: 72px 6vw; }
@@ -819,6 +861,12 @@
   <video class="features-video" autoplay muted loop playsinline preload="auto" poster="/features-video-poster.jpg">
     <source src="/features-video.mp4" type="video/mp4">
   </video>
+  <div class="fsi-dots" id="fsiDots">
+    <span class="fsi-dot"></span>
+    <span class="fsi-dot"></span>
+    <span class="fsi-dot"></span>
+    <span class="fsi-dot"></span>
+  </div>
   <div class="features-sticky-wrap">
     <div class="features-left">
       <div class="features-left-inner">
@@ -1031,10 +1079,16 @@ document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
 
 /* ── Features: título izquierda + tarjetas bidireccionales ── */
 (function () {
-  const inner = document.querySelector('.features-left-inner');
-  const sec   = document.querySelector('.features-section');
-  const items = Array.from(document.querySelectorAll('.fsi-item'));
+  const inner  = document.querySelector('.features-left-inner');
+  const sec    = document.querySelector('.features-section');
+  const items  = Array.from(document.querySelectorAll('.fsi-item'));
+  const dotsEl = document.getElementById('fsiDots');
+  const dots   = dotsEl ? Array.from(dotsEl.querySelectorAll('.fsi-dot')) : [];
   if (!inner || !sec || !items.length) return;
+
+  function updateDots() {
+    dots.forEach((d, i) => d.classList.toggle('active', i === current));
+  }
 
   const mq = window.matchMedia('(max-width: 768px)');
 
@@ -1085,6 +1139,7 @@ document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
     inner.style.opacity   = p;
     inner.style.transform = `translateX(${(1 - p) * -120}px)`;
     titleFixed = p >= 1;
+    if (dotsEl) dotsEl.classList.toggle('visible', titleFixed);
     if (titleFixed && !autoShown) { autoShown = true; goForward(); }
   }
   window.addEventListener('scroll', updateTitle, { passive: true });
@@ -1111,6 +1166,7 @@ document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
     if (animating) return;
     animating = true; accum = 0;
     const prev = current++;
+    updateDots();
 
     if (prev >= 0) anim(items[prev], 'bottom', EXIT_MS);         // sale abajo
     const delay = prev >= 0 ? EXIT_MS : 0;
@@ -1133,6 +1189,7 @@ document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
     if (animating || current <= -1) return;
     animating = true; accum = 0;
     const prev = current--;
+    updateDots();
 
     // salida a la derecha de la tarjeta actual (si existe)
     if (prev < N && prev >= 0) anim(items[prev], 'right', EXIT_MS);
