@@ -1364,17 +1364,15 @@ const [metricaSel, setMetricaSel] = useState(() => localStorage.getItem("fr_metr
   return (
     <div>
       {/* ── CABECERA MES ACTIVO ── */}
-      <div className="dash-header" style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10, paddingBottom:10, borderBottom:`1px solid ${C.border}` }}>
-        <div>
-          <p style={{ fontSize:22, fontWeight:800, color:C.text, fontFamily:"'Plus Jakarta Sans',sans-serif", letterSpacing:-0.5, marginBottom:2 }}>
-            {t("bienvenido")}, <span style={{ color:C.text }}>{datos.hotel?.nombre || "Mi Hotel"}</span>
-          </p>
-          <div style={{ display:"flex", alignItems:"baseline", gap:10 }}>
-            <h2 style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:28, fontWeight:700, color:C.text, margin:0, letterSpacing:-0.5 }}>
-              {t("meses_full")[mes]}
-            </h2>
-            <span style={{ fontSize:20, fontWeight:400, color:C.textLight }}>{anio}</span>
-          </div>
+      <p style={{ fontSize:13, fontWeight:600, color:C.textLight, fontFamily:"'Plus Jakarta Sans',sans-serif", marginBottom:4, marginTop:0 }}>
+        {t("bienvenido")}, {datos.hotel?.nombre || "Mi Hotel"}
+      </p>
+      <div className="dash-header" style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", marginBottom:10, paddingBottom:10, borderBottom:`1px solid ${C.border}` }}>
+        <div style={{ display:"flex", alignItems:"baseline", gap:10 }}>
+          <h2 style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:28, fontWeight:700, color:C.text, margin:0, letterSpacing:-0.5 }}>
+            {t("meses_full")[mes]}
+          </h2>
+          <span style={{ fontSize:20, fontWeight:400, color:C.textLight }}>{anio}</span>
         </div>
         <PeriodSelectorInline mes={mes} anio={anio} onChange={onPeriodo} aniosDisponibles={[...new Set((datos.produccion||[]).map(d=>new Date(d.fecha+"T00:00:00").getFullYear()))].sort()} />
       </div>
