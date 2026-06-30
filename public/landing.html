@@ -381,42 +381,45 @@
     opacity: 0;
     transform: translateX(110%);
     pointer-events: none;
-    background: #05101E;
-    border: 1px solid rgba(201,168,76,0.18);
-    border-left: 3px solid #C9A84C;
-    border-radius: 2px;
-    padding: 32px 32px 32px 36px;
-    box-shadow: 0 24px 56px rgba(0,0,0,0.55);
+    background: #F4EFE6;
+    border-radius: 3px;
+    padding: 36px 40px;
+    box-shadow: 0 28px 70px rgba(0,0,0,0.65), 0 4px 14px rgba(0,0,0,0.25);
   }
   .fsi-item.ptr-on { pointer-events: auto; }
   .fsi-num {
     font-family: 'Plus Jakarta Sans', sans-serif;
-    font-size: 11px; font-weight: 600; letter-spacing: 3px;
-    text-transform: uppercase; color: #C9A84C;
-    display: flex; align-items: center; gap: 12px;
-    margin-bottom: 16px;
-  }
-  .fsi-num::after {
-    content: ''; display: block; flex: 1;
-    height: 1px; background: rgba(201,168,76,0.22);
+    font-size: 10px; font-weight: 700; letter-spacing: 4px;
+    text-transform: uppercase; color: #B8860B;
+    margin-bottom: 12px;
+    display: block;
   }
   .fsi-title {
     font-family: 'Cormorant Garamond', serif;
-    font-size: 40px; font-weight: 700; font-style: italic;
-    color: #ffffff; line-height: 1.0;
+    font-size: 42px; font-weight: 700;
+    color: #0A2540; line-height: 1.0;
+  }
+  .fsi-title::after {
+    content: ''; display: block;
+    height: 1.5px; width: 44px;
+    background: #B8860B;
+    margin-top: 16px;
   }
   .fsi-divider { display: none; }
   .fsi-desc {
     list-style: none; padding: 0; margin: 18px 0 0;
-    display: flex; flex-direction: column; gap: 10px;
+    display: flex; flex-direction: column; gap: 0;
   }
   .fsi-desc li {
-    font-size: 14px; color: rgba(255,255,255,0.72); line-height: 1.55;
-    display: flex; align-items: flex-start; gap: 12px;
+    font-size: 13.5px; color: #374151; line-height: 1.6;
+    padding: 9px 0;
+    border-bottom: 1px solid rgba(10,37,64,0.08);
+    display: flex; align-items: flex-start; gap: 10px;
   }
+  .fsi-desc li:last-child { border-bottom: none; }
   .fsi-desc li::before {
-    content: '—'; font-size: 13px; color: #C9A84C;
-    line-height: 1.8; flex-shrink: 0; font-weight: 400;
+    content: ''; width: 5px; height: 5px; border-radius: 50%;
+    background: #B8860B; flex-shrink: 0; margin-top: 7px;
   }
 
   /* ── PRICING ── */
@@ -614,10 +617,11 @@
       pointer-events: auto;
       padding: 20px 18px 20px 22px;
     }
-    .fsi-num { font-size: 10px; margin-bottom: 10px; }
-    .fsi-title { font-size: 24px; }
+    .fsi-num { font-size: 9px; margin-bottom: 8px; }
+    .fsi-title { font-size: 26px; }
+    .fsi-title::after { margin-top: 12px; }
     .fsi-desc { margin-top: 12px; }
-    .fsi-desc li { font-size: 12px; }
+    .fsi-desc li { font-size: 12px; padding: 7px 0; }
 
     /* Mockup */
     .mockup-inner { grid-template-columns: 1fr !important; gap: 32px !important; }
