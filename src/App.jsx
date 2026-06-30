@@ -1364,7 +1364,7 @@ const [metricaSel, setMetricaSel] = useState(() => localStorage.getItem("fr_metr
   return (
     <div>
       {/* ── CABECERA MES ACTIVO ── */}
-      <div className="dash-header" style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16, paddingBottom:14, borderBottom:`1px solid ${C.border}` }}>
+      <div className="dash-header" style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10, paddingBottom:10, borderBottom:`1px solid ${C.border}` }}>
         <div>
           <p style={{ fontSize:22, fontWeight:800, color:C.text, fontFamily:"'Plus Jakarta Sans',sans-serif", letterSpacing:-0.5, marginBottom:2 }}>
             {t("bienvenido")}, <span style={{ color:C.text }}>{datos.hotel?.nombre || "Mi Hotel"}</span>
@@ -1379,7 +1379,7 @@ const [metricaSel, setMetricaSel] = useState(() => localStorage.getItem("fr_metr
         <PeriodSelectorInline mes={mes} anio={anio} onChange={onPeriodo} aniosDisponibles={[...new Set((datos.produccion||[]).map(d=>new Date(d.fecha+"T00:00:00").getFullYear()))].sort()} />
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(clamp(140px,40vw,200px), 1fr))", gap: 10, marginBottom: 8 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(clamp(140px,40vw,200px), 1fr))", gap: 10, marginBottom: 4 }}>
         {(kpiPreview || kpiOrder).map(key => kpis.find(k=>k.kpiKey===key)).filter(Boolean).map((k, i) => (
           <div key={k.kpiKey} draggable
             onDragStart={e => { kpiDragKey.current = k.kpiKey; e.dataTransfer.effectAllowed = "move"; setTimeout(() => setDraggingKpiKey(k.kpiKey), 0); }}
@@ -1392,7 +1392,7 @@ const [metricaSel, setMetricaSel] = useState(() => localStorage.getItem("fr_metr
         ))}
       </div>
 
-      <p style={{ fontSize: 11, color: C.textLight, marginBottom: 20, marginTop: 0 }}>
+      <p style={{ fontSize: 11, color: C.textLight, marginBottom: 10, marginTop: 0 }}>
         * Media mensual
       </p>
 
