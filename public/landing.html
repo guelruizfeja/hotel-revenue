@@ -1133,13 +1133,16 @@ document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
 
   /* ── Animación título ── */
   function updateTitle() {
-    const vh  = window.innerHeight;
-    const top = sec.getBoundingClientRect().top;
-    const p   = Math.max(0, Math.min(1, (vh - top) / (vh * 1.1)));
+    const vh   = window.innerHeight;
+    const rect = sec.getBoundingClientRect();
+    const top  = rect.top;
+    const p    = Math.max(0, Math.min(1, (vh - top) / (vh * 1.1)));
     inner.style.opacity   = p;
     inner.style.transform = `translateX(${(1 - p) * -120}px)`;
     titleFixed = p >= 1;
-    if (dotsEl) dotsEl.classList.toggle('visible', titleFixed);
+    // Puntos: solo visibles mientras la sección está activamente en el scroll sticky
+    const inSticky = rect.top <= 2 && rect.bottom >= (vh - 2);
+    if (dotsEl) dotsEl.classList.toggle('visible', inSticky);
     if (titleFixed && !autoShown) { autoShown = true; goForward(); }
   }
   window.addEventListener('scroll', updateTitle, { passive: true });
