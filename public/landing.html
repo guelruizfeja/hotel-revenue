@@ -381,46 +381,39 @@
     opacity: 0;
     transform: translateX(110%);
     pointer-events: none;
-    background: #F4EFE6;
-    border-radius: 3px;
-    padding: 36px 40px;
-    box-shadow: 0 28px 70px rgba(0,0,0,0.65), 0 4px 14px rgba(0,0,0,0.25);
+    background: rgba(5,12,30,0.55);
+    border: 1px solid rgba(255,255,255,0.16);
+    border-radius: 18px;
+    padding: 32px 28px;
+    box-shadow: 0 16px 48px rgba(0,0,0,0.40), inset 0 1px 0 rgba(255,255,255,0.08);
+    backdrop-filter: blur(22px);
+    -webkit-backdrop-filter: blur(22px);
+    text-align: center;
   }
   .fsi-item.ptr-on { pointer-events: auto; }
-  .fsi-num {
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    font-size: 10px; font-weight: 700; letter-spacing: 4px;
-    text-transform: uppercase; color: #B8860B;
-    margin-bottom: 12px;
-    display: block;
-  }
+  .fsi-num { display: none; }
   .fsi-title {
     font-family: 'Cormorant Garamond', serif;
-    font-size: 42px; font-weight: 700;
-    color: #0A2540; line-height: 1.0;
+    font-size: 38px; font-weight: 700;
+    color: #ffffff; line-height: 1.0;
   }
-  .fsi-title::after {
-    content: ''; display: block;
-    height: 1.5px; width: 44px;
-    background: #B8860B;
-    margin-top: 16px;
+  .fsi-title::after { display: none; }
+  .fsi-divider {
+    display: block;
+    height: 1px; width: 36px;
+    background: rgba(255,255,255,0.25);
+    margin: 16px auto;
   }
-  .fsi-divider { display: none; }
   .fsi-desc {
-    list-style: none; padding: 0; margin: 18px 0 0;
-    display: flex; flex-direction: column; gap: 0;
+    list-style: none; padding: 0; margin: 0;
+    display: flex; flex-direction: column; gap: 8px;
   }
   .fsi-desc li {
-    font-size: 13.5px; color: #374151; line-height: 1.6;
-    padding: 9px 0;
-    border-bottom: 1px solid rgba(10,37,64,0.08);
-    display: flex; align-items: flex-start; gap: 10px;
+    font-size: 13.5px; color: rgba(255,255,255,0.78); line-height: 1.55;
+    justify-content: center; text-align: center;
+    display: block;
   }
-  .fsi-desc li:last-child { border-bottom: none; }
-  .fsi-desc li::before {
-    content: ''; width: 5px; height: 5px; border-radius: 50%;
-    background: #B8860B; flex-shrink: 0; margin-top: 7px;
-  }
+  .fsi-desc li::before { display: none; }
 
   /* ── PRICING ── */
   .pricing-section { padding: 110px 6vw; background: var(--white); }
@@ -617,11 +610,8 @@
       pointer-events: auto;
       padding: 20px 18px 20px 22px;
     }
-    .fsi-num { font-size: 9px; margin-bottom: 8px; }
-    .fsi-title { font-size: 26px; }
-    .fsi-title::after { margin-top: 12px; }
-    .fsi-desc { margin-top: 12px; }
-    .fsi-desc li { font-size: 12px; padding: 7px 0; }
+    .fsi-title { font-size: 22px; }
+    .fsi-desc li { font-size: 12px; }
 
     /* Mockup */
     .mockup-inner { grid-template-columns: 1fr !important; gap: 32px !important; }
@@ -838,8 +828,8 @@
     </div>
     <div class="features-right">
       <div class="fsi-item">
-        <div class="fsi-num">01</div>
         <div class="fsi-title">Dashboard</div>
+        <div class="fsi-divider"></div>
         <ul class="fsi-desc">
           <li>Controla tus KPIs y su evolución histórica en un único vistazo</li>
           <li>Analiza la ocupación</li>
@@ -847,8 +837,8 @@
         </ul>
       </div>
       <div class="fsi-item">
-        <div class="fsi-num">02</div>
         <div class="fsi-title">Reservas</div>
+        <div class="fsi-divider"></div>
         <ul class="fsi-desc">
           <li>Reservas por segmento, duración, antelación y ADR</li>
           <li>Sigue el pick up y el pace para anticiparte a cierres débiles</li>
@@ -856,8 +846,8 @@
         </ul>
       </div>
       <div class="fsi-item">
-        <div class="fsi-num">03</div>
         <div class="fsi-title">Presupuesto</div>
+        <div class="fsi-divider"></div>
         <ul class="fsi-desc">
           <li>Detecta desviaciones de ADR y RevPAR</li>
           <li>Proyecta el cierre anual con los datos reales acumulados</li>
@@ -865,8 +855,8 @@
         </ul>
       </div>
       <div class="fsi-item">
-        <div class="fsi-num">04</div>
         <div class="fsi-title">Grupos</div>
+        <div class="fsi-divider"></div>
         <ul class="fsi-desc">
           <li>Evalúa si un grupo desplaza negocio individual antes de aceptarlo</li>
           <li>Gestiona el calendario de eventos y la ocupación de espacios</li>
