@@ -381,36 +381,42 @@
     opacity: 0;
     transform: translateX(110%);
     pointer-events: none;
-    background: rgba(255,255,255,0.07);
-    border: 1px solid rgba(255,255,255,0.18);
-    border-radius: 20px;
-    padding: 26px 30px;
-    box-shadow: 0 16px 48px rgba(0,0,0,0.40), inset 0 1px 0 rgba(255,255,255,0.10);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
+    background: #05101E;
+    border: 1px solid rgba(201,168,76,0.18);
+    border-left: 3px solid #C9A84C;
+    border-radius: 2px;
+    padding: 32px 32px 32px 36px;
+    box-shadow: 0 24px 56px rgba(0,0,0,0.55);
   }
   .fsi-item.ptr-on { pointer-events: auto; }
+  .fsi-num {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 11px; font-weight: 600; letter-spacing: 3px;
+    text-transform: uppercase; color: #C9A84C;
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 16px;
+  }
+  .fsi-num::after {
+    content: ''; display: block; flex: 1;
+    height: 1px; background: rgba(201,168,76,0.22);
+  }
   .fsi-title {
     font-family: 'Cormorant Garamond', serif;
-    font-size: 36px; font-weight: 700;
+    font-size: 40px; font-weight: 700; font-style: italic;
     color: #ffffff; line-height: 1.0;
   }
-  .fsi-divider {
-    height: 1px;
-    background: rgba(255,255,255,0.15);
-    margin: 14px 0;
-  }
+  .fsi-divider { display: none; }
   .fsi-desc {
-    list-style: none; padding: 0; margin: 0;
-    display: flex; flex-direction: column; gap: 8px;
+    list-style: none; padding: 0; margin: 18px 0 0;
+    display: flex; flex-direction: column; gap: 10px;
   }
   .fsi-desc li {
-    font-size: 14px; color: rgba(255,255,255,0.82); line-height: 1.5;
-    display: flex; align-items: flex-start; gap: 10px;
+    font-size: 14px; color: rgba(255,255,255,0.72); line-height: 1.55;
+    display: flex; align-items: flex-start; gap: 12px;
   }
   .fsi-desc li::before {
-    content: '›'; font-size: 18px; color: rgba(255,255,255,0.45);
-    line-height: 1.2; flex-shrink: 0;
+    content: '—'; font-size: 13px; color: #C9A84C;
+    line-height: 1.8; flex-shrink: 0; font-weight: 400;
   }
 
   /* ── PRICING ── */
@@ -606,9 +612,11 @@
       opacity: 1 !important;
       transform: none !important;
       pointer-events: auto;
-      padding: 18px 16px;
+      padding: 20px 18px 20px 22px;
     }
-    .fsi-title { font-size: 20px; }
+    .fsi-num { font-size: 10px; margin-bottom: 10px; }
+    .fsi-title { font-size: 24px; }
+    .fsi-desc { margin-top: 12px; }
     .fsi-desc li { font-size: 12px; }
 
     /* Mockup */
@@ -826,8 +834,8 @@
     </div>
     <div class="features-right">
       <div class="fsi-item">
+        <div class="fsi-num">01</div>
         <div class="fsi-title">Dashboard</div>
-        <div class="fsi-divider"></div>
         <ul class="fsi-desc">
           <li>Controla tus KPIs y su evolución histórica en un único vistazo</li>
           <li>Analiza la ocupación</li>
@@ -835,8 +843,8 @@
         </ul>
       </div>
       <div class="fsi-item">
+        <div class="fsi-num">02</div>
         <div class="fsi-title">Reservas</div>
-        <div class="fsi-divider"></div>
         <ul class="fsi-desc">
           <li>Reservas por segmento, duración, antelación y ADR</li>
           <li>Sigue el pick up y el pace para anticiparte a cierres débiles</li>
@@ -844,8 +852,8 @@
         </ul>
       </div>
       <div class="fsi-item">
+        <div class="fsi-num">03</div>
         <div class="fsi-title">Presupuesto</div>
-        <div class="fsi-divider"></div>
         <ul class="fsi-desc">
           <li>Detecta desviaciones de ADR y RevPAR</li>
           <li>Proyecta el cierre anual con los datos reales acumulados</li>
@@ -853,8 +861,8 @@
         </ul>
       </div>
       <div class="fsi-item">
+        <div class="fsi-num">04</div>
         <div class="fsi-title">Grupos</div>
-        <div class="fsi-divider"></div>
         <ul class="fsi-desc">
           <li>Evalúa si un grupo desplaza negocio individual antes de aceptarlo</li>
           <li>Gestiona el calendario de eventos y la ocupación de espacios</li>
