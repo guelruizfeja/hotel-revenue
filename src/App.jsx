@@ -4447,7 +4447,7 @@ function ModalFormGrupo({ datos, grupoData = {}, onClose, onGuardado }) {
     const g = grupoData;
     const _anyo = new Date().getFullYear();
     const _defFecha = `${_anyo}-01-01`;
-    if (!g || !g.nombre) return { ...FORM_VACIO, tipo: g.tipo||"grupo", fecha_inicio: g.fecha_inicio||_defFecha, fecha_fin: g.fecha_fin||_defFecha };
+    if (!g || !g.nombre) return { ...FORM_VACIO, tipo: g.tipo||"grupo", fecha_inicio: g.fecha_inicio||_defFecha, fecha_fin: g.fecha_fin||_defFecha, sala_nombre: g.sala_nombre||"" };
     const esEvento = g.categoria === "evento";
     const { hora_inicio, hora_fin, sala_nombre, servicio_incluido, notasUser } = esEvento ? parseNotasEvento(g.notas) : {};
     return {
@@ -4463,6 +4463,7 @@ function ModalFormGrupo({ datos, grupoData = {}, onClose, onGuardado }) {
 
   const [form, setForm] = useState(initForm);
   const [guardando, setGuardando] = useState(false);
+  const [errorGuardar, setErrorGuardar] = useState("");
   const [ingresosHabs, setIngresosHabs] = useState("");
 
   const CATS = {
@@ -4481,8 +4482,12 @@ function ModalFormGrupo({ datos, grupoData = {}, onClose, onGuardado }) {
   };
 
   const guardar = async () => {
-    if (!form.nombre || !form.fecha_inicio) return;
-    if (form.tipo === "grupo" && !form.fecha_fin) return;
+    const faltan = [];
+    if (!form.nombre) faltan.push("nombre");
+    if (!form.fecha_inicio) faltan.push(form.tipo === "grupo" ? "fecha de entrada" : "fecha");
+    if (form.tipo === "grupo" && !form.fecha_fin) faltan.push("fecha de salida");
+    if (faltan.length > 0) { setErrorGuardar(`Falta: ${faltan.join(", ")}`); return; }
+    setErrorGuardar("");
     setGuardando(true);
     const esEvento = form.tipo === "evento";
     const payload = {
@@ -4699,6 +4704,10 @@ function ModalFormGrupo({ datos, grupoData = {}, onClose, onGuardado }) {
       })()}
 
 
+      {errorGuardar && (
+        <p style={{ fontSize:12, color:C.red, fontWeight:600, margin:"4px 0 0" }}>{errorGuardar}</p>
+      )}
+
       <div style={{ display:"flex", justifyContent:"space-between", marginTop:4 }}>
         {isEditing
           ? <button onClick={eliminar} style={{ background:"none", border:`1px solid ${C.red}`, color:C.red, borderRadius:7, padding:"8px 16px", fontSize:12, cursor:"pointer" }}>{t("form_eliminar")}</button>
@@ -4706,8 +4715,8 @@ function ModalFormGrupo({ datos, grupoData = {}, onClose, onGuardado }) {
         }
         <div style={{ display:"flex", gap:8 }}>
           <button onClick={onClose} style={{ background:"none", border:`1px solid ${C.border}`, color:C.textMid, borderRadius:7, padding:"8px 16px", fontSize:12, cursor:"pointer" }}>{t("form_cancelar")}</button>
-          <button onClick={guardar} disabled={guardando||!form.nombre||!form.fecha_inicio||(form.tipo==="grupo"&&!form.fecha_fin)}
-            style={{ background:C.text, color:"#fff", border:"none", borderRadius:7, padding:"8px 20px", fontSize:13, fontWeight:600, cursor:"pointer", opacity:guardando?0.6:1 }}>
+          <button onClick={guardar} disabled={guardando}
+            style={{ background:C.text, color:"#fff", border:"none", borderRadius:7, padding:"8px 20px", fontSize:13, fontWeight:600, cursor:guardando?"default":"pointer", opacity:guardando?0.6:1 }}>
             {guardando ? t("guardando_btn") : t("form_guardar")}
           </button>
         </div>
@@ -5858,16 +5867,18 @@ function SalasView({ datos, onRecargar, onVolver, onVerEventos, salaDetalle, set
   const [planningMes, setPlanningMes] = useState(new Date().getMonth());
   const [planningDia, setPlanningDia] = useState(() => localStorage.getItem("fr_sala_planning_dia") || null);
   const cambiarPlanningDia = (v) => { setPlanningDia(v); if (v) localStorage.setItem("fr_sala_planning_dia", v); else localStorage.removeItem("fr_sala_planning_dia"); };
+  const [modalEvento, setModalEvento] = useState(null);
 
   useEffect(() => {
     const handler = (e) => {
       if (e.key !== "Escape") return;
+      if (modalEvento) { setModalEvento(null); return; }
       if (planningDia) { cambiarPlanningDia(null); return; }
       if (salaDetalle)  { setSalaDetalle(null); return; }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [planningDia, salaDetalle]);
+  }, [modalEvento, planningDia, salaDetalle]);
 
   // Salas: las de los eventos + las guardadas manualmente
   const todasSalas = SALAS_FIJAS;
@@ -6038,12 +6049,11 @@ function SalasView({ datos, onRecargar, onVolver, onVerEventos, salaDetalle, set
               style={{ padding:"6px 10px", borderRadius:7, border:`1.5px solid ${C.border}`, fontSize:13, fontWeight:600, color:C.text, background:C.bg, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", outline:"none" }}>
               {[planningAnio-1, planningAnio, planningAnio+1].map(a => <option key={a} value={a}>{a}</option>)}
             </select>
-            <button onClick={()=>abrirEditarSala(salaDetalle)} style={{ background:"#0A2540", color:"#fff", border:"none", borderRadius:8, padding:"7px 16px", fontSize:13, fontWeight:600, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>Editar</button>
           </div>
         </div>
 
         <Card>
-          <p style={{ fontSize:11, fontWeight:700, color:C.textLight, textTransform:"uppercase", letterSpacing:1.5, marginBottom:14 }}>Planning mensual — pulsa un día para ver el detalle</p>
+          <p style={{ fontSize:11, fontWeight:700, color:C.textLight, textTransform:"uppercase", letterSpacing:1.5, marginBottom:14 }}>Planning mensual — pulsa un día para añadir un evento</p>
           <div style={{ overflowX:"auto" }}>
             <table style={{ width:"100%", borderCollapse:"collapse", fontSize:13 }}>
               <thead>
@@ -6063,7 +6073,7 @@ function SalasView({ datos, onRecargar, onVolver, onVerEventos, salaDetalle, set
                   const revDia   = evsDia.reduce((a,g)=>a+(g.revenue_fnb||0)+(g.revenue_sala||0),0);
                   const bgBase   = esHoy ? "#FFFBEB" : esFds ? C.bg : C.bgCard;
                   return (
-                    <tr key={dia} onClick={()=>cambiarPlanningDia(fechaDia)}
+                    <tr key={dia} onClick={()=>setModalEvento({ tipo:"evento", fecha_inicio: fechaDia, fecha_fin: fechaDia, sala_nombre: salaDetalle })}
                       style={{ borderBottom:`1px solid ${C.border}`, background:bgBase, cursor:"pointer" }}
                       onMouseEnter={e=>e.currentTarget.style.background=C.accentLight}
                       onMouseLeave={e=>e.currentTarget.style.background=bgBase}>
@@ -6073,8 +6083,8 @@ function SalasView({ datos, onRecargar, onVolver, onVerEventos, salaDetalle, set
                         {evsDia.length === 0
                           ? <span style={{ color:C.border }}>—</span>
                           : evsDia.map(g => (
-                              <span key={g.id} onClick={e=>{ e.stopPropagation(); onVerEventos && onVerEventos(planningMes, planningAnio); }}
-                                style={{ display:"inline-block", fontSize:11, fontWeight:600, padding:"2px 8px", borderRadius:5, background:estadoBg[g.estado], color:estadoColor[g.estado], marginRight:4, cursor:"pointer", textDecoration:"underline" }}>{g.nombre}</span>
+                              <span key={g.id} onClick={e=>{ e.stopPropagation(); cambiarPlanningDia(fechaDia); }}
+                                style={{ fontSize:13, fontWeight:500, color:C.text, marginRight:4, cursor:"pointer", textDecoration:"underline" }}>{g.nombre}</span>
                             ))
                         }
                       </td>
@@ -6096,6 +6106,25 @@ function SalasView({ datos, onRecargar, onVolver, onVerEventos, salaDetalle, set
             </table>
           </div>
         </Card>
+
+        {modalEvento !== null && (
+          <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.55)", zIndex:1000, display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}
+            onClick={()=>setModalEvento(null)}>
+            <div style={{ background:C.bgCard, borderRadius:14, width:"100%", maxWidth:540, maxHeight:"90vh", overflow:"auto", padding:"28px 32px", boxShadow:"0 24px 80px rgba(0,0,0,0.2)" }}
+              onClick={e=>e.stopPropagation()}>
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20 }}>
+                <h3 style={{ fontSize:18, fontWeight:700, color:C.text, margin:0 }}>Nuevo evento</h3>
+                <button onClick={()=>setModalEvento(null)} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, width:28, height:28, cursor:"pointer", fontSize:16, color:C.textMid, display:"flex", alignItems:"center", justifyContent:"center", padding:0 }}>×</button>
+              </div>
+              <ModalFormGrupo
+                datos={datos}
+                grupoData={modalEvento}
+                onClose={()=>setModalEvento(null)}
+                onGuardado={()=>{ onRecargar(); setModalEvento(null); }}
+              />
+            </div>
+          </div>
+        )}
       </div>
     );
   }
