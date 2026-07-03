@@ -2560,12 +2560,11 @@ function PickupView({ datos, onGuardado }) {
   const { session, presupuesto, produccion } = datos;
   const pickupEntries = datos.pickupEntries || [];
   const cargando = false;
+  const [fechasCalientesVista, setFechasCalientesVista] = useState(() => { try { return localStorage.getItem("fr_fechasCalientesVista") || "proximas"; } catch { return "proximas"; } });
+  useEffect(() => { localStorage.setItem("fr_fechasCalientesVista", fechasCalientesVista); }, [fechasCalientesVista]);
 
-  const [generandoMock, setGenerandoMock] = useState(false);
-  const [okMock, setOkMock] = useState(false);
   const generarPickupMock = async () => {
     if (!session?.user?.id) return;
-    setGenerandoMock(true);
     try {
       const hoy = new Date();
       const hoyStr = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,"0")}-${String(hoy.getDate()).padStart(2,"0")}`;
@@ -2621,10 +2620,8 @@ function PickupView({ datos, onGuardado }) {
       const filas = [...shuffled(plantillaConf).slice(0,numConf).map(p=>mkFila(p,"confirmada")), ...shuffled(plantillaCancel).slice(0,numCancel).map(p=>mkFila(p,"cancelada"))];
       const { error } = await supabase.from("pickup_entries").insert(filas);
       if (error) throw new Error(error.message);
-      setOkMock(true);
-      setTimeout(() => { setOkMock(false); onGuardado && onGuardado(true); }, 2000);
+      setTimeout(() => { onGuardado && onGuardado(true); }, 2000);
     } catch(e) { console.error("Error generando mock:", e); }
-    setGenerandoMock(false);
   };
 
   // Auto-generar mock si no hay datos de pickup de hoy (desarrollo)
@@ -3043,10 +3040,6 @@ function PickupView({ datos, onGuardado }) {
           <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><rect x="1" y="1" width="11" height="11" rx="2" stroke="#fff" strokeWidth="1.8"/><line x1="4" y1="4.5" x2="9" y2="4.5" stroke="#fff" strokeWidth="1.5" strokeLinecap="round"/><line x1="4" y1="7" x2="7" y2="7" stroke="#fff" strokeWidth="1.5" strokeLinecap="round"/></svg>
           Gestión de reservas
         </button>
-        <button onClick={generarPickupMock} disabled={generandoMock}
-          style={{ display:"inline-flex", alignItems:"center", gap:6, background:"none", color:C.textMid, border:`1px solid ${C.border}`, borderRadius:8, padding:"8px 14px", cursor:generandoMock?"not-allowed":"pointer", fontSize:11, fontWeight:600, fontFamily:"'Plus Jakarta Sans',sans-serif", opacity:generandoMock?0.6:1 }}>
-          ⚡ {generandoMock ? "Generando…" : "Generar pickup ficticio"}
-        </button>
       </div>
 
       {/* Modal Gestión de reserva */}
@@ -3458,13 +3451,27 @@ function PickupView({ datos, onGuardado }) {
 
         {/* Col izquierda: Fechas Calientes + Cancelaciones */}
         <Card>
-          <p style={{ fontSize:11, fontWeight:700, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:8 }}>🔥 {t("fechas_calientes")}</p>
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:8 }}>
+            <p style={{ fontSize:11, fontWeight:700, color:C.textLight, textTransform:"uppercase", letterSpacing:1 }}>🔥 {t("fechas_calientes")}</p>
+            <div style={{ display:"flex", borderRadius:6, overflow:"hidden", border:`1px solid ${C.border}`, flexShrink:0 }}>
+              {[["mes","Mes actual"],["proximas","Próximas"]].map(([key, label]) => (
+                <button key={key} onClick={() => setFechasCalientesVista(key)}
+                  style={{ padding:"3px 9px", fontSize:10, fontWeight:600, border:"none", cursor:"pointer", fontFamily:"inherit",
+                    background: fechasCalientesVista === key ? C.text : "transparent",
+                    color:      fechasCalientesVista === key ? "#fff"  : C.textMid,
+                    transition:"all 0.15s" }}>
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
           <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
           {(() => {
             const padL = n => String(n).padStart(2,"0");
             const hoyStr = `${hoy.getFullYear()}-${padL(hoy.getMonth()+1)}-${padL(hoy.getDate())}`;
+            const finMesStr = `${hoy.getFullYear()}-${padL(hoy.getMonth()+1)}-${padL(new Date(hoy.getFullYear(), hoy.getMonth()+1, 0).getDate())}`;
             const top5 = Object.entries(habEnCasaMapPU)
-              .filter(([iso, n]) => iso > hoyStr && n > 0)
+              .filter(([iso, n]) => iso > hoyStr && n > 0 && (fechasCalientesVista === "proximas" || iso <= finMesStr))
               .sort((a,b) => b[1]-a[1])
               .slice(0,5);
             if (top5.length === 0) return <p style={{ fontSize:11, color:C.textLight }}>{t("sin_futuras")}</p>;
