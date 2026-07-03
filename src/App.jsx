@@ -650,9 +650,9 @@ function DesgloseMovimientoView({ datos, tipo, onBack }) {
 
   return (
     <div style={{ display:"flex", flexDirection:"column", gap:20 }}>
-      <div style={{ display:"flex", alignItems:"center", gap:16 }}>
-        <button onClick={onBack} style={{ background:C.bgCard, border:`1px solid ${C.border}`, borderRadius:8, padding:"8px 16px", cursor:"pointer", fontSize:13, color:C.textMid, fontFamily:"'Plus Jakarta Sans',sans-serif", display:"flex", alignItems:"center", gap:6 }}>← Volver</button>
-        <div>
+      <div style={{ position:"relative", display:"flex", alignItems:"center", minHeight:40 }}>
+        <button onClick={onBack} style={{ position:"absolute", left:0, background:C.bgCard, border:`1px solid ${C.border}`, borderRadius:8, padding:"8px 16px", cursor:"pointer", fontSize:13, color:C.textMid, fontFamily:"'Plus Jakarta Sans',sans-serif", display:"flex", alignItems:"center", gap:6 }}>← Volver</button>
+        <div style={{ width:"100%", textAlign:"center" }}>
           <h2 style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:24, fontWeight:700, color:C.text, margin:0 }}>{TITULOS[tipo]}</h2>
           <p style={{ fontSize:12, color:C.textLight, margin:0, marginTop:2 }}>{hoyStr} · {total} reservas</p>
         </div>
@@ -666,7 +666,7 @@ function DesgloseMovimientoView({ datos, tipo, onBack }) {
                 <thead>
                   <tr>
                     {["Nº Reserva","Canal","Llegada","Salida","Noches","Habitaciones","Precio total"].map(h => (
-                      <th key={h} style={{ padding:"10px 16px", textAlign:"left", fontSize:10, fontWeight:600, color:C.textLight, textTransform:"uppercase", letterSpacing:"1px", borderBottom:`2px solid ${C.border}`, whiteSpace:"nowrap" }}>{h}</th>
+                      <th key={h} style={{ padding:"10px 16px", textAlign:(h==="Habitaciones"||h==="Precio total")?"center":"left", fontSize:10, fontWeight:600, color:C.textLight, textTransform:"uppercase", letterSpacing:"1px", borderBottom:`2px solid ${C.border}`, whiteSpace:"nowrap" }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -683,7 +683,7 @@ function DesgloseMovimientoView({ datos, tipo, onBack }) {
                       <td style={{ padding:"11px 16px", color:C.textMid }}>{dmy(getFechaSalida(e))}</td>
                       <td style={{ padding:"11px 16px", color:C.textMid, textAlign:"center" }}>{e.noches || "—"}</td>
                       <td style={{ padding:"11px 16px", color:C.textMid, textAlign:"center" }}>{e.num_reservas || 1}</td>
-                      <td style={{ padding:"11px 16px", fontWeight:700, color:"#1A7A3C", textAlign:"right" }}>{e.precio_total ? `€${Number(e.precio_total).toLocaleString("es-ES")}` : "—"}</td>
+                      <td style={{ padding:"11px 16px", fontWeight:700, color:"#1A7A3C", textAlign:"center" }}>{e.precio_total ? `€${Number(e.precio_total).toLocaleString("es-ES")}` : "—"}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -1364,7 +1364,7 @@ const [metricaSel, setMetricaSel] = useState(() => localStorage.getItem("fr_metr
   return (
     <div>
       {/* ── CABECERA MES ACTIVO ── */}
-      <div className="dash-header" style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:8, paddingBottom:8, borderBottom:`1px solid ${C.border}` }}>
+      <div className="dash-header" style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:8, paddingBottom:8 }}>
         <div>
           <p style={{ fontSize:22, fontWeight:800, color:C.text, fontFamily:"'Plus Jakarta Sans',sans-serif", letterSpacing:-0.5, marginBottom:2 }}>
             {t("bienvenido")}, <span style={{ color:C.text }}>{datos.hotel?.nombre || "Mi Hotel"}</span>
@@ -2156,8 +2156,8 @@ const [metricaSel, setMetricaSel] = useState(() => localStorage.getItem("fr_metr
                     );
                   })}
                 </div>
-                <p style={{ fontSize:10, color:C.textLight, marginTop:8, display:"flex", alignItems:"center", gap:4 }}>
-                  <span style={{ fontSize:12 }}>⚡</span> Meses con mayor captación en el último día &nbsp;·&nbsp; <span style={{ fontSize:10, color:"#7A9CC8", fontWeight:700 }}>OTB</span> Dato estimado por reservas en cartera
+                <p style={{ fontSize:10, color:C.textMid, marginTop:8, display:"flex", alignItems:"center", gap:4 }}>
+                  <span style={{ fontSize:12 }}>⚡</span> Meses con mayor captación en el último día &nbsp;·&nbsp; <span style={{ fontSize:10, color:C.accent, fontWeight:700 }}>OTB</span> Dato estimado por reservas en cartera
                 </p>
               </>)}
 
@@ -2321,9 +2321,9 @@ const [metricaSel, setMetricaSel] = useState(() => localStorage.getItem("fr_metr
 
               return (
                 <div style={{ flex:"0 0 420px", padding:"28px 32px", display:"flex", flexDirection:"column", justifyContent:"center", gap:14 }}>
-                  <div>
-                    <p style={{ fontSize:11, fontWeight:700, color:C.text, textTransform:"uppercase", letterSpacing:"1.5px" }}>Movimiento Operativo Diario</p>
-                    <p style={{ fontSize:10, color:C.textLight, marginTop:2 }}>{hoyStr}</p>
+                  <div style={{ textAlign:"center" }}>
+                    <p style={{ fontSize:13, fontWeight:800, color:C.text, textTransform:"uppercase", letterSpacing:"1.5px" }}>Movimiento Operativo Diario</p>
+                    <p style={{ fontSize:11, color:C.textMid, marginTop:2 }}>{hoyStr}</p>
                   </div>
                   <div style={{ display:"grid", gridTemplateColumns:"22px 1fr auto auto", alignItems:"center", rowGap:14, columnGap:8 }}>
 
@@ -2378,16 +2378,16 @@ const [metricaSel, setMetricaSel] = useState(() => localStorage.getItem("fr_metr
                   <p style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontWeight:700, fontSize:18, color:C.text }}>
                     {metricas.find(m=>m.key===metricaSel)?.label}
                   </p>
-                  <div style={{ display:"flex", gap:14 }}>
+                  <div style={{ display:"flex", gap:18 }}>
                     {[
                       { color:"#004B87", opacity:0.75, label:"Ocupación", type:"bar" },
                       { color:"#B8860B", opacity:1,    label:"ADR",       type:"line" },
                       { color:"#E53935", opacity:1,    label:"RevPAR",    type:"line" },
                     ].map((item,i) => (
-                      <div key={i} style={{ display:"flex", alignItems:"center", gap:5 }}>
-                        {item.type==="bar" && <div style={{ width:10, height:10, borderRadius:2, background:item.color, opacity:item.opacity }}/>}
-                        {item.type==="line" && <div style={{ width:16, height:2, background:item.color, borderRadius:1 }}/>}
-                        <span style={{ fontSize:10, color:C.textLight, fontWeight:500, letterSpacing:"0.3px" }}>{item.label}</span>
+                      <div key={i} style={{ display:"flex", alignItems:"center", gap:6 }}>
+                        {item.type==="bar" && <div style={{ width:13, height:13, borderRadius:3, background:item.color, opacity:item.opacity }}/>}
+                        {item.type==="line" && <div style={{ width:20, height:3, background:item.color, borderRadius:1.5 }}/>}
+                        <span style={{ fontSize:13, color:C.textLight, fontWeight:500, letterSpacing:"0.3px" }}>{item.label}</span>
                       </div>
                     ))}
                   </div>
@@ -2399,8 +2399,8 @@ const [metricaSel, setMetricaSel] = useState(() => localStorage.getItem("fr_metr
                         onMouseLeave={() => setActiveSeriesKey(null)}>
                         <defs>
                           <linearGradient id="gradOcc" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor="#004B87" stopOpacity={0.9}/>
-                            <stop offset="100%" stopColor="#004B87" stopOpacity={0.55}/>
+                            <stop offset="0%" stopColor="#003057" stopOpacity={1}/>
+                            <stop offset="100%" stopColor="#003057" stopOpacity={0.75}/>
                           </linearGradient>
                         </defs>
                         <CartesianGrid strokeDasharray="3 3" stroke={C.border} vertical={false}/>
@@ -2415,12 +2415,12 @@ const [metricaSel, setMetricaSel] = useState(() => localStorage.getItem("fr_metr
                           shape={<AnimatedBar highlighted={activeSeriesKey === "occ"} onClick={(p) => { if(p?.mesIdx!=null) setModalDiario({mesIdx:p.mesIdx, anioIdx:p.anioIdx}); }}/>}
                         />
                         <Line yAxisId="right" dataKey="adr"    name="ADR"    type="monotone" stroke="#B8860B"
-                          strokeWidth={activeSeriesKey === "adr" ? 3 : 2}
+                          strokeWidth={activeSeriesKey === "adr" ? 4 : 3}
                           dot={{ fill:"#B8860B", r: activeSeriesKey === "adr" ? 4 : 3, strokeWidth:0 }}
                           activeDot={{ r:6, fill:"#B8860B", strokeWidth:0 }}
                           onMouseEnter={() => setActiveSeriesKey("adr")} isAnimationActive={false}/>
                         <Line yAxisId="right" dataKey="revpar" name="RevPAR" type="monotone" stroke="#E53935"
-                          strokeWidth={activeSeriesKey === "revpar" ? 3 : 2}
+                          strokeWidth={activeSeriesKey === "revpar" ? 4 : 3}
                           dot={{ fill:"#E53935", r: activeSeriesKey === "revpar" ? 4 : 3, strokeWidth:0 }}
                           activeDot={{ r:6, fill:"#E53935", strokeWidth:0 }}
                           onMouseEnter={() => setActiveSeriesKey("revpar")} isAnimationActive={false}/>
@@ -3508,12 +3508,14 @@ function PickupView({ datos, onGuardado }) {
           <p style={{ fontSize:10, color:C.textLight, marginBottom:10 }}>
             {ayerD.toLocaleDateString("es-ES",{weekday:"long",day:"numeric",month:"long"}).replace(/^\w/,c=>c.toUpperCase())}
           </p>
-          <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:12 }}>
-            <div style={{ background: cancelTotal>0?C.redLight:"#E6F7EE", border:`1px solid ${cancelTotal>0?"#D32F2F44":"#1A7A3C44"}`, borderRadius:8, padding:"5px 12px", display:"flex", alignItems:"baseline", gap:6 }}>
-              <span style={{ fontSize:18, fontWeight:800, color:cancelTotal>0?C.red:C.green, fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1 }}>{cancelTotal}</span>
-              <span style={{ fontSize:9, fontWeight:600, textTransform:"uppercase", letterSpacing:0.8, color:cancelTotal>0?C.red:C.green }}>{cancelTotal===1?"cancelación":"cancelaciones"}</span>
+          {cancelTotal > 0 && (
+            <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:12 }}>
+              <div style={{ background:C.redLight, border:`1px solid #D32F2F44`, borderRadius:8, padding:"5px 12px", display:"flex", alignItems:"baseline", gap:6 }}>
+                <span style={{ fontSize:18, fontWeight:800, color:C.red, fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1 }}>{cancelTotal}</span>
+                <span style={{ fontSize:9, fontWeight:600, textTransform:"uppercase", letterSpacing:0.8, color:C.red }}>{cancelTotal===1?"cancelación":"cancelaciones"}</span>
+              </div>
             </div>
-          </div>
+          )}
           {cancelTotal === 0 ? (
             <p style={{ color:C.green, fontSize:12, textAlign:"center", padding:"8px 0" }}>✅ {t("sin_cancelaciones")}</p>
           ) : (() => {
