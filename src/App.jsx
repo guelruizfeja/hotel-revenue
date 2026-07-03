@@ -6463,10 +6463,10 @@ function ModalConfigUnificado({ datos, session, navHidden, toggleNavHidden, navR
           <button onClick={onClose} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, width:28, height:28, cursor:"pointer", fontSize:15, color:C.textLight, display:"flex", alignItems:"center", justifyContent:"center", padding:0 }}>✕</button>
         </div>
         {/* Pestañas */}
-        <div style={{ display:"flex", gap:6, marginBottom:24 }}>
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:24 }}>
           {TABS_CONFIG.map(tc => (
             <button key={tc.key} onClick={() => { setTab(tc.key); }}
-              style={{ padding:"7px 16px", border:`1.5px solid ${tab===tc.key ? "#111111" : C.border}`, borderRadius:8, background: tab===tc.key ? "#f5f5f5" : "transparent", color: tab===tc.key ? "#111111" : C.textMid, fontSize:12, fontWeight: tab===tc.key ? 700 : 400, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", transition:"all 0.15s", boxShadow: tab===tc.key ? "0 1px 4px rgba(0,0,0,0.06)" : "none" }}>
+              style={{ padding:"10px 12px", border:`1.5px solid ${tab===tc.key ? "#111111" : C.border}`, borderRadius:8, background: tab===tc.key ? "#f5f5f5" : "transparent", color: tab===tc.key ? "#111111" : C.textMid, fontSize:12, fontWeight: tab===tc.key ? 700 : 400, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", transition:"all 0.15s", boxShadow: tab===tc.key ? "0 1px 4px rgba(0,0,0,0.06)" : "none", textAlign:"center" }}>
               {tc.label}
             </button>
           ))}
