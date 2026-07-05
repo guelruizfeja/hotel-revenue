@@ -4755,6 +4755,13 @@ function GruposView({ datos, onRecargar, onVolverHeatmap, subVistaExt, onCambiar
   const fmt  = (y, m, d)  => `${y}-${String(m).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
   const packEv = (hi, hf, sala, serv, notas="") =>
     `[ev:hi=${hi},hf=${hf},sala=${sala},serv=${serv?"sí":"no"}]${notas?"\n"+notas:""}`;
+  const parseNotasEvento = (notas) => {
+    if (!notas) return { hora_inicio:"", hora_fin:"", sala_nombre:"", servicio_incluido:false, notasUser:"" };
+    const m = notas.match(/^\[ev:([^\]]*)\]\n?([\s\S]*)$/);
+    if (!m) return { hora_inicio:"", hora_fin:"", sala_nombre:"", servicio_incluido:false, notasUser: notas };
+    const parts = Object.fromEntries(m[1].split(",").map(p => p.split("=")));
+    return { hora_inicio: parts.hi||"", hora_fin: parts.hf||"", sala_nombre: parts.sala||"", servicio_incluido: parts.serv==="sí", notasUser: m[2] };
+  };
 
   const seedDemoData = async () => {
     if (!window.confirm("¿Insertar datos demo (2 grupos + 1 evento × 24 meses)?")) return;
