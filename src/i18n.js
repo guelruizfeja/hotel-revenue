@@ -3,7 +3,7 @@ import { createContext, useContext } from "react";
 export const TRANSLATIONS = {
   es: {
     // Nav & topbar
-    nav_dashboard:"Dashboard", nav_pickup:"Reservas", nav_budget:"Forecast", nav_grupos:"Grupos/Eventos", nav_salas:"Salas", nav_gestion:"Gestión de datos",
+    nav_dashboard:"Dashboard", nav_pickup:"Reservas", nav_budget:"Presupuesto", nav_grupos:"Grupos/Eventos", nav_salas:"Salas", nav_gestion:"Gestión de datos",
     importar:"Importar", mi_perfil:"Mi perfil", cerrar_sesion:"Cerrar sesión",
     suscripcion:"Suscripción", extranets:"Extranets", informe_mensual:"Informe mensual",
     conectado_como:"Conectado como", cargando:"Cargando...",

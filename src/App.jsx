@@ -5367,10 +5367,6 @@ function GruposView({ datos, onRecargar, onVolverHeatmap, subVistaExt, onCambiar
                         </div>
                       );
                     })}
-                    <div style={{ borderTop:`1px solid ${C.border}`, marginTop:8, paddingTop:10, display:"flex", justifyContent:"space-between", padding:"10px 12px 0" }}>
-                      <span style={{ fontSize:11, color:C.textLight }}>Revenue total en pipeline</span>
-                      <span style={{ fontSize:13, fontWeight:700, color:"#B8860B" }}>{fmtEur(revCotizado)}</span>
-                    </div>
                   </div>
                 )}
               </Card>
@@ -7306,11 +7302,16 @@ export default function App() {
                 <span className="topbar-perfil-label" style={{ color:"#ffffff" }}>{t("mi_perfil")}</span>
               </button>
               {mostrarPerfil && (
-                <div style={{ position:"absolute", top:46, right:0, width:256, background:"#ffffff", border:"1.5px solid #111111", borderRadius:12, boxShadow:"0 8px 32px rgba(0,0,0,0.18)", zIndex:200, overflow:"hidden", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+                <div style={{ position:"absolute", top:46, right:0, width:264, background:"#ffffff", border:`1px solid ${C.border}`, borderRadius:16, boxShadow:"0 16px 40px rgba(0,0,0,0.14)", zIndex:200, overflow:"hidden", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
                   {/* Cabecera usuario */}
-                  <div style={{ padding:"14px 18px 12px", borderBottom:"1px solid #F0F0F0" }}>
-                    <p style={{ fontSize:10, fontWeight:700, color:"#999", textTransform:"uppercase", letterSpacing:"1px", marginBottom:3 }}>{t("conectado_como")}</p>
-                    <p style={{ fontSize:13, fontWeight:600, color:"#111111", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{session.user.email}</p>
+                  <div style={{ padding:"16px 18px", display:"flex", alignItems:"center", gap:11, background:`linear-gradient(135deg, ${barColor}14, ${barColor}05)`, borderBottom:`1px solid ${C.border}` }}>
+                    <div style={{ width:34, height:34, borderRadius:"50%", background:barColor, color:"#fff", display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, fontWeight:700, flexShrink:0, textTransform:"uppercase" }}>
+                      {session.user.email?.[0] || "?"}
+                    </div>
+                    <div style={{ minWidth:0 }}>
+                      <p style={{ fontSize:9.5, fontWeight:700, color:"#999", textTransform:"uppercase", letterSpacing:"1px", marginBottom:2 }}>{t("conectado_como")}</p>
+                      <p style={{ fontSize:13, fontWeight:600, color:"#111111", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{session.user.email}</p>
+                    </div>
                   </div>
                   {/* Opciones */}
                   <div style={{ padding:"6px 0" }}>
@@ -7488,20 +7489,20 @@ export default function App() {
                             setMostrarPerfil(false);
                           }
                         }}
-                        style={{ width:"100%", padding:"9px 18px", background:"transparent", border:"none", cursor:"pointer", fontSize:13, fontWeight:500, color:"#1A1A1A", textAlign:"left" }}
-                        onMouseEnter={e=>e.currentTarget.style.background="#F7F7F7"}
-                        onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                        style={{ width:"100%", padding:"9px 18px", background:"transparent", border:"none", borderLeft:"3px solid transparent", cursor:"pointer", fontSize:13, fontWeight:500, color:"#1A1A1A", textAlign:"left", transition:"all 0.12s" }}
+                        onMouseEnter={e=>{ e.currentTarget.style.background=`${barColor}0F`; e.currentTarget.style.borderLeftColor=barColor; }}
+                        onMouseLeave={e=>{ e.currentTarget.style.background="transparent"; e.currentTarget.style.borderLeftColor="transparent"; }}>
                         {op.key === "informe" && generandoPDF ? t("generando") : op.key === "preview_diario" && previsualizandoDiario ? "Generando..." : op.key === "informe_diario" && enviandoInformePrueba ? "Enviando..." : op.key === "informe_diario" && okInformePrueba ? "✓ Enviado" : op.label}
                       </button>
                     ))}
                   </div>
                   {/* Idioma */}
-                  <div style={{ padding:"10px 18px 12px", borderTop:"1px solid #F0F0F0", borderBottom:"1px solid #F0F0F0" }}>
-                    <p style={{ fontSize:10, fontWeight:700, color:"#999", textTransform:"uppercase", letterSpacing:"1px", marginBottom:8 }}>{t("idioma") ?? "Idioma"}</p>
-                    <div style={{ display:"flex", gap:6 }}>
+                  <div style={{ padding:"12px 18px 14px", borderTop:`1px solid ${C.border}`, background:"#FAFAFA" }}>
+                    <p style={{ fontSize:9.5, fontWeight:700, color:"#999", textTransform:"uppercase", letterSpacing:"1px", marginBottom:8 }}>{t("idioma") ?? "Idioma"}</p>
+                    <div style={{ display:"flex", gap:6, background:"#EFEFEF", padding:3, borderRadius:999 }}>
                       {[{v:"es",l:"ES"},{v:"en",l:"EN"},{v:"fr",l:"FR"}].map(({v,l}) => (
                         <button key={v} onClick={()=>{ setLang(v); localStorage.setItem("fr_lang",v); }}
-                          style={{ flex:1, padding:"5px 0", borderRadius:6, border: lang===v ? "1.5px solid #111111" : "1px solid #E0E0E0", background: lang===v ? "#111111" : "transparent", color: lang===v ? "#fff" : "#666", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit", transition:"all 0.12s" }}>
+                          style={{ flex:1, padding:"6px 0", borderRadius:999, border:"none", background: lang===v ? barColor : "transparent", color: lang===v ? "#fff" : "#666", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit", boxShadow: lang===v ? "0 2px 6px rgba(0,0,0,0.15)" : "none", transition:"all 0.15s" }}>
                           {l}
                         </button>
                       ))}
@@ -7509,10 +7510,10 @@ export default function App() {
                   </div>
                   {/* Cerrar sesión */}
                   <button onClick={handleLogout}
-                    style={{ width:"100%", padding:"11px 18px", background:"transparent", border:"none", cursor:"pointer", fontSize:13, fontWeight:600, color:"#D32F2F", textAlign:"left" }}
+                    style={{ width:"100%", padding:"12px 18px", background:"transparent", border:"none", cursor:"pointer", fontSize:13, fontWeight:600, color:"#D32F2F", textAlign:"left", display:"flex", alignItems:"center", gap:7 }}
                     onMouseEnter={e=>e.currentTarget.style.background="#FFF5F5"}
                     onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
-                    {t("cerrar_sesion")}
+                    <span style={{ fontSize:14 }}>⏻</span>{t("cerrar_sesion")}
                   </button>
                 </div>
               )}

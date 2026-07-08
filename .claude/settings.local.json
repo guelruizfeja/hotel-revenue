@@ -49,17 +49,27 @@
       "Bash(git -C /c/Users/guelr/hotel-revenue add public/landing.html)",
       "Bash(git -C /c/Users/guelr/hotel-revenue commit -m ' *)",
       "Bash(git -C /c/Users/guelr/hotel-revenue push origin main)",
-      "Bash(git restore *)"
+      "Bash(git restore *)",
+      "Bash(jq --version)",
+      "Bash(git rm *)",
+      "Bash(xargs -I {} basename {})",
+      "Skill(run)",
+      "Bash(chromium-cli --help)",
+      "Bash(npm ls *)",
+      "Bash(awk 'NR==2560,NR==3977' src/App.jsx)",
+      "Read(//tmp/**)",
+      "Bash(npm init *)",
+      "Bash(npm install *)",
+      "Bash(ffprobe -version)"
     ]
   },
   "hooks": {
-    "PostToolUse": [
+    "Stop": [
       {
-        "matcher": "Bash",
         "hooks": [
           {
             "type": "command",
-            "command": "jq -r '.tool_input.command' | grep -q 'git commit' && git -C /c/Users/guelr/hotel-revenue push 2>/dev/null || true"
+            "command": "git -C /c/Users/guelr/hotel-revenue push 2>/dev/null || true"
           }
         ]
       }

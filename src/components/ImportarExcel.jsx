@@ -1316,13 +1316,10 @@ export function ImportarExcel({ onClose, session, onImportado, onProduccionDirec
     <div style={{ background:H.bg, borderRadius: fullPage ? 0 : 14, width: fullPage ? "100%" : 620, maxWidth: fullPage ? "100%" : "95vw", boxShadow: fullPage ? "none" : "0 20px 60px rgba(0,0,0,0.15)", fontFamily:"'Plus Jakarta Sans',sans-serif", overflow:"hidden", border: fullPage ? "none" : `1px solid ${H.border}` }}>
 
       {/* Header */}
-      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"22px 26px 18px", borderBottom: fullPage ? `1px solid ${H.border}` : "none" }}>
+      <div style={{ padding:"22px 26px 18px", borderBottom: fullPage ? `1px solid ${H.border}` : "none" }}>
         <h2 style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:28, fontWeight:700, color:"#0A0A0A", letterSpacing:0.2 }}>
           Gestión de datos
         </h2>
-        <button onClick={onClose} style={{ background:"none", border:`1px solid ${H.border}`, borderRadius:7, padding:"6px 14px", cursor:"pointer", fontSize:12, fontWeight:600, color:H.textMid, fontFamily:"'Plus Jakarta Sans',sans-serif", display:"flex", alignItems:"center", gap:6 }}>
-          ← Volver al dashboard
-        </button>
       </div>
 
         {/* Tab cards */}
