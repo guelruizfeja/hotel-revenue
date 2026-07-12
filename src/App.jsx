@@ -696,372 +696,6 @@ function DesgloseMovimientoView({ datos, tipo, onBack }) {
   );
 }
 
-async function generarInformeDiarioPDF(kpis, hotelNombre) {
-  const MESES     = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
-  const MESES_S   = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
-  const {
-    fecha, mesNombre, occ, adr, revpar, trevpar,
-    hab_ocupadas, hab_disponibles, pickup_neto, cancelaciones, revenue_pickup_ayer,
-    revenueAcumulado, presupuestoMensual,
-    avg_occ, avg_adr, avg_revpar, avg_trevpar,
-    lm_avg_occ, lm_avg_adr, lm_avg_revpar, lm_avg_trevpar,
-    revHabAyer, revFnbAyer, canalesRevenue, canalesPickup, canalesRevMix,
-    revGruposAyer, revIndividualAyer,
-    adrPpto, occPpto, gruposProximos, proximoConfirmado,
-    forecastMes, paceProximos7,
-  } = kpis;
-
-  const loadScript = src => new Promise((res, rej) => {
-    if (document.querySelector(`script[src="${src}"]`)) { res(); return; }
-    const s = document.createElement("script");
-    s.src = src; s.onload = res; s.onerror = rej;
-    document.head.appendChild(s);
-  });
-  await loadScript("https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js");
-  const { jsPDF } = window.jspdf;
-
-  const doc = new jsPDF({ orientation:"portrait", unit:"mm", format:"a4" });
-  const W = 210; const M = 14; let y = 0;
-
-  const C_AZUL  = [10, 37, 64];
-  const C_GOLD  = [212, 160, 23];
-  const C_GRIS  = [20, 30, 50];
-  const C_VERDE = [5, 150, 105];
-  const C_ROJO  = [220, 38, 38];
-  const C_GRISC = [245, 247, 250];
-  const C_GRISM = [55, 70, 90];
-  const C_BORDE = [210, 218, 230];
-  const C_NEGRO = [10, 10, 10];
-
-  const fmt   = n => n != null && !isNaN(n) ? Math.round(n).toLocaleString("es-ES") : "—";
-  const fmtD  = iso => { if (!iso) return "—"; const [yr,mo,dy] = iso.split("-"); return `${parseInt(dy)} de ${MESES[parseInt(mo)-1]} de ${yr}`; };
-  const fmtSD = iso => { if (!iso) return "—"; const [,mo,dy] = iso.split("-"); return `${parseInt(dy)} ${MESES_S[parseInt(mo)-1]}`; };
-
-  // Donut via canvas (transparent bg → white center when placed on white PDF)
-  function addDonut(cx, cy, rMm, segments) {
-    const px = 160;
-    const canvas = document.createElement("canvas");
-    canvas.width = px; canvas.height = px;
-    const ctx = canvas.getContext("2d");
-    const ccx = px/2, ccy = px/2;
-    const outerR = px/2 - 4;
-    const ringW  = Math.round(outerR * 0.44);
-    const midR   = outerR - ringW/2;
-    const total  = segments.reduce((s, sg) => s + (sg.value||0), 0);
-    if (total === 0) {
-      ctx.beginPath(); ctx.arc(ccx, ccy, midR, 0, 2*Math.PI);
-      ctx.strokeStyle = "#CBD5E1"; ctx.lineWidth = ringW; ctx.stroke();
-    } else {
-      let a = -Math.PI/2;
-      const activeSegs = segments.filter(s => s.value > 0);
-      const gap = activeSegs.length > 1 ? 0.05 : 0;
-      for (const seg of segments) {
-        if (!seg.value) continue;
-        const sweep = (seg.value/total)*2*Math.PI - gap;
-        ctx.beginPath(); ctx.arc(ccx, ccy, midR, a, a+sweep);
-        ctx.strokeStyle = seg.color; ctx.lineWidth = ringW; ctx.lineCap = "butt"; ctx.stroke();
-        a += sweep + gap;
-      }
-    }
-    const mm = rMm*2;
-    doc.addImage(canvas.toDataURL("image/png"), "PNG", cx-rMm, cy-rMm, mm, mm);
-  }
-
-  // Colored legend square
-  function legendSq(x, y2, hex) {
-    const [r,g,b] = hex.match(/\w\w/g).map(h => parseInt(h,16));
-    doc.setFillColor(r,g,b); doc.rect(x, y2-2.2, 2.5, 2.5, "F");
-  }
-
-  // ── HEADER ──────────────────────────────────────────
-  const hdrH = 26;
-  doc.setFillColor(10, 37, 64); doc.rect(0, 0, W, hdrH, "F");
-  // Label superior centrado
-  doc.setFontSize(6.5); doc.setFont("helvetica","normal"); doc.setTextColor(130,145,165);
-  doc.text("INFORME DIARIO DE REVENUE", W/2, 7, { align:"center" });
-  // Hotel centrado y grande
-  doc.setFontSize(15); doc.setFont("helvetica","bold"); doc.setTextColor(255,255,255);
-  doc.text((hotelNombre || "Mi Hotel").toUpperCase(), W/2, 16, { align:"center" });
-  // Fecha centrada debajo
-  doc.setFontSize(8); doc.setFont("helvetica","normal"); doc.setTextColor(160,175,190);
-  doc.text(fmtD(fecha), W/2, 23, { align:"center" });
-  // Solo logo derecha en blanco
-  try {
-    const img = new Image();
-    await new Promise((res, rej) => { img.onload=res; img.onerror=rej; img.src="/fastrev-icon.png"; });
-    const cv = document.createElement("canvas"); cv.width=img.width; cv.height=img.height;
-    const cx2 = cv.getContext("2d"); cx2.drawImage(img,0,0);
-    const id = cx2.getImageData(0,0,cv.width,cv.height);
-    for (let i=0; i<id.data.length; i+=4) { if(id.data[i+3]>10){ id.data[i]=255; id.data[i+1]=255; id.data[i+2]=255; } }
-    cx2.putImageData(id,0,0);
-    const lW=9, lH=9;
-    doc.addImage(cv.toDataURL("image/png"), "PNG", W-lW-3, 3, lW, lH);
-  } catch(_) {}
-  y = hdrH + 1 + 6;
-
-  // ── CUMPLIMIENTO KPIs DEL MES ──────────────────────
-  {
-    const acumRev = revenueAcumulado?.length ? revenueAcumulado[revenueAcumulado.length-1]?.acum || 0 : 0;
-    const revPct  = presupuestoMensual && presupuestoMensual > 0 ? Math.round(acumRev / presupuestoMensual * 100) : null;
-    const occPct  = avg_occ != null && occPpto != null && occPpto > 0 ? Math.round(avg_occ / occPpto * 100) : null;
-    const adrPct2 = avg_adr != null && adrPpto != null && adrPpto > 0 ? Math.round(avg_adr / adrPpto * 100) : null;
-    doc.setFontSize(8); doc.setFont("helvetica","bold"); doc.setTextColor(...C_GRIS);
-    doc.text("CUMPLIMIENTO DEL MES", M, y);
-    doc.setFont("helvetica","normal"); doc.setTextColor(...C_GRISM);
-    doc.text(`(${mesNombre||""})`, M+47, y);
-    y += 4;
-    const kmH = 22;
-    doc.setFillColor(255,255,255); doc.setDrawColor(...C_BORDE);
-    doc.roundedRect(M, y, W-M*2, kmH, 2, 2, "FD");
-    const kmDefs = [
-      { lbl:"OCC MES",       val: avg_occ!=null?parseFloat(avg_occ).toFixed(1)+"%":"—",  ppto: occPpto!=null?parseFloat(occPpto).toFixed(1)+"%":"—",  pct: occPct },
-      { lbl:"ADR MEDIO",     val: avg_adr!=null?`€${Math.round(avg_adr)}`:"—",           ppto: adrPpto!=null?`€${Math.round(adrPpto)}`:"—",           pct: adrPct2 },
-      { lbl:"REVENUE TOTAL", val: `€${fmt(acumRev)}`,                                    ppto: presupuestoMensual?`€${fmt(presupuestoMensual)}`:"—",   pct: revPct },
-    ];
-    const kmCW = (W-M*2)/3;
-    kmDefs.forEach((k, i) => {
-      const kx = M + i*kmCW + kmCW/2;
-      if (i>0) { doc.setDrawColor(...C_BORDE); doc.line(M+i*kmCW, y+2, M+i*kmCW, y+kmH-2); }
-      doc.setFontSize(6.5); doc.setFont("helvetica","bold"); doc.setTextColor(...C_GRIS);
-      doc.text(k.lbl, kx, y+5, { align:"center" });
-      const valCol = k.pct==null ? C_NEGRO : k.pct>=100 ? C_VERDE : k.pct>=75 ? [196,154,10] : C_ROJO;
-      doc.setFontSize(12); doc.setFont("helvetica","bold"); doc.setTextColor(...valCol);
-      doc.text(k.val, kx, y+14, { align:"center" });
-      const statusTxt = k.pct==null ? `ppto: ${k.ppto}` : k.pct>=100 ? `Por encima del objetivo (ppto: ${k.ppto})` : `Por debajo del objetivo (ppto: ${k.ppto})`;
-      doc.setFontSize(6); doc.setFont("helvetica","normal"); doc.setTextColor(...valCol);
-      doc.text(statusTxt, kx, y+20, { align:"center", maxWidth: kmCW-4 });
-    });
-    y += kmH + 5;
-  }
-
-  // ── RESUMEN DE AYER ────────────────────────────────
-  doc.setFontSize(8); doc.setFont("helvetica","bold"); doc.setTextColor(...C_GRIS);
-  doc.text("RESUMEN DE AYER", M, y);
-  doc.setFont("helvetica","normal"); doc.setTextColor(...C_GRISM);
-  doc.text("(vs. Media del Mes)", M+38, y);
-  y += 4;
-
-  // ── Tarjeta KPIs (4 columnas) ──
-  const kH = 27;
-  doc.setFillColor(255,255,255); doc.setDrawColor(...C_BORDE);
-  doc.roundedRect(M, y, W-M*2, kH, 2, 2, "FD");
-
-  const occΔ  = occ!=null&&avg_occ!=null ? occ-avg_occ : null;
-  const adrΔ  = adr!=null&&avg_adr!=null ? adr-avg_adr : null;
-  const rvpΔ  = revpar!=null&&avg_revpar!=null&&avg_revpar>0 ? (revpar-avg_revpar)/avg_revpar*100 : null;
-  const kpiDefs = [
-    { lbl:"OCUPACIÓN", val: occ!=null?parseFloat(occ).toFixed(1)+"%":"—",  delta:occΔ, dfmt:n=>(n>=0?"+":"")+parseFloat(n).toFixed(1)+" pp", sub:hab_ocupadas!=null?`${hab_ocupadas}/${hab_disponibles} hab.`:null, vc:null },
-    { lbl:"ADR",       val: adr!=null?`€${Math.round(adr)}`:"—",           delta:adrΔ, dfmt:n=>(n>=0?"+€":"-€")+Math.abs(n).toFixed(1),        sub:null, vc:null },
-    { lbl:"REVPAR",    val: revpar!=null?`€${Math.round(revpar)}`:"—",      delta:rvpΔ, dfmt:n=>(n>=0?"+":"")+parseFloat(n).toFixed(1)+"%",   sub:null, vc:null },
-    { lbl:"TREVPAR",   val: trevpar!=null?`€${Math.round(trevpar)}`:"—",    delta:trevpar!=null&&avg_trevpar!=null&&avg_trevpar>0?(trevpar-avg_trevpar)/avg_trevpar*100:null, dfmt:n=>(n>=0?"+":"")+parseFloat(n).toFixed(1)+"%", sub:null, vc:null },
-  ];
-  const kColW = (W-M*2)/4;
-  kpiDefs.forEach((k, i) => {
-    const kx = M + i*kColW + kColW/2;
-    if (i>0) { doc.setDrawColor(...C_BORDE); doc.line(M+i*kColW, y+4, M+i*kColW, y+kH-4); }
-    doc.setFontSize(6.5); doc.setFont("helvetica","bold"); doc.setTextColor(...C_GRIS);
-    doc.text(k.lbl, kx, y+5, { align:"center" });
-    doc.setFontSize(12); doc.setFont("helvetica","bold"); doc.setTextColor(...(k.vc||C_NEGRO));
-    doc.text(k.val, kx, y+14, { align:"center" });
-    if (k.delta!=null) {
-      doc.setFontSize(7.5); doc.setFont("helvetica","bold"); doc.setTextColor(...(k.delta>=0?[2,110,75]:[180,20,20]));
-      doc.text(k.dfmt(k.delta), kx, y+21, { align:"center" });
-    }
-    if (k.sub) {
-      doc.setFontSize(6); doc.setFont("helvetica","normal"); doc.setTextColor(...C_GRISM);
-      doc.text(k.sub, kx, k.delta!=null?y+26:y+21, { align:"center" });
-    }
-  });
-  y += kH + 4;
-
-  // ── Tarjeta Pick Up desglosada ──
-  const nuevas = pickup_neto || 0;
-  const cancels = cancelaciones || 0;
-  const neto = nuevas - cancels;
-  const canalesPick = (canalesPickup || []).slice(0, 5);
-  const pickH = 30;
-  doc.setFillColor(255,255,255); doc.setDrawColor(...C_BORDE);
-  doc.roundedRect(M, y, W-M*2, pickH, 2, 2, "FD");
-  doc.setFontSize(6.5); doc.setFont("helvetica","bold"); doc.setTextColor(...C_GRIS);
-  doc.text("PICK UP AYER", M+4, y+6);
-  doc.setDrawColor(...C_BORDE); doc.line(M, y+9, M+W-M*2, y+9);
-  const pColW = (W-M*2)/3;
-  const pLabels = ["NUEVAS RESERVAS","CANCELACIONES","NETO"];
-  const pVals   = [`+${nuevas} hab.`, `-${cancels} hab.`, (neto>=0?"+":"")+neto+" hab."];
-  const pColors = [[2,110,75], cancels>0?[180,20,20]:C_GRIS, neto>0?[2,110,75]:neto<0?[180,20,20]:C_NEGRO];
-  pLabels.forEach((lbl, i) => {
-    const px = M + i*pColW + pColW/2;
-    if (i>0) { doc.setDrawColor(...C_BORDE); doc.line(M+i*pColW, y+10, M+i*pColW, y+26); }
-    doc.setFontSize(6.5); doc.setFont("helvetica","bold"); doc.setTextColor(...C_GRIS);
-    doc.text(lbl, px, y+14, { align:"center" });
-    doc.setFontSize(12); doc.setFont("helvetica","bold"); doc.setTextColor(...pColors[i]);
-    doc.text(pVals[i], px, y+23, { align:"center" });
-  });
-  if (canalesPick.length > 0) {
-    const dotColors2 = ["#0A2540","#D4A017","#059669","#7C3AED","#94A3B8"];
-    let cx2 = M + 4; const py2 = y + 28;
-    doc.setFontSize(6); doc.setFont("helvetica","bold"); doc.setTextColor(...C_GRISM);
-    doc.text("Procedencia:", cx2, py2); cx2 += 24;
-    canalesPick.forEach((c, i) => {
-      const [r2,g2,b2] = dotColors2[i].match(/\w\w/g).map(h=>parseInt(h,16));
-      doc.setFillColor(r2,g2,b2); doc.circle(cx2+1, py2-1.3, 1.2, "F");
-      doc.setFontSize(6); doc.setFont("helvetica","normal"); doc.setTextColor(...C_NEGRO);
-      const lbl2 = `${c.canal} (${c.reservas})`;
-      doc.text(lbl2, cx2+3.5, py2);
-      cx2 += doc.getTextWidth(lbl2) + 7;
-    });
-  }
-  y += pickH + 5;
-
-  // ── MIX DE REVENUE ──────────────────────────────────
-  doc.setFontSize(8); doc.setFont("helvetica","bold"); doc.setTextColor(...C_GRIS);
-  doc.text("MIX DE REVENUE", M, y);
-  doc.setFont("helvetica","normal"); doc.setTextColor(...C_GRISM);
-  doc.text("— AYER", M+33, y);
-  y += 5;
-
-  function addBar(x, bY, totalW, label, value, maxVal, hexColor) {
-    const barH = 3.5; const lblW = 28; const valW = 20;
-    const barW = totalW - lblW - valW;
-    const pct = maxVal > 0 ? Math.min(value / maxVal, 1) : 0;
-    doc.setFontSize(7); doc.setFont("helvetica","normal"); doc.setTextColor(...C_NEGRO);
-    doc.text(label, x, bY, { maxWidth: lblW - 1 });
-    doc.setFillColor(220, 228, 238); doc.rect(x + lblW, bY - 3.2, barW, barH, "F");
-    if (pct > 0) {
-      const [r,g,b] = hexColor.match(/\w\w/g).map(h => parseInt(h, 16));
-      doc.setFillColor(r, g, b); doc.rect(x + lblW, bY - 3.2, barW * pct, barH, "F");
-    }
-    doc.setFontSize(7); doc.setFont("helvetica","bold"); doc.setTextColor(...C_NEGRO);
-    doc.text(`€${Math.round(value).toLocaleString("es-ES")}`, x + lblW + barW + 1, bY);
-  }
-
-  const barRowH = 7;
-  const mixH    = 3 + 7 + 2 * barRowH + 3;
-
-  doc.setFillColor(255,255,255); doc.setDrawColor(...C_BORDE);
-  doc.roundedRect(M, y, W - M * 2, mixH, 2, 2, "FD");
-
-  const lx = M + 3;
-  let ly = y + 4;
-  doc.setFontSize(6.5); doc.setFont("helvetica","bold"); doc.setTextColor(...C_GRIS);
-  doc.text("HAB. VS F&B", lx, ly); ly += 7;
-  const totHF = (revHabAyer || 0) + (revFnbAyer || 0);
-  addBar(lx, ly, W - M * 2 - 6, "Habitaciones", revHabAyer || 0, totHF || 1, "#0A2540"); ly += barRowH;
-  addBar(lx, ly, W - M * 2 - 6, "F&B",          revFnbAyer || 0, totHF || 1, "#D4A017");
-
-  y += mixH + 5;
-
-
-  // ── PROGRESO MENSUAL ────────────────────────────────
-  if (revenueAcumulado?.length) {
-    const acum    = revenueAcumulado[revenueAcumulado.length-1]?.acum || 0;
-    const lastDay = revenueAcumulado[revenueAcumulado.length-1]?.dia  || 1;
-    const pct     = presupuestoMensual && presupuestoMensual>0 ? Math.round(acum/presupuestoMensual*100) : null;
-    const barCol  = pct==null ? C_GRIS : pct>=100 ? C_VERDE : pct>=75 ? [196,154,10] : C_ROJO;
-
-    doc.setFontSize(8); doc.setFont("helvetica","bold"); doc.setTextColor(...C_GRIS);
-    doc.text("PROGRESO MENSUAL", M, y);
-    doc.setFont("helvetica","normal"); doc.setTextColor(...C_GRISM);
-    doc.text(`(${mesNombre||""})`, M+41, y);
-    y += 4;
-
-    const pgH = 24;
-    doc.setFillColor(255,255,255); doc.setDrawColor(...C_BORDE);
-    doc.roundedRect(M, y, W-M*2, pgH, 2, 2, "FD");
-
-    const pgCols = [
-      { lbl:`ACUMULADO DÍA ${lastDay}`, val:`€${fmt(acum)}`,                                     vc:C_NEGRO },
-      { lbl:"CUMPLIMIENTO",             val:pct!=null?`${pct}%`:"—",                             vc:barCol  },
-      { lbl:"PRESUPUESTO",              val:presupuestoMensual?`€${fmt(presupuestoMensual)}`:"—", vc:C_NEGRO },
-      { lbl:"PREVISIÓN",                val:forecastMes?`€${fmt(forecastMes)}`:"—",              vc:C_NEGRO },
-    ];
-    const pgCW = (W-M*2)/4;
-    pgCols.forEach((col, i) => {
-      const px3 = M + i*pgCW + pgCW/2;
-      if (i>0) { doc.setDrawColor(...C_BORDE); doc.line(M+i*pgCW, y+3, M+i*pgCW, y+pgH-3); }
-      doc.setFontSize(6.5); doc.setFont("helvetica","bold"); doc.setTextColor(...C_GRIS);
-      doc.text(col.lbl, px3, y+7, { align:"center" });
-      doc.setFontSize(12); doc.setFont("helvetica","bold"); doc.setTextColor(...(col.vc===C_AZUL?C_NEGRO:col.vc));
-      doc.text(col.val, px3, y+18, { align:"center" });
-    });
-
-    y += pgH + 5;
-  }
-
-  // ── GRUPOS & EVENTOS ─────────────────────────────────
-  const drawGruposSeccion = (subtitulo, lista) => {
-    if (!lista?.length) return;
-    doc.setFontSize(8); doc.setFont("helvetica","bold"); doc.setTextColor(...C_GRIS);
-    const _geTxt = "GRUPOS & EVENTOS";
-    const _geW = doc.getTextWidth(_geTxt);
-    doc.text(_geTxt, M, y);
-    doc.setFont("helvetica","normal"); doc.setTextColor(...C_GRISM);
-    doc.text(` — ${subtitulo}`, M + _geW, y);
-    y += 4;
-    const tH = 9 + lista.length * 8;
-    doc.setFillColor(255,255,255); doc.setDrawColor(...C_BORDE);
-    doc.roundedRect(M, y, W-M*2, tH, 2, 2, "FD");
-    const cols = [{lbl:"NOMBRE",x:M+3},{lbl:"TIPO",x:M+52},{lbl:"FECHAS",x:M+80},{lbl:"HAB.",x:M+126},{lbl:"REVENUE",x:M+148}];
-    doc.setFontSize(6.5); doc.setFont("helvetica","bold"); doc.setTextColor(...C_GRIS);
-    cols.forEach(c => doc.text(c.lbl, c.x, y+6));
-    doc.setDrawColor(...C_BORDE); doc.line(M+3, y+8, W-M-3, y+8);
-    lista.forEach((g, i) => {
-      const ry = y + 14 + i*8;
-      doc.setFontSize(7.5); doc.setFont("helvetica","bold"); doc.setTextColor(...C_NEGRO);
-      doc.text((g.nombre||"—").slice(0,22), cols[0].x, ry);
-      doc.setFontSize(7); doc.setFont("helvetica","normal"); doc.setTextColor(...C_NEGRO);
-      doc.text((g.tipo||"").slice(0,13), cols[1].x, ry);
-      doc.text(`${fmtSD(g.fecha_inicio)} – ${fmtSD(g.fecha_fin)}`, cols[2].x, ry);
-      doc.text(g.habitaciones?`${g.habitaciones} hab.`:"—", cols[3].x, ry);
-      doc.setFontSize(7.5); doc.setFont("helvetica","bold"); doc.setTextColor(...C_NEGRO);
-      doc.text(g.revenue?`€${fmt(g.revenue)}`:"—", cols[4].x, ry);
-    });
-    y += tH + 5;
-  };
-
-  drawGruposSeccion("PRÓXIMOS 7 DÍAS", gruposProximos);
-
-  if (proximoConfirmado && !gruposProximos?.find(g => g.nombre===proximoConfirmado.nombre && g.fecha_inicio===proximoConfirmado.fecha_inicio)) {
-    drawGruposSeccion("PRÓXIMO CONFIRMADO", [proximoConfirmado]);
-  }
-
-  // ── PACE — PRÓXIMOS 7 DÍAS ──────────────────────────
-  if (paceProximos7?.length) {
-    doc.setFontSize(8); doc.setFont("helvetica","bold"); doc.setTextColor(...C_GRIS);
-    doc.text("PACE", M, y);
-    doc.setFont("helvetica","normal"); doc.setTextColor(...C_GRISM);
-    doc.text("— PRÓXIMOS 7 DÍAS", M+13, y);
-    y += 4;
-    const DIAS_S = ["DOM","LUN","MAR","MIÉ","JUE","VIE","SÁB"];
-    const pColW = (W-M*2)/7;
-    const paceH = 26;
-    doc.setFillColor(255,255,255); doc.setDrawColor(...C_BORDE);
-    doc.roundedRect(M, y, W-M*2, paceH, 2, 2, "FD");
-    paceProximos7.forEach((d, i) => {
-      const cx = M + i*pColW + pColW/2;
-      if (i>0) { doc.setDrawColor(...C_BORDE); doc.line(M+i*pColW, y+2, M+i*pColW, y+paceH-2); }
-      const dow = DIAS_S[new Date(d.fecha+'T00:00:00').getDay()];
-      const dayNum = parseInt(d.fecha.split('-')[2]);
-      doc.setFontSize(6.5); doc.setFont("helvetica","normal"); doc.setTextColor(...C_GRISM);
-      doc.text(dow, cx, y+5, { align:"center" });
-      doc.setFontSize(7); doc.setFont("helvetica","bold"); doc.setTextColor(...C_GRIS);
-      doc.text(String(dayNum), cx, y+9, { align:"center" });
-      const bH = 8; const bW2 = pColW*0.55; const bX2 = cx-bW2/2;
-      const pct2 = d.occ_pct!=null ? Math.min(d.occ_pct/100, 1) : 0;
-      doc.setFillColor(220,228,238); doc.rect(bX2, y+11, bW2, bH, "F");
-      if (pct2>0) {
-        const col = d.occ_pct>=80 ? C_VERDE : d.occ_pct>=60 ? [196,154,10] : C_AZUL;
-        doc.setFillColor(...col); doc.rect(bX2, y+11+(bH*(1-pct2)), bW2, bH*pct2, "F");
-      }
-      const occ_col = d.occ_pct!=null && d.occ_pct>=80 ? C_VERDE : d.occ_pct!=null && d.occ_pct>=60 ? [196,154,10] : C_AZUL;
-      doc.setFontSize(7); doc.setFont("helvetica","bold"); doc.setTextColor(...occ_col);
-      doc.text(d.occ_pct!=null?d.occ_pct+"%":"—", cx, y+22, { align:"center" });
-    });
-    y += paceH + 5;
-  }
-
-  return doc.output("datauristring").split(",")[1];
-}
 
 function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMovimiento, kpiModal, setKpiModal, kpiModalExterno, onKpiModalExternoHandled, onNavigarGrupos }) {
   const t = useT();
@@ -6698,10 +6332,7 @@ export default function App() {
   const [cargandoSub, setCargandoSub] = useState(true);
   const [confirmCancelar, setConfirmCancelar] = useState(false);
   const [cancelandoSub, setCancelandoSub] = useState(false);
-  const [enviandoInformePrueba, setEnviandoInformePrueba] = useState(false);
   const [previsualizandoDiario, setPrevisualizandoDiario] = useState(false);
-  const [okInformePrueba, setOkInformePrueba] = useState(false);
-  const [errorInformePrueba, setErrorInformePrueba] = useState("");
   const [toast, setToast] = useState(null); // { msg, ok }
   const showToast = (msg, ok=true) => { setToast({ msg, ok }); setTimeout(() => setToast(null), ok ? 3500 : 6000); };
   const [alertasDismissed, setAlertasDismissed] = useState(() => sessionStorage.getItem("fr_alertas_dismissed") === "1");
@@ -7283,7 +6914,6 @@ export default function App() {
                       { label:t("extranets"),             key:"extranets" },
                       { label:t("informe_mensual"),       key:"informe" },
                       { label:"Vista previa informe diario", key:"preview_diario" },
-                      { label:"Enviar informe diario",    key:"informe_diario" },
                     ].map(op => (
                       <button key={op.key} onClick={async () => {
                           if (op.key === "informe") {
@@ -7291,88 +6921,6 @@ export default function App() {
                             setGenerandoPDF(true);
                             await generarReportePDF(datos, mesSel, anioSel, datos.hotel?.nombre||"Mi Hotel");
                             setGenerandoPDF(false);
-                          } else if (op.key === "informe_diario") {
-                            setMostrarPerfil(false);
-                            showToast("Enviando informe...", true);
-                            try {
-                              const { data: ultimoDia } = await supabase.from("produccion_diaria").select("*").eq("hotel_id", session.user.id).order("fecha", { ascending: false }).limit(1).maybeSingle();
-                              if (!ultimoDia) throw new Error("Sin datos de producción registrados");
-                              const mesActual = parseInt(ultimoDia.fecha.split('-')[1]);
-                              const anioActual = parseInt(ultimoDia.fecha.split('-')[0]);
-                              const mesStr = String(mesActual).padStart(2,'0');
-                              const inicioMes = `${anioActual}-${mesStr}-01`;
-                              const inicioSig = mesActual===12 ? `${anioActual+1}-01-01` : `${anioActual}-${String(mesActual+1).padStart(2,'0')}-01`;
-                              const mesLM = mesActual===1 ? 12 : mesActual-1;
-                              const anioLM = mesActual===1 ? anioActual-1 : anioActual;
-                              const inicioMesLM = `${anioLM}-${String(mesLM).padStart(2,'0')}-01`;
-                              const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-                              const [{ data: datosMes }, { data: pickupRows }, { data: pptoData }, { data: gruposRows }, { data: datosLM }] = await Promise.all([
-                                supabase.from("produccion_diaria").select("fecha,hab_ocupadas,hab_disponibles,revenue_hab,revenue_fnb,revenue_total").eq("hotel_id", session.user.id).gte("fecha", inicioMes).lt("fecha", inicioSig).order("fecha", { ascending: true }),
-                                supabase.from("pickup_entries").select("canal,num_reservas,precio_total,estado").eq("hotel_id", session.user.id).eq("fecha_pickup", ultimoDia.fecha),
-                                supabase.from("presupuesto").select("rev_total_ppto,adr_ppto,occ_ppto").eq("hotel_id", session.user.id).eq("mes", mesActual).eq("anio", anioActual).maybeSingle(),
-                                supabase.from("grupos_eventos").select("nombre,categoria,estado,fecha_inicio,fecha_fin,habitaciones,adr_grupo,revenue_fnb,revenue_sala").eq("hotel_id", session.user.id).neq("estado","cancelado").gte("fecha_fin", ultimoDia.fecha).order("fecha_inicio"),
-                                supabase.from("produccion_diaria").select("hab_ocupadas,hab_disponibles,revenue_hab,revenue_fnb,revenue_total").eq("hotel_id", session.user.id).gte("fecha", inicioMesLM).lt("fecha", inicioMes),
-                              ]);
-                              let nuevas=0, cancels=0, revPickup=0;
-                              for (const p of (pickupRows||[])) { const nr=p.num_reservas||1; if (p.estado==='cancelada') cancels+=nr; else { nuevas+=nr; revPickup+=p.precio_total||0; } }
-                              let acum=0;
-                              const revenueAcumulado = (datosMes||[]).map(d => { acum+=d.revenue_hab||0; return { dia: parseInt(d.fecha.split('-')[2]), acum: Math.round(acum) }; });
-                              let totHabOcu=0, totHabDisp=0, totRevHab=0, totRevFnb=0, totRevTotal=0;
-                              for (const d of (datosMes||[])) { if (d.hab_disponibles>0) { totHabOcu+=d.hab_ocupadas||0; totHabDisp+=d.hab_disponibles||0; totRevHab+=d.revenue_hab||0; totRevFnb+=d.revenue_fnb||0; totRevTotal+=d.revenue_total||0; } }
-                              let lmHabOcu=0, lmHabDisp=0, lmRevHab=0, lmRevFnb=0, lmRevTotal=0;
-                              for (const d of (datosLM||[])) { if (d.hab_disponibles>0) { lmHabOcu+=d.hab_ocupadas||0; lmHabDisp+=d.hab_disponibles||0; lmRevHab+=d.revenue_hab||0; lmRevFnb+=d.revenue_fnb||0; lmRevTotal+=d.revenue_total||0; } }
-                              const lmRevTotalEff = lmRevTotal || (lmRevHab+lmRevFnb) || 0;
-                              const lm_avg_occ    = lmHabDisp>0 ? lmHabOcu/lmHabDisp*100 : null;
-                              const lm_avg_adr    = lmHabOcu>0  ? lmRevHab/lmHabOcu : null;
-                              const lm_avg_revpar = lmHabDisp>0 ? lmRevHab/lmHabDisp : null;
-                              const lm_avg_trevpar= lmHabDisp>0&&lmRevTotalEff>0 ? lmRevTotalEff/lmHabDisp : null;
-                              // Canales de ayer (solo las reservas nuevas del día)
-                              const normCanalP = c => { const lc=(c||'').toLowerCase().trim(); if(lc.includes('directo')||lc.includes('teléfono')||lc.includes('telefono')||lc.includes('email')) return 'Directo'; if(lc.includes('web')) return 'Web'; if(lc.includes('empresa')||lc.includes('corporativo')) return 'Empresa'; if(lc.includes('mice')||lc.includes('evento')) return 'Eventos/MICE'; if(lc.includes('grupo')) return 'Grupos'; return c||'Otro'; };
-                              const isOTA_p = c => !['directo','web','empresa','corporativo','grupo','mice','evento','tour','agencia','gds'].some(k=>(c||'').toLowerCase().includes(k));
-                              const canalMap = {}; let totCanalRev = 0;
-                              for (const p of (pickupRows||[])) { if((p.estado||'')==='cancelada') continue; const peso=p.precio_total||(p.num_reservas||1); const key=isOTA_p(p.canal)?'OTA':normCanalP(p.canal); canalMap[key]=(canalMap[key]||0)+peso; totCanalRev+=peso; }
-                              const canalesRevenue = Object.entries(canalMap).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]).map(([canal,revenue])=>({ canal, revenue:Math.round(revenue), pct:totCanalRev>0?Math.round(revenue/totCanalRev*100):0 }));
-                              const canalPickupMap = {};
-                              for (const p of (pickupRows||[])) { if((p.estado||'')==='cancelada') continue; const key=normCanalP(p.canal); canalPickupMap[key]=(canalPickupMap[key]||0)+(p.num_reservas||1); }
-                              const canalesPickup = Object.entries(canalPickupMap).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]).map(([canal,reservas])=>({ canal, reservas }));
-                              const canalRevMixMap = {};
-                              for (const p of (pickupRows||[])) { if((p.estado||'')==='cancelada') continue; const key=normCanalP(p.canal); canalRevMixMap[key]=(canalRevMixMap[key]||0)+(p.precio_total||0); }
-                              const canalesRevMix = Object.entries(canalRevMixMap).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]).map(([canal,revenue])=>({ canal, revenue:Math.round(revenue) }));
-                              // Grupos en casa ayer (1 noche)
-                              const gruposAyer = (gruposRows||[]).filter(g => g.estado==='confirmado' && g.fecha_inicio<=ultimoDia.fecha && g.fecha_fin>ultimoDia.fecha);
-                              const revGruposAyer = gruposAyer.reduce((s,g) => s+(g.habitaciones||0)*(g.adr_grupo||0), 0);
-                              const mkGrupo = g => { const noches=Math.max(1,(new Date(g.fecha_fin+'T00:00:00')-new Date(g.fecha_inicio+'T00:00:00'))/86400000); return { nombre:g.nombre, tipo:g.categoria||"", estado:g.estado, fecha_inicio:g.fecha_inicio, fecha_fin:g.fecha_fin, habitaciones:g.habitaciones||0, revenue:Math.round((g.habitaciones||0)*(g.adr_grupo||0)*noches+(g.revenue_fnb||0)+(g.revenue_sala||0)) }; };
-                              const en7Str = new Date(new Date(ultimoDia.fecha+'T00:00:00').getTime()+7*86400000).toISOString().split('T')[0];
-                              const gruposProximos = (gruposRows||[]).filter(g => g.estado==='confirmado' && g.fecha_inicio>ultimoDia.fecha && g.fecha_inicio<=en7Str).map(mkGrupo);
-                              const proximoConfirmado = (() => { const g=(gruposRows||[]).filter(g=>g.estado==='confirmado'&&g.fecha_inicio>ultimoDia.fecha).sort((a,b)=>a.fecha_inicio.localeCompare(b.fecha_inicio))[0]; return g?mkGrupo(g):null; })();
-                              const occ = ultimoDia.hab_disponibles>0 ? ultimoDia.hab_ocupadas/ultimoDia.hab_disponibles*100 : null;
-                              const adr = ultimoDia.adr ?? (ultimoDia.hab_ocupadas>0&&ultimoDia.revenue_hab ? ultimoDia.revenue_hab/ultimoDia.hab_ocupadas : null);
-                              const revpar = ultimoDia.revpar ?? (ultimoDia.hab_disponibles>0&&ultimoDia.revenue_hab ? ultimoDia.revenue_hab/ultimoDia.hab_disponibles : null);
-                              const revTotalEff = ultimoDia.revenue_total || ((ultimoDia.revenue_hab||0) + (ultimoDia.revenue_fnb||0)) || null;
-                              const trevpar = ultimoDia.trevpar ?? (ultimoDia.hab_disponibles>0&&revTotalEff ? revTotalEff/ultimoDia.hab_disponibles : null);
-                              const totRevTotalEff = totRevTotal || (totRevHab + totRevFnb) || 0;
-                              const forecastMes = calcForecastRevStandalone(mesActual-1, anioActual, datos.produccion, datos.pickupEntries, datos.hotel);
-                              const _habMap = buildHabEnCasaMap(datos.pickupEntries, datos.grupos);
-                              const _habDisp = datos.hotel?.habitaciones || ultimoDia.hab_disponibles || 1;
-                              const paceProximos7 = Array.from({length:7},(_,i)=>{ const d=new Date(new Date(ultimoDia.fecha+'T00:00:00').getTime()+(i+1)*86400000); const iso=d.toISOString().split('T')[0]; const hab=_habMap[iso]||0; return { fecha:iso, hab_reservadas:hab, occ_pct:Math.round(hab/_habDisp*100) }; });
-                              const kpisPayload = { fecha: ultimoDia.fecha, mesNombre: MESES[mesActual-1], occ, adr, revpar, trevpar, hab_ocupadas: ultimoDia.hab_ocupadas, hab_disponibles: ultimoDia.hab_disponibles, pickup_neto: nuevas, cancelaciones: cancels, revenue_pickup_ayer: revPickup||null, revenueAcumulado, presupuestoMensual: pptoData?.rev_total_ppto??null, avg_occ: totHabDisp>0?totHabOcu/totHabDisp*100:null, avg_adr: totHabOcu>0?totRevHab/totHabOcu:null, avg_revpar: totHabDisp>0?totRevHab/totHabDisp:null, avg_trevpar: totHabDisp>0&&totRevTotalEff>0?totRevTotalEff/totHabDisp:null, lm_avg_occ, lm_avg_adr, lm_avg_revpar, lm_avg_trevpar, revHabAyer: ultimoDia.revenue_hab||0, revFnbAyer: ultimoDia.revenue_fnb||0, canalesRevenue, canalesPickup, canalesRevMix, revGruposAyer: Math.round(revGruposAyer), revIndividualAyer: Math.round(Math.max(0, (ultimoDia.revenue_hab||0)-revGruposAyer)), adrPpto: pptoData?.adr_ppto??null, occPpto: pptoData?.occ_ppto??null, gruposProximos, proximoConfirmado, forecastMes, paceProximos7 };
-                              let pdfBase64 = null;
-                              try {
-                                pdfBase64 = await generarInformeDiarioPDF(kpisPayload, datos.hotel?.nombre||null);
-                                if (!pdfBase64) throw new Error("PDF vacío");
-                              } catch(pdfErr) {
-                                showToast("Aviso: PDF no generado (" + pdfErr.message + ") — enviando sin adjunto", false);
-                                await new Promise(r => setTimeout(r, 2000));
-                              }
-                              const resp = await fetch('/api/daily-email', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
-                                body: JSON.stringify({ email: session.user.email, hotelNombre: datos.hotel?.nombre||null, kpis: kpisPayload, pdfBase64 }),
-                              });
-                              const json = await resp.json();
-                              if (!resp.ok) throw new Error(json.error || `HTTP ${resp.status}`);
-                              showToast("✓ Informe enviado a " + session.user.email, true);
-                            } catch(e) { showToast("Error: " + e.message, false); }
                           } else if (op.key === "preview_diario") {
                             setMostrarPerfil(false);
                             setPrevisualizandoDiario(true);
@@ -7432,7 +6980,14 @@ export default function App() {
                               const _habDisp2 = datos.hotel?.habitaciones || ultimoDia.hab_disponibles || 1;
                               const paceProximos7 = Array.from({length:7},(_,i)=>{ const d=new Date(new Date(ultimoDia.fecha+'T00:00:00').getTime()+(i+1)*86400000); const iso=d.toISOString().split('T')[0]; const hab=_habMap2[iso]||0; return { fecha:iso, hab_reservadas:hab, occ_pct:Math.round(hab/_habDisp2*100) }; });
                               const kpisPayload = { fecha: ultimoDia.fecha, mesNombre: MESES_ES[mesActual-1], occ, adr, revpar, trevpar, hab_ocupadas: ultimoDia.hab_ocupadas, hab_disponibles: ultimoDia.hab_disponibles, pickup_neto: nuevas, cancelaciones: cancels, revenue_pickup_ayer: revPickup||null, revenueAcumulado, presupuestoMensual: pptoData?.rev_total_ppto??null, avg_occ: totHabDisp>0?totHabOcu/totHabDisp*100:null, avg_adr: totHabOcu>0?totRevHab/totHabOcu:null, avg_revpar: totHabDisp>0?totRevHab/totHabDisp:null, avg_trevpar: totHabDisp>0&&totRevTotalEff>0?totRevTotalEff/totHabDisp:null, lm_avg_occ: lmHabDisp>0?lmHabOcu/lmHabDisp*100:null, lm_avg_adr: lmHabOcu>0?lmRevHab/lmHabOcu:null, lm_avg_revpar: lmHabDisp>0?lmRevHab/lmHabDisp:null, lm_avg_trevpar: lmHabDisp>0&&lmRevTotalEff>0?lmRevTotalEff/lmHabDisp:null, revHabAyer: ultimoDia.revenue_hab||0, revFnbAyer: ultimoDia.revenue_fnb||0, canalesRevenue, canalesPickup, canalesRevMix, revGruposAyer: Math.round(revGruposAyer), revIndividualAyer: Math.round(Math.max(0, (ultimoDia.revenue_hab||0)-revGruposAyer)), adrPpto: pptoData?.adr_ppto??null, occPpto: pptoData?.occ_ppto??null, gruposProximos, proximoConfirmado, forecastMes, paceProximos7 };
-                              const pdfBase64 = await generarInformeDiarioPDF(kpisPayload, datos.hotel?.nombre||null);
+                              const pdfResp = await fetch('/api/generar-pdf-informe-diario', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+                                body: JSON.stringify({ hotelNombre: datos.hotel?.nombre||null, kpis: kpisPayload }),
+                              });
+                              const pdfJson = await pdfResp.json();
+                              if (!pdfResp.ok) throw new Error(pdfJson.error || `HTTP ${pdfResp.status}`);
+                              const pdfBase64 = pdfJson.pdfBase64;
                               if (!pdfBase64) throw new Error("PDF vacío");
                               const bytes = atob(pdfBase64);
                               const buf = new Uint8Array(bytes.length);
@@ -7454,7 +7009,7 @@ export default function App() {
                         style={{ width:"100%", padding:"9px 18px", background:"transparent", border:"none", borderLeft:"3px solid transparent", cursor:"pointer", fontSize:13, fontWeight:500, color:"#1A1A1A", textAlign:"left", transition:"all 0.12s" }}
                         onMouseEnter={e=>{ e.currentTarget.style.background=`${barColor}0F`; e.currentTarget.style.borderLeftColor=barColor; }}
                         onMouseLeave={e=>{ e.currentTarget.style.background="transparent"; e.currentTarget.style.borderLeftColor="transparent"; }}>
-                        {op.key === "informe" && generandoPDF ? t("generando") : op.key === "preview_diario" && previsualizandoDiario ? "Generando..." : op.key === "informe_diario" && enviandoInformePrueba ? "Enviando..." : op.key === "informe_diario" && okInformePrueba ? "✓ Enviado" : op.label}
+                        {op.key === "informe" && generandoPDF ? t("generando") : op.key === "preview_diario" && previsualizandoDiario ? "Generando..." : op.label}
                       </button>
                     ))}
                   </div>

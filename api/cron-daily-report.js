@@ -212,10 +212,12 @@ function buildHtml(hotel, kpis) {
 export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).end();
 
-  const isVercelCron  = req.headers['x-vercel-cron'] === '1';
-  const cronSecret    = process.env.CRON_SECRET;
-  const hasValidSecret = cronSecret && req.headers['authorization'] === `Bearer ${cronSecret}`;
-  if (!isVercelCron && !hasValidSecret) return res.status(401).json({ error: 'No autorizado' });
+  // Vercel envía automáticamente Authorization: Bearer {CRON_SECRET} al invocar el cron
+  // (no existe un header "x-vercel-cron" fiable para autenticar — ver docs de Vercel)
+  const cronSecret = process.env.CRON_SECRET;
+  if (!cronSecret || req.headers['authorization'] !== `Bearer ${cronSecret}`) {
+    return res.status(401).json({ error: 'No autorizado' });
+  }
 
   // Compute yesterday in UTC (cron fires at 07:30 UTC = 09:30 CEST, so UTC date = local date - 1)
   const now = new Date();
