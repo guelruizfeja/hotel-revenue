@@ -3475,7 +3475,6 @@ function PickupView({ datos, onGuardado }) {
               .sort((a,b) => b[1]-a[1])
               .slice(0,5);
             if (top5.length === 0) return <p style={{ fontSize:11, color:C.textLight }}>{t("sin_futuras")}</p>;
-            const maxVal = top5[0][1] || 1;
             const fmt = (iso) => {
               const [y,m,d] = iso.split("-");
               const dt = new Date(Number(y), Number(m)-1, Number(d));
@@ -3497,7 +3496,7 @@ function PickupView({ datos, onGuardado }) {
                     </div>
                   </div>
                   <div style={{ width:"100%", height:4, background:C.border, borderRadius:2 }}>
-                    <div style={{ width:`${Math.round(otb/maxVal*100)}%`, height:"100%", background:`linear-gradient(to right, ${occColor}77, ${occColor})`, borderRadius:2 }} />
+                    <div style={{ width:`${Math.min(occ,100)}%`, height:"100%", background:`linear-gradient(to right, ${occColor}77, ${occColor})`, borderRadius:2 }} />
                   </div>
                 </div>
               );

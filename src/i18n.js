@@ -62,7 +62,7 @@ export const TRANSLATIONS = {
     th_adr_ppto:"ADR Ppto.", th_adr_real:"ADR Real", th_desv_adr:"Desv. ADR",
     th_revpar_ppto:"RevPAR Ppto.", th_revpar_real:"RevPAR Real", th_desv_revpar:"Desv. RevPAR",
     th_rev_ppto:"Rev. Ppto.", th_rev_real:"Rev. Real", th_desv_rev:"Desv. Rev.",
-    th_forecast:"Forecast Cierre", total_ytd:"TOTAL YTD", vs_ppto:"vs ppto",
+    th_forecast:"Forecast", total_ytd:"TOTAL YTD", vs_ppto:"vs ppto",
     confianza:"confianza", real_badge:"✓ Real",
     // Grupos
     nuevo_evento:"+ Nuevo evento", sin_eventos:"Sin grupos/eventos", rev_estimado:"Revenue estimado",
