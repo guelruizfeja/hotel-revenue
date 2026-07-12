@@ -1,3 +1,40 @@
+export function calcForecastRevStandalone(mesIdx, anioF, produccion, pickupEntries, hotel) {
+  const hoy = new Date();
+  const pad = n => String(n).padStart(2, "0");
+  const hoyStr   = `${hoy.getFullYear()}-${pad(hoy.getMonth()+1)}-${pad(hoy.getDate())}`;
+  const mesStr   = `${anioF}-${pad(mesIdx + 1)}`;
+  const mesStrLY = `${anioF - 1}-${pad(mesIdx + 1)}`;
+  const ultimoDia  = new Date(anioF, mesIdx + 1, 0);
+  if (ultimoDia < new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate())) return null;
+  const hoyLY    = `${anioF-1}-${pad(hoy.getMonth()+1)}-${pad(hoy.getDate())}`;
+  const finMesLY = `${anioF-1}-${pad(mesIdx+1)}-${pad(ultimoDia.getDate())}`;
+  const getNochas = e => { const n=Number(e.noches); if(n>0)return n; if(e.fecha_salida&&e.fecha_llegada){const d=(new Date(String(e.fecha_salida).slice(0,10)+"T00:00:00")-new Date(String(e.fecha_llegada).slice(0,10)+"T00:00:00"))/86400000;return d>0?d:1;}return 1; };
+  const getSalidaKey = e => { if(e.fecha_salida)return String(e.fecha_salida).slice(0,10); const n=Number(e.noches); if(n>0&&e.fecha_llegada){const d=new Date(String(e.fecha_llegada).slice(0,10)+"T00:00:00");d.setDate(d.getDate()+n);return d.toISOString().slice(0,10);}return ""; };
+  const dedup = es => { const m={}; es.forEach(e=>{const k=`${String(e.fecha_llegada||"").slice(0,10)}|${e.canal||""}|${getSalidaKey(e)}`;const fp=String(e.fecha_pickup||"").slice(0,10);if(!m[k]||fp>m[k]._fp)m[k]={...e,_fp:fp};}); return Object.values(m); };
+  const sumNights  = arr => arr.reduce((a,e)=>a+(e.num_reservas||1)*getNochas(e),0);
+  const sumRevenue = arr => arr.reduce((a,e)=>a+(e.precio_total||0),0);
+  const diasLY   = (produccion||[]).filter(r=>String(r.fecha||"").slice(0,7)===mesStrLY);
+  const habOcuLY = diasLY.reduce((a,r)=>a+(r.hab_ocupadas||0),0);
+  const revHabLY = diasLY.reduce((a,r)=>a+(r.revenue_hab||0),0);
+  const adrLY    = habOcuLY>0?revHabLY/habOcuLY:null;
+  let canceladas=0,totales=0;
+  for(let m=1;m<=3;m++){const ref=new Date(hoy.getFullYear(),hoy.getMonth()-m,1);const rs=`${ref.getFullYear()}-${pad(ref.getMonth()+1)}`;dedup((pickupEntries||[]).filter(e=>!e._grupo&&String(e.fecha_llegada||"").slice(0,7)===rs)).forEach(e=>{totales++;if((e.estado||"confirmada")==="cancelada")canceladas++;});}
+  const cancelRate=totales>20?canceladas/totales:0.08;
+  const realPE=(pickupEntries||[]).filter(e=>!e._grupo);
+  const otbEntries=dedup(realPE.filter(e=>String(e.fecha_llegada||"").slice(0,7)===mesStr&&String(e.fecha_pickup||"").slice(0,10)<=hoyStr&&(e.estado||"confirmada")!=="cancelada"));
+  const netOTBRevenue=sumRevenue(otbEntries)*(1-cancelRate);
+  const otbNights=sumNights(otbEntries);
+  const lyBase=realPE.filter(e=>String(e.fecha_llegada||"").slice(0,7)===mesStrLY&&(e.estado||"confirmada")!=="cancelada");
+  const lyOtb=dedup(lyBase.filter(e=>String(e.fecha_pickup||"").slice(0,10)<=hoyLY));
+  const lyAll=dedup(lyBase.filter(e=>String(e.fecha_pickup||"").slice(0,10)<=finMesLY));
+  const otbNightsLY=sumNights(lyOtb);
+  const etpRevLY=Math.max(0,sumRevenue(lyAll)-sumRevenue(lyOtb));
+  const paceFactor=Math.min(1.5,Math.max(0.5,otbNightsLY>3?otbNights/otbNightsLY:1));
+  const etpRev=etpRevLY>0?Math.round(etpRevLY*paceFactor):(adrLY?Math.round(Math.max(0,sumNights(lyAll)-otbNightsLY)*paceFactor*adrLY):0);
+  const forecastRev=Math.round(netOTBRevenue+etpRev);
+  return forecastRev>0?forecastRev:null;
+}
+
 export function buildHabEnCasaMap(pickupEntries, grupos) {
   const map = {};
   const pad = n => String(n).padStart(2, "0");
