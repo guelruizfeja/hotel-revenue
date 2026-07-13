@@ -15,7 +15,7 @@ export function generarInformeDiarioPDF(kpis, hotelNombre) {
     revenueAcumulado, presupuestoMensual,
     avg_occ, avg_adr, avg_revpar, avg_trevpar,
     lm_avg_occ, lm_avg_adr, lm_avg_revpar, lm_avg_trevpar,
-    revHabAyer, revFnbAyer, canalesRevenue, canalesPickup, canalesRevMix,
+    revHabAyer, revFnbAyer, revSalasAyer, canalesRevenue, canalesPickup, canalesRevMix,
     revGruposAyer, revIndividualAyer,
     adrPpto, occPpto, gruposProximos, proximoConfirmado,
     forecastMes, paceProximos7,
@@ -91,7 +91,7 @@ export function generarInformeDiarioPDF(kpis, hotelNombre) {
       const valCol = k.pct==null ? C_NEGRO : k.pct>=100 ? C_VERDE : k.pct>=75 ? [196,154,10] : C_ROJO;
       doc.setFontSize(12); doc.setFont("helvetica","bold"); doc.setTextColor(...valCol);
       doc.text(k.val, kx, y+14, { align:"center" });
-      const statusTxt = k.pct==null ? `ppto: ${k.ppto}` : k.pct>=100 ? `Por encima del objetivo (ppto: ${k.ppto})` : `Por debajo del objetivo (ppto: ${k.ppto})`;
+      const statusTxt = `ppto: ${k.ppto}`;
       doc.setFontSize(6); doc.setFont("helvetica","normal"); doc.setTextColor(...valCol);
       doc.text(statusTxt, kx, y+20, { align:"center", maxWidth: kmCW-4 });
     });
@@ -142,8 +142,9 @@ export function generarInformeDiarioPDF(kpis, hotelNombre) {
   const nuevas = pickup_neto || 0;
   const cancels = cancelaciones || 0;
   const neto = nuevas - cancels;
+  const adrNuevas = nuevas > 0 && revenue_pickup_ayer ? Math.round(revenue_pickup_ayer / nuevas) : null;
   const canalesPick = (canalesPickup || []).slice(0, 5);
-  const pickH = 30;
+  const pickH = 36;
   doc.setFillColor(255,255,255); doc.setDrawColor(...C_BORDE);
   doc.roundedRect(M, y, W-M*2, pickH, 2, 2, "FD");
   doc.setFontSize(6.5); doc.setFont("helvetica","bold"); doc.setTextColor(...C_GRIS);
@@ -155,15 +156,19 @@ export function generarInformeDiarioPDF(kpis, hotelNombre) {
   const pColors = [[2,110,75], cancels>0?[180,20,20]:C_GRIS, neto>0?[2,110,75]:neto<0?[180,20,20]:C_NEGRO];
   pLabels.forEach((lbl, i) => {
     const px = M + i*pColW + pColW/2;
-    if (i>0) { doc.setDrawColor(...C_BORDE); doc.line(M+i*pColW, y+10, M+i*pColW, y+26); }
+    if (i>0) { doc.setDrawColor(...C_BORDE); doc.line(M+i*pColW, y+10, M+i*pColW, y+30); }
     doc.setFontSize(6.5); doc.setFont("helvetica","bold"); doc.setTextColor(...C_GRIS);
     doc.text(lbl, px, y+14, { align:"center" });
     doc.setFontSize(12); doc.setFont("helvetica","bold"); doc.setTextColor(...pColors[i]);
-    doc.text(pVals[i], px, y+23, { align:"center" });
+    doc.text(pVals[i], px, y+22, { align:"center" });
+    if (i===0 && adrNuevas!=null) {
+      doc.setFontSize(6); doc.setFont("helvetica","normal"); doc.setTextColor(...C_GRISM);
+      doc.text(`Precio medio: €${adrNuevas}`, px, y+27, { align:"center" });
+    }
   });
   if (canalesPick.length > 0) {
     const dotColors2 = ["#0A2540","#D4A017","#059669","#7C3AED","#94A3B8"];
-    let cx2 = M + 4; const py2 = y + 28;
+    let cx2 = M + 4; const py2 = y + 33;
     doc.setFontSize(6); doc.setFont("helvetica","bold"); doc.setTextColor(...C_GRISM);
     doc.text("Procedencia:", cx2, py2); cx2 += 24;
     canalesPick.forEach((c, i) => {
@@ -184,23 +189,24 @@ export function generarInformeDiarioPDF(kpis, hotelNombre) {
   doc.text("— AYER", M+33, y);
   y += 5;
 
-  function addBar(x, bY, totalW, label, value, maxVal, hexColor) {
-    const barH = 3.5; const lblW = 28; const valW = 20;
+  function addBar(x, bY, totalW, label, value, maxVal, hexColor, pct) {
+    const barH = 3.5; const lblW = 28; const valW = 26;
     const barW = totalW - lblW - valW;
-    const pct = maxVal > 0 ? Math.min(value / maxVal, 1) : 0;
-    doc.setFontSize(7); doc.setFont("helvetica","normal"); doc.setTextColor(...C_NEGRO);
+    const fillPct = maxVal > 0 ? Math.min(value / maxVal, 1) : 0;
+    doc.setFontSize(7); doc.setFont("helvetica","bold"); doc.setTextColor(0,0,0);
     doc.text(label, x, bY, { maxWidth: lblW - 1 });
     doc.setFillColor(220, 228, 238); doc.rect(x + lblW, bY - 3.2, barW, barH, "F");
-    if (pct > 0) {
+    if (fillPct > 0) {
       const [r,g,b] = hexColor.match(/\w\w/g).map(h => parseInt(h, 16));
-      doc.setFillColor(r, g, b); doc.rect(x + lblW, bY - 3.2, barW * pct, barH, "F");
+      doc.setFillColor(r, g, b); doc.rect(x + lblW, bY - 3.2, barW * fillPct, barH, "F");
     }
-    doc.setFontSize(7); doc.setFont("helvetica","bold"); doc.setTextColor(...C_NEGRO);
-    doc.text(`€${Math.round(value).toLocaleString("es-ES")}`, x + lblW + barW + 1, bY);
+    doc.setFontSize(7); doc.setFont("helvetica","bold"); doc.setTextColor(0,0,0);
+    const valTxt = `€${Math.round(value).toLocaleString("es-ES")}` + (pct!=null ? `  ·  ${pct}%` : '');
+    doc.text(valTxt, x + lblW + barW + 1, bY);
   }
 
   const barRowH = 7;
-  const mixH    = 3 + 7 + 2 * barRowH + 3;
+  const mixH    = 3 + 7 + 3 * barRowH + 3;
 
   doc.setFillColor(255,255,255); doc.setDrawColor(...C_BORDE);
   doc.roundedRect(M, y, W - M * 2, mixH, 2, 2, "FD");
@@ -208,10 +214,14 @@ export function generarInformeDiarioPDF(kpis, hotelNombre) {
   const lx = M + 3;
   let ly = y + 4;
   doc.setFontSize(6.5); doc.setFont("helvetica","bold"); doc.setTextColor(...C_GRIS);
-  doc.text("HAB. VS F&B", lx, ly); ly += 7;
-  const totHF = (revHabAyer || 0) + (revFnbAyer || 0);
-  addBar(lx, ly, W - M * 2 - 6, "Habitaciones", revHabAyer || 0, totHF || 1, "#0A2540"); ly += barRowH;
-  addBar(lx, ly, W - M * 2 - 6, "F&B",          revFnbAyer || 0, totHF || 1, "#D4A017");
+  doc.text("HAB. VS F&B VS SALAS", lx, ly); ly += 7;
+  const totHF = (revHabAyer || 0) + (revFnbAyer || 0) + (revSalasAyer || 0);
+  const pctHab   = totHF > 0 ? Math.round((revHabAyer || 0) / totHF * 100) : 0;
+  const pctFnb   = totHF > 0 ? Math.round((revFnbAyer || 0) / totHF * 100) : 0;
+  const pctSalas = totHF > 0 ? Math.round((revSalasAyer || 0) / totHF * 100) : 0;
+  addBar(lx, ly, W - M * 2 - 6, "Habitaciones", revHabAyer   || 0, totHF || 1, "#0A2540", pctHab);   ly += barRowH;
+  addBar(lx, ly, W - M * 2 - 6, "F&B",          revFnbAyer   || 0, totHF || 1, "#D4A017", pctFnb);   ly += barRowH;
+  addBar(lx, ly, W - M * 2 - 6, "Salas",        revSalasAyer || 0, totHF || 1, "#7C3AED", pctSalas);
 
   y += mixH + 5;
 
@@ -297,7 +307,7 @@ export function generarInformeDiarioPDF(kpis, hotelNombre) {
     y += 4;
     const DIAS_S = ["DOM","LUN","MAR","MIÉ","JUE","VIE","SÁB"];
     const pColW2 = (W-M*2)/7;
-    const paceH = 26;
+    const paceH = 31;
     doc.setFillColor(255,255,255); doc.setDrawColor(...C_BORDE);
     doc.roundedRect(M, y, W-M*2, paceH, 2, 2, "FD");
     paceProximos7.forEach((d, i) => {
@@ -319,6 +329,8 @@ export function generarInformeDiarioPDF(kpis, hotelNombre) {
       const occ_col = d.occ_pct!=null && d.occ_pct>=80 ? C_VERDE : d.occ_pct!=null && d.occ_pct>=60 ? [196,154,10] : C_AZUL;
       doc.setFontSize(7); doc.setFont("helvetica","bold"); doc.setTextColor(...occ_col);
       doc.text(d.occ_pct!=null?d.occ_pct+"%":"—", cx, y+22, { align:"center" });
+      doc.setFontSize(6); doc.setFont("helvetica","normal"); doc.setTextColor(...C_GRISM);
+      doc.text(d.adr!=null?`ADR €${d.adr}`:"—", cx, y+27, { align:"center" });
     });
     y += paceH + 5;
   }

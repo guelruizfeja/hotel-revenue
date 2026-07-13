@@ -1,6 +1,6 @@
 import { Resend } from 'resend';
 import { createClient } from '@supabase/supabase-js';
-import { buildHabEnCasaMap, calcForecastRevStandalone } from '../src/utils.js';
+import { buildHabEnCasaMap, buildRevEnCasaMap, calcForecastRevStandalone } from '../src/utils.js';
 import { generarInformeDiarioPDF } from './_pdfInformeDiario.js';
 
 const resend  = new Resend(process.env.RESEND_API_KEY);
@@ -264,12 +264,14 @@ export default async function handler(req, res) {
       // ── Forecast de cierre de mes y pace próximos 7 días ──
       const forecastMes = calcForecastRevStandalone(mesActual - 1, anioActual, [...(datosMes||[]), ...(datosMesLY||[])], [...(pickupAmplio||[]), ...(pickupLY||[])], null);
       const habMap  = buildHabEnCasaMap(pickupAmplio, gruposRows);
+      const revMap  = buildRevEnCasaMap(pickupAmplio, gruposRows);
       const habDisp = hotelRow?.habitaciones || ayerData.hab_disponibles || 1;
       const paceProximos7 = Array.from({ length: 7 }, (_, i) => {
         const d = new Date(Date.UTC(ayer.getUTCFullYear(), ayer.getUTCMonth(), ayer.getUTCDate() + i + 1));
         const iso = `${d.getUTCFullYear()}-${pad2(d.getUTCMonth()+1)}-${pad2(d.getUTCDate())}`;
         const hab = habMap[iso] || 0;
-        return { fecha: iso, hab_reservadas: hab, occ_pct: Math.round(hab / habDisp * 100) };
+        const rev = revMap[iso] || 0;
+        return { fecha: iso, hab_reservadas: hab, occ_pct: Math.round(hab / habDisp * 100), adr: hab > 0 ? Math.round(rev / hab) : null };
       });
 
       const kpis = {
@@ -288,7 +290,7 @@ export default async function handler(req, res) {
         ly_occ: lyOcc, ly_adr: lyAdr, ly_revpar: lyRevpar, ly_trevpar: lyTrevpar,
         avg_occ, avg_adr, avg_revpar, avg_trevpar,
         lm_avg_occ, lm_avg_adr, lm_avg_revpar, lm_avg_trevpar,
-        revHabAyer: ayerData.revenue_hab || 0, revFnbAyer: ayerData.revenue_fnb || 0,
+        revHabAyer: ayerData.revenue_hab || 0, revFnbAyer: ayerData.revenue_fnb || 0, revSalasAyer: ayerData.revenue_salas || 0,
         canalesRevenue, canalesPickup, canalesRevMix,
         revGruposAyer: Math.round(revGruposAyer),
         revIndividualAyer: Math.round(Math.max(0, (ayerData.revenue_hab||0) - revGruposAyer)),
