@@ -99,14 +99,20 @@
   }
   .hero-actions { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
   .hero-features {
-    list-style: none;
-    display: flex; flex-direction: row; flex-wrap: nowrap; gap: 10px;
-    padding-left: 0; width: 100%;
+    display: flex; flex-direction: row; align-items: center; flex-wrap: nowrap; gap: 14px;
+    width: 100%; max-width: 520px; margin: 0 auto;
   }
-  /* Feature cards — ocultas hasta que se revelan */
+  .hero-feat-track {
+    list-style: none; padding-left: 0; margin: 0;
+    position: relative;
+    flex: 1 1 auto; min-width: 0;
+    height: 64px;
+  }
+  /* Feature cards — solo la activa es visible */
   .hero-feature-item {
     display: none;
-    flex: 1 1 0; align-items: center; justify-content: center;
+    position: absolute; inset: 0;
+    align-items: center; justify-content: center;
     font-family: 'DM Sans', sans-serif;
     font-size: 13px; color: #ffffff;
     font-weight: 400; line-height: 1.45; text-align: center;
@@ -115,24 +121,23 @@
     border-radius: 10px; padding: 14px 16px;
     backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
   }
-  .hero-feature-item.revealed {
+  .hero-feature-item.active {
     display: flex;
     animation: featureSlideIn 0.42s cubic-bezier(0.4,0,0.2,1) forwards;
   }
-  /* Tarjeta "Descubre FastRevenue" */
-  .hero-discover {
+  .hero-feat-arrow {
     flex: 0 0 auto;
-    display: flex; align-items: center; justify-content: center; gap: 10px;
-    font-size: 17px; font-weight: 600; color: #ffffff;
+    display: flex; align-items: center; justify-content: center;
+    width: 40px; height: 40px;
+    font-size: 20px; line-height: 1; color: #ffffff;
     background: rgba(5,12,30,0.82);
     border: 1px solid rgba(255,255,255,0.32);
-    border-radius: 10px; padding: 18px 28px;
+    border-radius: 50%;
     cursor: pointer;
     backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-    user-select: none; white-space: nowrap;
     transition: border-color 0.2s ease;
   }
-  .hero-discover:hover { border-color: rgba(255,255,255,0.6); }
+  .hero-feat-arrow:hover { border-color: rgba(255,255,255,0.6); }
   @keyframes featureSlideIn {
     from { opacity: 0; transform: translateX(40px); }
     to   { opacity: 1; transform: translateX(0); }
@@ -613,9 +618,8 @@
     /* Hero */
     .hero { padding: 110px 6vw 60px; align-items: flex-start; }
     .hero-inner { gap: 28px; }
-    .hero-features { flex-wrap: wrap; }
-    .hero-feature-item.revealed { flex: 1 1 calc(50% - 5px); }
-    .hero-discover { flex: 1 1 100%; }
+    .hero-features { max-width: 100%; }
+    .hero-feat-track { height: 80px; }
 
     /* Stats */
     .stats-inner { grid-template-columns: 1fr; gap: 0; }
@@ -864,14 +868,17 @@
         <a href="#consulta" class="btn-gold" onclick="event.preventDefault(); window.scrollToSection('consulta');">Solicitar primera consulta →</a>
       </div>
     </div>
-    <ul class="hero-features" id="heroFeatures">
-      <li class="hero-discover" id="heroDiscover">Descubre FastRevenue <span style="font-size:17px;opacity:0.6;">→</span></li>
-      <li class="hero-feature-item">Control de todos los datos y KPIs de tu hotel en un único espacio</li>
-      <li class="hero-feature-item">Gestión del rendimiento de tu hotel</li>
-      <li class="hero-feature-item">Observa la demanda de tu hotel y anticípate</li>
-      <li class="hero-feature-item">Todos los datos que necesitas para la toma de decisiones</li>
-      <li class="hero-feature-item">Instalación y gestión sencilla</li>
-    </ul>
+    <div class="hero-features" id="heroFeatures">
+      <button type="button" class="hero-feat-arrow hero-feat-prev" id="heroFeatPrev" aria-label="Anterior">‹</button>
+      <ul class="hero-feat-track">
+        <li class="hero-feature-item">Control de todos los datos y KPIs de tu hotel en un único espacio</li>
+        <li class="hero-feature-item">Gestión del rendimiento de tu hotel</li>
+        <li class="hero-feature-item">Observa la demanda de tu hotel y anticípate</li>
+        <li class="hero-feature-item">Todos los datos que necesitas para la toma de decisiones</li>
+        <li class="hero-feature-item">Instalación y gestión sencilla</li>
+      </ul>
+      <button type="button" class="hero-feat-arrow hero-feat-next" id="heroFeatNext" aria-label="Siguiente">›</button>
+    </div>
   </div>
 </section>
 
@@ -1323,26 +1330,38 @@ window.scrollToSection = function(id) {
   if (el) el.scrollIntoView({ behavior: 'smooth' });
 };
 
-/* ── Descubre FastRevenue: revelar tarjetas una a una ── */
+/* ── Carrusel de features del hero: 1 cartel visible + flechas + autoplay ── */
 (function () {
   const features = Array.from(document.querySelectorAll('.hero-feature-item'));
-  const discover = document.getElementById('heroDiscover');
-  if (!discover) return;
-  let revealed = 0;
-  const N = features.length;
+  const prevBtn = document.getElementById('heroFeatPrev');
+  const nextBtn = document.getElementById('heroFeatNext');
+  if (!features.length || !prevBtn || !nextBtn) return;
 
-  discover.addEventListener('click', function () {
-    if (revealed >= N) return;
-    features[revealed].classList.add('revealed');
-    revealed++;
-    if (revealed >= N) {
-      discover.style.transition = 'opacity 0.35s ease, max-width 0.45s ease, padding 0.45s ease';
-      discover.style.opacity = '0';
-      discover.style.maxWidth = '0';
-      discover.style.padding = '0';
-      discover.style.overflow = 'hidden';
-      setTimeout(function () { discover.style.display = 'none'; }, 480);
-    }
+  const N = features.length;
+  let current = Math.floor(N / 2); // el del medio
+  let timer = null;
+
+  function show(index) {
+    features[current].classList.remove('active');
+    current = (index + N) % N;
+    features[current].classList.add('active');
+  }
+
+  function restartAutoplay() {
+    if (timer) clearInterval(timer);
+    timer = setInterval(function () { show(current + 1); }, 10000);
+  }
+
+  features[current].classList.add('active');
+  restartAutoplay();
+
+  prevBtn.addEventListener('click', function () {
+    show(current - 1);
+    restartAutoplay();
+  });
+  nextBtn.addEventListener('click', function () {
+    show(current + 1);
+    restartAutoplay();
   });
 })();
 
