@@ -568,7 +568,7 @@ function ModalEditarReserva({ entry, onClose, onGuardado }) {
         onClick={e => e.stopPropagation()}>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:18 }}>
           <p style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontWeight:700, fontSize:20, color:C.text }}>Gestión de reserva</p>
-          <button onClick={onClose} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, width:28, height:28, cursor:"pointer", fontSize:14, color:C.textLight }}>✕</button>
+          <button onClick={onClose} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, width:28, height:28, cursor:"pointer", fontSize:14, color:C.textLight, display:"flex", alignItems:"center", justifyContent:"center", padding:0 }}>✕</button>
         </div>
         <p style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontWeight:700, fontSize:16, color:C.text, marginBottom:14 }}>
           Editar reserva{entry.numero_reserva ? ` #${entry.numero_reserva}` : ""}
@@ -2646,7 +2646,7 @@ function PickupView({ datos, onGuardado }) {
               {/* Cabecera */}
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:18 }}>
                 <p style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontWeight:700, fontSize:20, color:C.text }}>Gestión de reserva</p>
-                <button onClick={()=>{ setModalNRPersist(false); setEditEntry(null); setGestionTabPersist("buscar"); }} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, width:28, height:28, cursor:"pointer", fontSize:14, color:C.textLight }}>✕</button>
+                <button onClick={()=>{ setModalNRPersist(false); setEditEntry(null); setGestionTabPersist("buscar"); }} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, width:28, height:28, cursor:"pointer", fontSize:14, color:C.textLight, display:"flex", alignItems:"center", justifyContent:"center", padding:0 }}>✕</button>
               </div>
 
               {/* Pestañas */}
