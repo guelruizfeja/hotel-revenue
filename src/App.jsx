@@ -2351,8 +2351,6 @@ function PickupView({ datos, onGuardado }) {
     return saved ? parseInt(saved) : new Date().getFullYear();
   });
   const [trimSel, setTrimSel] = useState(null);
-  const [trimTip, setTrimTip] = useState(null); // data only (no x/y)
-  const trimTipRef = useRef(null);
   const [canalMetric, setCanalMetric]     = useState("adr"); // "adr" | "noches"
   const [ayerVista, setAyerVista]         = useState(null); // null | "count"|"adr"|"noches"|"antelacion"
   const [reservasVentana, setReservasVentana] = useState(() => localStorage.getItem('reservasVentana') || "30d");
@@ -2382,12 +2380,42 @@ function PickupView({ datos, onGuardado }) {
     return () => window.removeEventListener("keydown", handler);
   }, [trimSel]);
 
-  // ── OTB por mes (suma num_reservas por fecha_llegada) ──
+  // ── Dedup snapshots de pickup: una reserva puede tener varias filas (una por día de captura) ──
+  //    Nos quedamos con la más reciente por reserva, igual que calcForecastRevenue más abajo.
+  const getSalidaKeyOtb = e => {
+    if (e.fecha_salida) return String(e.fecha_salida).slice(0, 10);
+    const n = Number(e.noches);
+    if (n > 0 && e.fecha_llegada) {
+      const d = new Date(String(e.fecha_llegada).slice(0, 10) + "T00:00:00");
+      d.setDate(d.getDate() + n);
+      return d.toISOString().slice(0, 10);
+    }
+    return "";
+  };
+  const pickupDedup = (() => {
+    const map = {};
+    (pickupEntries || []).forEach(e => {
+      const key = `${String(e.fecha_llegada||"").slice(0,10)}|${e.canal||""}|${getSalidaKeyOtb(e)}`;
+      const fp  = String(e.fecha_pickup||"").slice(0,10);
+      if (!map[key] || fp > map[key]._fp) map[key] = { ...e, _fp: fp };
+    });
+    return Object.values(map);
+  })();
+
+  // ── OTB por mes (habitaciones-noche vendidas, repartidas por cada noche real de estancia) ──
   const otbPorMes = {};
-  (pickupEntries || []).forEach(e => {
-    const f = String(e.fecha_llegada || "").slice(0, 7);
-    if (!f || f.length < 7) return;
-    otbPorMes[f] = (otbPorMes[f] || 0) + (e.num_reservas || 1);
+  pickupDedup.forEach(e => {
+    if ((e.estado || "confirmada") === "cancelada") return;
+    const llegada = String(e.fecha_llegada || "").slice(0, 10);
+    if (llegada.length < 10) return;
+    const noches = Number(e.noches) || 1;
+    const nr = e.num_reservas || 1;
+    const d = new Date(llegada + "T00:00:00");
+    for (let i = 0; i < noches; i++) {
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      otbPorMes[key] = (otbPorMes[key] || 0) + nr;
+      d.setDate(d.getDate() + 1);
+    }
   });
 
   // ── Presupuesto por mes del año seleccionado ──
@@ -2423,10 +2451,10 @@ function PickupView({ datos, onGuardado }) {
   const aniosPptoDisp   = (presupuesto || []).map(p => p.anio).filter(Boolean);
   const aniosDisp = [...new Set([...aniosPickupDisp, ...aniosPptoDisp, anio])].sort();
 
-  // ── Colores gráfica: dorados con rango amplio ──
-  const COL_OTB  = "#5C3300";  // marrón dorado oscuro — OTB actual
-  const COL_PPTO = "#C8850C";  // naranja dorado medio — presupuesto
-  const COL_LY   = "#F2D06B";  // amarillo dorado claro — año anterior
+  // ── Colores gráfica: paleta navy/gris/rojo, coherente con el resto de la app ──
+  const COL_OTB  = C.accent;   // navy — OTB actual
+  const COL_PPTO = "#64748B";  // gris — presupuesto
+  const COL_LY   = "#D32F2F";  // rojo — año anterior
 
   // ── Drill-down por trimestre ──
   const MESES_CORTO_PU = t("meses_corto");
@@ -2439,17 +2467,6 @@ function PickupView({ datos, onGuardado }) {
     const ppto = pptoPorMes[key] ?? null;
     return { mes: MESES_CORTO_PU[mi], otb: otb||null, ppto, ly: ly||null };
   }) : [];
-
-  // ── Calcular máximo para escala ──
-  const maxVal = Math.max(
-    ...datosGrafica.map(d => Math.max(d.otb||0, d.ppto||0, d.ly||0)),
-    10
-  );
-  const escala = [0, 25, 50, 75, 100].map(p => Math.round(maxVal * p / 100));
-  escala.push(Math.ceil(maxVal / 10) * 10);
-  const yMax = Math.ceil(maxVal * 1.15 / 10) * 10;
-
-  const barH = (val) => val && yMax > 0 ? `${Math.min((val/yMax)*100, 100)}%` : "0%";
 
   const hayDatos = datosGrafica.some(d => d.otb || d.ppto || d.ly);
 
@@ -3301,21 +3318,13 @@ function PickupView({ datos, onGuardado }) {
       </div>
 
       {/* PICKUP TRIMESTRAL — ancho completo */}
-      <Card style={{ position:"relative" }}>
-        <div ref={trimTipRef} style={{ position:"fixed", display: trimTip ? "block" : "none", background:"#f5f5f5", border:"1.5px solid #111111", borderRadius:8, padding:"12px 16px", boxShadow:"0 1px 4px rgba(0,0,0,0.06)", pointerEvents:"none", zIndex:9999, minWidth:148 }}>
-          {trimTip && <>
-            <p style={{ color:"#111111", fontSize:10, fontWeight:700, marginBottom:6, textTransform:"uppercase", letterSpacing:"1px" }}>{trimTip.mes}</p>
-            {trimTip.otb  != null && <div style={{ display:"flex", alignItems:"center", gap:7, margin:"2px 0" }}><span style={{ width:8, height:8, borderRadius:2, background:COL_OTB, flexShrink:0, display:"inline-block", border:"1px solid rgba(0,0,0,0.15)" }}/><span style={{ color:"rgba(0,0,0,0.75)", fontSize:12 }}>{t("otb_actual")}: <span style={{ color:"#111111", fontWeight:700 }}>{trimTip.otb}</span></span></div>}
-            {trimTip.ppto != null && <div style={{ display:"flex", alignItems:"center", gap:7, margin:"2px 0" }}><span style={{ width:8, height:8, borderRadius:2, background:COL_PPTO, flexShrink:0, display:"inline-block", border:"1px solid rgba(0,0,0,0.15)" }}/><span style={{ color:"rgba(0,0,0,0.75)", fontSize:12 }}>{t("nav_budget")}: <span style={{ color:"#111111", fontWeight:700 }}>{trimTip.ppto}</span></span></div>}
-            {trimTip.ly   != null && <div style={{ display:"flex", alignItems:"center", gap:7, margin:"2px 0" }}><span style={{ width:8, height:8, borderRadius:2, background:COL_LY,  flexShrink:0, display:"inline-block", border:"1px solid rgba(0,0,0,0.15)" }}/><span style={{ color:"rgba(0,0,0,0.75)", fontSize:12 }}>{t("anio_anterior")}: <span style={{ color:"#111111", fontWeight:700 }}>{trimTip.ly}</span></span></div>}
-          </>}
-        </div>
-        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:24, flexWrap:"wrap", gap:8 }}>
+      <Card>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8, flexWrap:"wrap", gap:8 }}>
           <div style={{ display:"flex", gap:20, flexWrap:"wrap" }}>
-            {[[t("otb_actual"), COL_OTB], [t("nav_budget"), COL_PPTO], [t("anio_anterior"), COL_LY]].map(([label, color]) => (
+            {[[t("anio_anterior"), COL_LY], [t("otb_actual"), COL_OTB], [t("nav_budget"), COL_PPTO]].map(([label, color]) => (
               <div key={label} style={{ display:"flex", alignItems:"center", gap:7 }}>
-                <div style={{ width:14, height:14, background:color, borderRadius:2 }} />
-                <span style={{ fontSize:12, fontWeight:600, color:C.textMid }}>{label}</span>
+                <div style={{ width:10, height:10, borderRadius:2, background:color }} />
+                <span style={{ fontSize:10, color:C.textLight, fontWeight:500, letterSpacing:"0.5px", textTransform:"uppercase" }}>{label}</span>
               </div>
             ))}
           </div>
@@ -3333,41 +3342,53 @@ function PickupView({ datos, onGuardado }) {
           </div>
         ) : (() => {
           const vista = trimSel !== null ? datosDetalle : datosGrafica;
-          const vMax  = Math.ceil(Math.max(...vista.map(d => Math.max(d.otb||0, d.ppto||0, d.ly||0)), 10) * 1.15 / 10) * 10;
-          const bH    = (val) => val && vMax > 0 ? `${Math.min((val/vMax)*100, 100)}%` : "0%";
+          const nameMap  = { otb: t("otb_actual"), ppto: t("nav_budget"), ly: t("anio_anterior") };
+          const colorMap = { otb: COL_OTB, ppto: COL_PPTO, ly: COL_LY };
           return (
-          <div style={{ display:"flex", gap:0, alignItems:"flex-end", height:340, position:"relative" }}>
-            {[0,25,50,75,100].map(p => (
-              <div key={p} style={{ position:"absolute", left:0, right:0, bottom:`${p}%`, display:"flex", alignItems:"center" }}>
-                <span style={{ fontSize:10, color:C.textLight, lineHeight:1, width:36, flexShrink:0 }}>{Math.round(vMax * p / 100)}</span>
-              </div>
-            ))}
-            <div style={{ display:"flex", flex:1, alignItems:"flex-end", height:"100%", paddingLeft:40, gap: trimSel !== null ? 48 : 32 }}>
-              {vista.map((d, i) => (
-                <div key={i}
-                  onClick={() => trimSel === null && setTrimSel(i)}
-                  onMouseEnter={(e) => { setTrimTip(d); if (trimTipRef.current) { trimTipRef.current.style.top=`${e.clientY-10}px`; trimTipRef.current.style.left=`${e.clientX+14}px`; } }}
-                  onMouseMove={(e)  => { if (trimTipRef.current) { trimTipRef.current.style.top=`${e.clientY-10}px`; trimTipRef.current.style.left=`${e.clientX+14}px`; } }}
-                  onMouseLeave={() => setTrimTip(null)}
-                  style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", height:"100%", justifyContent:"flex-end", gap:2, cursor: trimSel === null ? "pointer" : "default" }}>
-                  <div style={{ display:"flex", alignItems:"flex-end", gap:3, width:"100%", height:"calc(100% - 22px)", justifyContent:"center" }}>
-                    <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"flex-end", height:"100%" }}>
-                      {d.otb > 0 && <span style={{ fontSize:9, fontWeight:700, color:COL_OTB, marginBottom:2, lineHeight:1 }}>{d.otb}</span>}
-                      <div style={{ width:"100%", height:bH(d.otb), background:`linear-gradient(to top, ${COL_OTB}88, ${COL_OTB})`, borderRadius:"4px 4px 0 0", minHeight:d.otb>0?4:0, transition:"height 0.3s" }} />
+          <div onMouseDown={e=>e.preventDefault()}>
+          <ResponsiveContainer width="100%" height={340}>
+            <BarChart data={vista} barGap={3} barCategoryGap={trimSel !== null ? "30%" : "20%"}>
+              <defs>
+                <linearGradient id="gradOtb" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={COL_OTB} stopOpacity={1}/>
+                  <stop offset="100%" stopColor={COL_OTB} stopOpacity={0.75}/>
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke={C.border} vertical={false}/>
+              <XAxis dataKey="mes" tick={{ fill: C.textLight, fontSize: 11 }} axisLine={false} tickLine={false}/>
+              <YAxis tick={{ fill: C.textLight, fontSize: 11 }} axisLine={false} tickLine={false} width={40}/>
+              <Tooltip
+                cursor={false}
+                content={({ active, payload, label }) => {
+                  if (!active || !payload?.length) return null;
+                  return (
+                    <div style={{ background:"#f5f5f5", border:"1.5px solid #111111", borderRadius:8, padding:"12px 16px", boxShadow:"0 1px 4px rgba(0,0,0,0.06)", minWidth:150 }}>
+                      <p style={{ margin:"0 0 8px", fontSize:10, fontWeight:700, color:"#111111", textTransform:"uppercase", letterSpacing:"1.5px" }}>{label}</p>
+                      {payload.map((p, i) => p.value != null && (
+                        <div key={i} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", gap:20, marginBottom:4 }}>
+                          <span style={{ display:"flex", alignItems:"center", gap:6 }}>
+                            <span style={{ display:"inline-block", width:8, height:8, borderRadius:2, background:colorMap[p.dataKey] || "#888", border:"1px solid rgba(0,0,0,0.15)" }} />
+                            <span style={{ fontSize:11, color:"rgba(0,0,0,0.65)" }}>{nameMap[p.dataKey]}</span>
+                          </span>
+                          <span style={{ fontSize:12, fontWeight:700, color:"#111111" }}>{p.value}</span>
+                        </div>
+                      ))}
+                      {trimSel === null && <p style={{ margin:"6px 0 0", fontSize:10, color:"rgba(0,0,0,0.4)" }}>Pulsa para ver desglose</p>}
                     </div>
-                    <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"flex-end", height:"100%" }}>
-                      {d.ppto > 0 && <span style={{ fontSize:9, fontWeight:700, color:COL_PPTO, marginBottom:2, lineHeight:1 }}>{d.ppto}</span>}
-                      <div style={{ width:"100%", height:bH(d.ppto), background:`linear-gradient(to top, ${COL_PPTO}88, ${COL_PPTO})`, borderRadius:"4px 4px 0 0", minHeight:d.ppto>0?4:0, transition:"height 0.3s" }} />
-                    </div>
-                    <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"flex-end", height:"100%" }}>
-                      {d.ly > 0 && <span style={{ fontSize:9, fontWeight:700, color:COL_LY, marginBottom:2, lineHeight:1 }}>{d.ly}</span>}
-                      <div style={{ width:"100%", height:bH(d.ly), background:`linear-gradient(to top, ${COL_LY}88, ${COL_LY})`, borderRadius:"4px 4px 0 0", minHeight:d.ly>0?4:0, transition:"height 0.3s" }} />
-                    </div>
-                  </div>
-                  <span style={{ fontSize:11, fontWeight:700, marginTop:6, color: trimSel === null ? COL_OTB : C.textLight }}>{d.mes}</span>
-                </div>
-              ))}
-            </div>
+                  );
+                }}
+              />
+              <Bar dataKey="ly"   name={t("anio_anterior")} fill={COL_LY} fillOpacity={0.55} radius={[4,4,0,0]} shape={(p) => <SimpleBar {...p}/>}
+                cursor={trimSel === null ? "pointer" : "default"}
+                onClick={(_, idx) => trimSel === null && setTrimSel(idx)}/>
+              <Bar dataKey="otb"  name={t("otb_actual")}    fill="url(#gradOtb)" radius={[4,4,0,0]} shape={(p) => <SimpleBar {...p}/>}
+                cursor={trimSel === null ? "pointer" : "default"}
+                onClick={(_, idx) => trimSel === null && setTrimSel(idx)}/>
+              <Bar dataKey="ppto" name={t("nav_budget")}    fill={COL_PPTO} fillOpacity={0.55} radius={[4,4,0,0]} shape={(p) => <SimpleBar {...p}/>}
+                cursor={trimSel === null ? "pointer" : "default"}
+                onClick={(_, idx) => trimSel === null && setTrimSel(idx)}/>
+            </BarChart>
+          </ResponsiveContainer>
           </div>
           );
         })()}
@@ -3534,7 +3555,7 @@ function PickupView({ datos, onGuardado }) {
                 <thead>
                   <tr style={{ background:C.bg }}>
                     <th style={{ padding:"9px 16px", textAlign:"left",   color:C.textLight, fontWeight:600, fontSize:10, textTransform:"uppercase", letterSpacing:1, whiteSpace:"nowrap" }}>Mes</th>
-                    <th style={{ padding:"9px 12px", textAlign:"right",  color:C.textLight, fontWeight:600, fontSize:10, textTransform:"uppercase", letterSpacing:1 }}>OTB Res.</th>
+                    <th style={{ padding:"9px 12px", textAlign:"right",  color:C.textLight, fontWeight:600, fontSize:10, textTransform:"uppercase", letterSpacing:1 }}>OTB Noches</th>
                     <th style={{ padding:"9px 12px", textAlign:"right",  color:C.textLight, fontWeight:600, fontSize:10, textTransform:"uppercase", letterSpacing:1 }}>OCC OTB</th>
                     <th style={{ padding:"9px 12px", textAlign:"right",  color:C.textLight, fontWeight:600, fontSize:10, textTransform:"uppercase", letterSpacing:1 }}>OCC LY</th>
                     <th style={{ padding:"9px 12px", textAlign:"right",  color:C.textLight, fontWeight:600, fontSize:10, textTransform:"uppercase", letterSpacing:1 }}>OCC Ppto</th>

@@ -60,7 +60,23 @@
       "Read(//tmp/**)",
       "Bash(npm init *)",
       "Bash(npm install *)",
-      "Bash(ffprobe -version)"
+      "Bash(ffprobe -version)",
+      "Bash(command -v vercel)",
+      "Bash(git rev-list *)",
+      "Bash(RESEND_API_KEY=re_dummy SUPABASE_URL=https://example.supabase.co SUPABASE_SERVICE_ROLE_KEY=dummy node --input-type=module -e ' *)",
+      "Bash(curl.exe -s --ssl-no-revoke -o /dev/null -w \"HTTP %{http_code}\\\\n\" https://fastrevenue.app/api/cron-daily-report)",
+      "Bash(echo \"exit:$?\")",
+      "Bash(curl.exe *)",
+      "Bash(env)",
+      "Bash(npx eslint *)",
+      "Bash(npx vercel *)",
+      "Bash(tee /tmp/vercel-dev.log)",
+      "Bash(npx vite *)",
+      "Bash(echo \"started with pid $!\")",
+      "Bash(npx --no-install chromium-cli --help)",
+      "Bash(npx playwright *)",
+      "Bash(taskkill //F //IM node.exe //FI \"WINDOWTITLE eq*\")",
+      "Bash(netstat -ano)"
     ]
   },
   "hooks": {
