@@ -3101,16 +3101,13 @@ function PickupView({ datos, onGuardado }) {
                 <div key={fecha} style={{ display:"flex", flexDirection:"column", gap:3 }}>
                   <div style={{ display:"flex", justifyContent:"space-between", alignItems:"baseline" }}>
                     <span style={{ fontSize:12, fontWeight:700, color:C.text }}>{fmt(fecha)}</span>
-                    <div style={{ display:"flex", alignItems:"baseline", gap:6 }}>
-                      <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end" }}>
-                        <span style={{ fontSize:11, fontWeight:700, color:occColor }}>{occ}%</span>
-                        <span style={{ fontSize:8, color:C.textLight, lineHeight:1, marginTop:1 }}>ocup.</span>
-                      </div>
-                      <span style={{ fontSize:13, fontWeight:800, color:COL_OTB, fontFamily:"'Plus Jakarta Sans',sans-serif" }}>{otb} {t("res_abrev")}</span>
+                    <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end" }}>
+                      <span style={{ fontSize:11, fontWeight:700, color:occColor }}>{occ}%</span>
+                      <span style={{ fontSize:8, color:C.textLight, lineHeight:1, marginTop:1 }}>ocup.</span>
                     </div>
                   </div>
-                  <div style={{ width:"100%", height:4, background:C.border, borderRadius:2 }}>
-                    <div style={{ width:`${Math.min(occ,100)}%`, height:"100%", background:`linear-gradient(to right, ${occColor}77, ${occColor})`, borderRadius:2 }} />
+                  <div style={{ width:"100%", height:8, background:C.border, borderRadius:4 }}>
+                    <div style={{ width:`${Math.min(occ,100)}%`, height:"100%", background:occColor, opacity:0.9, borderRadius:4 }} />
                   </div>
                 </div>
               );
