@@ -4899,15 +4899,14 @@ function GruposView({ datos, onRecargar, onVolverHeatmap, subVistaExt, onCambiar
             {/* KPIs resumen */}
             <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(160px,1fr))", gap:12 }}>
               {[
-                { label:"Tasa de conversión", value: tasaConv!=null?`${tasaConv}%`:"—", color:"#1A7A3C", sub:"confirmados / cerrados" },
-                { label:"Revenue confirmado",  value: fmtEur(revConfirmado), color:"#1A7A3C", sub:`${confirmados.length} grupos` },
-                { label:"Revenue cotizado",    value: fmtEur(revCotizado),   color:"#B8860B", sub:`${cotizados.length} cotizaciones` },
-                { label:"Tiempo medio cierre", value: tiempoMedio!=null?`${tiempoMedio}d`:"—", color:C.accent, sub:"días hasta confirmar" },
+                { label:"Tasa de conversión", value: tasaConv!=null?`${tasaConv}%`:"—" },
+                { label:"Revenue confirmado",  value: fmtEur(revConfirmado) },
+                { label:"Revenue cotizado",    value: fmtEur(revCotizado) },
+                { label:"Tiempo medio cierre", value: tiempoMedio!=null?`${tiempoMedio}d`:"—" },
               ].map((k,i)=>(
                 <div key={i} style={{ background:"#f5f5f5", border:"1.5px solid #111111", borderRadius:8, padding:"14px 18px", boxShadow:"0 1px 4px rgba(0,0,0,0.06)" }}>
                   <p style={{ fontSize:10, color:C.text, textTransform:"uppercase", letterSpacing:1.5, marginBottom:6, fontWeight:700 }}>{k.label}</p>
-                  <p style={{ fontSize:22, fontWeight:700, color:k.color, fontFamily:"'Plus Jakarta Sans',sans-serif", margin:0 }}>{k.value}</p>
-                  <p style={{ fontSize:10, color:C.textLight, marginTop:3 }}>{k.sub}</p>
+                  <p style={{ fontSize:22, fontWeight:700, color:C.text, fontFamily:"'Plus Jakarta Sans',sans-serif", margin:0 }}>{k.value}</p>
                 </div>
               ))}
             </div>
@@ -6692,11 +6691,25 @@ export default function App() {
   const [desgloseMovimiento, setDesgloseMovimiento] = useState(null); // null | "entradas" | "salidas" | "estancias"
   const [generandoPDF, setGenerandoPDF] = useState(false);
   const [mostrarPerfil, setMostrarPerfil] = useState(false);
+  const [mostrarSelectorInforme, setMostrarSelectorInforme] = useState(false);
+  const mesesInformeDisponibles = useMemo(() => {
+    const cM = hoy.getMonth(), cA = hoy.getFullYear();
+    const set = new Set();
+    (datos.produccion || []).forEach(d => {
+      const dt = new Date(d.fecha + "T00:00:00");
+      const a = dt.getFullYear(), m = dt.getMonth();
+      if (a < cA || (a === cA && m < cM)) set.add(`${a}-${m}`);
+    });
+    return [...set]
+      .map(s => { const [a, m] = s.split("-").map(Number); return { anio: a, mes: m }; })
+      .sort((x, y) => y.anio - x.anio || y.mes - x.mes);
+  }, [datos.produccion]);
   useEffect(() => {
     if (!mostrarPerfil) return;
     const handler = (e) => {
       if (!e.target.closest("[data-menu]")) {
         setMostrarPerfil(false);
+        setMostrarSelectorInforme(false);
       }
     };
     document.addEventListener("mousedown", handler);
@@ -6908,7 +6921,7 @@ export default function App() {
 
             {/* Menú Mi Perfil */}
             <div data-menu style={{ position:"relative" }}>
-              <button onClick={() => setMostrarPerfil(v=>!v)}
+              <button onClick={() => { setMostrarPerfil(v=>!v); setMostrarSelectorInforme(false); }}
                 style={{ display:"flex", alignItems:"center", gap:7, padding:"5px 10px", borderRadius:7, border:"1px solid rgba(255,255,255,0.25)", background:"transparent", color:"#fff", cursor:"pointer", fontSize:13, fontWeight:500, fontFamily:"'Plus Jakarta Sans',sans-serif", transition:"all 0.15s", letterSpacing:0.2 }}>
                 <span className="topbar-perfil-label" style={{ color:"#ffffff" }}>{t("mi_perfil")}</span>
               </button>
@@ -6933,14 +6946,13 @@ export default function App() {
                       { label:t("informe_mensual"),       key:"informe" },
                       { label:"Vista previa informe diario", key:"preview_diario" },
                     ].map(op => (
-                      <button key={op.key} onClick={async () => {
+                      <React.Fragment key={op.key}>
+                      <button onClick={async () => {
                           if (op.key === "informe") {
-                            setMostrarPerfil(false);
-                            setGenerandoPDF(true);
-                            await generarReportePDF(datos, mesSel, anioSel, datos.hotel?.nombre||"Mi Hotel");
-                            setGenerandoPDF(false);
+                            setMostrarSelectorInforme(v => !v);
                           } else if (op.key === "preview_diario") {
                             setMostrarPerfil(false);
+                            setMostrarSelectorInforme(false);
                             setPrevisualizandoDiario(true);
                             try {
                               const { data: ultimoDia } = await supabase.from("produccion_diaria").select("*").eq("hotel_id", session.user.id).order("fecha", { ascending: false }).limit(1).maybeSingle();
@@ -7020,16 +7032,41 @@ export default function App() {
                             setConfigInitialTab("datos");
                             setPerfilSeccion("config");
                             setMostrarPerfil(false);
+                            setMostrarSelectorInforme(false);
                           } else {
                             setPerfilSeccion(op.key);
                             setMostrarPerfil(false);
+                            setMostrarSelectorInforme(false);
                           }
                         }}
-                        style={{ width:"100%", padding:"9px 18px", background:"transparent", border:"none", borderLeft:"3px solid transparent", cursor:"pointer", fontSize:13, fontWeight:500, color:"#1A1A1A", textAlign:"left", transition:"all 0.12s" }}
+                        style={{ width:"100%", padding:"9px 18px", background: op.key==="informe"&&mostrarSelectorInforme ? `${barColor}0F` : "transparent", border:"none", borderLeft: op.key==="informe"&&mostrarSelectorInforme ? `3px solid ${barColor}` : "3px solid transparent", cursor:"pointer", fontSize:13, fontWeight:500, color:"#1A1A1A", textAlign:"left", transition:"all 0.12s", display:"flex", alignItems:"center", justifyContent:"space-between" }}
                         onMouseEnter={e=>{ e.currentTarget.style.background=`${barColor}0F`; e.currentTarget.style.borderLeftColor=barColor; }}
-                        onMouseLeave={e=>{ e.currentTarget.style.background="transparent"; e.currentTarget.style.borderLeftColor="transparent"; }}>
-                        {op.key === "informe" && generandoPDF ? t("generando") : op.key === "preview_diario" && previsualizandoDiario ? "Generando..." : op.label}
+                        onMouseLeave={e=>{ e.currentTarget.style.background = op.key==="informe"&&mostrarSelectorInforme ? `${barColor}0F` : "transparent"; e.currentTarget.style.borderLeftColor = op.key==="informe"&&mostrarSelectorInforme ? barColor : "transparent"; }}>
+                        <span>{op.key === "informe" && generandoPDF ? t("generando") : op.key === "preview_diario" && previsualizandoDiario ? "Generando..." : op.label}</span>
+                        {op.key === "informe" && <span style={{ fontSize:10, color:"#999", transform: mostrarSelectorInforme ? "rotate(180deg)" : "none", transition:"transform 0.15s" }}>▾</span>}
                       </button>
+                      {op.key === "informe" && mostrarSelectorInforme && (
+                        <div style={{ maxHeight:190, overflowY:"auto", background:"#FAFAFA", borderTop:`1px solid ${C.border}`, borderBottom:`1px solid ${C.border}` }}>
+                          {mesesInformeDisponibles.length === 0 ? (
+                            <p style={{ padding:"10px 18px", fontSize:12, color:C.textLight, margin:0 }}>Sin datos disponibles</p>
+                          ) : mesesInformeDisponibles.map(({ mes, anio }) => (
+                            <button key={`${anio}-${mes}`}
+                              onClick={async () => {
+                                setMostrarPerfil(false);
+                                setMostrarSelectorInforme(false);
+                                setGenerandoPDF(true);
+                                await generarReportePDF(datos, mes, anio, datos.hotel?.nombre||"Mi Hotel");
+                                setGenerandoPDF(false);
+                              }}
+                              style={{ width:"100%", padding:"7px 18px 7px 32px", background:"transparent", border:"none", cursor:"pointer", fontSize:12.5, fontWeight:500, color:"#444", textAlign:"left" }}
+                              onMouseEnter={e=>{ e.currentTarget.style.background=`${barColor}14`; }}
+                              onMouseLeave={e=>{ e.currentTarget.style.background="transparent"; }}>
+                              {MESES_FULL[mes]} {anio}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                      </React.Fragment>
                     ))}
                   </div>
                   {/* Idioma */}
