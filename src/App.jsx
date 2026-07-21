@@ -2374,6 +2374,18 @@ function PickupView({ datos, onGuardado }) {
   const [reservasVista, setReservasVista]     = useState("count"); // "count"|"adr"|"noches"|"antelacion"
   const [otaDetalle, setOtaDetalle]           = useState(() => localStorage.getItem('otaDetalle') === 'true');
   const [showPickupDetalle, setShowPickupDetalle] = useState(false);
+  const [diaSemVista, setDiaSemVista] = useState(() => localStorage.getItem('fr_diaSemVista') || "historico"); // "historico"|"actual"|"mes"
+  const setDiaSemVistaPersist = (v) => { setDiaSemVista(v); localStorage.setItem('fr_diaSemVista', v); };
+  const [diaSemMesFiltro, setDiaSemMesFiltro] = useState(() => { try { const v = localStorage.getItem('fr_diaSemMesFiltro'); return v ? JSON.parse(v) : null; } catch { return null; } });
+  const setDiaSemMesFiltroPersist = (v) => { setDiaSemMesFiltro(v); if (v) localStorage.setItem('fr_diaSemMesFiltro', JSON.stringify(v)); else localStorage.removeItem('fr_diaSemMesFiltro'); };
+  const [showDiaSemMesPicker, setShowDiaSemMesPicker] = useState(false);
+  const diaSemMesPickerRef = useRef(null);
+  useEffect(() => {
+    if (!showDiaSemMesPicker) return;
+    const handler = e => { if (diaSemMesPickerRef.current && !diaSemMesPickerRef.current.contains(e.target)) setShowDiaSemMesPicker(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showDiaSemMesPicker]);
 
   const hoy     = new Date();
   const padL    = n => String(n).padStart(2,"0");
@@ -2651,6 +2663,49 @@ function PickupView({ datos, onGuardado }) {
     };
     return [...noOta, otaEntry].sort((a,b) => b.count - a.count);
   })();
+
+  // ── Ocupación y ADR medio por día de semana (solo días pasados) ──
+  // Misma escala de color que el heatmap: verde (baja) → amarillo → rojo (alta ocupación)
+  const heatColor = (occ) => {
+    if (occ==null) return C.border;
+    if (occ<25)  return "#81C784";
+    if (occ<40)  return "#4CAF50";
+    if (occ<55)  return "#FFC107";
+    if (occ<70)  return "#FF7043";
+    if (occ<85)  return "#E53935";
+    if (occ<100) return "#B71C1C";
+    return "#7B0000"; // sobrebook
+  };
+  const diaSemData = useMemo(() => {
+    let desde = null, hasta = hoyStr;
+    if (diaSemVista === "mes" && diaSemMesFiltro) {
+      desde = `${diaSemMesFiltro.anio}-${padL(diaSemMesFiltro.mes+1)}-01`;
+      const ultimoDia = new Date(diaSemMesFiltro.anio, diaSemMesFiltro.mes+1, 0).getDate();
+      hasta = `${diaSemMesFiltro.anio}-${padL(diaSemMesFiltro.mes+1)}-${padL(ultimoDia)}`;
+    } else if (diaSemVista === "actual") {
+      desde = `${hoy.getFullYear()}-${padL(hoy.getMonth()+1)}-01`;
+    }
+    const dias = (produccion||[]).filter(r => {
+      const f = String(r.fecha||"").slice(0,10);
+      if (f > hasta) return false;
+      if (desde && f < desde) return false;
+      return true;
+    });
+    const DIAS = ["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"];
+    return DIAS.map((label, idx) => {
+      const wd = (idx+1) % 7; // 0=Dom..6=Sáb, igual que Date.getDay()
+      const rows = dias.filter(r => new Date(r.fecha+"T00:00:00").getDay() === wd);
+      const habOcu = rows.reduce((a,r)=>a+(r.hab_ocupadas||0),0);
+      const habDis = rows.reduce((a,r)=>a+(r.hab_disponibles||0),0);
+      const revH   = rows.reduce((a,r)=>a+(r.revenue_hab||0),0);
+      return {
+        label,
+        occ: habDis>0 ? habOcu/habDis*100 : 0,
+        adr: habOcu>0 ? revH/habOcu : 0,
+        n: rows.length,
+      };
+    });
+  }, [produccion, diaSemVista, diaSemMesFiltro, hoyStr]);
 
   return (
     <div style={{ display:"flex", flexDirection:"column", gap:20 }}>
@@ -3306,6 +3361,69 @@ function PickupView({ datos, onGuardado }) {
           })()}
         </Card>{/* fin col derecha */}
       </div>{/* fin grid 2 cols */}
+
+      {/* OCUPACIÓN Y ADR MEDIO POR DÍA DE SEMANA */}
+      <Card>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20, flexWrap:"wrap", gap:8 }}>
+          <p style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontWeight:700, fontSize:18, color:C.text }}>Ocupación y ADR medio por día de semana</p>
+          <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>
+            <div style={{ display:"flex", borderRadius:8, overflow:"hidden", border:`1px solid ${C.border}`, width:"fit-content" }}>
+              {[["historico","Histórico"],["actual","Mes actual"]].map(([key, label]) => (
+                <button key={key} onClick={() => { setDiaSemVistaPersist(key); setDiaSemMesFiltroPersist(null); setShowDiaSemMesPicker(false); }}
+                  style={{ padding:"5px 14px", fontSize:11, fontWeight:700, cursor:"pointer", border:"none", background: !diaSemMesFiltro && diaSemVista===key ? "#111" : "transparent", color: !diaSemMesFiltro && diaSemVista===key ? "#fff" : C.textMid, transition:"background 0.2s", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+                  {label}
+                </button>
+              ))}
+            </div>
+            <div style={{ position:"relative" }} ref={diaSemMesPickerRef}>
+              <button onClick={()=>setShowDiaSemMesPicker(v=>!v)}
+                style={{ padding:"5px 12px", fontSize:11, fontWeight:700, cursor:"pointer", borderRadius:8, border:`1px solid ${diaSemMesFiltro ? "#111" : C.border}`, background: diaSemMesFiltro ? "#111" : "transparent", color: diaSemMesFiltro ? "#fff" : C.textMid, fontFamily:"'Plus Jakarta Sans',sans-serif", transition:"all 0.2s" }}>
+                {diaSemMesFiltro ? `${MESES_CORTO[diaSemMesFiltro.mes]} ${diaSemMesFiltro.anio}` : "Seleccionar mes"}
+              </button>
+              {showDiaSemMesPicker && (
+                <div style={{ position:"absolute", top:"calc(100% + 6px)", right:0, zIndex:300, background:C.bgCard, border:`1px solid #111`, borderRadius:10, padding:"12px", boxShadow:"0 8px 24px rgba(0,0,0,0.12)", minWidth:220 }}>
+                  <PeriodSelectorInline
+                    mes={diaSemMesFiltro?.mes ?? hoy.getMonth()}
+                    anio={diaSemMesFiltro?.anio ?? hoy.getFullYear()}
+                    onChange={(m,a)=>{ const v={mes:m,anio:a}; setDiaSemMesFiltroPersist(v); setDiaSemVistaPersist("mes"); setShowDiaSemMesPicker(false); }}
+                    aniosDisponibles={[...new Set((produccion||[]).map(d=>new Date(d.fecha+"T00:00:00").getFullYear()))].sort()}
+                    allowFuture={false}
+                  />
+                  {diaSemMesFiltro && (
+                    <button onClick={()=>{ setDiaSemMesFiltroPersist(null); setDiaSemVistaPersist("historico"); setShowDiaSemMesPicker(false); }}
+                      style={{ width:"100%", marginTop:8, padding:"5px 0", borderRadius:6, border:`1px solid ${C.border}`, background:"none", color:C.textMid, fontSize:11, cursor:"pointer", fontFamily:"inherit" }}>
+                      Quitar filtro
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+        {diaSemData.every(d => d.n === 0) ? (
+          <p style={{ color:C.textLight, fontSize:13, textAlign:"center", padding:"20px 0" }}>{t("sin_datos")}</p>
+        ) : (
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(7, 1fr)", gap:8 }}>
+            {diaSemData.map(d => {
+              const sinDatos = d.n === 0;
+              const occColor = sinDatos ? C.border : heatColor(d.occ);
+              const barH = sinDatos ? 2 : Math.max(4, (Math.min(d.occ,100)/100)*90);
+              return (
+                <div key={d.label} style={{ display:"flex", flexDirection:"column", alignItems:"center" }}>
+                  <span style={{ fontSize:12, fontWeight:800, color: sinDatos ? C.textLight : occColor, marginBottom:4 }}>
+                    {sinDatos ? "—" : `${Math.round(d.occ)}%`}
+                  </span>
+                  <div style={{ width:"70%", height:90, display:"flex", alignItems:"flex-end" }}>
+                    <div style={{ width:"100%", height:barH, background:occColor, opacity:sinDatos?0.3:0.9, borderRadius:"4px 4px 0 0" }} />
+                  </div>
+                  <span style={{ fontSize:11, fontWeight:700, color:C.text, marginTop:8 }}>{d.label}</span>
+                  <span style={{ fontSize:10, color:C.textLight, marginTop:2 }}>{sinDatos ? "—" : `€${Math.round(d.adr)}`}</span>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </Card>
 
       {/* Selector año */}
       <div style={{ display:"flex", justifyContent:"flex-end" }}>
