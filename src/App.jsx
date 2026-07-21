@@ -1403,7 +1403,7 @@ const [metricaSel, setMetricaSel] = useState(() => localStorage.getItem("fr_metr
               const diaN = parseInt(iso.slice(8,10));
               const dt = new Date(iso+"T00:00:00");
               const diasSemNombre = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
-              const labelDia = `${diasSemNombre[dt.getDay()]} ${diaN} ${MESES_H[hmMesSel]} ${anio}`;
+              const labelDia = `${diasSemNombre[dt.getDay()]} ${String(diaN).padStart(2,'0')}/${String(hmMesSel+1).padStart(2,'0')}/${anio}`;
 
               const dayData = diasDelMes.find(d => d.dia === diaN);
 
@@ -1411,6 +1411,12 @@ const [metricaSel, setMetricaSel] = useState(() => localStorage.getItem("fr_metr
                 if (e.fecha_salida) return String(e.fecha_salida).slice(0,10);
                 if (e.noches && e.fecha_llegada) { const d=new Date(String(e.fecha_llegada).slice(0,10)); d.setDate(d.getDate()+Number(e.noches)); return d.toISOString().slice(0,10); }
                 return null;
+              };
+              const calcNoches = (ini, fin) => {
+                if (!ini || !fin) return null;
+                const d1 = new Date(String(ini).slice(0,10)+"T00:00:00");
+                const d2 = new Date(String(fin).slice(0,10)+"T00:00:00");
+                return Math.round((d2-d1)/86400000);
               };
               // Deduplicar pickup reports; reservas individuales se cuentan sin deduplicar
               const dedupMap = {};
@@ -1588,7 +1594,7 @@ const [metricaSel, setMetricaSel] = useState(() => localStorage.getItem("fr_metr
                             <table style={{ width:"100%", borderCollapse:"collapse", fontSize:12 }}>
                               <thead>
                                 <tr>
-                                  {["Nº Reserva","Canal","Llegada","Salida","Habs","Precio"].map(h => (
+                                  {["Nº Reserva","Canal","Llegada","Salida","Noches","Habs","Precio"].map(h => (
                                     <th key={h} style={{ padding:"7px 12px", textAlign: h==="Precio" ? "right" : "left", fontSize:10, fontWeight:600, color:C.textLight, textTransform:"uppercase", letterSpacing:"0.8px", borderBottom:`2px solid ${C.border}`, whiteSpace:"nowrap" }}>{h}</th>
                                   ))}
                                 </tr>
@@ -1603,7 +1609,8 @@ const [metricaSel, setMetricaSel] = useState(() => localStorage.getItem("fr_metr
                                     <td style={{ padding:"8px 12px", color:C.textMid, fontVariantNumeric:"tabular-nums" }}>{e.numero_reserva || "—"}</td>
                                     <td style={{ padding:"8px 12px", fontWeight:600, color:C.text }}>{e.canal || "—"}</td>
                                     <td style={{ padding:"8px 12px", color:C.textMid }}>{dmy(e.fecha_llegada)}</td>
-                                    <td style={{ padding:"8px 12px", color:C.textMid }}>{getFechaSalidaD(e) || "—"}</td>
+                                    <td style={{ padding:"8px 12px", color:C.textMid }}>{getFechaSalidaD(e) ? dmy(getFechaSalidaD(e)) : "—"}</td>
+                                    <td style={{ padding:"8px 12px", color:C.textMid, textAlign:"center" }}>{calcNoches(e.fecha_llegada, getFechaSalidaD(e)) ?? "—"}</td>
                                     <td style={{ padding:"8px 12px", color:C.textMid, textAlign:"center" }}>{e.num_reservas || 1}</td>
                                     <td style={{ padding:"8px 12px", fontWeight:600, color:"#1A7A3C", textAlign:"right", whiteSpace:"nowrap" }}>{e.precio_total ? `€${Number(e.precio_total).toLocaleString("es-ES")}` : "—"}</td>
                                   </tr>
@@ -1620,6 +1627,7 @@ const [metricaSel, setMetricaSel] = useState(() => localStorage.getItem("fr_metr
                                     </td>
                                     <td style={{ padding:"8px 12px", color:C.textMid }}>{dmy(g.fecha_inicio)}</td>
                                     <td style={{ padding:"8px 12px", color:C.textMid }}>{g.fecha_fin ? dmy(g.fecha_fin) : "—"}</td>
+                                    <td style={{ padding:"8px 12px", color:C.textMid, textAlign:"center" }}>{calcNoches(g.fecha_inicio, g.fecha_fin) ?? "—"}</td>
                                     <td style={{ padding:"8px 12px", color:C.textMid, textAlign:"center" }}>{g.habitaciones || "—"}</td>
                                     <td style={{ padding:"8px 12px", color:C.textMid, textAlign:"right", whiteSpace:"nowrap" }}>—</td>
                                   </tr>
@@ -1627,7 +1635,7 @@ const [metricaSel, setMetricaSel] = useState(() => localStorage.getItem("fr_metr
                               </tbody>
                               <tfoot>
                                 <tr style={{ borderTop:`2px solid ${C.border}` }}>
-                                  <td colSpan={4} style={{ padding:"8px 12px", fontSize:11, fontWeight:700, color:C.textMid, textTransform:"uppercase", letterSpacing:"0.8px" }}>Total</td>
+                                  <td colSpan={5} style={{ padding:"8px 12px", fontSize:11, fontWeight:700, color:C.textMid, textTransform:"uppercase", letterSpacing:"0.8px" }}>Total</td>
                                   <td style={{ padding:"8px 12px", fontWeight:800, color:C.text, textAlign:"center" }}>{totalHabs}</td>
                                   <td/>
                                 </tr>
