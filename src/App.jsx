@@ -238,96 +238,123 @@ async function generarReportePDF(datos, mes, anio, hotelNombre, returnData = fal
   await loadScript("https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js");
   const { jsPDF } = window.jspdf;
 
+  const logoDataUrl = await fetch("/fastrev-icon-white.png")
+    .then(r => r.blob())
+    .then(b => new Promise((res, rej) => {
+      const reader = new FileReader();
+      reader.onloadend = () => res(reader.result);
+      reader.onerror = rej;
+      reader.readAsDataURL(b);
+    }))
+    .catch(() => null);
+
   const doc = new jsPDF({ orientation:"portrait", unit:"mm", format:"a4" });
   const W=210; const M=14; let y=M;
 
-  const azul   = [0,75,135];
-  const negro  = [26,26,26];
-  const gris   = [100,100,100];
-  const grisCl = [220,220,220];
-  const verde  = [0,159,77];
-  const rojo   = [211,47,47];
+  const azul   = [10,37,64];
+  const negro  = [10,10,10];
+  const gris   = [55,70,90];
+  const grisCl = [210,218,230];
+  const verde  = [5,150,105];
+  const rojo   = [220,38,38];
+  const dorado = [212,160,23];
 
   const addPage = () => { doc.addPage(); y=M; };
   const checkY  = (needed=20) => { if(y+needed>285) addPage(); };
 
-  doc.setFillColor(...azul);
-  doc.rect(0,0,W,38,"F");
-  doc.setTextColor(255,255,255);
-  doc.setFontSize(22); doc.setFont("helvetica","bold");
-  doc.text((hotelNombre||"Mi Hotel").toUpperCase(), M, 18);
-  doc.setFontSize(13); doc.setFont("helvetica","normal");
-  doc.text(`Informe Mensual — ${MESES_FULL[mes]} ${anio}`, M, 28);
-  doc.setFontSize(9);
-  doc.text(`Generado el ${new Date().toLocaleDateString("es-ES",{day:"2-digit",month:"long",year:"numeric"})}`, W-M, 33, {align:"right"});
-  y = 48;
-
-  doc.setTextColor(...azul);
-  doc.setFontSize(13); doc.setFont("helvetica","bold");
-  doc.text("KPIs del Mes", M, y); y+=6;
-  doc.setDrawColor(...grisCl); doc.line(M, y, W-M, y); y+=5;
-
-  const kpis = [
-    ["Ocupación", fmtP(mesAct.occ), "Mes anterior: "+fmtP(mesPrev.occ)],
-    ["ADR", "€"+fmt(mesAct.adr), "Mes anterior: €"+fmt(mesPrev.adr)],
-    ["RevPAR", "€"+fmt(mesAct.revpar), "Mes anterior: €"+fmt(mesPrev.revpar)],
-    ["TRevPAR", "€"+fmt(mesAct.trevpar), ""],
-    ["Revenue Hab.", "€"+fmt(mesAct.revH), ""],
-    ["Revenue Total", "€"+fmt(mesAct.revTot), pptoVsReal?.rev ? `vs Ppto: ${pptoVsReal.rev}%` : ""],
-  ];
-  const colW = (W-M*2)/3;
-  kpis.forEach((k,i)=>{
-    const col = i%3; const row = Math.floor(i/3);
-    const x = M + col*colW; const ky = y + row*22;
-    doc.setFillColor(248,250,253);
-    doc.roundedRect(x+1, ky, colW-3, 18, 2, 2, "F");
-    doc.setDrawColor(...grisCl); doc.roundedRect(x+1, ky, colW-3, 18, 2, 2, "S");
-    doc.setTextColor(...gris); doc.setFontSize(7); doc.setFont("helvetica","normal");
-    doc.text(k[0].toUpperCase(), x+5, ky+5);
-    doc.setTextColor(...negro); doc.setFontSize(13); doc.setFont("helvetica","bold");
-    doc.text(k[1], x+5, ky+12);
-    if(k[2]){ doc.setFontSize(7); doc.setFont("helvetica","normal"); doc.setTextColor(...gris); doc.text(k[2], x+5, ky+16.5); }
-  });
-  y += 48;
-
-  if(pptoVsReal) {
-    checkY(30);
-    doc.setTextColor(...azul); doc.setFontSize(13); doc.setFont("helvetica","bold");
-    doc.text("Comparativa vs Presupuesto", M, y); y+=6;
-    doc.setDrawColor(...grisCl); doc.line(M,y,W-M,y); y+=5;
-    doc.autoTable({
-      startY: y,
-      head: [["Métrica","Presupuesto","Real","Desviación"]],
-      body: [
-        ["Ocupación", pptoMes?.occ_ppto?fmtP(pptoMes.occ_ppto):"—", fmtP(mesAct.occ), pptoVsReal.occ?(parseFloat(pptoVsReal.occ)>=0?"+":"")+pptoVsReal.occ+" pp":"—"],
-        ["ADR", pptoMes?.adr_ppto?"€"+fmt(pptoMes.adr_ppto):"—", "€"+fmt(mesAct.adr), pptoVsReal.adr?(parseFloat(pptoVsReal.adr)>=0?"+":"")+pptoVsReal.adr+"%":"—"],
-        ["RevPAR", pptoMes?.revpar_ppto?"€"+fmt(pptoMes.revpar_ppto):"—", "€"+fmt(mesAct.revpar), pptoVsReal.revpar?(parseFloat(pptoVsReal.revpar)>=0?"+":"")+pptoVsReal.revpar+"%":"—"],
-        ["Revenue Total", pptoMes?.rev_total_ppto?"€"+fmt(pptoMes.rev_total_ppto):"—", "€"+fmt(mesAct.revTot), pptoVsReal.rev?(parseFloat(pptoVsReal.rev)>=0?"+":"")+pptoVsReal.rev+"%":"—"],
-      ],
-      styles: { fontSize:9, cellPadding:3 },
-      headStyles: { fillColor:azul, textColor:[255,255,255], fontStyle:"bold" },
-      alternateRowStyles: { fillColor:[248,250,253] },
-      columnStyles: { 3: { halign:"center", fontStyle:"bold" } },
-      margin: { left:M, right:M },
-      didParseCell: (d)=>{
-        if(d.section==="body" && d.column.index===3 && d.cell.raw!=="—"){
-          d.cell.styles.textColor = parseFloat(d.cell.raw)>=0 ? verde : rojo;
-        }
-      }
-    });
-    y = doc.lastAutoTable.finalY + 8;
+  // ── HEADER (mismo formato que el informe diario) ──
+  const hdrH = 26;
+  doc.setFillColor(...azul); doc.rect(0, 0, W, hdrH, "F");
+  doc.setFontSize(6.5); doc.setFont("helvetica","normal"); doc.setTextColor(130,145,165);
+  doc.text("INFORME MENSUAL DE REVENUE", W/2, 7, { align:"center" });
+  doc.setFontSize(15); doc.setFont("helvetica","bold"); doc.setTextColor(255,255,255);
+  doc.text((hotelNombre||"Mi Hotel").toUpperCase(), W/2, 16, { align:"center" });
+  doc.setFontSize(8); doc.setFont("helvetica","normal"); doc.setTextColor(160,175,190);
+  doc.text(`${MESES_FULL[mes]} ${anio}`, W/2, 23, { align:"center" });
+  if (logoDataUrl) {
+    try { const lW=9, lH=9; doc.addImage(logoDataUrl, "PNG", W-lW-3, 3, lW, lH); } catch(_) {}
   }
+  y = hdrH + 1 + 6;
+
+  // ── CUMPLIMIENTO DEL MES (vs Presupuesto) ──
+  if (pptoVsReal) {
+    const occPct2 = pptoMes?.occ_ppto ? Math.round(mesAct.occ / pptoMes.occ_ppto * 100) : null;
+    const adrPct2 = pptoMes?.adr_ppto ? Math.round(mesAct.adr / pptoMes.adr_ppto * 100) : null;
+    const revPct2 = pptoMes?.rev_total_ppto ? Math.round(mesAct.revTot / pptoMes.rev_total_ppto * 100) : null;
+    doc.setFontSize(8); doc.setFont("helvetica","bold"); doc.setTextColor(...gris);
+    doc.text("CUMPLIMIENTO DEL MES", M, y);
+    doc.setFont("helvetica","normal");
+    doc.text("(vs Presupuesto)", M+47, y);
+    y += 4;
+    const kmH = 22;
+    doc.setFillColor(255,255,255); doc.setDrawColor(...grisCl);
+    doc.roundedRect(M, y, W-M*2, kmH, 2, 2, "FD");
+    const kmDefs = [
+      { lbl:"OCUPACIÓN",     val: fmtP(mesAct.occ),      ppto: pptoMes?.occ_ppto?fmtP(pptoMes.occ_ppto):"—",             pct: occPct2 },
+      { lbl:"ADR",           val: "€"+fmt(mesAct.adr),    ppto: pptoMes?.adr_ppto?"€"+fmt(pptoMes.adr_ppto):"—",         pct: adrPct2 },
+      { lbl:"REVENUE TOTAL", val: "€"+fmt(mesAct.revTot), ppto: pptoMes?.rev_total_ppto?"€"+fmt(pptoMes.rev_total_ppto):"—", pct: revPct2 },
+    ];
+    const kmCW = (W-M*2)/3;
+    kmDefs.forEach((k,i)=>{
+      const kx = M + i*kmCW + kmCW/2;
+      if (i>0) { doc.setDrawColor(...grisCl); doc.line(M+i*kmCW, y+2, M+i*kmCW, y+kmH-2); }
+      doc.setFontSize(6.5); doc.setFont("helvetica","bold"); doc.setTextColor(...gris);
+      doc.text(k.lbl, kx, y+5, { align:"center" });
+      const pptoCol = k.pct==null ? gris : k.pct>=100 ? verde : k.pct>=75 ? dorado : rojo;
+      doc.setFontSize(12); doc.setFont("helvetica","bold"); doc.setTextColor(...negro);
+      doc.text(k.val, kx, y+14, { align:"center" });
+      doc.setFontSize(6); doc.setFont("helvetica","normal"); doc.setTextColor(...pptoCol);
+      doc.text(`ppto: ${k.ppto}`, kx, y+20, { align:"center", maxWidth: kmCW-4 });
+    });
+    y += kmH + 8;
+  }
+
+  // ── KPIs DEL MES (vs Mes Anterior) ──
+  checkY(35);
+  doc.setFontSize(8); doc.setFont("helvetica","bold"); doc.setTextColor(...gris);
+  doc.text("KPIs DEL MES", M, y);
+  doc.setFont("helvetica","normal");
+  doc.text("(vs Mes Anterior)", M+27, y);
+  y += 4;
+  const kH = 27;
+  doc.setFillColor(255,255,255); doc.setDrawColor(...grisCl);
+  doc.roundedRect(M, y, W-M*2, kH, 2, 2, "FD");
+  const occD = mesAct.occ!=null && mesPrev.occ!=null ? mesAct.occ - mesPrev.occ : null;
+  const adrD = mesAct.adr!=null && mesPrev.adr!=null ? mesAct.adr - mesPrev.adr : null;
+  const rvpD = mesAct.revpar!=null && mesPrev.revpar>0 ? (mesAct.revpar-mesPrev.revpar)/mesPrev.revpar*100 : null;
+  const trvD = mesAct.trevpar!=null && mesPrev.trevpar>0 ? (mesAct.trevpar-mesPrev.trevpar)/mesPrev.trevpar*100 : null;
+  const kpiDefs = [
+    { lbl:"OCUPACIÓN", val: fmtP(mesAct.occ),      delta:occD, dfmt:n=>(n>=0?"+":"")+n.toFixed(1)+" pp" },
+    { lbl:"ADR",       val: "€"+fmt(mesAct.adr),    delta:adrD, dfmt:n=>(n>=0?"+€":"-€")+Math.abs(n).toFixed(1) },
+    { lbl:"REVPAR",    val: "€"+fmt(mesAct.revpar), delta:rvpD, dfmt:n=>(n>=0?"+":"")+n.toFixed(1)+"%" },
+    { lbl:"TREVPAR",   val: "€"+fmt(mesAct.trevpar),delta:trvD, dfmt:n=>(n>=0?"+":"")+n.toFixed(1)+"%" },
+  ];
+  const kColW = (W-M*2)/4;
+  kpiDefs.forEach((k,i)=>{
+    const kx = M + i*kColW + kColW/2;
+    if (i>0) { doc.setDrawColor(...grisCl); doc.line(M+i*kColW, y+4, M+i*kColW, y+kH-4); }
+    doc.setFontSize(6.5); doc.setFont("helvetica","bold"); doc.setTextColor(...gris);
+    doc.text(k.lbl, kx, y+5, { align:"center" });
+    doc.setFontSize(12); doc.setFont("helvetica","bold"); doc.setTextColor(...negro);
+    doc.text(k.val, kx, y+14, { align:"center" });
+    if (k.delta!=null) {
+      doc.setFontSize(7.5); doc.setFont("helvetica","bold"); doc.setTextColor(...(k.delta>=0?verde:rojo));
+      doc.text(k.dfmt(k.delta), kx, y+21, { align:"center" });
+    }
+  });
+  y += kH + 8;
 
   checkY(40);
   doc.setTextColor(...azul); doc.setFontSize(13); doc.setFont("helvetica","bold");
   doc.text("Análisis IA del Mes", M, y); y+=6;
   doc.setDrawColor(...grisCl); doc.line(M,y,W-M,y); y+=5;
   doc.setFillColor(248,250,253);
+  doc.setFontSize(10);
   const lines = doc.splitTextToSize(resumenIA, W-M*2-8);
-  doc.roundedRect(M, y, W-M*2, lines.length*4.5+8, 2, 2, "F");
-  doc.setTextColor(...negro); doc.setFontSize(9); doc.setFont("helvetica","normal");
-  doc.text(lines, M+4, y+6);
-  y += lines.length*4.5+14;
+  doc.roundedRect(M, y, W-M*2, lines.length*5.2+8, 2, 2, "F");
+  doc.setTextColor(...negro); doc.setFont("helvetica","normal");
+  doc.text(lines, M+4, y+6.5, { lineHeightFactor: 1.4 });
+  y += lines.length*5.2+14;
 
   checkY(60);
   doc.setTextColor(...azul); doc.setFontSize(13); doc.setFont("helvetica","bold");
@@ -341,7 +368,7 @@ async function generarReportePDF(datos, mes, anio, hotelNombre, returnData = fal
       fmtP(r.occ), "€"+fmt(r.adr), "€"+fmt(r.revpar),
       "€"+fmt(r.trevpar), "€"+fmt(r.revH), "€"+fmt(r.revTot)
     ]),
-    styles: { fontSize:8.5, cellPadding:2.5 },
+    styles: { fontSize:9, cellPadding:2.7, textColor:negro },
     headStyles: { fillColor:azul, textColor:[255,255,255], fontStyle:"bold" },
     alternateRowStyles: { fillColor:[248,250,253] },
     margin: { left:M, right:M },
@@ -356,7 +383,7 @@ async function generarReportePDF(datos, mes, anio, hotelNombre, returnData = fal
     startY: y,
     head: [["Día","","Ocup.","ADR","RevPAR","Rev. Total"]],
     body: diasMes.map(d=>[d.dia, d.sem, d.occ+"%", "€"+d.adr, "€"+d.revpar, "€"+fmt(d.revTot)]),
-    styles: { fontSize:8, cellPadding:2 },
+    styles: { fontSize:8.5, cellPadding:2.2, textColor:negro },
     headStyles: { fillColor:azul, textColor:[255,255,255], fontStyle:"bold" },
     alternateRowStyles: { fillColor:[248,250,253] },
     columnStyles: { 1:{ textColor:gris, fontStyle:"italic" } },
@@ -395,7 +422,7 @@ async function generarReportePDF(datos, mes, anio, hotelNombre, returnData = fal
       const ly = y + chartH - (pct/maxOcc)*chartH;
       doc.setDrawColor(220,220,220); doc.setLineWidth(0.1);
       doc.line(M, ly, M+chartW, ly);
-      doc.setTextColor(...gris); doc.setFontSize(5);
+      doc.setTextColor(...negro); doc.setFontSize(6.5); doc.setFont("helvetica","bold");
       doc.text(pct+"%", M-4, ly+1, {align:"right"});
     });
 
@@ -421,7 +448,7 @@ async function generarReportePDF(datos, mes, anio, hotelNombre, returnData = fal
     });
 
     // Eje X días
-    doc.setTextColor(...gris); doc.setFontSize(5);
+    doc.setTextColor(...negro); doc.setFontSize(6.5); doc.setFont("helvetica","bold");
     diasMes.forEach((d,i) => {
       if(i%5===0 || i===diasMes.length-1) {
         doc.text(String(d.dia), M+i*gap+gap/2, y+chartH+4, {align:"center"});
@@ -430,7 +457,7 @@ async function generarReportePDF(datos, mes, anio, hotelNombre, returnData = fal
 
     // Leyenda
     doc.setFillColor(...azul); doc.rect(M, y+chartH+7, 8, 3, "F");
-    doc.setTextColor(...negro); doc.setFontSize(7);
+    doc.setTextColor(...negro); doc.setFontSize(7.5); doc.setFont("helvetica","bold");
     doc.text("Ocupación %", M+10, y+chartH+10);
     doc.setDrawColor(232,93,4); doc.setLineWidth(0.8);
     doc.line(M+45, y+chartH+8.5, M+53, y+chartH+8.5);
