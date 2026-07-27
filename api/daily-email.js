@@ -2,15 +2,9 @@ export const config = { api: { bodyParser: { sizeLimit: '7mb' } } };
 
 import { Resend } from 'resend';
 import { validateEmail, cleanString, escapeHtml } from './_validate.js';
+import { verifySupabaseJwt } from './_jwt.js';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
-
-function jwtEmail(token) {
-  try {
-    const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString('utf8'));
-    return payload.email ?? null;
-  } catch { return null; }
-}
 
 const fmt    = (n, dec = 0) => (n != null && !isNaN(n)) ? Number(n).toFixed(dec) : '—';
 const fmtEur = (n) => (n != null && !isNaN(n)) ? `€${Math.round(n).toLocaleString('es-ES')}` : '—';
@@ -27,7 +21,7 @@ export default async function handler(req, res) {
 
     const token = (req.headers.authorization || '').replace('Bearer ', '').trim();
     if (!token) return res.status(401).json({ error: 'No autorizado' });
-    const tokenEmail = jwtEmail(token);
+    const tokenEmail = verifySupabaseJwt(token);
     if (!tokenEmail) return res.status(401).json({ error: 'Token inválido' });
 
     const { email, hotelNombre, kpis, pdfBase64 } = req.body ?? {};

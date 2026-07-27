@@ -3,13 +3,7 @@ export const config = { api: { bodyParser: { sizeLimit: '2mb' } } };
 import { rateLimit, getIP } from './_ratelimit.js';
 import { cleanString, escapeHtml } from './_validate.js';
 import { generarInformeDiarioPDF } from './_pdfInformeDiario.js';
-
-function jwtEmail(token) {
-  try {
-    const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString('utf8'));
-    return payload.email ?? null;
-  } catch { return null; }
-}
+import { verifySupabaseJwt } from './_jwt.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
@@ -19,7 +13,7 @@ export default async function handler(req, res) {
 
   const token = (req.headers.authorization || '').replace('Bearer ', '').trim();
   if (!token) return res.status(401).json({ error: 'No autorizado' });
-  const email = jwtEmail(token);
+  const email = verifySupabaseJwt(token);
   if (!email) return res.status(401).json({ error: 'Token inválido' });
 
   const { hotelNombre, kpis } = req.body ?? {};
