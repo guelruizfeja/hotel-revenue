@@ -5503,6 +5503,17 @@ function AuthScreen() {
     setLoading(false);
   };
 
+  const handleForgotPassword = async () => {
+    if (!email) { setError("Introduce tu email"); return; }
+    setLoading(true); setError("");
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/home`,
+    });
+    setLoading(false);
+    if (error) { setError(error.message); return; }
+    setMensaje("Si existe una cuenta con ese email, te hemos enviado un enlace para restablecer tu contraseña. El enlace caduca pasado un tiempo y solo se puede usar una vez.");
+  };
+
   const validarPassword = (pw) => {
     if (pw.length < 8) return "La contraseña debe tener al menos 8 caracteres";
     if (!/[A-Z]/.test(pw)) return "Debe incluir al menos una mayúscula";
@@ -5556,21 +5567,55 @@ function AuthScreen() {
         {/* Card */}
         <div style={{ background: "#fff", borderRadius: 16, padding: "32px 28px", boxShadow: "0 24px 60px rgba(0,0,0,0.4)" }}>
           {/* Tabs */}
-          <div style={{ display: "flex", background: "#F3F4F6", borderRadius: 10, padding: 4, marginBottom: 24 }}>
-            {[["login","Iniciar sesión"],["register","Crear cuenta"]].map(([k,l]) => (
-              <button key={k} onClick={() => { setMode(k); setError(""); setMensaje(""); }}
-                style={{ flex: 1, padding: "9px", borderRadius: 7, border: "none", cursor: "pointer",
-                  background: mode===k ? "#fff" : "transparent",
-                  color: mode===k ? "#004B87" : "#6B7280",
-                  fontWeight: mode===k ? 700 : 400, fontSize: 13,
-                  fontFamily: "'Plus Jakarta Sans', sans-serif",
-                  boxShadow: mode===k ? "0 1px 4px rgba(0,0,0,0.08)" : "none",
-                  transition: "all 0.15s" }}>{l}</button>
-            ))}
-          </div>
+          {mode !== "forgot" && (
+            <div style={{ display: "flex", background: "#F3F4F6", borderRadius: 10, padding: 4, marginBottom: 24 }}>
+              {[["login","Iniciar sesión"],["register","Crear cuenta"]].map(([k,l]) => (
+                <button key={k} onClick={() => { setMode(k); setError(""); setMensaje(""); }}
+                  style={{ flex: 1, padding: "9px", borderRadius: 7, border: "none", cursor: "pointer",
+                    background: mode===k ? "#fff" : "transparent",
+                    color: mode===k ? "#004B87" : "#6B7280",
+                    fontWeight: mode===k ? 700 : 400, fontSize: 13,
+                    fontFamily: "'Plus Jakarta Sans', sans-serif",
+                    boxShadow: mode===k ? "0 1px 4px rgba(0,0,0,0.08)" : "none",
+                    transition: "all 0.15s" }}>{l}</button>
+              ))}
+            </div>
+          )}
+          {mode === "forgot" && (
+            <p style={{ fontSize: 15, fontWeight: 700, color: "#1A1A1A", marginBottom: 18 }}>Recuperar contraseña</p>
+          )}
 
           {mensaje ? (
-            <div style={{ background: "#ECFDF5", color: "#059669", padding: "14px", borderRadius: 8, fontSize: 13, textAlign: "center", fontWeight: 600 }}>{mensaje}</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              <div style={{ background: "#ECFDF5", color: "#059669", padding: "14px", borderRadius: 8, fontSize: 13, textAlign: "center", fontWeight: 600 }}>{mensaje}</div>
+              {mode === "forgot" && (
+                <button onClick={() => { setMode("login"); setMensaje(""); setError(""); }}
+                  style={{ background: "none", border: "none", color: "#6B7280", fontSize: 12, cursor: "pointer", fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+                  ← Volver a iniciar sesión
+                </button>
+              )}
+            </div>
+          ) : mode === "forgot" ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              <p style={{ fontSize: 13, color: "#6B7280", margin: 0 }}>Te enviaremos un enlace de un solo uso a tu email para restablecer la contraseña.</p>
+              <div>
+                <p style={{ fontSize: 11, color: "#9CA3AF", marginBottom: 5, textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600 }}>Email *</p>
+                <input style={inp} type="email" value={email} onChange={e => setEmail(e.target.value)} onKeyDown={e => e.key==="Enter" && handleForgotPassword()} autoComplete="email" />
+              </div>
+              {error && <div style={{ background: "#FEF2F2", color: "#DC2626", padding: "10px 14px", borderRadius: 8, fontSize: 13 }}>{error}</div>}
+              <button onClick={handleForgotPassword} disabled={loading}
+                style={{ width: "100%", padding: "13px", borderRadius: 10, border: "none",
+                  background: loading ? "#BFDBFE" : "#004B87",
+                  color: loading ? "#1E40AF" : "#fff",
+                  fontSize: 14, fontWeight: 700, cursor: loading ? "not-allowed" : "pointer",
+                  fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+                {loading ? "Enviando..." : "Enviar enlace de recuperación"}
+              </button>
+              <button onClick={() => { setMode("login"); setError(""); }}
+                style={{ background: "none", border: "none", color: "#6B7280", fontSize: 12, cursor: "pointer", fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+                ← Volver a iniciar sesión
+              </button>
+            </div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
               {mode === "register" && (
@@ -5600,6 +5645,14 @@ function AuthScreen() {
                 <p style={{ fontSize: 11, color: "#9CA3AF", marginBottom: 5, textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600 }}>Contraseña *</p>
                 <input style={inp} type="password" value={password} onChange={e => setPassword(e.target.value)} onKeyDown={e => e.key==="Enter" && (mode==="login" ? handleLogin() : handleRegister())} autoComplete="current-password" />
                 {mode === "register" && <p style={{ fontSize: 11, color: "#9CA3AF", marginTop: 4 }}>Mín. 8 caracteres, una mayúscula y un número</p>}
+                {mode === "login" && (
+                  <p style={{ textAlign: "right", marginTop: 6 }}>
+                    <a href="#" onClick={e => { e.preventDefault(); setMode("forgot"); setError(""); setMensaje(""); }}
+                      style={{ fontSize: 12, color: "#004B87", fontWeight: 600, textDecoration: "none" }}>
+                      ¿Olvidaste tu contraseña?
+                    </a>
+                  </p>
+                )}
               </div>
               {error && <div style={{ background: "#FEF2F2", color: "#DC2626", padding: "10px 14px", borderRadius: 8, fontSize: 13 }}>{error}</div>}
               <button onClick={mode==="login" ? handleLogin : handleRegister} disabled={loading}
@@ -5617,6 +5670,74 @@ function AuthScreen() {
         <p style={{ textAlign: "center", marginTop: 20, fontSize: 12, color: "rgba(255,255,255,0.35)" }}>
           <a href="/" style={{ color: "rgba(255,255,255,0.35)", textDecoration: "none" }}>← Volver a fastrevenue.app</a>
         </p>
+      </div>
+    </div>
+  );
+}
+
+// ─── RESET PASSWORD SCREEN (llegada desde el enlace de recuperación) ─────────
+function ResetPasswordScreen({ onDone }) {
+  const [password, setPassword] = useState("");
+  const [password2, setPassword2] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const validarPassword = (pw) => {
+    if (pw.length < 8) return "La contraseña debe tener al menos 8 caracteres";
+    if (!/[A-Z]/.test(pw)) return "Debe incluir al menos una mayúscula";
+    if (!/[0-9]/.test(pw)) return "Debe incluir al menos un número";
+    return null;
+  };
+
+  const handleSubmit = async () => {
+    const pwError = validarPassword(password);
+    if (pwError) { setError(pwError); return; }
+    if (password !== password2) { setError("Las contraseñas no coinciden"); return; }
+    setLoading(true); setError("");
+    const { error } = await supabase.auth.updateUser({ password });
+    setLoading(false);
+    if (error) { setError(error.message); return; }
+    onDone();
+  };
+
+  const inp = { width: "100%", padding: "11px 14px", borderRadius: 8, border: "1.5px solid #E0E0E0", fontSize: 14, fontFamily: "'Plus Jakarta Sans', sans-serif", color: "#1A1A1A", background: "#FDFDFD", outline: "none", boxSizing: "border-box" };
+
+  return (
+    <div style={{ minHeight: "100vh", backgroundImage: "url('/login-bg.jpg')", backgroundSize: "cover", backgroundPosition: "center", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", fontFamily: "'Plus Jakarta Sans', sans-serif", padding: "24px" }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+        * { box-sizing: border-box; }
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+      `}</style>
+      <div style={{ width: "100%", maxWidth: 400, animation: "fadeUp 0.4s ease both" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginBottom: 36 }}>
+          <img src="/fastrev-icon.png" alt="FastRevenue" style={{ height: 38, width: "auto", filter: "brightness(0) invert(1)" }} />
+          <span style={{ fontSize: 19, fontWeight: 800, color: "#fff", letterSpacing: 0.3 }}>FAST<span style={{ fontWeight: 400 }}>REVENUE</span></span>
+        </div>
+        <div style={{ background: "#fff", borderRadius: 16, padding: "32px 28px", boxShadow: "0 24px 60px rgba(0,0,0,0.4)" }}>
+          <p style={{ fontSize: 15, fontWeight: 700, color: "#1A1A1A", marginBottom: 6 }}>Nueva contraseña</p>
+          <p style={{ fontSize: 13, color: "#6B7280", marginBottom: 20 }}>Elige una nueva contraseña para tu cuenta.</p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            <div>
+              <p style={{ fontSize: 11, color: "#9CA3AF", marginBottom: 5, textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600 }}>Nueva contraseña *</p>
+              <input style={inp} type="password" value={password} onChange={e => setPassword(e.target.value)} autoComplete="new-password" />
+              <p style={{ fontSize: 11, color: "#9CA3AF", marginTop: 4 }}>Mín. 8 caracteres, una mayúscula y un número</p>
+            </div>
+            <div>
+              <p style={{ fontSize: 11, color: "#9CA3AF", marginBottom: 5, textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600 }}>Repite la contraseña *</p>
+              <input style={inp} type="password" value={password2} onChange={e => setPassword2(e.target.value)} onKeyDown={e => e.key==="Enter" && handleSubmit()} autoComplete="new-password" />
+            </div>
+            {error && <div style={{ background: "#FEF2F2", color: "#DC2626", padding: "10px 14px", borderRadius: 8, fontSize: 13 }}>{error}</div>}
+            <button onClick={handleSubmit} disabled={loading}
+              style={{ width: "100%", padding: "13px", borderRadius: 10, border: "none",
+                background: loading ? "#BFDBFE" : "#004B87",
+                color: loading ? "#1E40AF" : "#fff",
+                fontSize: 14, fontWeight: 700, cursor: loading ? "not-allowed" : "pointer",
+                fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+              {loading ? "Guardando..." : "Guardar nueva contraseña"}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -6512,6 +6633,7 @@ function ModalConfigUnificado({ datos, session, navHidden, toggleNavHidden, navR
 export default function App() {
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [recoveryMode, setRecoveryMode] = useState(false);
   const [view, setView] = useState(() => localStorage.getItem("fr_view") || "dashboard");
   const [gruposSubVista, setGruposSubVista] = useState(() => localStorage.getItem("fr_grupos_subvista") || "grupos");
   const cambiarGruposSubVista = (v) => { setGruposSubVista(v); localStorage.setItem("fr_grupos_subvista", v); };
@@ -6592,7 +6714,8 @@ export default function App() {
       setSession(session);
       setLoading(false);
     });
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "PASSWORD_RECOVERY") setRecoveryMode(true);
       // Si cambia el usuario, limpiar caché
       if (session) {
         const cachedUserId = localStorage.getItem("fr_user_id");
@@ -6977,6 +7100,7 @@ export default function App() {
     </div>
   );
 
+  if (recoveryMode) return <ResetPasswordScreen onDone={() => setRecoveryMode(false)} />;
   if (!session) return <AuthScreen />;
   if (!cargandoSub && (!suscripcion || suscripcion.estado === "cancelada")) return <PantallaSubscripcion session={session} />;
 
