@@ -3341,6 +3341,11 @@ function PickupView({ datos, onGuardado }) {
                     </button>
                   ))}
                 </div>
+                {reservasVista==="antelacion" && (
+                  <p style={{ fontSize:11, color:C.textLight, marginBottom:12, fontStyle:"italic" }}>
+                    * La antelación solo está disponible para las reservas cargadas manualmente, no para el histórico.
+                  </p>
+                )}
                 <div onMouseDown={e=>e.preventDefault()}>
                 <ResponsiveContainer width="100%" height={280}>
                 <BarChart data={chartData} margin={{ top:16, right:16, left:8, bottom:8 }}>
@@ -3441,7 +3446,7 @@ function PickupView({ datos, onGuardado }) {
                     {sinDatos ? "—" : `${Math.round(d.occ)}%`}
                   </span>
                   <div style={{ width:"70%", height:90, display:"flex", alignItems:"flex-end" }}>
-                    <div style={{ width:"100%", height:barH, background:occColor, opacity:sinDatos?0.3:0.9, borderRadius:"4px 4px 0 0" }} />
+                    <div style={{ width:"100%", height:barH, background:occColor, opacity:sinDatos?0.3:0.9, borderRadius:"4px 4px 0 0", border:"1px solid #000" }} />
                   </div>
                   <span style={{ fontSize:11, fontWeight:700, color:C.text, marginTop:8 }}>{d.label}</span>
                   <span style={{ fontSize:10, color:C.textLight, marginTop:2 }}>{sinDatos ? "—" : `€${Math.round(d.adr)}`}</span>
@@ -6184,6 +6189,7 @@ function ModalConfigUnificado({ datos, session, navHidden, toggleNavHidden, navR
   }));
   const [comisionesGuardando, setComisionesGuardando] = React.useState(false);
   const [comisionesOk, setComisionesOk] = React.useState(false);
+  const [nuevoCanalNombre, setNuevoCanalNombre] = React.useState("");
 
   const inp = { width:"100%", padding:"9px 12px", borderRadius:8, border:`1px solid ${C.border}`, background:C.bg, color:C.text, fontSize:13, fontFamily:"'Plus Jakarta Sans',sans-serif", boxSizing:"border-box", outline:"none" };
 
@@ -6232,10 +6238,10 @@ function ModalConfigUnificado({ datos, session, navHidden, toggleNavHidden, navR
           <button onClick={onClose} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, width:28, height:28, cursor:"pointer", fontSize:15, color:C.textLight, display:"flex", alignItems:"center", justifyContent:"center", padding:0 }}>✕</button>
         </div>
         {/* Pestañas */}
-        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:24 }}>
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:4, marginBottom:24, background:C.bg, padding:4, borderRadius:12, border:`1px solid ${C.border}` }}>
           {TABS_CONFIG.map(tc => (
             <button key={tc.key} onClick={() => { setTab(tc.key); }}
-              style={{ padding:"10px 12px", border:`1.5px solid ${tab===tc.key ? "#111111" : C.border}`, borderRadius:8, background: tab===tc.key ? "#f5f5f5" : "transparent", color: tab===tc.key ? "#111111" : C.textMid, fontSize:12, fontWeight: tab===tc.key ? 700 : 400, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", transition:"all 0.15s", boxShadow: tab===tc.key ? "0 1px 4px rgba(0,0,0,0.06)" : "none", textAlign:"center" }}>
+              style={{ padding:"9px 12px", border:"none", borderRadius:9, background: tab===tc.key ? "#111111" : "transparent", color: tab===tc.key ? "#ffffff" : C.textMid, fontSize:12.5, fontWeight: tab===tc.key ? 700 : 600, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", transition:"all 0.18s ease", boxShadow: tab===tc.key ? "0 2px 6px rgba(0,0,0,0.18)" : "none", textAlign:"center" }}>
               {tc.label}
             </button>
           ))}
@@ -6368,6 +6374,7 @@ function ModalConfigUnificado({ datos, session, navHidden, toggleNavHidden, navR
                   <tr style={{ background:C.bg }}>
                     <th style={{ padding:"8px 14px", textAlign:"left", fontSize:10, color:C.textLight, fontWeight:600, textTransform:"uppercase", letterSpacing:"1px" }}>Canal</th>
                     <th style={{ padding:"8px 14px", textAlign:"right", fontSize:10, color:C.textLight, fontWeight:600, textTransform:"uppercase", letterSpacing:"1px" }}>Comisión %</th>
+                    <th style={{ width:32 }}></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -6384,10 +6391,41 @@ function ModalConfigUnificado({ datos, session, navHidden, toggleNavHidden, navR
                           <span style={{ fontSize:12, color:C.textMid, width:14 }}>%</span>
                         </div>
                       </td>
+                      <td style={{ padding:"7px 8px", textAlign:"center" }}>
+                        <button onClick={() => setComisiones(c => { const n={...c}; delete n[canal]; return n; })}
+                          title="Eliminar canal"
+                          style={{ background:"none", border:"none", cursor:"pointer", color:C.textLight, fontSize:14, padding:2, lineHeight:1 }}>
+                          ✕
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
+            </div>
+            <div style={{ display:"flex", gap:8, marginBottom:16 }}>
+              <input type="text" placeholder="Nombre del nuevo canal"
+                value={nuevoCanalNombre}
+                onChange={e => setNuevoCanalNombre(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === "Enter" && nuevoCanalNombre.trim() && !(nuevoCanalNombre.trim() in comisiones)) {
+                    setComisiones(c => ({...c, [nuevoCanalNombre.trim()]: 0}));
+                    setNuevoCanalNombre("");
+                  }
+                }}
+                style={{ flex:1, padding:"8px 12px", borderRadius:8, border:`1px solid ${C.border}`, background:C.bg, color:C.text, fontSize:13, fontFamily:"'Plus Jakarta Sans',sans-serif", outline:"none" }}
+              />
+              <button
+                disabled={!nuevoCanalNombre.trim() || (nuevoCanalNombre.trim() in comisiones)}
+                onClick={() => {
+                  const nombre = nuevoCanalNombre.trim();
+                  if (!nombre || nombre in comisiones) return;
+                  setComisiones(c => ({...c, [nombre]: 0}));
+                  setNuevoCanalNombre("");
+                }}
+                style={{ padding:"8px 16px", borderRadius:8, border:"none", background: !nuevoCanalNombre.trim()||(nuevoCanalNombre.trim() in comisiones) ? C.border : C.accent, color:"#fff", fontSize:13, fontWeight:700, cursor: !nuevoCanalNombre.trim()||(nuevoCanalNombre.trim() in comisiones) ? "not-allowed" : "pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", whiteSpace:"nowrap" }}>
+                + Añadir canal
+              </button>
             </div>
             <button disabled={comisionesGuardando||comisionesOk} onClick={async()=>{
               setComisionesGuardando(true);

@@ -50,7 +50,7 @@ export const KpiCard = React.memo(function KpiCard({ label, subtitle, value, cha
           {indicatorColor && (
             <div style={{ position:"absolute", top:0, bottom:0, left:"calc(50% + 46px)", display:"flex", flexDirection:"column", justifyContent:"center", alignItems:"flex-start", gap:2 }}>
               <span style={{ fontSize:13, fontWeight:800, color:indicatorColor, lineHeight:1, whiteSpace:"nowrap" }}>{indicatorIcon} <span style={{ fontSize:11, fontWeight:600 }}>{changeLm}</span></span>
-              <span style={{ fontSize:9, color:C.textLight, lineHeight:1 }}>vs LM</span>
+              <span style={{ fontSize:9, color:C.textLight, lineHeight:1 }}>vs mes anterior</span>
             </div>
           )}
         </div>
