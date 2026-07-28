@@ -29,6 +29,7 @@
   .nav-logo img { height: 28px; }
   .nav-back { font-size: 13px; color: var(--gray); display: flex; align-items: center; gap: 6px; }
   .nav-back:hover { color: var(--navy); }
+  .nav-right { display: flex; align-items: center; gap: 18px; }
   .wrapper { max-width: 760px; margin: 0 auto; padding: 60px 24px 100px; }
   .badge {
     display: inline-block; background: var(--navy); color: #fff;
@@ -61,17 +62,20 @@
 
 <nav>
   <a href="/" class="nav-logo"><img src="/fastrev-logo.png" alt="FastRevenue"></a>
-  <a href="/" class="nav-back">← Volver al inicio</a>
+  <div class="nav-right">
+    <div class="lang-switch i18n-switch--light" id="langSwitch"></div>
+    <a href="/" class="nav-back" data-i18n="nav.back">← Volver al inicio</a>
+  </div>
 </nav>
 
 <div class="wrapper">
-  <span class="badge">Legal</span>
-  <h1>Aviso Legal</h1>
-  <p class="meta">Última actualización: abril de 2026</p>
+  <span class="badge" data-i18n="badge">Legal</span>
+  <h1 data-i18n="h1">Aviso Legal</h1>
+  <p class="meta" data-i18n="meta">Última actualización: abril de 2026</p>
 
-  <h2>1. Datos identificativos del titular</h2>
-  <p>En cumplimiento de lo establecido en el artículo 10 de la Ley 34/2002, de 11 de julio, de Servicios de la Sociedad de la Información y de Comercio Electrónico (LSSI-CE), se informa que el titular del presente sitio web es:</p>
-  <p>
+  <h2 data-i18n="h2.1">1. Datos identificativos del titular</h2>
+  <p data-i18n="p.1a">En cumplimiento de lo establecido en el artículo 10 de la Ley 34/2002, de 11 de julio, de Servicios de la Sociedad de la Información y de Comercio Electrónico (LSSI-CE), se informa que el titular del presente sitio web es:</p>
+  <p data-i18n-html="p.1b">
     <strong>Nombre:</strong> Miguel Ruiz Feja<br>
     <strong>NIF:</strong> 73051069X<br>
     <strong>Domicilio:</strong> Calle Abades 7<br>
@@ -82,33 +86,119 @@
 
   <hr>
 
-  <h2>2. Objeto y aceptación</h2>
-  <p>El presente Aviso Legal regula el acceso y uso del sitio web <strong>fastrevenue.app</strong> (en adelante, «el Sitio»), así como la aplicación web accesible desde el mismo. El acceso al Sitio implica la aceptación plena de las condiciones aquí recogidas.</p>
+  <h2 data-i18n="h2.2">2. Objeto y aceptación</h2>
+  <p data-i18n-html="p.2">El presente Aviso Legal regula el acceso y uso del sitio web <strong>fastrevenue.app</strong> (en adelante, «el Sitio»), así como la aplicación web accesible desde el mismo. El acceso al Sitio implica la aceptación plena de las condiciones aquí recogidas.</p>
 
-  <h2>3. Propiedad intelectual e industrial</h2>
-  <p>Todos los contenidos del Sitio —textos, imágenes, logotipos, código fuente, diseño gráfico y demás elementos— son propiedad de Miguel Ruiz Feja o cuenta con las licencias correspondientes para su uso. Quedan reservados todos los derechos sobre los mismos.</p>
-  <p>Queda expresamente prohibida la reproducción, distribución, comunicación pública o transformación total o parcial de dichos contenidos sin autorización previa y expresa del titular.</p>
+  <h2 data-i18n="h2.3">3. Propiedad intelectual e industrial</h2>
+  <p data-i18n="p.3a">Todos los contenidos del Sitio —textos, imágenes, logotipos, código fuente, diseño gráfico y demás elementos— son propiedad de Miguel Ruiz Feja o cuenta con las licencias correspondientes para su uso. Quedan reservados todos los derechos sobre los mismos.</p>
+  <p data-i18n="p.3b">Queda expresamente prohibida la reproducción, distribución, comunicación pública o transformación total o parcial de dichos contenidos sin autorización previa y expresa del titular.</p>
 
-  <h2>4. Exclusión de responsabilidad</h2>
-  <p>El titular no se hace responsable de los daños o perjuicios de cualquier naturaleza que pudieran derivarse del acceso o uso del Sitio, ni de la imposibilidad de acceder al mismo, por causas ajenas a su control.</p>
-  <p>Los datos e informaciones mostrados en la aplicación (indicadores de revenue, ocupación, forecast, etc.) son elaborados a partir de los datos que el propio usuario introduce. El titular no garantiza la exactitud de los resultados ni su idoneidad para fines específicos de negocio.</p>
+  <h2 data-i18n="h2.4">4. Exclusión de responsabilidad</h2>
+  <p data-i18n="p.4a">El titular no se hace responsable de los daños o perjuicios de cualquier naturaleza que pudieran derivarse del acceso o uso del Sitio, ni de la imposibilidad de acceder al mismo, por causas ajenas a su control.</p>
+  <p data-i18n="p.4b">Los datos e informaciones mostrados en la aplicación (indicadores de revenue, ocupación, forecast, etc.) son elaborados a partir de los datos que el propio usuario introduce. El titular no garantiza la exactitud de los resultados ni su idoneidad para fines específicos de negocio.</p>
 
-  <h2>5. Política de enlaces</h2>
-  <p>El Sitio puede contener enlaces a sitios web de terceros. El titular no asume ninguna responsabilidad sobre el contenido, informaciones o servicios que pudieran aparecer en dichos sitios, que tendrán exclusivamente carácter informativo.</p>
+  <h2 data-i18n="h2.5">5. Política de enlaces</h2>
+  <p data-i18n="p.5">El Sitio puede contener enlaces a sitios web de terceros. El titular no asume ninguna responsabilidad sobre el contenido, informaciones o servicios que pudieran aparecer en dichos sitios, que tendrán exclusivamente carácter informativo.</p>
 
-  <h2>6. Legislación aplicable y jurisdicción</h2>
-  <p>Las presentes condiciones se rigen por la legislación española. Para la resolución de cualquier controversia derivada del acceso o uso del Sitio, las partes se someten, con renuncia expresa a cualquier otro fuero, a los Juzgados y Tribunales correspondientes al domicilio del titular.</p>
+  <h2 data-i18n="h2.6">6. Legislación aplicable y jurisdicción</h2>
+  <p data-i18n="p.6">Las presentes condiciones se rigen por la legislación española. Para la resolución de cualquier controversia derivada del acceso o uso del Sitio, las partes se someten, con renuncia expresa a cualquier otro fuero, a los Juzgados y Tribunales correspondientes al domicilio del titular.</p>
 </div>
 
 <footer>
-  <p>© 2026 FastRevenue · Miguel Ruiz Feja · NIF 73051069X</p>
+  <p data-i18n="footer.copyright">© 2026 FastRevenue · Miguel Ruiz Feja · NIF 73051069X</p>
   <p style="margin-top:8px;">
-    <a href="/aviso-legal.html">Aviso Legal</a>
-    <a href="/privacidad.html">Privacidad</a>
-    <a href="/terminos.html">Términos</a>
-    <a href="/cookies.html">Cookies</a>
+    <a href="/aviso-legal.html" data-i18n="footer.legal">Aviso Legal</a>
+    <a href="/privacidad.html" data-i18n="footer.privacy">Privacidad</a>
+    <a href="/terminos.html" data-i18n="footer.terms">Términos</a>
+    <a href="/cookies.html" data-i18n="footer.cookies">Cookies</a>
   </p>
 </footer>
 
+<script>
+window.I18N_DATA = {
+  es: {
+    __pageTitle: 'Aviso Legal — FastRevenue',
+    'nav.back': '← Volver al inicio',
+    badge: 'Legal',
+    h1: 'Aviso Legal',
+    meta: 'Última actualización: abril de 2026',
+    'h2.1': '1. Datos identificativos del titular',
+    'p.1a': 'En cumplimiento de lo establecido en el artículo 10 de la Ley 34/2002, de 11 de julio, de Servicios de la Sociedad de la Información y de Comercio Electrónico (LSSI-CE), se informa que el titular del presente sitio web es:',
+    'p.1b': '<strong>Nombre:</strong> Miguel Ruiz Feja<br><strong>NIF:</strong> 73051069X<br><strong>Domicilio:</strong> Calle Abades 7<br><strong>Actividad:</strong> Trabajador autónomo — Software SaaS para gestión hotelera<br><strong>Correo electrónico:</strong> <a href="mailto:info@fastrevenue.app">info@fastrevenue.app</a><br><strong>Sitio web:</strong> https://fastrevenue.app',
+    'h2.2': '2. Objeto y aceptación',
+    'p.2': 'El presente Aviso Legal regula el acceso y uso del sitio web <strong>fastrevenue.app</strong> (en adelante, «el Sitio»), así como la aplicación web accesible desde el mismo. El acceso al Sitio implica la aceptación plena de las condiciones aquí recogidas.',
+    'h2.3': '3. Propiedad intelectual e industrial',
+    'p.3a': 'Todos los contenidos del Sitio —textos, imágenes, logotipos, código fuente, diseño gráfico y demás elementos— son propiedad de Miguel Ruiz Feja o cuenta con las licencias correspondientes para su uso. Quedan reservados todos los derechos sobre los mismos.',
+    'p.3b': 'Queda expresamente prohibida la reproducción, distribución, comunicación pública o transformación total o parcial de dichos contenidos sin autorización previa y expresa del titular.',
+    'h2.4': '4. Exclusión de responsabilidad',
+    'p.4a': 'El titular no se hace responsable de los daños o perjuicios de cualquier naturaleza que pudieran derivarse del acceso o uso del Sitio, ni de la imposibilidad de acceder al mismo, por causas ajenas a su control.',
+    'p.4b': 'Los datos e informaciones mostrados en la aplicación (indicadores de revenue, ocupación, forecast, etc.) son elaborados a partir de los datos que el propio usuario introduce. El titular no garantiza la exactitud de los resultados ni su idoneidad para fines específicos de negocio.',
+    'h2.5': '5. Política de enlaces',
+    'p.5': 'El Sitio puede contener enlaces a sitios web de terceros. El titular no asume ninguna responsabilidad sobre el contenido, informaciones o servicios que pudieran aparecer en dichos sitios, que tendrán exclusivamente carácter informativo.',
+    'h2.6': '6. Legislación aplicable y jurisdicción',
+    'p.6': 'Las presentes condiciones se rigen por la legislación española. Para la resolución de cualquier controversia derivada del acceso o uso del Sitio, las partes se someten, con renuncia expresa a cualquier otro fuero, a los Juzgados y Tribunales correspondientes al domicilio del titular.',
+    'footer.copyright': '© 2026 FastRevenue · Miguel Ruiz Feja · NIF 73051069X',
+    'footer.legal': 'Aviso Legal',
+    'footer.privacy': 'Privacidad',
+    'footer.terms': 'Términos',
+    'footer.cookies': 'Cookies',
+  },
+  en: {
+    __pageTitle: 'Legal Notice — FastRevenue',
+    'nav.back': '← Back to home',
+    badge: 'Legal',
+    h1: 'Legal Notice',
+    meta: 'Last updated: April 2026',
+    'h2.1': '1. Identification of the site owner',
+    'p.1a': 'In compliance with Article 10 of Spanish Law 34/2002, of 11 July, on Information Society Services and Electronic Commerce (LSSI-CE), the owner of this website is:',
+    'p.1b': '<strong>Name:</strong> Miguel Ruiz Feja<br><strong>Tax ID (NIF):</strong> 73051069X<br><strong>Address:</strong> Calle Abades 7, Spain<br><strong>Activity:</strong> Self-employed professional — SaaS software for hotel management<br><strong>Email:</strong> <a href="mailto:info@fastrevenue.app">info@fastrevenue.app</a><br><strong>Website:</strong> https://fastrevenue.app',
+    'h2.2': '2. Purpose and acceptance',
+    'p.2': 'This Legal Notice governs access to and use of the website <strong>fastrevenue.app</strong> (the "Site"), as well as the web application accessible from it. Accessing the Site implies full acceptance of the conditions set out herein.',
+    'h2.3': '3. Intellectual and industrial property',
+    'p.3a': 'All content on the Site — text, images, logos, source code, graphic design and other elements — is the property of Miguel Ruiz Feja or is used under the corresponding licenses. All rights are reserved.',
+    'p.3b': 'Reproduction, distribution, public communication or total or partial transformation of such content without the owner\'s prior express authorization is expressly prohibited.',
+    'h2.4': '4. Disclaimer of liability',
+    'p.4a': 'The owner is not liable for any damages of any kind that may arise from access to or use of the Site, nor from the inability to access it, for reasons beyond their control.',
+    'p.4b': 'The data and information shown in the application (revenue, occupancy, forecast indicators, etc.) are generated from the data entered by the user. The owner does not guarantee the accuracy of the results or their suitability for specific business purposes.',
+    'h2.5': '5. Linking policy',
+    'p.5': 'The Site may contain links to third-party websites. The owner assumes no responsibility for the content, information or services that may appear on such sites, which are provided for informational purposes only.',
+    'h2.6': '6. Applicable law and jurisdiction',
+    'p.6': 'These conditions are governed by Spanish law. For the resolution of any dispute arising from access to or use of the Site, the parties submit, expressly waiving any other jurisdiction, to the Courts corresponding to the owner\'s domicile.',
+    'footer.copyright': '© 2026 FastRevenue · Miguel Ruiz Feja · Tax ID (NIF) 73051069X',
+    'footer.legal': 'Legal Notice',
+    'footer.privacy': 'Privacy',
+    'footer.terms': 'Terms',
+    'footer.cookies': 'Cookies',
+  },
+  fr: {
+    __pageTitle: 'Mentions légales — FastRevenue',
+    'nav.back': '← Retour à l\'accueil',
+    badge: 'Légal',
+    h1: 'Mentions légales',
+    meta: 'Dernière mise à jour : avril 2026',
+    'h2.1': '1. Identification du titulaire',
+    'p.1a': 'Conformément à l\'article 10 de la loi espagnole 34/2002 du 11 juillet sur les services de la société de l\'information et le commerce électronique (LSSI-CE), le titulaire de ce site web est :',
+    'p.1b': '<strong>Nom :</strong> Miguel Ruiz Feja<br><strong>NIF :</strong> 73051069X<br><strong>Adresse :</strong> Calle Abades 7, Espagne<br><strong>Activité :</strong> Travailleur indépendant — Logiciel SaaS de gestion hôtelière<br><strong>Email :</strong> <a href="mailto:info@fastrevenue.app">info@fastrevenue.app</a><br><strong>Site web :</strong> https://fastrevenue.app',
+    'h2.2': '2. Objet et acceptation',
+    'p.2': 'Les présentes mentions légales régissent l\'accès et l\'utilisation du site web <strong>fastrevenue.app</strong> (ci-après, « le Site »), ainsi que l\'application web accessible depuis celui-ci. L\'accès au Site implique l\'acceptation pleine et entière des conditions ici énoncées.',
+    'h2.3': '3. Propriété intellectuelle et industrielle',
+    'p.3a': 'Tous les contenus du Site — textes, images, logos, code source, design graphique et autres éléments — sont la propriété de Miguel Ruiz Feja ou font l\'objet des licences correspondantes. Tous les droits y afférents sont réservés.',
+    'p.3b': 'Sont expressément interdites la reproduction, la distribution, la communication publique ou la transformation totale ou partielle de ces contenus sans autorisation préalable et expresse du titulaire.',
+    'h2.4': '4. Exclusion de responsabilité',
+    'p.4a': 'Le titulaire n\'est pas responsable des dommages de quelque nature que ce soit pouvant résulter de l\'accès ou de l\'utilisation du Site, ni de l\'impossibilité d\'y accéder, pour des causes indépendantes de sa volonté.',
+    'p.4b': 'Les données et informations affichées dans l\'application (indicateurs de revenue, occupation, forecast, etc.) sont élaborées à partir des données saisies par l\'utilisateur lui-même. Le titulaire ne garantit ni l\'exactitude des résultats ni leur adéquation à des fins commerciales spécifiques.',
+    'h2.5': '5. Politique de liens',
+    'p.5': 'Le Site peut contenir des liens vers des sites web de tiers. Le titulaire n\'assume aucune responsabilité quant au contenu, aux informations ou aux services pouvant apparaître sur ces sites, qui ont un caractère purement informatif.',
+    'h2.6': '6. Législation applicable et juridiction',
+    'p.6': 'Les présentes conditions sont régies par la législation espagnole. Pour le règlement de tout litige découlant de l\'accès ou de l\'utilisation du Site, les parties se soumettent, en renonçant expressément à tout autre for, aux tribunaux correspondant au domicile du titulaire.',
+    'footer.copyright': '© 2026 FastRevenue · Miguel Ruiz Feja · NIF 73051069X',
+    'footer.legal': 'Mentions légales',
+    'footer.privacy': 'Confidentialité',
+    'footer.terms': 'Conditions',
+    'footer.cookies': 'Cookies',
+  },
+};
+</script>
+<script src="/i18n.js"></script>
 </body>
 </html>

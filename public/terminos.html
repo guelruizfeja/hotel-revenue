@@ -29,6 +29,7 @@
   .nav-logo img { height: 28px; }
   .nav-back { font-size: 13px; color: var(--gray); display: flex; align-items: center; gap: 6px; }
   .nav-back:hover { color: var(--navy); }
+  .nav-right { display: flex; align-items: center; gap: 18px; }
   .wrapper { max-width: 760px; margin: 0 auto; padding: 60px 24px 100px; }
   .badge {
     display: inline-block; background: var(--navy); color: #fff;
@@ -63,86 +64,262 @@
 
 <nav>
   <a href="/" class="nav-logo"><img src="/fastrev-logo.png" alt="FastRevenue"></a>
-  <a href="/" class="nav-back">← Volver al inicio</a>
+  <div class="nav-right">
+    <div class="lang-switch i18n-switch--light" id="langSwitch"></div>
+    <a href="/" class="nav-back" data-i18n="nav.back">← Volver al inicio</a>
+  </div>
 </nav>
 
 <div class="wrapper">
-  <span class="badge">Legal</span>
-  <h1>Términos y Condiciones</h1>
-  <p class="meta">Última actualización: abril de 2026</p>
+  <span class="badge" data-i18n="badge">Legal</span>
+  <h1 data-i18n="h1">Términos y Condiciones</h1>
+  <p class="meta" data-i18n="meta">Última actualización: abril de 2026</p>
 
-  <h2>1. Objeto</h2>
-  <p>Los presentes Términos y Condiciones (en adelante, «los Términos») regulan el acceso y uso del servicio <strong>FastRevenue</strong>, una aplicación web de Revenue Management para establecimientos hoteleros, titularidad de Miguel Ruiz Feja (NIF 73051069X), con domicilio en Calle Abades 7 (en adelante, «FastRevenue» o «el Proveedor»).</p>
-  <p>El registro en la plataforma implica la aceptación plena e incondicional de los presentes Términos. Si no estás de acuerdo con alguna de las condiciones, debes abstenerte de usar el servicio.</p>
+  <h2 data-i18n="h2.1">1. Objeto</h2>
+  <p data-i18n-html="p.1a">Los presentes Términos y Condiciones (en adelante, «los Términos») regulan el acceso y uso del servicio <strong>FastRevenue</strong>, una aplicación web de Revenue Management para establecimientos hoteleros, titularidad de Miguel Ruiz Feja (NIF 73051069X), con domicilio en Calle Abades 7 (en adelante, «FastRevenue» o «el Proveedor»).</p>
+  <p data-i18n="p.1b">El registro en la plataforma implica la aceptación plena e incondicional de los presentes Términos. Si no estás de acuerdo con alguna de las condiciones, debes abstenerte de usar el servicio.</p>
 
   <hr>
 
-  <h2>2. Acceso y registro</h2>
-  <p>Para acceder a FastRevenue es necesario crear una cuenta mediante un correo electrónico válido y una contraseña. El usuario es responsable de mantener la confidencialidad de sus credenciales y de todas las actividades que se realicen bajo su cuenta.</p>
-  <p>FastRevenue se reserva el derecho a suspender o cancelar cuentas que incumplan estos Términos, que presenten actividad fraudulenta o que supongan un uso indebido del servicio.</p>
+  <h2 data-i18n="h2.2">2. Acceso y registro</h2>
+  <p data-i18n="p.2a">Para acceder a FastRevenue es necesario crear una cuenta mediante un correo electrónico válido y una contraseña. El usuario es responsable de mantener la confidencialidad de sus credenciales y de todas las actividades que se realicen bajo su cuenta.</p>
+  <p data-i18n="p.2b">FastRevenue se reserva el derecho a suspender o cancelar cuentas que incumplan estos Términos, que presenten actividad fraudulenta o que supongan un uso indebido del servicio.</p>
 
-  <h2>3. Descripción del servicio</h2>
-  <p>FastRevenue ofrece una plataforma SaaS que permite a los hoteleros:</p>
+  <h2 data-i18n="h2.3">3. Descripción del servicio</h2>
+  <p data-i18n="p.3a">FastRevenue ofrece una plataforma SaaS que permite a los hoteleros:</p>
   <ul>
-    <li>Importar y visualizar datos de producción diaria (ocupación, ADR, RevPAR, TRevPAR).</li>
-    <li>Analizar el pickup de reservas y su evolución.</li>
-    <li>Gestionar presupuestos y comparar con los datos reales.</li>
-    <li>Registrar y analizar grupos y eventos.</li>
-    <li>Generar informes y visualizaciones sobre el rendimiento del hotel.</li>
+    <li data-i18n="li.3.1">Importar y visualizar datos de producción diaria (ocupación, ADR, RevPAR, TRevPAR).</li>
+    <li data-i18n="li.3.2">Analizar el pickup de reservas y su evolución.</li>
+    <li data-i18n="li.3.3">Gestionar presupuestos y comparar con los datos reales.</li>
+    <li data-i18n="li.3.4">Registrar y analizar grupos y eventos.</li>
+    <li data-i18n="li.3.5">Generar informes y visualizaciones sobre el rendimiento del hotel.</li>
   </ul>
-  <p>Los indicadores y proyecciones que muestra la plataforma se elaboran a partir de los datos introducidos por el propio usuario y tienen carácter meramente orientativo.</p>
+  <p data-i18n="p.3b">Los indicadores y proyecciones que muestra la plataforma se elaboran a partir de los datos introducidos por el propio usuario y tienen carácter meramente orientativo.</p>
 
-  <h2>4. Planes y precios</h2>
-  <p>FastRevenue ofrece un <strong>mes de prueba gratuito</strong> sin necesidad de facilitar datos de pago. Durante este período el usuario tiene acceso completo a todas las funcionalidades.</p>
-  <p>Transcurrido el mes de prueba, la continuidad del servicio requiere la contratación de una suscripción mensual. El precio para los hoteles que contraten durante el período fundador es de <strong>59 € al mes (IVA no incluido)</strong> y queda garantizado de forma indefinida mientras la suscripción permanezca activa. Este precio podrá revisarse a los 5 años de la fecha de contratación original, con un preaviso mínimo de 3 meses.</p>
-  <p>Adicionalmente, puede contratarse un servicio de instalación y carga histórica de datos por un importe único de <strong>130 € (IVA no incluido)</strong>, únicamente en el momento de la contratación de la suscripción y siempre que el hotel proporcione los datos históricos necesarios.</p>
+  <h2 data-i18n="h2.4">4. Planes y precios</h2>
+  <p data-i18n-html="p.4a">FastRevenue ofrece un <strong>mes de prueba gratuito</strong> sin necesidad de facilitar datos de pago. Durante este período el usuario tiene acceso completo a todas las funcionalidades.</p>
+  <p data-i18n-html="p.4b">Transcurrido el mes de prueba, la continuidad del servicio requiere la contratación de una suscripción mensual. El precio para los hoteles que contraten durante el período fundador es de <strong>59 € al mes (IVA no incluido)</strong> y queda garantizado de forma indefinida mientras la suscripción permanezca activa. Este precio podrá revisarse a los 5 años de la fecha de contratación original, con un preaviso mínimo de 3 meses.</p>
+  <p data-i18n-html="p.4c">Adicionalmente, puede contratarse un servicio de instalación y carga histórica de datos por un importe único de <strong>130 € (IVA no incluido)</strong>, únicamente en el momento de la contratación de la suscripción y siempre que el hotel proporcione los datos históricos necesarios.</p>
 
-  <h2>5. Facturación y cancelación</h2>
-  <p>La suscripción se factura mensualmente. FastRevenue emite la factura al inicio de cada período y el pago se realiza mediante transferencia bancaria al número de cuenta indicado en la factura. El servicio permanece activo mientras el pago esté al corriente.</p>
-  <p>El usuario puede cancelar su suscripción en cualquier momento enviando un correo a <a href="mailto:info@fastrevenue.app">info@fastrevenue.app</a> con un preaviso mínimo de 30 días naturales. La cancelación será efectiva al término del período de preaviso; no se realizan reembolsos por el tiempo no utilizado.</p>
-  <p>FastRevenue no aplica penalización ni permanencia mínima más allá del período de preaviso de 30 días.</p>
+  <h2 data-i18n="h2.5">5. Facturación y cancelación</h2>
+  <p data-i18n="p.5a">La suscripción se factura mensualmente. FastRevenue emite la factura al inicio de cada período y el pago se realiza mediante transferencia bancaria al número de cuenta indicado en la factura. El servicio permanece activo mientras el pago esté al corriente.</p>
+  <p data-i18n-html="p.5b">El usuario puede cancelar su suscripción en cualquier momento enviando un correo a <a href="mailto:info@fastrevenue.app">info@fastrevenue.app</a> con un preaviso mínimo de 30 días naturales. La cancelación será efectiva al término del período de preaviso; no se realizan reembolsos por el tiempo no utilizado.</p>
+  <p data-i18n="p.5c">FastRevenue no aplica penalización ni permanencia mínima más allá del período de preaviso de 30 días.</p>
 
-  <h2>6. Uso aceptable</h2>
-  <p>El usuario se compromete a utilizar el servicio de conformidad con la ley y los presentes Términos. Queda expresamente prohibido:</p>
+  <h2 data-i18n="h2.6">6. Uso aceptable</h2>
+  <p data-i18n="p.6a">El usuario se compromete a utilizar el servicio de conformidad con la ley y los presentes Términos. Queda expresamente prohibido:</p>
   <ul>
-    <li>Introducir datos falsos, fraudulentos o de terceros sin autorización.</li>
-    <li>Intentar acceder de manera no autorizada a sistemas o cuentas ajenas.</li>
-    <li>Realizar ingeniería inversa, descompilar o copiar el código de la plataforma.</li>
-    <li>Usar el servicio para actividades ilegales o contrarias a la buena fe.</li>
-    <li>Revender o sublicenciar el acceso a terceros sin autorización expresa.</li>
+    <li data-i18n="li.6.1">Introducir datos falsos, fraudulentos o de terceros sin autorización.</li>
+    <li data-i18n="li.6.2">Intentar acceder de manera no autorizada a sistemas o cuentas ajenas.</li>
+    <li data-i18n="li.6.3">Realizar ingeniería inversa, descompilar o copiar el código de la plataforma.</li>
+    <li data-i18n="li.6.4">Usar el servicio para actividades ilegales o contrarias a la buena fe.</li>
+    <li data-i18n="li.6.5">Revender o sublicenciar el acceso a terceros sin autorización expresa.</li>
   </ul>
 
-  <h2>7. Propiedad intelectual</h2>
-  <p>FastRevenue y todos sus componentes (código, diseño, marca, logotipos, algoritmos) son propiedad de Miguel Ruiz Feja o cuentan con las licencias correspondientes. La contratación del servicio no implica cesión alguna de derechos de propiedad intelectual al usuario.</p>
-  <p>Los datos introducidos por el usuario son de su exclusiva propiedad. FastRevenue no cede ni comercializa dichos datos a terceros.</p>
+  <h2 data-i18n="h2.7">7. Propiedad intelectual</h2>
+  <p data-i18n="p.7a">FastRevenue y todos sus componentes (código, diseño, marca, logotipos, algoritmos) son propiedad de Miguel Ruiz Feja o cuentan con las licencias correspondientes. La contratación del servicio no implica cesión alguna de derechos de propiedad intelectual al usuario.</p>
+  <p data-i18n="p.7b">Los datos introducidos por el usuario son de su exclusiva propiedad. FastRevenue no cede ni comercializa dichos datos a terceros.</p>
 
-  <h2>8. Disponibilidad del servicio</h2>
-  <p>FastRevenue aspira a ofrecer una disponibilidad del 99,5 % mensual, si bien no garantiza la ausencia de interrupciones por mantenimiento, causas de fuerza mayor o incidencias técnicas de proveedores. Las tareas de mantenimiento programadas se anunciarán con la mayor antelación posible.</p>
+  <h2 data-i18n="h2.8">8. Disponibilidad del servicio</h2>
+  <p data-i18n="p.8">FastRevenue aspira a ofrecer una disponibilidad del 99,5 % mensual, si bien no garantiza la ausencia de interrupciones por mantenimiento, causas de fuerza mayor o incidencias técnicas de proveedores. Las tareas de mantenimiento programadas se anunciarán con la mayor antelación posible.</p>
 
-  <h2>9. Limitación de responsabilidad</h2>
-  <p>FastRevenue no será responsable de los daños indirectos, lucro cesante o pérdida de datos que pudieran derivarse del uso o de la imposibilidad de uso del servicio. En ningún caso la responsabilidad total del Proveedor superará el importe abonado por el usuario en los últimos 12 meses.</p>
-  <p>El usuario es el único responsable de las decisiones de negocio que tome basándose en los datos e indicadores mostrados por la plataforma.</p>
+  <h2 data-i18n="h2.9">9. Limitación de responsabilidad</h2>
+  <p data-i18n="p.9a">FastRevenue no será responsable de los daños indirectos, lucro cesante o pérdida de datos que pudieran derivarse del uso o de la imposibilidad de uso del servicio. En ningún caso la responsabilidad total del Proveedor superará el importe abonado por el usuario en los últimos 12 meses.</p>
+  <p data-i18n="p.9b">El usuario es el único responsable de las decisiones de negocio que tome basándose en los datos e indicadores mostrados por la plataforma.</p>
 
-  <h2>10. Modificaciones de los Términos</h2>
-  <p>FastRevenue se reserva el derecho a modificar los presentes Términos en cualquier momento. Los cambios sustanciales se comunicarán al usuario por correo electrónico con al menos <strong>15 días de antelación</strong>. El uso continuado del servicio tras dicha comunicación implica la aceptación de las nuevas condiciones.</p>
+  <h2 data-i18n="h2.10">10. Modificaciones de los Términos</h2>
+  <p data-i18n-html="p.10">FastRevenue se reserva el derecho a modificar los presentes Términos en cualquier momento. Los cambios sustanciales se comunicarán al usuario por correo electrónico con al menos <strong>15 días de antelación</strong>. El uso continuado del servicio tras dicha comunicación implica la aceptación de las nuevas condiciones.</p>
 
-  <h2>11. Legislación aplicable y resolución de conflictos</h2>
-  <p>Los presentes Términos se rigen por la legislación española. Ante cualquier controversia, las partes se someten a los Juzgados y Tribunales correspondientes al domicilio del Proveedor, con renuncia a cualquier otro fuero que pudiera corresponderles.</p>
-  <p>Para reclamaciones de consumidores en la UE, la Comisión Europea pone a disposición una plataforma de resolución de litigios en línea: <a href="https://ec.europa.eu/consumers/odr" target="_blank" rel="noopener">ec.europa.eu/consumers/odr</a>.</p>
+  <h2 data-i18n="h2.11">11. Legislación aplicable y resolución de conflictos</h2>
+  <p data-i18n="p.11a">Los presentes Términos se rigen por la legislación española. Ante cualquier controversia, las partes se someten a los Juzgados y Tribunales correspondientes al domicilio del Proveedor, con renuncia a cualquier otro fuero que pudiera corresponderles.</p>
+  <p data-i18n-html="p.11b">Para reclamaciones de consumidores en la UE, la Comisión Europea pone a disposición una plataforma de resolución de litigios en línea: <a href="https://ec.europa.eu/consumers/odr" target="_blank" rel="noopener">ec.europa.eu/consumers/odr</a>.</p>
 
-  <h2>12. Contacto</h2>
-  <p>Para cualquier consulta sobre estos Términos, puedes contactarnos en <a href="mailto:info@fastrevenue.app">info@fastrevenue.app</a>.</p>
+  <h2 data-i18n="h2.12">12. Contacto</h2>
+  <p data-i18n-html="p.12">Para cualquier consulta sobre estos Términos, puedes contactarnos en <a href="mailto:info@fastrevenue.app">info@fastrevenue.app</a>.</p>
 </div>
 
 <footer>
-  <p>© 2026 FastRevenue · Miguel Ruiz Feja · NIF 73051069X</p>
+  <p data-i18n="footer.copyright">© 2026 FastRevenue · Miguel Ruiz Feja · NIF 73051069X</p>
   <p style="margin-top:8px;">
-    <a href="/aviso-legal.html">Aviso Legal</a>
-    <a href="/privacidad.html">Privacidad</a>
-    <a href="/terminos.html">Términos</a>
-    <a href="/cookies.html">Cookies</a>
+    <a href="/aviso-legal.html" data-i18n="footer.legal">Aviso Legal</a>
+    <a href="/privacidad.html" data-i18n="footer.privacy">Privacidad</a>
+    <a href="/terminos.html" data-i18n="footer.terms">Términos</a>
+    <a href="/cookies.html" data-i18n="footer.cookies">Cookies</a>
   </p>
 </footer>
 
+<script>
+window.I18N_DATA = {
+  es: {
+    __pageTitle: 'Términos y Condiciones — FastRevenue',
+    'nav.back': '← Volver al inicio',
+    badge: 'Legal',
+    h1: 'Términos y Condiciones',
+    meta: 'Última actualización: abril de 2026',
+    'h2.1': '1. Objeto',
+    'p.1a': 'Los presentes Términos y Condiciones (en adelante, «los Términos») regulan el acceso y uso del servicio <strong>FastRevenue</strong>, una aplicación web de Revenue Management para establecimientos hoteleros, titularidad de Miguel Ruiz Feja (NIF 73051069X), con domicilio en Calle Abades 7 (en adelante, «FastRevenue» o «el Proveedor»).',
+    'p.1b': 'El registro en la plataforma implica la aceptación plena e incondicional de los presentes Términos. Si no estás de acuerdo con alguna de las condiciones, debes abstenerte de usar el servicio.',
+    'h2.2': '2. Acceso y registro',
+    'p.2a': 'Para acceder a FastRevenue es necesario crear una cuenta mediante un correo electrónico válido y una contraseña. El usuario es responsable de mantener la confidencialidad de sus credenciales y de todas las actividades que se realicen bajo su cuenta.',
+    'p.2b': 'FastRevenue se reserva el derecho a suspender o cancelar cuentas que incumplan estos Términos, que presenten actividad fraudulenta o que supongan un uso indebido del servicio.',
+    'h2.3': '3. Descripción del servicio',
+    'p.3a': 'FastRevenue ofrece una plataforma SaaS que permite a los hoteleros:',
+    'li.3.1': 'Importar y visualizar datos de producción diaria (ocupación, ADR, RevPAR, TRevPAR).',
+    'li.3.2': 'Analizar el pickup de reservas y su evolución.',
+    'li.3.3': 'Gestionar presupuestos y comparar con los datos reales.',
+    'li.3.4': 'Registrar y analizar grupos y eventos.',
+    'li.3.5': 'Generar informes y visualizaciones sobre el rendimiento del hotel.',
+    'p.3b': 'Los indicadores y proyecciones que muestra la plataforma se elaboran a partir de los datos introducidos por el propio usuario y tienen carácter meramente orientativo.',
+    'h2.4': '4. Planes y precios',
+    'p.4a': 'FastRevenue ofrece un <strong>mes de prueba gratuito</strong> sin necesidad de facilitar datos de pago. Durante este período el usuario tiene acceso completo a todas las funcionalidades.',
+    'p.4b': 'Transcurrido el mes de prueba, la continuidad del servicio requiere la contratación de una suscripción mensual. El precio para los hoteles que contraten durante el período fundador es de <strong>59 € al mes (IVA no incluido)</strong> y queda garantizado de forma indefinida mientras la suscripción permanezca activa. Este precio podrá revisarse a los 5 años de la fecha de contratación original, con un preaviso mínimo de 3 meses.',
+    'p.4c': 'Adicionalmente, puede contratarse un servicio de instalación y carga histórica de datos por un importe único de <strong>130 € (IVA no incluido)</strong>, únicamente en el momento de la contratación de la suscripción y siempre que el hotel proporcione los datos históricos necesarios.',
+    'h2.5': '5. Facturación y cancelación',
+    'p.5a': 'La suscripción se factura mensualmente. FastRevenue emite la factura al inicio de cada período y el pago se realiza mediante transferencia bancaria al número de cuenta indicado en la factura. El servicio permanece activo mientras el pago esté al corriente.',
+    'p.5b': 'El usuario puede cancelar su suscripción en cualquier momento enviando un correo a <a href="mailto:info@fastrevenue.app">info@fastrevenue.app</a> con un preaviso mínimo de 30 días naturales. La cancelación será efectiva al término del período de preaviso; no se realizan reembolsos por el tiempo no utilizado.',
+    'p.5c': 'FastRevenue no aplica penalización ni permanencia mínima más allá del período de preaviso de 30 días.',
+    'h2.6': '6. Uso aceptable',
+    'p.6a': 'El usuario se compromete a utilizar el servicio de conformidad con la ley y los presentes Términos. Queda expresamente prohibido:',
+    'li.6.1': 'Introducir datos falsos, fraudulentos o de terceros sin autorización.',
+    'li.6.2': 'Intentar acceder de manera no autorizada a sistemas o cuentas ajenas.',
+    'li.6.3': 'Realizar ingeniería inversa, descompilar o copiar el código de la plataforma.',
+    'li.6.4': 'Usar el servicio para actividades ilegales o contrarias a la buena fe.',
+    'li.6.5': 'Revender o sublicenciar el acceso a terceros sin autorización expresa.',
+    'h2.7': '7. Propiedad intelectual',
+    'p.7a': 'FastRevenue y todos sus componentes (código, diseño, marca, logotipos, algoritmos) son propiedad de Miguel Ruiz Feja o cuentan con las licencias correspondientes. La contratación del servicio no implica cesión alguna de derechos de propiedad intelectual al usuario.',
+    'p.7b': 'Los datos introducidos por el usuario son de su exclusiva propiedad. FastRevenue no cede ni comercializa dichos datos a terceros.',
+    'h2.8': '8. Disponibilidad del servicio',
+    'p.8': 'FastRevenue aspira a ofrecer una disponibilidad del 99,5 % mensual, si bien no garantiza la ausencia de interrupciones por mantenimiento, causas de fuerza mayor o incidencias técnicas de proveedores. Las tareas de mantenimiento programadas se anunciarán con la mayor antelación posible.',
+    'h2.9': '9. Limitación de responsabilidad',
+    'p.9a': 'FastRevenue no será responsable de los daños indirectos, lucro cesante o pérdida de datos que pudieran derivarse del uso o de la imposibilidad de uso del servicio. En ningún caso la responsabilidad total del Proveedor superará el importe abonado por el usuario en los últimos 12 meses.',
+    'p.9b': 'El usuario es el único responsable de las decisiones de negocio que tome basándose en los datos e indicadores mostrados por la plataforma.',
+    'h2.10': '10. Modificaciones de los Términos',
+    'p.10': 'FastRevenue se reserva el derecho a modificar los presentes Términos en cualquier momento. Los cambios sustanciales se comunicarán al usuario por correo electrónico con al menos <strong>15 días de antelación</strong>. El uso continuado del servicio tras dicha comunicación implica la aceptación de las nuevas condiciones.',
+    'h2.11': '11. Legislación aplicable y resolución de conflictos',
+    'p.11a': 'Los presentes Términos se rigen por la legislación española. Ante cualquier controversia, las partes se someten a los Juzgados y Tribunales correspondientes al domicilio del Proveedor, con renuncia a cualquier otro fuero que pudiera corresponderles.',
+    'p.11b': 'Para reclamaciones de consumidores en la UE, la Comisión Europea pone a disposición una plataforma de resolución de litigios en línea: <a href="https://ec.europa.eu/consumers/odr" target="_blank" rel="noopener">ec.europa.eu/consumers/odr</a>.',
+    'h2.12': '12. Contacto',
+    'p.12': 'Para cualquier consulta sobre estos Términos, puedes contactarnos en <a href="mailto:info@fastrevenue.app">info@fastrevenue.app</a>.',
+    'footer.copyright': '© 2026 FastRevenue · Miguel Ruiz Feja · NIF 73051069X',
+    'footer.legal': 'Aviso Legal',
+    'footer.privacy': 'Privacidad',
+    'footer.terms': 'Términos',
+    'footer.cookies': 'Cookies',
+  },
+  en: {
+    __pageTitle: 'Terms & Conditions — FastRevenue',
+    'nav.back': '← Back to home',
+    badge: 'Legal',
+    h1: 'Terms & Conditions',
+    meta: 'Last updated: April 2026',
+    'h2.1': '1. Purpose',
+    'p.1a': 'These Terms & Conditions (the "Terms") govern access to and use of the <strong>FastRevenue</strong> service, a Revenue Management web application for hotel properties, owned by Miguel Ruiz Feja (Tax ID (NIF) 73051069X), domiciled at Calle Abades 7, Spain (hereinafter "FastRevenue" or "the Provider").',
+    'p.1b': 'Registering on the platform implies full and unconditional acceptance of these Terms. If you do not agree with any of the conditions, you must refrain from using the service.',
+    'h2.2': '2. Access and registration',
+    'p.2a': 'To access FastRevenue you must create an account using a valid email address and password. The user is responsible for keeping their credentials confidential and for all activity carried out under their account.',
+    'p.2b': 'FastRevenue reserves the right to suspend or cancel accounts that breach these Terms, show fraudulent activity, or involve improper use of the service.',
+    'h2.3': '3. Service description',
+    'p.3a': 'FastRevenue offers a SaaS platform that allows hoteliers to:',
+    'li.3.1': 'Import and view daily production data (occupancy, ADR, RevPAR, TRevPAR).',
+    'li.3.2': 'Analyze booking pickup and its evolution.',
+    'li.3.3': 'Manage budgets and compare them with actual data.',
+    'li.3.4': 'Record and analyze groups and events.',
+    'li.3.5': 'Generate reports and visualizations on hotel performance.',
+    'p.3b': 'The indicators and projections shown by the platform are generated from data entered by the user and are provided for guidance purposes only.',
+    'h2.4': '4. Plans and pricing',
+    'p.4a': 'FastRevenue offers a <strong>free one-month trial</strong> with no payment details required. During this period the user has full access to all features.',
+    'p.4b': 'After the trial month, continued use of the service requires a monthly subscription. The price for hotels signing up during the founder period is <strong>€59 per month (VAT not included)</strong> and is guaranteed indefinitely for as long as the subscription remains active. This price may be revised after 5 years from the original signup date, with a minimum notice of 3 months.',
+    'p.4c': 'Additionally, a setup and historical data-loading service can be contracted for a one-time fee of <strong>€130 (VAT not included)</strong>, only at the time of subscribing and provided the hotel supplies the necessary historical data.',
+    'h2.5': '5. Billing and cancellation',
+    'p.5a': 'The subscription is billed monthly. FastRevenue issues an invoice at the start of each period and payment is made by bank transfer to the account number stated on the invoice. The service remains active while payment is up to date.',
+    'p.5b': 'The user may cancel their subscription at any time by emailing <a href="mailto:info@fastrevenue.app">info@fastrevenue.app</a> with a minimum of 30 calendar days\' notice. Cancellation will take effect at the end of the notice period; no refunds are given for unused time.',
+    'p.5c': 'FastRevenue does not apply any penalty or minimum commitment period beyond the 30-day notice period.',
+    'h2.6': '6. Acceptable use',
+    'p.6a': 'The user agrees to use the service in accordance with the law and these Terms. It is expressly forbidden to:',
+    'li.6.1': 'Enter false, fraudulent data or third-party data without authorization.',
+    'li.6.2': 'Attempt unauthorized access to systems or accounts belonging to others.',
+    'li.6.3': 'Reverse-engineer, decompile or copy the platform\'s code.',
+    'li.6.4': 'Use the service for illegal activities or activities contrary to good faith.',
+    'li.6.5': 'Resell or sublicense access to third parties without express authorization.',
+    'h2.7': '7. Intellectual property',
+    'p.7a': 'FastRevenue and all its components (code, design, brand, logos, algorithms) are the property of Miguel Ruiz Feja or are used under the corresponding licenses. Contracting the service does not imply any transfer of intellectual property rights to the user.',
+    'p.7b': 'Data entered by the user remains their exclusive property. FastRevenue does not transfer or sell such data to third parties.',
+    'h2.8': '8. Service availability',
+    'p.8': 'FastRevenue aims to offer 99.5% monthly availability, although it does not guarantee the absence of interruptions due to maintenance, force majeure or technical incidents at providers. Scheduled maintenance will be announced with as much advance notice as possible.',
+    'h2.9': '9. Limitation of liability',
+    'p.9a': 'FastRevenue will not be liable for indirect damages, loss of profit or loss of data arising from use or inability to use the service. In no case will the Provider\'s total liability exceed the amount paid by the user in the last 12 months.',
+    'p.9b': 'The user is solely responsible for any business decisions made based on the data and indicators shown by the platform.',
+    'h2.10': '10. Changes to the Terms',
+    'p.10': 'FastRevenue reserves the right to modify these Terms at any time. Substantial changes will be communicated to the user by email at least <strong>15 days in advance</strong>. Continued use of the service after such communication implies acceptance of the new conditions.',
+    'h2.11': '11. Applicable law and dispute resolution',
+    'p.11a': 'These Terms are governed by Spanish law. In the event of any dispute, the parties submit to the Courts corresponding to the Provider\'s domicile, waiving any other jurisdiction that may apply to them.',
+    'p.11b': 'For EU consumer complaints, the European Commission provides an online dispute resolution platform: <a href="https://ec.europa.eu/consumers/odr" target="_blank" rel="noopener">ec.europa.eu/consumers/odr</a>.',
+    'h2.12': '12. Contact',
+    'p.12': 'For any query about these Terms, you can contact us at <a href="mailto:info@fastrevenue.app">info@fastrevenue.app</a>.',
+    'footer.copyright': '© 2026 FastRevenue · Miguel Ruiz Feja · Tax ID (NIF) 73051069X',
+    'footer.legal': 'Legal Notice',
+    'footer.privacy': 'Privacy',
+    'footer.terms': 'Terms',
+    'footer.cookies': 'Cookies',
+  },
+  fr: {
+    __pageTitle: 'Conditions générales — FastRevenue',
+    'nav.back': '← Retour à l\'accueil',
+    badge: 'Légal',
+    h1: 'Conditions générales',
+    meta: 'Dernière mise à jour : avril 2026',
+    'h2.1': '1. Objet',
+    'p.1a': 'Les présentes Conditions générales (ci-après, « les Conditions ») régissent l\'accès et l\'utilisation du service <strong>FastRevenue</strong>, une application web de Revenue Management pour établissements hôteliers, dont le titulaire est Miguel Ruiz Feja (NIF 73051069X), domicilié Calle Abades 7, Espagne (ci-après « FastRevenue » ou « le Fournisseur »).',
+    'p.1b': 'L\'inscription sur la plateforme implique l\'acceptation pleine et inconditionnelle des présentes Conditions. Si vous n\'êtes pas d\'accord avec l\'une des conditions, vous devez vous abstenir d\'utiliser le service.',
+    'h2.2': '2. Accès et inscription',
+    'p.2a': 'Pour accéder à FastRevenue, il est nécessaire de créer un compte au moyen d\'une adresse email valide et d\'un mot de passe. L\'utilisateur est responsable de la confidentialité de ses identifiants et de toutes les activités réalisées sous son compte.',
+    'p.2b': 'FastRevenue se réserve le droit de suspendre ou d\'annuler les comptes qui ne respectent pas ces Conditions, qui présentent une activité frauduleuse ou qui impliquent un usage abusif du service.',
+    'h2.3': '3. Description du service',
+    'p.3a': 'FastRevenue propose une plateforme SaaS qui permet aux hôteliers de :',
+    'li.3.1': 'Importer et visualiser les données de production quotidienne (occupation, ADR, RevPAR, TRevPAR).',
+    'li.3.2': 'Analyser le pick-up des réservations et son évolution.',
+    'li.3.3': 'Gérer les budgets et les comparer aux données réelles.',
+    'li.3.4': 'Enregistrer et analyser les groupes et événements.',
+    'li.3.5': 'Générer des rapports et des visualisations sur la performance de l\'hôtel.',
+    'p.3b': 'Les indicateurs et projections affichés par la plateforme sont élaborés à partir des données saisies par l\'utilisateur lui-même et ont un caractère purement indicatif.',
+    'h2.4': '4. Formules et tarifs',
+    'p.4a': 'FastRevenue propose un <strong>mois d\'essai gratuit</strong> sans avoir à fournir de moyen de paiement. Durant cette période, l\'utilisateur dispose d\'un accès complet à toutes les fonctionnalités.',
+    'p.4b': 'Passé le mois d\'essai, la poursuite du service nécessite la souscription d\'un abonnement mensuel. Le prix pour les hôtels souscrivant pendant la période fondatrice est de <strong>59 € par mois (TVA non incluse)</strong> et reste garanti indéfiniment tant que l\'abonnement reste actif. Ce prix pourra être révisé au bout de 5 ans à compter de la date de souscription initiale, avec un préavis minimal de 3 mois.',
+    'p.4c': 'De plus, un service d\'installation et de chargement des données historiques peut être souscrit pour un montant unique de <strong>130 € (TVA non incluse)</strong>, uniquement au moment de la souscription de l\'abonnement et à condition que l\'hôtel fournisse les données historiques nécessaires.',
+    'h2.5': '5. Facturation et résiliation',
+    'p.5a': 'L\'abonnement est facturé mensuellement. FastRevenue émet la facture au début de chaque période et le paiement s\'effectue par virement bancaire au numéro de compte indiqué sur la facture. Le service reste actif tant que le paiement est à jour.',
+    'p.5b': 'L\'utilisateur peut résilier son abonnement à tout moment en envoyant un email à <a href="mailto:info@fastrevenue.app">info@fastrevenue.app</a> avec un préavis minimal de 30 jours calendaires. La résiliation prendra effet à la fin de la période de préavis ; aucun remboursement n\'est effectué pour le temps non utilisé.',
+    'p.5c': 'FastRevenue n\'applique aucune pénalité ni durée minimale d\'engagement au-delà de la période de préavis de 30 jours.',
+    'h2.6': '6. Usage acceptable',
+    'p.6a': 'L\'utilisateur s\'engage à utiliser le service conformément à la loi et aux présentes Conditions. Sont expressément interdits :',
+    'li.6.1': 'La saisie de données fausses, frauduleuses ou de tiers sans autorisation.',
+    'li.6.2': 'La tentative d\'accès non autorisé à des systèmes ou comptes appartenant à des tiers.',
+    'li.6.3': 'L\'ingénierie inverse, la décompilation ou la copie du code de la plateforme.',
+    'li.6.4': 'L\'utilisation du service à des fins illégales ou contraires à la bonne foi.',
+    'li.6.5': 'La revente ou la sous-licence de l\'accès à des tiers sans autorisation expresse.',
+    'h2.7': '7. Propriété intellectuelle',
+    'p.7a': 'FastRevenue et l\'ensemble de ses composants (code, design, marque, logos, algorithmes) sont la propriété de Miguel Ruiz Feja ou font l\'objet des licences correspondantes. La souscription du service n\'implique aucune cession de droits de propriété intellectuelle à l\'utilisateur.',
+    'p.7b': 'Les données saisies par l\'utilisateur restent sa propriété exclusive. FastRevenue ne cède ni ne commercialise ces données à des tiers.',
+    'h2.8': '8. Disponibilité du service',
+    'p.8': 'FastRevenue vise une disponibilité mensuelle de 99,5 %, sans toutefois garantir l\'absence d\'interruptions dues à la maintenance, à un cas de force majeure ou à des incidents techniques chez ses prestataires. Les opérations de maintenance planifiées seront annoncées avec le plus de préavis possible.',
+    'h2.9': '9. Limitation de responsabilité',
+    'p.9a': 'FastRevenue ne sera pas responsable des dommages indirects, du manque à gagner ou de la perte de données pouvant résulter de l\'utilisation ou de l\'impossibilité d\'utiliser le service. En aucun cas la responsabilité totale du Fournisseur ne dépassera le montant versé par l\'utilisateur au cours des 12 derniers mois.',
+    'p.9b': 'L\'utilisateur est seul responsable des décisions commerciales qu\'il prend sur la base des données et indicateurs affichés par la plateforme.',
+    'h2.10': '10. Modifications des Conditions',
+    'p.10': 'FastRevenue se réserve le droit de modifier les présentes Conditions à tout moment. Les changements substantiels seront communiqués à l\'utilisateur par email au moins <strong>15 jours à l\'avance</strong>. La poursuite de l\'utilisation du service après cette communication implique l\'acceptation des nouvelles conditions.',
+    'h2.11': '11. Législation applicable et résolution des litiges',
+    'p.11a': 'Les présentes Conditions sont régies par la législation espagnole. En cas de litige, les parties se soumettent aux tribunaux correspondant au domicile du Fournisseur, renonçant à tout autre for qui pourrait leur être applicable.',
+    'p.11b': 'Pour les réclamations des consommateurs de l\'UE, la Commission européenne met à disposition une plateforme de résolution des litiges en ligne : <a href="https://ec.europa.eu/consumers/odr" target="_blank" rel="noopener">ec.europa.eu/consumers/odr</a>.',
+    'h2.12': '12. Contact',
+    'p.12': 'Pour toute question concernant ces Conditions, vous pouvez nous contacter à <a href="mailto:info@fastrevenue.app">info@fastrevenue.app</a>.',
+    'footer.copyright': '© 2026 FastRevenue · Miguel Ruiz Feja · NIF 73051069X',
+    'footer.legal': 'Mentions légales',
+    'footer.privacy': 'Confidentialité',
+    'footer.terms': 'Conditions',
+    'footer.cookies': 'Cookies',
+  },
+};
+</script>
+<script src="/i18n.js"></script>
 </body>
 </html>

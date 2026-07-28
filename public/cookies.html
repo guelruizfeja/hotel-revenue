@@ -29,6 +29,7 @@
   .nav-logo img { height: 28px; }
   .nav-back { font-size: 13px; color: var(--gray); display: flex; align-items: center; gap: 6px; }
   .nav-back:hover { color: var(--navy); }
+  .nav-right { display: flex; align-items: center; gap: 18px; }
   .wrapper { max-width: 760px; margin: 0 auto; padding: 60px 24px 100px; }
   .badge {
     display: inline-block; background: var(--navy); color: #fff;
@@ -73,97 +74,243 @@
 
 <nav>
   <a href="/" class="nav-logo"><img src="/fastrev-logo.png" alt="FastRevenue"></a>
-  <a href="/" class="nav-back">← Volver al inicio</a>
+  <div class="nav-right">
+    <div class="lang-switch i18n-switch--light" id="langSwitch"></div>
+    <a href="/" class="nav-back" data-i18n="nav.back">← Volver al inicio</a>
+  </div>
 </nav>
 
 <div class="wrapper">
-  <span class="badge">Legal</span>
-  <h1>Política de Cookies</h1>
-  <p class="meta">Última actualización: abril de 2026</p>
+  <span class="badge" data-i18n="badge">Legal</span>
+  <h1 data-i18n="h1">Política de Cookies</h1>
+  <p class="meta" data-i18n="meta">Última actualización: abril de 2026</p>
 
   <div class="info-box">
-    <p>FastRevenue <strong>no utiliza cookies publicitarias ni de seguimiento</strong>. Esta página describe exclusivamente las cookies técnicas estrictamente necesarias para el funcionamiento del servicio.</p>
+    <p data-i18n-html="infobox">FastRevenue <strong>no utiliza cookies publicitarias ni de seguimiento</strong>. Esta página describe exclusivamente las cookies técnicas estrictamente necesarias para el funcionamiento del servicio.</p>
   </div>
 
-  <h2>1. ¿Qué es una cookie?</h2>
-  <p>Una cookie es un pequeño archivo de texto que un sitio web almacena en el navegador del usuario cuando este lo visita. Las cookies permiten que el sitio recuerde acciones y preferencias del usuario durante un periodo de tiempo, de manera que no tenga que volver a introducirlos cada vez que regrese al sitio.</p>
+  <h2 data-i18n="h2.1">1. ¿Qué es una cookie?</h2>
+  <p data-i18n="p.1">Una cookie es un pequeño archivo de texto que un sitio web almacena en el navegador del usuario cuando este lo visita. Las cookies permiten que el sitio recuerde acciones y preferencias del usuario durante un periodo de tiempo, de manera que no tenga que volver a introducirlos cada vez que regrese al sitio.</p>
 
   <hr>
 
-  <h2>2. Cookies que utilizamos</h2>
-  <p>FastRevenue utiliza únicamente cookies técnicas estrictamente necesarias. Estas cookies no requieren consentimiento del usuario conforme al artículo 22.2 de la Ley 34/2002 de Servicios de la Sociedad de la Información (LSSI) y el Reglamento General de Protección de Datos (RGPD).</p>
+  <h2 data-i18n="h2.2">2. Cookies que utilizamos</h2>
+  <p data-i18n="p.2a">FastRevenue utiliza únicamente cookies técnicas estrictamente necesarias. Estas cookies no requieren consentimiento del usuario conforme al artículo 22.2 de la Ley 34/2002 de Servicios de la Sociedad de la Información (LSSI) y el Reglamento General de Protección de Datos (RGPD).</p>
 
   <div class="table-wrap">
     <table>
       <tr>
-        <th>Nombre</th>
-        <th>Proveedor</th>
-        <th>Finalidad</th>
-        <th>Duración</th>
-        <th>Tipo</th>
+        <th data-i18n="th.name">Nombre</th>
+        <th data-i18n="th.provider">Proveedor</th>
+        <th data-i18n="th.purpose">Finalidad</th>
+        <th data-i18n="th.duration">Duración</th>
+        <th data-i18n="th.type">Tipo</th>
       </tr>
       <tr>
         <td><code>sb-&lt;ref&gt;-auth-token</code></td>
         <td>Supabase</td>
-        <td>Mantiene la sesión autenticada del usuario en la plataforma. Sin esta cookie, el usuario tendría que iniciar sesión en cada visita.</td>
-        <td>Sesión / hasta 1 año</td>
-        <td>Técnica necesaria</td>
+        <td data-i18n="td.1.purpose">Mantiene la sesión autenticada del usuario en la plataforma. Sin esta cookie, el usuario tendría que iniciar sesión en cada visita.</td>
+        <td data-i18n="td.1.duration">Sesión / hasta 1 año</td>
+        <td data-i18n="td.1.type">Técnica necesaria</td>
       </tr>
       <tr>
         <td><code>sb-&lt;ref&gt;-auth-token-code-verifier</code></td>
         <td>Supabase</td>
-        <td>Almacena el verificador de código PKCE durante el flujo de autenticación para proteger el proceso de inicio de sesión.</td>
-        <td>Sesión</td>
-        <td>Técnica necesaria</td>
+        <td data-i18n="td.2.purpose">Almacena el verificador de código PKCE durante el flujo de autenticación para proteger el proceso de inicio de sesión.</td>
+        <td data-i18n="td.2.duration">Sesión</td>
+        <td data-i18n="td.2.type">Técnica necesaria</td>
       </tr>
     </table>
   </div>
 
-  <p>Estas cookies son generadas por <strong>Supabase, Inc.</strong>, proveedor de autenticación y base de datos de FastRevenue, ubicado en la región UE (eu-west). Para más información sobre las cookies de Supabase, consulta su <a href="https://supabase.com/privacy" target="_blank" rel="noopener">política de privacidad</a>.</p>
+  <p data-i18n-html="p.2b">Estas cookies son generadas por <strong>Supabase, Inc.</strong>, proveedor de autenticación y base de datos de FastRevenue, ubicado en la región UE (eu-west). Para más información sobre las cookies de Supabase, consulta su <a href="https://supabase.com/privacy" target="_blank" rel="noopener">política de privacidad</a>.</p>
 
   <hr>
 
-  <h2>3. Cookies de terceros</h2>
-  <p>FastRevenue <strong>no instala cookies de terceros</strong> con fines analíticos, publicitarios o de seguimiento del comportamiento del usuario. No se utilizan herramientas como Google Analytics, Meta Pixel, Hotjar ni similares.</p>
-  <p>La landing page carga tipografías desde <strong>Google Fonts</strong>. Esta carga puede generar una conexión al servidor de Google para descargar la fuente, pero <strong>no establece cookies</strong> en el navegador del usuario.</p>
+  <h2 data-i18n="h2.3">3. Cookies de terceros</h2>
+  <p data-i18n-html="p.3a">FastRevenue <strong>no instala cookies de terceros</strong> con fines analíticos, publicitarios o de seguimiento del comportamiento del usuario. No se utilizan herramientas como Google Analytics, Meta Pixel, Hotjar ni similares.</p>
+  <p data-i18n-html="p.3b">La landing page carga tipografías desde <strong>Google Fonts</strong>. Esta carga puede generar una conexión al servidor de Google para descargar la fuente, pero <strong>no establece cookies</strong> en el navegador del usuario.</p>
 
   <hr>
 
-  <h2>4. Gestión y desactivación de cookies</h2>
-  <p>Dado que FastRevenue solo utiliza cookies técnicas estrictamente necesarias, desactivarlas puede impedir el correcto funcionamiento de la plataforma (por ejemplo, no podrás mantener la sesión iniciada).</p>
-  <p>Si aun así deseas gestionar o eliminar las cookies, puedes hacerlo desde la configuración de tu navegador:</p>
+  <h2 data-i18n="h2.4">4. Gestión y desactivación de cookies</h2>
+  <p data-i18n="p.4a">Dado que FastRevenue solo utiliza cookies técnicas estrictamente necesarias, desactivarlas puede impedir el correcto funcionamiento de la plataforma (por ejemplo, no podrás mantener la sesión iniciada).</p>
+  <p data-i18n="p.4b">Si aun así deseas gestionar o eliminar las cookies, puedes hacerlo desde la configuración de tu navegador:</p>
   <ul>
-    <li><strong>Google Chrome:</strong> Configuración → Privacidad y seguridad → Cookies y otros datos de sitios</li>
-    <li><strong>Mozilla Firefox:</strong> Opciones → Privacidad y seguridad → Cookies y datos del sitio</li>
-    <li><strong>Safari:</strong> Preferencias → Privacidad → Gestionar datos de sitios web</li>
-    <li><strong>Microsoft Edge:</strong> Configuración → Privacidad, búsqueda y servicios → Cookies</li>
+    <li data-i18n-html="li.4.1"><strong>Google Chrome:</strong> Configuración → Privacidad y seguridad → Cookies y otros datos de sitios</li>
+    <li data-i18n-html="li.4.2"><strong>Mozilla Firefox:</strong> Opciones → Privacidad y seguridad → Cookies y datos del sitio</li>
+    <li data-i18n-html="li.4.3"><strong>Safari:</strong> Preferencias → Privacidad → Gestionar datos de sitios web</li>
+    <li data-i18n-html="li.4.4"><strong>Microsoft Edge:</strong> Configuración → Privacidad, búsqueda y servicios → Cookies</li>
   </ul>
 
   <hr>
 
-  <h2>5. Cambios en esta política</h2>
-  <p>FastRevenue se reserva el derecho a modificar esta política de cookies para adaptarla a cambios legislativos o tecnológicos. Se informará de cualquier cambio relevante mediante la actualización de la fecha indicada en el encabezado de esta página.</p>
+  <h2 data-i18n="h2.5">5. Cambios en esta política</h2>
+  <p data-i18n="p.5">FastRevenue se reserva el derecho a modificar esta política de cookies para adaptarla a cambios legislativos o tecnológicos. Se informará de cualquier cambio relevante mediante la actualización de la fecha indicada en el encabezado de esta página.</p>
 
   <hr>
 
-  <h2>6. Contacto</h2>
-  <p>Para cualquier consulta sobre el uso de cookies, puedes contactar con el responsable del tratamiento:</p>
+  <h2 data-i18n="h2.6">6. Contacto</h2>
+  <p data-i18n="p.6a">Para cualquier consulta sobre el uso de cookies, puedes contactar con el responsable del tratamiento:</p>
   <ul>
-    <li><strong>Responsable:</strong> Miguel Ruiz Feja</li>
-    <li><strong>Email:</strong> <a href="mailto:info@fastrevenue.app">info@fastrevenue.app</a></li>
+    <li data-i18n-html="li.6.1"><strong>Responsable:</strong> Miguel Ruiz Feja</li>
+    <li data-i18n-html="li.6.2"><strong>Email:</strong> <a href="mailto:info@fastrevenue.app">info@fastrevenue.app</a></li>
   </ul>
-  <p>También puedes consultar nuestra <a href="/privacidad.html">Política de Privacidad</a> para más información sobre el tratamiento de tus datos personales.</p>
+  <p data-i18n-html="p.6b">También puedes consultar nuestra <a href="/privacidad.html">Política de Privacidad</a> para más información sobre el tratamiento de tus datos personales.</p>
 </div>
 
 <footer>
-  <p>© 2026 FastRevenue · Miguel Ruiz Feja</p>
+  <p data-i18n="footer.copyright">© 2026 FastRevenue · Miguel Ruiz Feja</p>
   <p style="margin-top:8px;">
-    <a href="/aviso-legal.html">Aviso Legal</a>
-    <a href="/privacidad.html">Privacidad</a>
-    <a href="/terminos.html">Términos</a>
-    <a href="/cookies.html">Cookies</a>
+    <a href="/aviso-legal.html" data-i18n="footer.legal">Aviso Legal</a>
+    <a href="/privacidad.html" data-i18n="footer.privacy">Privacidad</a>
+    <a href="/terminos.html" data-i18n="footer.terms">Términos</a>
+    <a href="/cookies.html" data-i18n="footer.cookies">Cookies</a>
   </p>
 </footer>
 
+<script>
+window.I18N_DATA = {
+  es: {
+    __pageTitle: 'Política de Cookies — FastRevenue',
+    'nav.back': '← Volver al inicio',
+    badge: 'Legal',
+    h1: 'Política de Cookies',
+    meta: 'Última actualización: abril de 2026',
+    infobox: 'FastRevenue <strong>no utiliza cookies publicitarias ni de seguimiento</strong>. Esta página describe exclusivamente las cookies técnicas estrictamente necesarias para el funcionamiento del servicio.',
+    'h2.1': '1. ¿Qué es una cookie?',
+    'p.1': 'Una cookie es un pequeño archivo de texto que un sitio web almacena en el navegador del usuario cuando este lo visita. Las cookies permiten que el sitio recuerde acciones y preferencias del usuario durante un periodo de tiempo, de manera que no tenga que volver a introducirlos cada vez que regrese al sitio.',
+    'h2.2': '2. Cookies que utilizamos',
+    'p.2a': 'FastRevenue utiliza únicamente cookies técnicas estrictamente necesarias. Estas cookies no requieren consentimiento del usuario conforme al artículo 22.2 de la Ley 34/2002 de Servicios de la Sociedad de la Información (LSSI) y el Reglamento General de Protección de Datos (RGPD).',
+    'th.name': 'Nombre',
+    'th.provider': 'Proveedor',
+    'th.purpose': 'Finalidad',
+    'th.duration': 'Duración',
+    'th.type': 'Tipo',
+    'td.1.purpose': 'Mantiene la sesión autenticada del usuario en la plataforma. Sin esta cookie, el usuario tendría que iniciar sesión en cada visita.',
+    'td.1.duration': 'Sesión / hasta 1 año',
+    'td.1.type': 'Técnica necesaria',
+    'td.2.purpose': 'Almacena el verificador de código PKCE durante el flujo de autenticación para proteger el proceso de inicio de sesión.',
+    'td.2.duration': 'Sesión',
+    'td.2.type': 'Técnica necesaria',
+    'p.2b': 'Estas cookies son generadas por <strong>Supabase, Inc.</strong>, proveedor de autenticación y base de datos de FastRevenue, ubicado en la región UE (eu-west). Para más información sobre las cookies de Supabase, consulta su <a href="https://supabase.com/privacy" target="_blank" rel="noopener">política de privacidad</a>.',
+    'h2.3': '3. Cookies de terceros',
+    'p.3a': 'FastRevenue <strong>no instala cookies de terceros</strong> con fines analíticos, publicitarios o de seguimiento del comportamiento del usuario. No se utilizan herramientas como Google Analytics, Meta Pixel, Hotjar ni similares.',
+    'p.3b': 'La landing page carga tipografías desde <strong>Google Fonts</strong>. Esta carga puede generar una conexión al servidor de Google para descargar la fuente, pero <strong>no establece cookies</strong> en el navegador del usuario.',
+    'h2.4': '4. Gestión y desactivación de cookies',
+    'p.4a': 'Dado que FastRevenue solo utiliza cookies técnicas estrictamente necesarias, desactivarlas puede impedir el correcto funcionamiento de la plataforma (por ejemplo, no podrás mantener la sesión iniciada).',
+    'p.4b': 'Si aun así deseas gestionar o eliminar las cookies, puedes hacerlo desde la configuración de tu navegador:',
+    'li.4.1': '<strong>Google Chrome:</strong> Configuración → Privacidad y seguridad → Cookies y otros datos de sitios',
+    'li.4.2': '<strong>Mozilla Firefox:</strong> Opciones → Privacidad y seguridad → Cookies y datos del sitio',
+    'li.4.3': '<strong>Safari:</strong> Preferencias → Privacidad → Gestionar datos de sitios web',
+    'li.4.4': '<strong>Microsoft Edge:</strong> Configuración → Privacidad, búsqueda y servicios → Cookies',
+    'h2.5': '5. Cambios en esta política',
+    'p.5': 'FastRevenue se reserva el derecho a modificar esta política de cookies para adaptarla a cambios legislativos o tecnológicos. Se informará de cualquier cambio relevante mediante la actualización de la fecha indicada en el encabezado de esta página.',
+    'h2.6': '6. Contacto',
+    'p.6a': 'Para cualquier consulta sobre el uso de cookies, puedes contactar con el responsable del tratamiento:',
+    'li.6.1': '<strong>Responsable:</strong> Miguel Ruiz Feja',
+    'li.6.2': '<strong>Email:</strong> <a href="mailto:info@fastrevenue.app">info@fastrevenue.app</a>',
+    'p.6b': 'También puedes consultar nuestra <a href="/privacidad.html">Política de Privacidad</a> para más información sobre el tratamiento de tus datos personales.',
+    'footer.copyright': '© 2026 FastRevenue · Miguel Ruiz Feja',
+    'footer.legal': 'Aviso Legal',
+    'footer.privacy': 'Privacidad',
+    'footer.terms': 'Términos',
+    'footer.cookies': 'Cookies',
+  },
+  en: {
+    __pageTitle: 'Cookie Policy — FastRevenue',
+    'nav.back': '← Back to home',
+    badge: 'Legal',
+    h1: 'Cookie Policy',
+    meta: 'Last updated: April 2026',
+    infobox: 'FastRevenue <strong>does not use advertising or tracking cookies</strong>. This page describes only the strictly necessary technical cookies used for the service to function.',
+    'h2.1': '1. What is a cookie?',
+    'p.1': 'A cookie is a small text file that a website stores in the user\'s browser when they visit it. Cookies allow the site to remember the user\'s actions and preferences over a period of time, so they don\'t have to re-enter them every time they return to the site.',
+    'h2.2': '2. Cookies we use',
+    'p.2a': 'FastRevenue uses only strictly necessary technical cookies. These cookies do not require user consent under Article 22.2 of Spanish Law 34/2002 on Information Society Services (LSSI) and the General Data Protection Regulation (GDPR).',
+    'th.name': 'Name',
+    'th.provider': 'Provider',
+    'th.purpose': 'Purpose',
+    'th.duration': 'Duration',
+    'th.type': 'Type',
+    'td.1.purpose': 'Keeps the user\'s authenticated session active on the platform. Without this cookie, the user would have to log in on every visit.',
+    'td.1.duration': 'Session / up to 1 year',
+    'td.1.type': 'Strictly necessary',
+    'td.2.purpose': 'Stores the PKCE code verifier during the authentication flow to protect the login process.',
+    'td.2.duration': 'Session',
+    'td.2.type': 'Strictly necessary',
+    'p.2b': 'These cookies are generated by <strong>Supabase, Inc.</strong>, FastRevenue\'s authentication and database provider, located in the EU region (eu-west). For more information about Supabase cookies, see their <a href="https://supabase.com/privacy" target="_blank" rel="noopener">privacy policy</a>.',
+    'h2.3': '3. Third-party cookies',
+    'p.3a': 'FastRevenue <strong>does not install third-party cookies</strong> for analytics, advertising or user behavior tracking purposes. Tools such as Google Analytics, Meta Pixel, Hotjar or similar are not used.',
+    'p.3b': 'The landing page loads fonts from <strong>Google Fonts</strong>. This may generate a connection to Google\'s server to download the font, but it <strong>does not set cookies</strong> on the user\'s browser.',
+    'h2.4': '4. Managing and disabling cookies',
+    'p.4a': 'Since FastRevenue only uses strictly necessary technical cookies, disabling them may prevent the platform from working correctly (for example, you won\'t be able to stay logged in).',
+    'p.4b': 'If you still wish to manage or delete cookies, you can do so from your browser settings:',
+    'li.4.1': '<strong>Google Chrome:</strong> Settings → Privacy and security → Cookies and other site data',
+    'li.4.2': '<strong>Mozilla Firefox:</strong> Options → Privacy & Security → Cookies and Site Data',
+    'li.4.3': '<strong>Safari:</strong> Preferences → Privacy → Manage Website Data',
+    'li.4.4': '<strong>Microsoft Edge:</strong> Settings → Privacy, search and services → Cookies',
+    'h2.5': '5. Changes to this policy',
+    'p.5': 'FastRevenue reserves the right to modify this cookie policy to adapt it to legislative or technological changes. Any relevant change will be announced by updating the date shown at the top of this page.',
+    'h2.6': '6. Contact',
+    'p.6a': 'For any query about the use of cookies, you can contact the data controller:',
+    'li.6.1': '<strong>Controller:</strong> Miguel Ruiz Feja',
+    'li.6.2': '<strong>Email:</strong> <a href="mailto:info@fastrevenue.app">info@fastrevenue.app</a>',
+    'p.6b': 'You can also check our <a href="/privacidad.html">Privacy Policy</a> for more information on how we process your personal data.',
+    'footer.copyright': '© 2026 FastRevenue · Miguel Ruiz Feja',
+    'footer.legal': 'Legal Notice',
+    'footer.privacy': 'Privacy',
+    'footer.terms': 'Terms',
+    'footer.cookies': 'Cookies',
+  },
+  fr: {
+    __pageTitle: 'Politique de cookies — FastRevenue',
+    'nav.back': '← Retour à l\'accueil',
+    badge: 'Légal',
+    h1: 'Politique de cookies',
+    meta: 'Dernière mise à jour : avril 2026',
+    infobox: 'FastRevenue <strong>n\'utilise pas de cookies publicitaires ni de suivi</strong>. Cette page décrit exclusivement les cookies techniques strictement nécessaires au fonctionnement du service.',
+    'h2.1': '1. Qu\'est-ce qu\'un cookie ?',
+    'p.1': 'Un cookie est un petit fichier texte qu\'un site web enregistre dans le navigateur de l\'utilisateur lors de sa visite. Les cookies permettent au site de se souvenir des actions et préférences de l\'utilisateur pendant une certaine durée, afin qu\'il n\'ait pas à les ressaisir à chaque retour sur le site.',
+    'h2.2': '2. Cookies que nous utilisons',
+    'p.2a': 'FastRevenue utilise uniquement des cookies techniques strictement nécessaires. Ces cookies ne nécessitent pas le consentement de l\'utilisateur conformément à l\'article 22.2 de la loi espagnole 34/2002 sur les services de la société de l\'information (LSSI) et au Règlement général sur la protection des données (RGPD).',
+    'th.name': 'Nom',
+    'th.provider': 'Prestataire',
+    'th.purpose': 'Finalité',
+    'th.duration': 'Durée',
+    'th.type': 'Type',
+    'td.1.purpose': 'Maintient la session authentifiée de l\'utilisateur sur la plateforme. Sans ce cookie, l\'utilisateur devrait se reconnecter à chaque visite.',
+    'td.1.duration': 'Session / jusqu\'à 1 an',
+    'td.1.type': 'Technique nécessaire',
+    'td.2.purpose': 'Stocke le vérificateur de code PKCE pendant le flux d\'authentification afin de protéger le processus de connexion.',
+    'td.2.duration': 'Session',
+    'td.2.type': 'Technique nécessaire',
+    'p.2b': 'Ces cookies sont générés par <strong>Supabase, Inc.</strong>, prestataire d\'authentification et de base de données de FastRevenue, situé dans la région UE (eu-west). Pour plus d\'informations sur les cookies de Supabase, consultez leur <a href="https://supabase.com/privacy" target="_blank" rel="noopener">politique de confidentialité</a>.',
+    'h2.3': '3. Cookies tiers',
+    'p.3a': 'FastRevenue <strong>n\'installe aucun cookie tiers</strong> à des fins analytiques, publicitaires ou de suivi du comportement de l\'utilisateur. Aucun outil tel que Google Analytics, Meta Pixel, Hotjar ou similaire n\'est utilisé.',
+    'p.3b': 'La landing page charge des polices depuis <strong>Google Fonts</strong>. Ce chargement peut générer une connexion au serveur de Google pour télécharger la police, mais <strong>n\'installe aucun cookie</strong> dans le navigateur de l\'utilisateur.',
+    'h2.4': '4. Gestion et désactivation des cookies',
+    'p.4a': 'Étant donné que FastRevenue n\'utilise que des cookies techniques strictement nécessaires, les désactiver peut empêcher le bon fonctionnement de la plateforme (par exemple, vous ne pourrez pas rester connecté).',
+    'p.4b': 'Si vous souhaitez malgré tout gérer ou supprimer les cookies, vous pouvez le faire depuis les paramètres de votre navigateur :',
+    'li.4.1': '<strong>Google Chrome :</strong> Paramètres → Confidentialité et sécurité → Cookies et autres données de sites',
+    'li.4.2': '<strong>Mozilla Firefox :</strong> Options → Vie privée et sécurité → Cookies et données de sites',
+    'li.4.3': '<strong>Safari :</strong> Préférences → Confidentialité → Gérer les données de sites web',
+    'li.4.4': '<strong>Microsoft Edge :</strong> Paramètres → Confidentialité, recherche et services → Cookies',
+    'h2.5': '5. Modifications de cette politique',
+    'p.5': 'FastRevenue se réserve le droit de modifier cette politique de cookies pour l\'adapter à des changements législatifs ou technologiques. Tout changement pertinent sera signalé par la mise à jour de la date indiquée en haut de cette page.',
+    'h2.6': '6. Contact',
+    'p.6a': 'Pour toute question concernant l\'utilisation des cookies, vous pouvez contacter le responsable du traitement :',
+    'li.6.1': '<strong>Responsable :</strong> Miguel Ruiz Feja',
+    'li.6.2': '<strong>Email :</strong> <a href="mailto:info@fastrevenue.app">info@fastrevenue.app</a>',
+    'p.6b': 'Vous pouvez également consulter notre <a href="/privacidad.html">Politique de confidentialité</a> pour plus d\'informations sur le traitement de vos données personnelles.',
+    'footer.copyright': '© 2026 FastRevenue · Miguel Ruiz Feja',
+    'footer.legal': 'Mentions légales',
+    'footer.privacy': 'Confidentialité',
+    'footer.terms': 'Conditions',
+    'footer.cookies': 'Cookies',
+  },
+};
+</script>
+<script src="/i18n.js"></script>
 </body>
 </html>

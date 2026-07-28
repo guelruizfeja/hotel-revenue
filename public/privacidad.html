@@ -29,6 +29,7 @@
   .nav-logo img { height: 28px; }
   .nav-back { font-size: 13px; color: var(--gray); display: flex; align-items: center; gap: 6px; }
   .nav-back:hover { color: var(--navy); }
+  .nav-right { display: flex; align-items: center; gap: 18px; }
   .wrapper { max-width: 760px; margin: 0 auto; padding: 60px 24px 100px; }
   .badge {
     display: inline-block; background: var(--navy); color: #fff;
@@ -68,115 +69,297 @@
 
 <nav>
   <a href="/" class="nav-logo"><img src="/fastrev-logo.png" alt="FastRevenue"></a>
-  <a href="/" class="nav-back">← Volver al inicio</a>
+  <div class="nav-right">
+    <div class="lang-switch i18n-switch--light" id="langSwitch"></div>
+    <a href="/" class="nav-back" data-i18n="nav.back">← Volver al inicio</a>
+  </div>
 </nav>
 
 <div class="wrapper">
-  <span class="badge">Legal</span>
-  <h1>Política de Privacidad</h1>
-  <p class="meta">Última actualización: abril de 2026</p>
+  <span class="badge" data-i18n="badge">Legal</span>
+  <h1 data-i18n="h1">Política de Privacidad</h1>
+  <p class="meta" data-i18n="meta">Última actualización: abril de 2026</p>
 
-  <h2>1. Responsable del tratamiento</h2>
-  <p>
+  <h2 data-i18n="h2.1">1. Responsable del tratamiento</h2>
+  <p data-i18n-html="p.1a">
     <strong>Nombre:</strong> Miguel Ruiz Feja<br>
     <strong>NIF:</strong> 73051069X<br>
     <strong>Domicilio:</strong> Calle Abades 7<br>
     <strong>Contacto:</strong> <a href="mailto:info@fastrevenue.app">info@fastrevenue.app</a>
   </p>
-  <p>En adelante, «el Responsable» o «FastRevenue».</p>
+  <p data-i18n="p.1b">En adelante, «el Responsable» o «FastRevenue».</p>
 
   <hr>
 
-  <h2>2. Datos que recogemos</h2>
-  <p>FastRevenue recoge únicamente los datos necesarios para prestar el servicio:</p>
+  <h2 data-i18n="h2.2">2. Datos que recogemos</h2>
+  <p data-i18n="p.2a">FastRevenue recoge únicamente los datos necesarios para prestar el servicio:</p>
   <ul>
-    <li><strong>Datos de cuenta:</strong> dirección de correo electrónico y contraseña (cifrada) para el acceso a la plataforma.</li>
-    <li><strong>Datos del hotel:</strong> nombre del establecimiento y número de habitaciones, facilitados voluntariamente por el usuario.</li>
-    <li><strong>Datos operativos:</strong> producción diaria (ocupación, revenue), pickup de reservas, presupuesto y grupos/eventos, que el usuario importa desde su propia plantilla Excel.</li>
-    <li><strong>Datos de uso:</strong> logs técnicos básicos para el correcto funcionamiento del servicio (sin tracking de comportamiento ni publicidad).</li>
+    <li data-i18n-html="li.2.1"><strong>Datos de cuenta:</strong> dirección de correo electrónico y contraseña (cifrada) para el acceso a la plataforma.</li>
+    <li data-i18n-html="li.2.2"><strong>Datos del hotel:</strong> nombre del establecimiento y número de habitaciones, facilitados voluntariamente por el usuario.</li>
+    <li data-i18n-html="li.2.3"><strong>Datos operativos:</strong> producción diaria (ocupación, revenue), pickup de reservas, presupuesto y grupos/eventos, que el usuario importa desde su propia plantilla Excel.</li>
+    <li data-i18n-html="li.2.4"><strong>Datos de uso:</strong> logs técnicos básicos para el correcto funcionamiento del servicio (sin tracking de comportamiento ni publicidad).</li>
   </ul>
 
-  <h2>3. Finalidad y base legitimadora</h2>
+  <h2 data-i18n="h2.3">3. Finalidad y base legitimadora</h2>
   <div class="table-wrap">
     <table>
       <tr>
-        <th>Finalidad</th>
-        <th>Base jurídica (RGPD art. 6)</th>
+        <th data-i18n="th.3.1">Finalidad</th>
+        <th data-i18n="th.3.2">Base jurídica (RGPD art. 6)</th>
       </tr>
       <tr>
-        <td>Prestación del servicio contratado</td>
-        <td>Ejecución del contrato (art. 6.1.b)</td>
+        <td data-i18n="td.3.1a">Prestación del servicio contratado</td>
+        <td data-i18n="td.3.1b">Ejecución del contrato (art. 6.1.b)</td>
       </tr>
       <tr>
-        <td>Gestión del acceso y autenticación</td>
-        <td>Ejecución del contrato (art. 6.1.b)</td>
+        <td data-i18n="td.3.2a">Gestión del acceso y autenticación</td>
+        <td data-i18n="td.3.2b">Ejecución del contrato (art. 6.1.b)</td>
       </tr>
       <tr>
-        <td>Comunicaciones sobre el servicio (avisos, actualizaciones)</td>
-        <td>Interés legítimo (art. 6.1.f)</td>
+        <td data-i18n="td.3.3a">Comunicaciones sobre el servicio (avisos, actualizaciones)</td>
+        <td data-i18n="td.3.3b">Interés legítimo (art. 6.1.f)</td>
       </tr>
       <tr>
-        <td>Cumplimiento de obligaciones legales</td>
-        <td>Obligación legal (art. 6.1.c)</td>
+        <td data-i18n="td.3.4a">Cumplimiento de obligaciones legales</td>
+        <td data-i18n="td.3.4b">Obligación legal (art. 6.1.c)</td>
       </tr>
     </table>
   </div>
 
-  <h2>4. Encargados del tratamiento</h2>
-  <p>FastRevenue utiliza los siguientes proveedores de confianza, con los que mantiene el correspondiente contrato de encargado del tratamiento (DPA):</p>
+  <h2 data-i18n="h2.4">4. Encargados del tratamiento</h2>
+  <p data-i18n="p.4a">FastRevenue utiliza los siguientes proveedores de confianza, con los que mantiene el correspondiente contrato de encargado del tratamiento (DPA):</p>
   <div class="table-wrap">
     <table>
       <tr>
-        <th>Proveedor</th>
-        <th>Función</th>
-        <th>Ubicación</th>
+        <th data-i18n="th.4.1">Proveedor</th>
+        <th data-i18n="th.4.2">Función</th>
+        <th data-i18n="th.4.3">Ubicación</th>
       </tr>
       <tr>
         <td><strong>Supabase, Inc.</strong></td>
-        <td>Base de datos y autenticación</td>
-        <td>UE (AWS Frankfurt, eu-central-1)</td>
+        <td data-i18n="td.4.1b">Base de datos y autenticación</td>
+        <td data-i18n="td.4.1c">UE (AWS Frankfurt, eu-central-1)</td>
       </tr>
       <tr>
         <td><strong>Vercel, Inc.</strong></td>
-        <td>Hospedaje de la aplicación web</td>
-        <td>UE / EEUU (con SCCs)</td>
+        <td data-i18n="td.4.2b">Hospedaje de la aplicación web</td>
+        <td data-i18n="td.4.2c">UE / EEUU (con SCCs)</td>
       </tr>
     </table>
   </div>
-  <p>Las transferencias a países fuera del EEE se realizan bajo las Cláusulas Contractuales Tipo (SCCs) aprobadas por la Comisión Europea.</p>
+  <p data-i18n="p.4b">Las transferencias a países fuera del EEE se realizan bajo las Cláusulas Contractuales Tipo (SCCs) aprobadas por la Comisión Europea.</p>
 
-  <h2>5. Plazo de conservación</h2>
-  <p>Los datos de cuenta y operativos se conservan mientras el usuario mantenga su suscripción activa. Tras la baja, los datos se eliminan en un plazo máximo de <strong>30 días</strong>. Los datos de facturación asociados a las facturas emitidas se conservan durante <strong>5 años</strong> para cumplir con las obligaciones fiscales y contables.</p>
+  <h2 data-i18n="h2.5">5. Plazo de conservación</h2>
+  <p data-i18n-html="p.5">Los datos de cuenta y operativos se conservan mientras el usuario mantenga su suscripción activa. Tras la baja, los datos se eliminan en un plazo máximo de <strong>30 días</strong>. Los datos de facturación asociados a las facturas emitidas se conservan durante <strong>5 años</strong> para cumplir con las obligaciones fiscales y contables.</p>
 
-  <h2>6. Derechos del usuario</h2>
-  <p>Conforme al RGPD y la LOPDGDD, el usuario tiene derecho a:</p>
+  <h2 data-i18n="h2.6">6. Derechos del usuario</h2>
+  <p data-i18n="p.6a">Conforme al RGPD y la LOPDGDD, el usuario tiene derecho a:</p>
   <ul>
-    <li><strong>Acceso:</strong> obtener confirmación de si se tratan sus datos y acceder a ellos.</li>
-    <li><strong>Rectificación:</strong> solicitar la corrección de datos inexactos.</li>
-    <li><strong>Supresión («derecho al olvido»):</strong> solicitar la eliminación de sus datos.</li>
-    <li><strong>Limitación del tratamiento:</strong> solicitar que el tratamiento quede restringido en determinadas circunstancias.</li>
-    <li><strong>Portabilidad:</strong> recibir sus datos en formato estructurado y de uso común.</li>
-    <li><strong>Oposición:</strong> oponerse al tratamiento basado en interés legítimo.</li>
+    <li data-i18n-html="li.6.1"><strong>Acceso:</strong> obtener confirmación de si se tratan sus datos y acceder a ellos.</li>
+    <li data-i18n-html="li.6.2"><strong>Rectificación:</strong> solicitar la corrección de datos inexactos.</li>
+    <li data-i18n-html="li.6.3"><strong>Supresión («derecho al olvido»):</strong> solicitar la eliminación de sus datos.</li>
+    <li data-i18n-html="li.6.4"><strong>Limitación del tratamiento:</strong> solicitar que el tratamiento quede restringido en determinadas circunstancias.</li>
+    <li data-i18n-html="li.6.5"><strong>Portabilidad:</strong> recibir sus datos en formato estructurado y de uso común.</li>
+    <li data-i18n-html="li.6.6"><strong>Oposición:</strong> oponerse al tratamiento basado en interés legítimo.</li>
   </ul>
-  <p>Para ejercer cualquiera de estos derechos, envía un correo a <a href="mailto:info@fastrevenue.app">info@fastrevenue.app</a> indicando tu solicitud y adjuntando una copia de tu documento de identidad. Responderemos en el plazo máximo de <strong>30 días</strong>.</p>
-  <p>Si consideras que el tratamiento no es conforme a la normativa, puedes presentar una reclamación ante la <strong>Agencia Española de Protección de Datos</strong> (<a href="https://www.aepd.es" target="_blank" rel="noopener">www.aepd.es</a>).</p>
+  <p data-i18n-html="p.6b">Para ejercer cualquiera de estos derechos, envía un correo a <a href="mailto:info@fastrevenue.app">info@fastrevenue.app</a> indicando tu solicitud y adjuntando una copia de tu documento de identidad. Responderemos en el plazo máximo de <strong>30 días</strong>.</p>
+  <p data-i18n-html="p.6c">Si consideras que el tratamiento no es conforme a la normativa, puedes presentar una reclamación ante la <strong>Agencia Española de Protección de Datos</strong> (<a href="https://www.aepd.es" target="_blank" rel="noopener">www.aepd.es</a>).</p>
 
-  <h2>7. Seguridad</h2>
-  <p>FastRevenue aplica medidas técnicas y organizativas adecuadas para proteger los datos frente a accesos no autorizados, pérdida o alteración: cifrado en tránsito (TLS), cifrado en reposo en la base de datos, acceso restringido con autenticación segura y contraseñas hasheadas.</p>
+  <h2 data-i18n="h2.7">7. Seguridad</h2>
+  <p data-i18n="p.7">FastRevenue aplica medidas técnicas y organizativas adecuadas para proteger los datos frente a accesos no autorizados, pérdida o alteración: cifrado en tránsito (TLS), cifrado en reposo en la base de datos, acceso restringido con autenticación segura y contraseñas hasheadas.</p>
 
-  <h2>8. Cookies</h2>
-  <p>FastRevenue utiliza únicamente cookies técnicas estrictamente necesarias para el funcionamiento de la sesión de usuario. No se usan cookies publicitarias ni de seguimiento de terceros.</p>
+  <h2 data-i18n="h2.8">8. Cookies</h2>
+  <p data-i18n="p.8">FastRevenue utiliza únicamente cookies técnicas estrictamente necesarias para el funcionamiento de la sesión de usuario. No se usan cookies publicitarias ni de seguimiento de terceros.</p>
 </div>
 
 <footer>
-  <p>© 2026 FastRevenue · Miguel Ruiz Feja · NIF 73051069X</p>
+  <p data-i18n="footer.copyright">© 2026 FastRevenue · Miguel Ruiz Feja · NIF 73051069X</p>
   <p style="margin-top:8px;">
-    <a href="/aviso-legal.html">Aviso Legal</a>
-    <a href="/privacidad.html">Privacidad</a>
-    <a href="/terminos.html">Términos</a>
-    <a href="/cookies.html">Cookies</a>
+    <a href="/aviso-legal.html" data-i18n="footer.legal">Aviso Legal</a>
+    <a href="/privacidad.html" data-i18n="footer.privacy">Privacidad</a>
+    <a href="/terminos.html" data-i18n="footer.terms">Términos</a>
+    <a href="/cookies.html" data-i18n="footer.cookies">Cookies</a>
   </p>
 </footer>
 
+<script>
+window.I18N_DATA = {
+  es: {
+    __pageTitle: 'Política de Privacidad — FastRevenue',
+    'nav.back': '← Volver al inicio',
+    badge: 'Legal',
+    h1: 'Política de Privacidad',
+    meta: 'Última actualización: abril de 2026',
+    'h2.1': '1. Responsable del tratamiento',
+    'p.1a': '<strong>Nombre:</strong> Miguel Ruiz Feja<br><strong>NIF:</strong> 73051069X<br><strong>Domicilio:</strong> Calle Abades 7<br><strong>Contacto:</strong> <a href="mailto:info@fastrevenue.app">info@fastrevenue.app</a>',
+    'p.1b': 'En adelante, «el Responsable» o «FastRevenue».',
+    'h2.2': '2. Datos que recogemos',
+    'p.2a': 'FastRevenue recoge únicamente los datos necesarios para prestar el servicio:',
+    'li.2.1': '<strong>Datos de cuenta:</strong> dirección de correo electrónico y contraseña (cifrada) para el acceso a la plataforma.',
+    'li.2.2': '<strong>Datos del hotel:</strong> nombre del establecimiento y número de habitaciones, facilitados voluntariamente por el usuario.',
+    'li.2.3': '<strong>Datos operativos:</strong> producción diaria (ocupación, revenue), pickup de reservas, presupuesto y grupos/eventos, que el usuario importa desde su propia plantilla Excel.',
+    'li.2.4': '<strong>Datos de uso:</strong> logs técnicos básicos para el correcto funcionamiento del servicio (sin tracking de comportamiento ni publicidad).',
+    'h2.3': '3. Finalidad y base legitimadora',
+    'th.3.1': 'Finalidad',
+    'th.3.2': 'Base jurídica (RGPD art. 6)',
+    'td.3.1a': 'Prestación del servicio contratado',
+    'td.3.1b': 'Ejecución del contrato (art. 6.1.b)',
+    'td.3.2a': 'Gestión del acceso y autenticación',
+    'td.3.2b': 'Ejecución del contrato (art. 6.1.b)',
+    'td.3.3a': 'Comunicaciones sobre el servicio (avisos, actualizaciones)',
+    'td.3.3b': 'Interés legítimo (art. 6.1.f)',
+    'td.3.4a': 'Cumplimiento de obligaciones legales',
+    'td.3.4b': 'Obligación legal (art. 6.1.c)',
+    'h2.4': '4. Encargados del tratamiento',
+    'p.4a': 'FastRevenue utiliza los siguientes proveedores de confianza, con los que mantiene el correspondiente contrato de encargado del tratamiento (DPA):',
+    'th.4.1': 'Proveedor',
+    'th.4.2': 'Función',
+    'th.4.3': 'Ubicación',
+    'td.4.1b': 'Base de datos y autenticación',
+    'td.4.1c': 'UE (AWS Frankfurt, eu-central-1)',
+    'td.4.2b': 'Hospedaje de la aplicación web',
+    'td.4.2c': 'UE / EEUU (con SCCs)',
+    'p.4b': 'Las transferencias a países fuera del EEE se realizan bajo las Cláusulas Contractuales Tipo (SCCs) aprobadas por la Comisión Europea.',
+    'h2.5': '5. Plazo de conservación',
+    'p.5': 'Los datos de cuenta y operativos se conservan mientras el usuario mantenga su suscripción activa. Tras la baja, los datos se eliminan en un plazo máximo de <strong>30 días</strong>. Los datos de facturación asociados a las facturas emitidas se conservan durante <strong>5 años</strong> para cumplir con las obligaciones fiscales y contables.',
+    'h2.6': '6. Derechos del usuario',
+    'p.6a': 'Conforme al RGPD y la LOPDGDD, el usuario tiene derecho a:',
+    'li.6.1': '<strong>Acceso:</strong> obtener confirmación de si se tratan sus datos y acceder a ellos.',
+    'li.6.2': '<strong>Rectificación:</strong> solicitar la corrección de datos inexactos.',
+    'li.6.3': '<strong>Supresión («derecho al olvido»):</strong> solicitar la eliminación de sus datos.',
+    'li.6.4': '<strong>Limitación del tratamiento:</strong> solicitar que el tratamiento quede restringido en determinadas circunstancias.',
+    'li.6.5': '<strong>Portabilidad:</strong> recibir sus datos en formato estructurado y de uso común.',
+    'li.6.6': '<strong>Oposición:</strong> oponerse al tratamiento basado en interés legítimo.',
+    'p.6b': 'Para ejercer cualquiera de estos derechos, envía un correo a <a href="mailto:info@fastrevenue.app">info@fastrevenue.app</a> indicando tu solicitud y adjuntando una copia de tu documento de identidad. Responderemos en el plazo máximo de <strong>30 días</strong>.',
+    'p.6c': 'Si consideras que el tratamiento no es conforme a la normativa, puedes presentar una reclamación ante la <strong>Agencia Española de Protección de Datos</strong> (<a href="https://www.aepd.es" target="_blank" rel="noopener">www.aepd.es</a>).',
+    'h2.7': '7. Seguridad',
+    'p.7': 'FastRevenue aplica medidas técnicas y organizativas adecuadas para proteger los datos frente a accesos no autorizados, pérdida o alteración: cifrado en tránsito (TLS), cifrado en reposo en la base de datos, acceso restringido con autenticación segura y contraseñas hasheadas.',
+    'h2.8': '8. Cookies',
+    'p.8': 'FastRevenue utiliza únicamente cookies técnicas estrictamente necesarias para el funcionamiento de la sesión de usuario. No se usan cookies publicitarias ni de seguimiento de terceros.',
+    'footer.copyright': '© 2026 FastRevenue · Miguel Ruiz Feja · NIF 73051069X',
+    'footer.legal': 'Aviso Legal',
+    'footer.privacy': 'Privacidad',
+    'footer.terms': 'Términos',
+    'footer.cookies': 'Cookies',
+  },
+  en: {
+    __pageTitle: 'Privacy Policy — FastRevenue',
+    'nav.back': '← Back to home',
+    badge: 'Legal',
+    h1: 'Privacy Policy',
+    meta: 'Last updated: April 2026',
+    'h2.1': '1. Data controller',
+    'p.1a': '<strong>Name:</strong> Miguel Ruiz Feja<br><strong>Tax ID (NIF):</strong> 73051069X<br><strong>Address:</strong> Calle Abades 7, Spain<br><strong>Contact:</strong> <a href="mailto:info@fastrevenue.app">info@fastrevenue.app</a>',
+    'p.1b': 'Hereinafter, "the Controller" or "FastRevenue".',
+    'h2.2': '2. Data we collect',
+    'p.2a': 'FastRevenue collects only the data necessary to provide the service:',
+    'li.2.1': '<strong>Account data:</strong> email address and password (encrypted) for access to the platform.',
+    'li.2.2': '<strong>Hotel data:</strong> property name and number of rooms, voluntarily provided by the user.',
+    'li.2.3': '<strong>Operational data:</strong> daily production (occupancy, revenue), booking pickup, budget and groups/events, imported by the user from their own Excel template.',
+    'li.2.4': '<strong>Usage data:</strong> basic technical logs required for the proper functioning of the service (no behavioral tracking or advertising).',
+    'h2.3': '3. Purpose and legal basis',
+    'th.3.1': 'Purpose',
+    'th.3.2': 'Legal basis (GDPR Art. 6)',
+    'td.3.1a': 'Provision of the contracted service',
+    'td.3.1b': 'Performance of a contract (Art. 6.1.b)',
+    'td.3.2a': 'Access and authentication management',
+    'td.3.2b': 'Performance of a contract (Art. 6.1.b)',
+    'td.3.3a': 'Service-related communications (notices, updates)',
+    'td.3.3b': 'Legitimate interest (Art. 6.1.f)',
+    'td.3.4a': 'Compliance with legal obligations',
+    'td.3.4b': 'Legal obligation (Art. 6.1.c)',
+    'h2.4': '4. Data processors',
+    'p.4a': 'FastRevenue uses the following trusted providers, with whom it maintains the corresponding data processing agreement (DPA):',
+    'th.4.1': 'Provider',
+    'th.4.2': 'Function',
+    'th.4.3': 'Location',
+    'td.4.1b': 'Database and authentication',
+    'td.4.1c': 'EU (AWS Frankfurt, eu-central-1)',
+    'td.4.2b': 'Web application hosting',
+    'td.4.2c': 'EU / USA (with SCCs)',
+    'p.4b': 'Transfers to countries outside the EEA are carried out under the Standard Contractual Clauses (SCCs) approved by the European Commission.',
+    'h2.5': '5. Retention period',
+    'p.5': 'Account and operational data are retained for as long as the user maintains an active subscription. After cancellation, data is deleted within a maximum of <strong>30 days</strong>. Billing data associated with issued invoices is kept for <strong>5 years</strong> to comply with tax and accounting obligations.',
+    'h2.6': '6. User rights',
+    'p.6a': 'In accordance with the GDPR and Spanish LOPDGDD, users have the right to:',
+    'li.6.1': '<strong>Access:</strong> obtain confirmation as to whether their data is being processed and access it.',
+    'li.6.2': '<strong>Rectification:</strong> request correction of inaccurate data.',
+    'li.6.3': '<strong>Erasure ("right to be forgotten"):</strong> request deletion of their data.',
+    'li.6.4': '<strong>Restriction of processing:</strong> request that processing be restricted under certain circumstances.',
+    'li.6.5': '<strong>Portability:</strong> receive their data in a structured, commonly used format.',
+    'li.6.6': '<strong>Objection:</strong> object to processing based on legitimate interest.',
+    'p.6b': 'To exercise any of these rights, send an email to <a href="mailto:info@fastrevenue.app">info@fastrevenue.app</a> stating your request and attaching a copy of your ID document. We will respond within a maximum of <strong>30 days</strong>.',
+    'p.6c': 'If you believe the processing does not comply with the regulations, you can file a complaint with the <strong>Spanish Data Protection Agency</strong> (<a href="https://www.aepd.es" target="_blank" rel="noopener">www.aepd.es</a>).',
+    'h2.7': '7. Security',
+    'p.7': 'FastRevenue applies appropriate technical and organizational measures to protect data against unauthorized access, loss or alteration: encryption in transit (TLS), encryption at rest in the database, restricted access with secure authentication and hashed passwords.',
+    'h2.8': '8. Cookies',
+    'p.8': 'FastRevenue uses only strictly necessary technical cookies for the operation of the user session. No advertising or third-party tracking cookies are used.',
+    'footer.copyright': '© 2026 FastRevenue · Miguel Ruiz Feja · Tax ID (NIF) 73051069X',
+    'footer.legal': 'Legal Notice',
+    'footer.privacy': 'Privacy',
+    'footer.terms': 'Terms',
+    'footer.cookies': 'Cookies',
+  },
+  fr: {
+    __pageTitle: 'Politique de confidentialité — FastRevenue',
+    'nav.back': '← Retour à l\'accueil',
+    badge: 'Légal',
+    h1: 'Politique de confidentialité',
+    meta: 'Dernière mise à jour : avril 2026',
+    'h2.1': '1. Responsable du traitement',
+    'p.1a': '<strong>Nom :</strong> Miguel Ruiz Feja<br><strong>NIF :</strong> 73051069X<br><strong>Adresse :</strong> Calle Abades 7, Espagne<br><strong>Contact :</strong> <a href="mailto:info@fastrevenue.app">info@fastrevenue.app</a>',
+    'p.1b': 'Ci-après, « le Responsable » ou « FastRevenue ».',
+    'h2.2': '2. Données que nous collectons',
+    'p.2a': 'FastRevenue ne collecte que les données nécessaires à la fourniture du service :',
+    'li.2.1': '<strong>Données de compte :</strong> adresse email et mot de passe (chiffré) pour l\'accès à la plateforme.',
+    'li.2.2': '<strong>Données de l\'hôtel :</strong> nom de l\'établissement et nombre de chambres, fournis volontairement par l\'utilisateur.',
+    'li.2.3': '<strong>Données opérationnelles :</strong> production quotidienne (occupation, revenue), pick-up des réservations, budget et groupes/événements, importés par l\'utilisateur depuis son propre modèle Excel.',
+    'li.2.4': '<strong>Données d\'utilisation :</strong> journaux techniques de base nécessaires au bon fonctionnement du service (sans suivi comportemental ni publicité).',
+    'h2.3': '3. Finalité et base juridique',
+    'th.3.1': 'Finalité',
+    'th.3.2': 'Base juridique (RGPD art. 6)',
+    'td.3.1a': 'Fourniture du service souscrit',
+    'td.3.1b': 'Exécution du contrat (art. 6.1.b)',
+    'td.3.2a': 'Gestion de l\'accès et de l\'authentification',
+    'td.3.2b': 'Exécution du contrat (art. 6.1.b)',
+    'td.3.3a': 'Communications relatives au service (avis, mises à jour)',
+    'td.3.3b': 'Intérêt légitime (art. 6.1.f)',
+    'td.3.4a': 'Respect des obligations légales',
+    'td.3.4b': 'Obligation légale (art. 6.1.c)',
+    'h2.4': '4. Sous-traitants',
+    'p.4a': 'FastRevenue fait appel aux prestataires de confiance suivants, avec lesquels il maintient le contrat de sous-traitance (DPA) correspondant :',
+    'th.4.1': 'Prestataire',
+    'th.4.2': 'Fonction',
+    'th.4.3': 'Localisation',
+    'td.4.1b': 'Base de données et authentification',
+    'td.4.1c': 'UE (AWS Francfort, eu-central-1)',
+    'td.4.2b': 'Hébergement de l\'application web',
+    'td.4.2c': 'UE / États-Unis (avec CCT)',
+    'p.4b': 'Les transferts vers des pays hors EEE sont réalisés dans le cadre des Clauses Contractuelles Types (CCT) approuvées par la Commission européenne.',
+    'h2.5': '5. Durée de conservation',
+    'p.5': 'Les données de compte et opérationnelles sont conservées tant que l\'utilisateur maintient un abonnement actif. Après résiliation, les données sont supprimées sous un délai maximal de <strong>30 jours</strong>. Les données de facturation associées aux factures émises sont conservées pendant <strong>5 ans</strong> afin de respecter les obligations fiscales et comptables.',
+    'h2.6': '6. Droits de l\'utilisateur',
+    'p.6a': 'Conformément au RGPD et à la loi espagnole LOPDGDD, l\'utilisateur a le droit :',
+    'li.6.1': '<strong>D\'accès :</strong> obtenir la confirmation que ses données sont traitées et y accéder.',
+    'li.6.2': '<strong>De rectification :</strong> demander la correction de données inexactes.',
+    'li.6.3': '<strong>D\'effacement (« droit à l\'oubli ») :</strong> demander la suppression de ses données.',
+    'li.6.4': '<strong>De limitation du traitement :</strong> demander que le traitement soit restreint dans certaines circonstances.',
+    'li.6.5': '<strong>De portabilité :</strong> recevoir ses données dans un format structuré et couramment utilisé.',
+    'li.6.6': '<strong>D\'opposition :</strong> s\'opposer au traitement fondé sur l\'intérêt légitime.',
+    'p.6b': 'Pour exercer l\'un de ces droits, envoyez un email à <a href="mailto:info@fastrevenue.app">info@fastrevenue.app</a> en indiquant votre demande et en joignant une copie de votre pièce d\'identité. Nous répondrons dans un délai maximal de <strong>30 jours</strong>.',
+    'p.6c': 'Si vous estimez que le traitement n\'est pas conforme à la réglementation, vous pouvez déposer une réclamation auprès de l\'<strong>Agence espagnole de protection des données</strong> (<a href="https://www.aepd.es" target="_blank" rel="noopener">www.aepd.es</a>).',
+    'h2.7': '7. Sécurité',
+    'p.7': 'FastRevenue applique des mesures techniques et organisationnelles appropriées pour protéger les données contre les accès non autorisés, la perte ou l\'altération : chiffrement en transit (TLS), chiffrement au repos dans la base de données, accès restreint avec authentification sécurisée et mots de passe hachés.',
+    'h2.8': '8. Cookies',
+    'p.8': 'FastRevenue utilise uniquement des cookies techniques strictement nécessaires au fonctionnement de la session utilisateur. Aucun cookie publicitaire ni de suivi tiers n\'est utilisé.',
+    'footer.copyright': '© 2026 FastRevenue · Miguel Ruiz Feja · NIF 73051069X',
+    'footer.legal': 'Mentions légales',
+    'footer.privacy': 'Confidentialité',
+    'footer.terms': 'Conditions',
+    'footer.cookies': 'Cookies',
+  },
+};
+</script>
+<script src="/i18n.js"></script>
 </body>
 </html>

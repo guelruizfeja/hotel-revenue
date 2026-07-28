@@ -55,6 +55,7 @@
     background: rgba(255,255,255,0.1);
   }
   .nav-socios:hover { background: rgba(255,255,255,0.2); border-color: rgba(255,255,255,0.8); color: white; }
+  .nav-right { display: flex; align-items: center; gap: 18px; }
 
   /* ── HERO ── */
   .hero {
@@ -614,6 +615,9 @@
   @media (max-width: 768px) {
     /* Nav */
     .nav-socios { font-size: 11px; padding: 6px 13px; }
+    .nav-right { gap: 10px; }
+    .nav-logo span { display: none; }
+    .i18n-switch button { padding: 6px 5px; font-size: 11px; }
 
     /* Hero */
     .hero { padding: 110px 6vw 60px; align-items: flex-start; }
@@ -836,15 +840,15 @@
 <!-- LAUNCH OFFER POPUP -->
 <div class="launch-backdrop" id="launchBackdrop" role="dialog" aria-modal="true" aria-labelledby="launchTitle">
   <div class="launch-modal">
-    <button class="launch-close" id="launchClose" aria-label="Cerrar">✕</button>
-    <p class="launch-eyebrow">Oferta de lanzamiento</p>
-    <h2 class="launch-title" id="launchTitle">Solo para los 5 primeros hoteles</h2>
+    <button class="launch-close" id="launchClose" data-i18n-aria="launch.close" aria-label="Cerrar">✕</button>
+    <p class="launch-eyebrow" data-i18n="launch.eyebrow">Oferta de lanzamiento</p>
+    <h2 class="launch-title" id="launchTitle" data-i18n="launch.title">Solo para los 5 primeros hoteles</h2>
     <ul class="launch-perks">
-      <li>Precio especial para siempre</li>
-      <li>Acceso a la beta</li>
+      <li data-i18n="launch.perk1">Precio especial para siempre</li>
+      <li data-i18n="launch.perk2">Acceso a la beta</li>
     </ul>
-    <a href="#consulta" class="launch-cta" id="launchCta">Solicitar consulta →</a>
-    <button class="launch-dismiss" id="launchDismiss">No me interesa</button>
+    <a href="#consulta" class="launch-cta" id="launchCta" data-i18n="launch.cta">Solicitar consulta →</a>
+    <button class="launch-dismiss" id="launchDismiss" data-i18n="launch.dismiss">No me interesa</button>
   </div>
 </div>
 
@@ -853,7 +857,10 @@
     <img src="/fastrev-icon.png" alt="FastRevenue">
     <span>FAST<span style="font-weight:400">REVENUE</span></span>
   </a>
-  <a href="/home#login" class="nav-socios">Área de socios</a>
+  <div class="nav-right">
+    <div class="lang-switch i18n-switch--dark" id="langSwitch"></div>
+    <a href="/home#login" class="nav-socios" data-i18n="nav.socios">Área de socios</a>
+  </div>
 </nav>
 
 <!-- HERO -->
@@ -863,21 +870,21 @@
   </video>
   <div class="hero-inner">
     <div class="hero-copy">
-      <h1>FastRevenue,<br>tu hotel bajo control.</h1>
+      <h1 data-i18n-html="hero.title">FastRevenue,<br>tu hotel bajo control.</h1>
       <div class="hero-actions">
-        <a href="#consulta" class="btn-gold" onclick="event.preventDefault(); window.scrollToSection('consulta');">Solicitar primera consulta →</a>
+        <a href="#consulta" class="btn-gold" data-i18n="hero.cta" onclick="event.preventDefault(); window.scrollToSection('consulta');">Solicitar primera consulta →</a>
       </div>
     </div>
     <div class="hero-features" id="heroFeatures">
-      <button type="button" class="hero-feat-arrow hero-feat-prev" id="heroFeatPrev" aria-label="Anterior">‹</button>
+      <button type="button" class="hero-feat-arrow hero-feat-prev" id="heroFeatPrev" data-i18n-aria="hero.prev" aria-label="Anterior">‹</button>
       <ul class="hero-feat-track">
-        <li class="hero-feature-item">Control de todos los datos y KPIs de tu hotel en un único espacio</li>
-        <li class="hero-feature-item">Gestión del rendimiento de tu hotel</li>
-        <li class="hero-feature-item">Observa la demanda de tu hotel y anticípate</li>
-        <li class="hero-feature-item">Todos los datos que necesitas para la toma de decisiones</li>
-        <li class="hero-feature-item">Instalación y gestión sencilla</li>
+        <li class="hero-feature-item" data-i18n="hero.feat1">Control de todos los datos y KPIs de tu hotel en un único espacio</li>
+        <li class="hero-feature-item" data-i18n="hero.feat2">Gestión del rendimiento de tu hotel</li>
+        <li class="hero-feature-item" data-i18n="hero.feat3">Observa la demanda de tu hotel y anticípate</li>
+        <li class="hero-feature-item" data-i18n="hero.feat4">Todos los datos que necesitas para la toma de decisiones</li>
+        <li class="hero-feature-item" data-i18n="hero.feat5">Instalación y gestión sencilla</li>
       </ul>
-      <button type="button" class="hero-feat-arrow hero-feat-next" id="heroFeatNext" aria-label="Siguiente">›</button>
+      <button type="button" class="hero-feat-arrow hero-feat-next" id="heroFeatNext" data-i18n-aria="hero.next" aria-label="Siguiente">›</button>
     </div>
   </div>
 </section>
@@ -893,45 +900,45 @@
   <div class="features-sticky-wrap">
     <div class="features-left">
       <div class="features-left-inner">
-<h2 class="section-title" style="text-align:left; color:#ffffff; font-size:clamp(22px, 2.2vw, 34px); letter-spacing:-0.4px;">La herramienta de revenue management perfecta para tu hotel</h2>
-        <p style="font-size:15px; color:rgba(255,255,255,0.92); line-height:1.75; margin-top:16px; max-width:380px;">FastRevenue nace de la necesidad de controlar los KPIs del hotel, facilitando el proceso de gestión a los hoteles pequeños e independientes que no tienen una única plataforma de gestión de revenue. A través de los siguientes bloques, las decisiones de pricing y gestión de ocupación se toman en base a datos reales, históricos y situación futura del hotel. No dejes ninguna decisión al azar.</p>
+<h2 class="section-title" style="text-align:left; color:#ffffff; font-size:clamp(22px, 2.2vw, 34px); letter-spacing:-0.4px;" data-i18n="features.title">La herramienta de revenue management perfecta para tu hotel</h2>
+        <p style="font-size:15px; color:rgba(255,255,255,0.92); line-height:1.75; margin-top:16px; max-width:380px;" data-i18n="features.desc">FastRevenue nace de la necesidad de controlar los KPIs del hotel, facilitando el proceso de gestión a los hoteles pequeños e independientes que no tienen una única plataforma de gestión de revenue. A través de los siguientes bloques, las decisiones de pricing y gestión de ocupación se toman en base a datos reales, históricos y situación futura del hotel. No dejes ninguna decisión al azar.</p>
       </div>
     </div>
     <div class="features-right">
       <div class="fsi-item">
-        <div class="fsi-title">Dashboard</div>
+        <div class="fsi-title" data-i18n="features.dash.title">Dashboard</div>
         <div class="fsi-divider"></div>
         <ul class="fsi-desc">
-          <li>Controla tus KPIs y su evolución histórica en un único vistazo</li>
-          <li>Analiza la ocupación</li>
-          <li>Revisa el resumen del último ejercicio</li>
+          <li data-i18n="features.dash.li1">Controla tus KPIs y su evolución histórica en un único vistazo</li>
+          <li data-i18n="features.dash.li2">Analiza la ocupación</li>
+          <li data-i18n="features.dash.li3">Revisa el resumen del último ejercicio</li>
         </ul>
       </div>
       <div class="fsi-item">
-        <div class="fsi-title">Reservas</div>
+        <div class="fsi-title" data-i18n="features.res.title">Reservas</div>
         <div class="fsi-divider"></div>
         <ul class="fsi-desc">
-          <li>Reservas por segmento, duración, antelación y ADR</li>
-          <li>Sigue el pick up y el pace para anticiparte a cierres débiles</li>
-          <li>Recibe alertas cuando la ocupación futura se dispara</li>
+          <li data-i18n="features.res.li1">Reservas por segmento, duración, antelación y ADR</li>
+          <li data-i18n="features.res.li2">Sigue el pick up y el pace para anticiparte a cierres débiles</li>
+          <li data-i18n="features.res.li3">Recibe alertas cuando la ocupación futura se dispara</li>
         </ul>
       </div>
       <div class="fsi-item">
-        <div class="fsi-title">Presupuesto</div>
+        <div class="fsi-title" data-i18n="features.budget.title">Presupuesto</div>
         <div class="fsi-divider"></div>
         <ul class="fsi-desc">
-          <li>Detecta desviaciones de ADR y RevPAR</li>
-          <li>Proyecta el cierre anual con los datos reales acumulados</li>
-          <li>Toma decisiones de pricing basadas en el forecast</li>
+          <li data-i18n="features.budget.li1">Detecta desviaciones de ADR y RevPAR</li>
+          <li data-i18n="features.budget.li2">Proyecta el cierre anual con los datos reales acumulados</li>
+          <li data-i18n="features.budget.li3">Toma decisiones de pricing basadas en el forecast</li>
         </ul>
       </div>
       <div class="fsi-item">
-        <div class="fsi-title">Grupos</div>
+        <div class="fsi-title" data-i18n="features.groups.title">Grupos</div>
         <div class="fsi-divider"></div>
         <ul class="fsi-desc">
-          <li>Evalúa si un grupo desplaza negocio individual antes de aceptarlo</li>
-          <li>Gestiona el calendario de eventos y la ocupación de espacios</li>
-          <li>Evalúa el resumen del revenue de grupos por segmentos</li>
+          <li data-i18n="features.groups.li1">Evalúa si un grupo desplaza negocio individual antes de aceptarlo</li>
+          <li data-i18n="features.groups.li2">Gestiona el calendario de eventos y la ocupación de espacios</li>
+          <li data-i18n="features.groups.li3">Evalúa el resumen del revenue de grupos por segmentos</li>
         </ul>
       </div>
     </div>
@@ -953,17 +960,17 @@
     <!-- Texto izquierda — entra por la derecha -->
     <div class="mockup-text">
       <div class="mockup-text-inner">
-        <h2 class="section-title" style="color:#ffffff; text-align:left; font-size:clamp(22px, 2.2vw, 34px); letter-spacing:-0.4px;">Con FastRevenue controlas los datos históricos y el forecast del ejercicio, comprobando en todo momento si se cumplen los objetivos.</h2>
+        <h2 class="section-title" style="color:#ffffff; text-align:left; font-size:clamp(22px, 2.2vw, 34px); letter-spacing:-0.4px;" data-i18n="mockup.title">Con FastRevenue controlas los datos históricos y el forecast del ejercicio, comprobando en todo momento si se cumplen los objetivos.</h2>
       </div>
     </div>
 
     <!-- 2×2 capturas con CTA en el centro -->
     <div class="mockup-shots">
-      <div class="mockup-shot"><img src="/dashboard-preview.png" alt="Dashboard"><div class="mockup-shot-overlay"><svg class="mockup-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div></div>
-      <div class="mockup-shot"><img src="/reservas-preview.png" alt="Reservas"><div class="mockup-shot-overlay"><svg class="mockup-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div></div>
-      <div class="mockup-shot"><img src="/grupos-preview.png" alt="Grupos"><div class="mockup-shot-overlay"><svg class="mockup-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div></div>
-      <div class="mockup-shot"><img src="/budget-preview.png" alt="Presupuesto"><div class="mockup-shot-overlay"><svg class="mockup-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div></div>
-      <a href="#consulta" class="mockup-shots-cta btn-gold" onclick="event.preventDefault(); window.scrollToSection('consulta');">
+      <div class="mockup-shot"><img src="/dashboard-preview.png" alt="Dashboard" data-i18n-alt="features.dash.title"><div class="mockup-shot-overlay"><svg class="mockup-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div></div>
+      <div class="mockup-shot"><img src="/reservas-preview.png" alt="Reservas" data-i18n-alt="features.res.title"><div class="mockup-shot-overlay"><svg class="mockup-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div></div>
+      <div class="mockup-shot"><img src="/grupos-preview.png" alt="Grupos" data-i18n-alt="features.groups.title"><div class="mockup-shot-overlay"><svg class="mockup-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div></div>
+      <div class="mockup-shot"><img src="/budget-preview.png" alt="Presupuesto" data-i18n-alt="features.budget.title"><div class="mockup-shot-overlay"><svg class="mockup-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div></div>
+      <a href="#consulta" class="mockup-shots-cta btn-gold" data-i18n="mockup.cta" onclick="event.preventDefault(); window.scrollToSection('consulta');">
         Solicitar consulta para ver demo →
       </a>
     </div>
@@ -1045,14 +1052,14 @@ document.querySelectorAll('.module-tab').forEach(tab => {
 <!-- CONSULTA -->
 <section class="contact-section reveal" id="consulta">
   <div class="contact-wrap">
-    <h2 class="section-title">Hablamos de <em style="color:#ffffff; font-style:italic;">tu hotel</em></h2>
-    <p class="section-sub" style="margin-bottom:0;">Cuéntanos cómo gestionas tus datos hoy y te mostramos cómo FastRevenue puede centralizarlo todo. Sin compromiso.</p>
+    <h2 class="section-title" data-i18n-html="contact.title">Hablamos de <em style="color:#ffffff; font-style:italic;">tu hotel</em></h2>
+    <p class="section-sub" style="margin-bottom:0;" data-i18n="contact.sub">Cuéntanos cómo gestionas tus datos hoy y te mostramos cómo FastRevenue puede centralizarlo todo. Sin compromiso.</p>
     <form class="contact-form" id="contactForm">
-      <input type="text" name="nombre" placeholder="Tu nombre *" required>
-      <input type="text" name="hotel" placeholder="Nombre del hotel *" required>
-      <input type="email" name="email" placeholder="Email de contacto *" required>
-      <textarea name="mensaje" placeholder="¿Qué quieres mejorar en la gestión de tu hotel? (opcional)" style="min-height:100px;"></textarea>
-      <button type="submit" class="contact-submit" id="contactBtn">Solicitar consulta gratuita</button>
+      <input type="text" name="nombre" placeholder="Tu nombre *" data-i18n-placeholder="contact.nombre" required>
+      <input type="text" name="hotel" placeholder="Nombre del hotel *" data-i18n-placeholder="contact.hotel" required>
+      <input type="email" name="email" placeholder="Email de contacto *" data-i18n-placeholder="contact.email" required>
+      <textarea name="mensaje" placeholder="¿Qué quieres mejorar en la gestión de tu hotel? (opcional)" data-i18n-placeholder="contact.mensaje" style="min-height:100px;"></textarea>
+      <button type="submit" class="contact-submit" id="contactBtn" data-i18n="contact.submit">Solicitar consulta gratuita</button>
       <div class="contact-feedback" id="contactFeedback"></div>
     </form>
   </div>
@@ -1064,8 +1071,9 @@ document.getElementById('contactForm').addEventListener('submit', async function
   const btn = document.getElementById('contactBtn');
   const feedback = document.getElementById('contactFeedback');
   const data = Object.fromEntries(new FormData(this));
+  const t = (window.I18N_DATA && window.I18N_DATA[window.I18N.getLang()]) || {};
   btn.disabled = true;
-  btn.textContent = 'Enviando...';
+  btn.textContent = t['contact.sending'] || 'Enviando...';
   feedback.className = 'contact-feedback';
   try {
     const res = await fetch('/api/contact', {
@@ -1074,15 +1082,15 @@ document.getElementById('contactForm').addEventListener('submit', async function
       body: JSON.stringify(data),
     });
     if (!res.ok) throw new Error();
-    feedback.textContent = '¡Mensaje enviado! Te respondemos en menos de 24h.';
+    feedback.textContent = t['contact.successMsg'] || '¡Mensaje enviado! Te respondemos en menos de 24h.';
     feedback.className = 'contact-feedback ok';
     this.reset();
   } catch {
-    feedback.textContent = 'Error al enviar. Escríbenos a info@fastrevenue.app';
+    feedback.textContent = t['contact.errorMsg'] || 'Error al enviar. Escríbenos a info@fastrevenue.app';
     feedback.className = 'contact-feedback err';
   }
   btn.disabled = false;
-  btn.textContent = 'Enviar mensaje';
+  btn.textContent = t['contact.submitReset'] || 'Enviar mensaje';
 });
 </script>
 
@@ -1091,12 +1099,12 @@ document.getElementById('contactForm').addEventListener('submit', async function
   <img src="/fastrev-logo.png" alt="FastRevenue">
   <div class="footer-links">
     <a href="mailto:info@fastrevenue.app">info@fastrevenue.app</a>
-    <a href="/aviso-legal.html">Aviso Legal</a>
-    <a href="/privacidad.html">Privacidad</a>
-    <a href="/terminos.html">Términos</a>
-    <a href="/cookies.html">Cookies</a>
+    <a href="/aviso-legal.html" data-i18n="footer.legal">Aviso Legal</a>
+    <a href="/privacidad.html" data-i18n="footer.privacy">Privacidad</a>
+    <a href="/terminos.html" data-i18n="footer.terms">Términos</a>
+    <a href="/cookies.html" data-i18n="footer.cookies">Cookies</a>
   </div>
-  <p style="margin-top:12px;">© 2026 FastRevenue</p>
+  <p style="margin-top:12px;" data-i18n="footer.copyright">© 2026 FastRevenue</p>
 </footer>
 
 <script>
@@ -1399,5 +1407,179 @@ window.scrollToSection = function(id) {
   });
 })();
 </script>
+
+<script>
+window.I18N_DATA = {
+  es: {
+    __pageTitle: 'FastRevenue',
+    'nav.socios': 'Área de socios',
+    'launch.eyebrow': 'Oferta de lanzamiento',
+    'launch.title': 'Solo para los 5 primeros hoteles',
+    'launch.perk1': 'Precio especial para siempre',
+    'launch.perk2': 'Acceso a la beta',
+    'launch.cta': 'Solicitar consulta →',
+    'launch.dismiss': 'No me interesa',
+    'launch.close': 'Cerrar',
+    'hero.title': 'FastRevenue,<br>tu hotel bajo control.',
+    'hero.cta': 'Solicitar primera consulta →',
+    'hero.prev': 'Anterior',
+    'hero.next': 'Siguiente',
+    'hero.feat1': 'Control de todos los datos y KPIs de tu hotel en un único espacio',
+    'hero.feat2': 'Gestión del rendimiento de tu hotel',
+    'hero.feat3': 'Observa la demanda de tu hotel y anticípate',
+    'hero.feat4': 'Todos los datos que necesitas para la toma de decisiones',
+    'hero.feat5': 'Instalación y gestión sencilla',
+    'features.title': 'La herramienta de revenue management perfecta para tu hotel',
+    'features.desc': 'FastRevenue nace de la necesidad de controlar los KPIs del hotel, facilitando el proceso de gestión a los hoteles pequeños e independientes que no tienen una única plataforma de gestión de revenue. A través de los siguientes bloques, las decisiones de pricing y gestión de ocupación se toman en base a datos reales, históricos y situación futura del hotel. No dejes ninguna decisión al azar.',
+    'features.dash.title': 'Dashboard',
+    'features.dash.li1': 'Controla tus KPIs y su evolución histórica en un único vistazo',
+    'features.dash.li2': 'Analiza la ocupación',
+    'features.dash.li3': 'Revisa el resumen del último ejercicio',
+    'features.res.title': 'Reservas',
+    'features.res.li1': 'Reservas por segmento, duración, antelación y ADR',
+    'features.res.li2': 'Sigue el pick up y el pace para anticiparte a cierres débiles',
+    'features.res.li3': 'Recibe alertas cuando la ocupación futura se dispara',
+    'features.budget.title': 'Presupuesto',
+    'features.budget.li1': 'Detecta desviaciones de ADR y RevPAR',
+    'features.budget.li2': 'Proyecta el cierre anual con los datos reales acumulados',
+    'features.budget.li3': 'Toma decisiones de pricing basadas en el forecast',
+    'features.groups.title': 'Grupos',
+    'features.groups.li1': 'Evalúa si un grupo desplaza negocio individual antes de aceptarlo',
+    'features.groups.li2': 'Gestiona el calendario de eventos y la ocupación de espacios',
+    'features.groups.li3': 'Evalúa el resumen del revenue de grupos por segmentos',
+    'mockup.title': 'Con FastRevenue controlas los datos históricos y el forecast del ejercicio, comprobando en todo momento si se cumplen los objetivos.',
+    'mockup.cta': 'Solicitar consulta para ver demo →',
+    'contact.title': 'Hablamos de <em style="color:#ffffff; font-style:italic;">tu hotel</em>',
+    'contact.sub': 'Cuéntanos cómo gestionas tus datos hoy y te mostramos cómo FastRevenue puede centralizarlo todo. Sin compromiso.',
+    'contact.nombre': 'Tu nombre *',
+    'contact.hotel': 'Nombre del hotel *',
+    'contact.email': 'Email de contacto *',
+    'contact.mensaje': '¿Qué quieres mejorar en la gestión de tu hotel? (opcional)',
+    'contact.submit': 'Solicitar consulta gratuita',
+    'contact.sending': 'Enviando...',
+    'contact.submitReset': 'Enviar mensaje',
+    'contact.successMsg': '¡Mensaje enviado! Te respondemos en menos de 24h.',
+    'contact.errorMsg': 'Error al enviar. Escríbenos a info@fastrevenue.app',
+    'footer.legal': 'Aviso Legal',
+    'footer.privacy': 'Privacidad',
+    'footer.terms': 'Términos',
+    'footer.cookies': 'Cookies',
+    'footer.copyright': '© 2026 FastRevenue',
+  },
+  en: {
+    __pageTitle: 'FastRevenue',
+    'nav.socios': 'Partner login',
+    'launch.eyebrow': 'Launch offer',
+    'launch.title': 'For the first 5 hotels only',
+    'launch.perk1': 'Special price, forever',
+    'launch.perk2': 'Beta access',
+    'launch.cta': 'Request consultation →',
+    'launch.dismiss': 'Not interested',
+    'launch.close': 'Close',
+    'hero.title': 'FastRevenue,<br>your hotel under control.',
+    'hero.cta': 'Request your first consultation →',
+    'hero.prev': 'Previous',
+    'hero.next': 'Next',
+    'hero.feat1': 'Control all your hotel\'s data and KPIs in a single place',
+    'hero.feat2': 'Manage your hotel\'s performance',
+    'hero.feat3': 'Track your hotel\'s demand and stay ahead',
+    'hero.feat4': 'All the data you need to make decisions',
+    'hero.feat5': 'Simple setup and management',
+    'features.title': 'The perfect revenue management tool for your hotel',
+    'features.desc': 'FastRevenue was born from the need to control hotel KPIs, simplifying management for small and independent hotels that don\'t have a single revenue management platform. Through the modules below, pricing and occupancy decisions are made based on real, historical and forward-looking hotel data. Don\'t leave any decision to chance.',
+    'features.dash.title': 'Dashboard',
+    'features.dash.li1': 'Track your KPIs and their historical trend at a glance',
+    'features.dash.li2': 'Analyze occupancy',
+    'features.dash.li3': 'Review the summary of the previous fiscal year',
+    'features.res.title': 'Bookings',
+    'features.res.li1': 'Bookings by segment, length of stay, lead time and ADR',
+    'features.res.li2': 'Track pickup and pace to get ahead of weak closing periods',
+    'features.res.li3': 'Get alerts when future occupancy spikes',
+    'features.budget.title': 'Budget',
+    'features.budget.li1': 'Detect ADR and RevPAR deviations',
+    'features.budget.li2': 'Project the year-end close using accumulated real data',
+    'features.budget.li3': 'Make pricing decisions based on the forecast',
+    'features.groups.title': 'Groups',
+    'features.groups.li1': 'Assess whether a group displaces individual business before accepting it',
+    'features.groups.li2': 'Manage the events calendar and space occupancy',
+    'features.groups.li3': 'Review the group revenue summary by segment',
+    'mockup.title': 'With FastRevenue you control historical data and the forecast for the year, checking at all times whether targets are being met.',
+    'mockup.cta': 'Request a consultation to see a demo →',
+    'contact.title': 'Let\'s talk about <em style="color:#ffffff; font-style:italic;">your hotel</em>',
+    'contact.sub': 'Tell us how you manage your data today and we\'ll show you how FastRevenue can centralize it all. No commitment.',
+    'contact.nombre': 'Your name *',
+    'contact.hotel': 'Hotel name *',
+    'contact.email': 'Contact email *',
+    'contact.mensaje': 'What would you like to improve in your hotel\'s management? (optional)',
+    'contact.submit': 'Request a free consultation',
+    'contact.sending': 'Sending...',
+    'contact.submitReset': 'Send message',
+    'contact.successMsg': 'Message sent! We\'ll get back to you within 24h.',
+    'contact.errorMsg': 'Something went wrong. Email us at info@fastrevenue.app',
+    'footer.legal': 'Legal Notice',
+    'footer.privacy': 'Privacy',
+    'footer.terms': 'Terms',
+    'footer.cookies': 'Cookies',
+    'footer.copyright': '© 2026 FastRevenue',
+  },
+  fr: {
+    __pageTitle: 'FastRevenue',
+    'nav.socios': 'Espace partenaires',
+    'launch.eyebrow': 'Offre de lancement',
+    'launch.title': 'Réservé aux 5 premiers hôtels',
+    'launch.perk1': 'Prix spécial à vie',
+    'launch.perk2': 'Accès à la bêta',
+    'launch.cta': 'Demander une consultation →',
+    'launch.dismiss': 'Pas intéressé',
+    'launch.close': 'Fermer',
+    'hero.title': 'FastRevenue,<br>votre hôtel sous contrôle.',
+    'hero.cta': 'Demander une première consultation →',
+    'hero.prev': 'Précédent',
+    'hero.next': 'Suivant',
+    'hero.feat1': 'Contrôlez toutes les données et KPI de votre hôtel en un seul endroit',
+    'hero.feat2': 'Gérez la performance de votre hôtel',
+    'hero.feat3': 'Observez la demande de votre hôtel et anticipez',
+    'hero.feat4': 'Toutes les données nécessaires à la prise de décision',
+    'hero.feat5': 'Installation et gestion simples',
+    'features.title': 'L\'outil de revenue management idéal pour votre hôtel',
+    'features.desc': 'FastRevenue est né du besoin de contrôler les KPI de l\'hôtel, en simplifiant la gestion pour les hôtels indépendants qui ne disposent pas d\'une plateforme unique de gestion du revenue. Grâce aux modules suivants, les décisions de tarification et de gestion de l\'occupation se prennent sur la base de données réelles, historiques et prévisionnelles. Ne laissez plus aucune décision au hasard.',
+    'features.dash.title': 'Tableau de bord',
+    'features.dash.li1': 'Suivez vos KPI et leur évolution historique en un coup d\'œil',
+    'features.dash.li2': 'Analysez le taux d\'occupation',
+    'features.dash.li3': 'Consultez le résumé du dernier exercice',
+    'features.res.title': 'Réservations',
+    'features.res.li1': 'Réservations par segment, durée de séjour, délai de réservation et ADR',
+    'features.res.li2': 'Suivez le pick-up et le pace pour anticiper les périodes faibles',
+    'features.res.li3': 'Recevez des alertes lorsque l\'occupation future s\'envole',
+    'features.budget.title': 'Budget',
+    'features.budget.li1': 'Détectez les écarts d\'ADR et de RevPAR',
+    'features.budget.li2': 'Projetez la clôture annuelle à partir des données réelles cumulées',
+    'features.budget.li3': 'Prenez des décisions tarifaires basées sur le forecast',
+    'features.groups.title': 'Groupes',
+    'features.groups.li1': 'Évaluez si un groupe déplace la clientèle individuelle avant de l\'accepter',
+    'features.groups.li2': 'Gérez le calendrier des événements et l\'occupation des espaces',
+    'features.groups.li3': 'Consultez le résumé du revenue des groupes par segment',
+    'mockup.title': 'Avec FastRevenue, vous contrôlez les données historiques et le forecast de l\'exercice, en vérifiant à tout moment si les objectifs sont atteints.',
+    'mockup.cta': 'Demander une consultation pour voir la démo →',
+    'contact.title': 'Parlons de <em style="color:#ffffff; font-style:italic;">votre hôtel</em>',
+    'contact.sub': 'Dites-nous comment vous gérez vos données aujourd\'hui et nous vous montrerons comment FastRevenue peut tout centraliser. Sans engagement.',
+    'contact.nombre': 'Votre nom *',
+    'contact.hotel': 'Nom de l\'hôtel *',
+    'contact.email': 'Email de contact *',
+    'contact.mensaje': 'Qu\'aimeriez-vous améliorer dans la gestion de votre hôtel ? (facultatif)',
+    'contact.submit': 'Demander une consultation gratuite',
+    'contact.sending': 'Envoi...',
+    'contact.submitReset': 'Envoyer le message',
+    'contact.successMsg': 'Message envoyé ! Nous vous répondrons sous 24h.',
+    'contact.errorMsg': 'Erreur lors de l\'envoi. Écrivez-nous à info@fastrevenue.app',
+    'footer.legal': 'Mentions légales',
+    'footer.privacy': 'Confidentialité',
+    'footer.terms': 'Conditions',
+    'footer.cookies': 'Cookies',
+    'footer.copyright': '© 2026 FastRevenue',
+  },
+};
+</script>
+<script src="/i18n.js"></script>
 </body>
 </html>
