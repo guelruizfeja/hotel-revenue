@@ -2187,7 +2187,7 @@ const [metricaSel, setMetricaSel] = useState(() => localStorage.getItem("fr_metr
 }
 
 // ─── PICKUP VIEW ──────────────────────────────────────────────────
-function PickupView({ datos, onGuardado }) {
+function PickupView({ datos, onGuardado, onReservaGuardada }) {
   const t = useT();
   const { session, presupuesto, produccion } = datos;
   const pickupEntries = datos.pickupEntries || [];
@@ -2208,11 +2208,12 @@ function PickupView({ datos, onGuardado }) {
 
   const _hoyISOd = new Date();
   const hoyISO = `${_hoyISOd.getFullYear()}-${String(_hoyISOd.getMonth()+1).padStart(2,"0")}-${String(_hoyISOd.getDate()).padStart(2,"0")}`;
+  const _mananaISOd = new Date(); _mananaISOd.setDate(_mananaISOd.getDate()+1);
+  const mananaISO = `${_mananaISOd.getFullYear()}-${String(_mananaISOd.getMonth()+1).padStart(2,"0")}-${String(_mananaISOd.getDate()).padStart(2,"0")}`;
   const [modalNR, setModalNR] = useState(() => { try { return localStorage.getItem("fr_nr_modal") === "1"; } catch { return false; } });
   const setModalNRPersist = (v) => { setModalNR(v); try { localStorage.setItem("fr_nr_modal", v ? "1" : "0"); } catch {} };
   const [nrForm, setNrForm] = useState(() => {
-    const hoy0 = new Date(); const hoyD=`${hoy0.getFullYear()}-01-01`;
-    try { return { canal:"", num_reservas:"", fecha_llegada:hoyD, fecha_salida:"", noches:"", precio_total:"", numero_reserva:"" }; } catch { return { canal:"", num_reservas:"", fecha_llegada:hoyD, fecha_salida:"", noches:"", precio_total:"", numero_reserva:"" }; }
+    return { canal:"", num_reservas:"", fecha_llegada:hoyISO, fecha_salida:mananaISO, noches:"1", precio_total:"", numero_reserva:"" };
   });
   const setNrFormPersist = (fn) => setNrForm(prev => { const next = typeof fn === "function" ? fn(prev) : fn; try { localStorage.setItem("fr_nr_form", JSON.stringify(next)); } catch {} return next; });
   const [nrGuardando, setNrGuardando] = useState(false);
@@ -2266,7 +2267,7 @@ function PickupView({ datos, onGuardado }) {
     } catch(e) { setEditError(e.message); }
     finally { setEditGuardando(false); }
   };
-  const guardarNuevaReserva = async () => {
+  const guardarNuevaReserva = async (seguir = false) => {
     setNrGuardando(true); setNrError("");
     try {
       const noches = nrForm.noches ? parseInt(nrForm.noches) : 1;
@@ -2302,7 +2303,17 @@ function PickupView({ datos, onGuardado }) {
       const { error } = await supabase.from("pickup_entries").insert(row);
       if (error) throw new Error(error.message);
       setNrOk(true);
-      setTimeout(() => { setModalNRPersist(false); setNrOk(false); onGuardado && onGuardado(true); }, 1200);
+      onGuardado && onGuardado(true);
+      onReservaGuardada && onReservaGuardada(numero_reserva);
+      if (seguir) {
+        setTimeout(() => {
+          setNrOk(false);
+          setNrFormPersist({ canal:"", num_reservas:"", fecha_llegada:hoyISO, fecha_salida:mananaISO, noches:"1", precio_total:"", numero_reserva:"" });
+          setNrPreciosPorNoche([]);
+        }, 900);
+      } else {
+        setTimeout(() => { setModalNRPersist(false); setNrOk(false); }, 1200);
+      }
     } catch(e) { setNrError(e.message); }
     finally { setNrGuardando(false); }
   };
@@ -2675,7 +2686,7 @@ function PickupView({ datos, onGuardado }) {
       {/* Modal Gestión de reserva */}
       {modalNR && (
           <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.55)", zIndex:2000, display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}>
-            <div style={{ background:C.bgCard, borderRadius:14, padding:"28px 32px", width:"100%", maxWidth: gestionTab==="nueva" && (nrTipo==="grupo" || nrTipo==="evento") ? 540 : 460, maxHeight:"90vh", overflowY:"auto", boxShadow:"0 20px 60px rgba(0,0,0,0.25)" }}>
+            <div style={{ background:C.bgCard, borderRadius:14, padding:"28px 32px", width:"100%", maxWidth: gestionTab==="nueva" ? (nrTipo==="individual" ? 660 : 540) : 460, maxHeight:"90vh", overflowY:"auto", boxShadow:"0 20px 60px rgba(0,0,0,0.25)" }}>
               {/* Cabecera */}
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:18 }}>
                 <p style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontWeight:700, fontSize:20, color:C.text }}>Gestión de reserva</p>
@@ -2685,7 +2696,7 @@ function PickupView({ datos, onGuardado }) {
               {/* Pestañas */}
               <div style={{ display:"flex", gap:4, marginBottom:20, background:C.bg, borderRadius:8, padding:4 }}>
                 {[{key:"buscar",label:"Buscar reserva"},{key:"nueva",label:"Nueva reserva"}].map(tab => (
-                  <button key={tab.key} onClick={()=>{ setGestionTabPersist(tab.key); if(tab.key==="nueva"){ const _h=new Date(); const _hoy=`${_h.getFullYear()}-01-01`; setNrForm({ canal:"", num_reservas:"", fecha_llegada:_hoy, fecha_salida:"", noches:"", precio_total:"", numero_reserva:"" }); try { localStorage.removeItem("fr_nr_form"); } catch {} } }}
+                  <button key={tab.key} onClick={()=>{ setGestionTabPersist(tab.key); if(tab.key==="nueva"){ setNrForm({ canal:"", num_reservas:"", fecha_llegada:hoyISO, fecha_salida:mananaISO, noches:"1", precio_total:"", numero_reserva:"" }); try { localStorage.removeItem("fr_nr_form"); } catch {} } }}
                     style={{ flex:1, padding:"7px 0", borderRadius:6, border:"none", cursor:"pointer", fontSize:12, fontWeight:700, fontFamily:"'Plus Jakarta Sans',sans-serif", background:gestionTab===tab.key ? C.text : "transparent", color:gestionTab===tab.key ? "#fff" : C.textLight, boxShadow:gestionTab===tab.key ? "0 1px 4px rgba(0,0,0,0.18)" : "none", transition:"all 0.15s" }}>
                     {tab.label}
                   </button>
@@ -2812,7 +2823,7 @@ function PickupView({ datos, onGuardado }) {
                   {/* Formulario individual */}
                   {nrTipo === "individual" && (
                     <>
-                      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
+                      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:12 }}>
                         <div>
                           <p style={{ fontSize:10, color:C.textLight, fontWeight:600, textTransform:"uppercase", letterSpacing:"0.8px", marginBottom:4 }}>Fecha llegada</p>
                           <input type="date" value={nrForm.fecha_llegada||""} onChange={e=>{ const v=e.target.value; setNrFormPersist(f=>({ ...f, fecha_llegada:v, fecha_salida:"", noches:"" })); }} style={{ width:"100%", padding:"8px 10px", borderRadius:7, border:`1px solid ${C.border}`, fontSize:13, background:C.bgCard, color:C.text, fontFamily:"inherit", boxSizing:"border-box" }}/>
@@ -2875,11 +2886,16 @@ function PickupView({ datos, onGuardado }) {
                         </div>
                       </div>
                       {nrError && <p style={{ fontSize:12, color:C.red, marginTop:10 }}>{nrError}</p>}
-                      {nrOk && <p style={{ fontSize:12, color:C.green, marginTop:10, fontWeight:600 }}>Reserva guardada</p>}
-                      <button onClick={guardarNuevaReserva} disabled={nrGuardando}
-                        style={{ marginTop:18, width:"100%", padding:"10px 0", borderRadius:8, background:nrGuardando?C.border:C.text, color:"#fff", border:"none", cursor:nrGuardando?"default":"pointer", fontSize:13, fontWeight:700, fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
-                        {nrGuardando ? "Guardando..." : "Guardar reserva"}
-                      </button>
+                      <div style={{ display:"flex", gap:8, marginTop:18 }}>
+                        <button onClick={() => guardarNuevaReserva(false)} disabled={nrGuardando}
+                          style={{ flex:1, padding:"10px 0", borderRadius:8, background:nrGuardando?C.border:C.text, color:"#fff", border:"none", cursor:nrGuardando?"default":"pointer", fontSize:13, fontWeight:700, fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+                          {nrGuardando ? "Guardando..." : "Guardar reserva"}
+                        </button>
+                        <button onClick={() => guardarNuevaReserva(true)} disabled={nrGuardando}
+                          style={{ flex:1, padding:"10px 0", borderRadius:8, background:"transparent", color:nrGuardando?C.border:C.text, border:`1px solid ${nrGuardando?C.border:C.text}`, cursor:nrGuardando?"default":"pointer", fontSize:13, fontWeight:700, fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+                          {nrGuardando ? "Guardando..." : "Guardar y añadir reserva"}
+                        </button>
+                      </div>
                     </>
                   )}
 
@@ -6423,6 +6439,7 @@ export default function App() {
   const [previsualizandoDiario, setPrevisualizandoDiario] = useState(false);
   const [toast, setToast] = useState(null); // { msg, ok }
   const showToast = (msg, ok=true) => { setToast({ msg, ok }); setTimeout(() => setToast(null), ok ? 3500 : 6000); };
+  const [reservaGuardadaNotif, setReservaGuardadaNotif] = useState(null); // numero_reserva o null
   const [alertasDismissed, setAlertasDismissed] = useState(() => sessionStorage.getItem("fr_alertas_dismissed") === "1");
   const [alertasExpanded, setAlertasExpanded] = useState(false);
   const [datos, setDatos] = useState(() => {
@@ -6433,6 +6450,7 @@ export default function App() {
     return { produccion: [], presupuesto: [] };
   });
   const [cargandoDatos, setCargandoDatos] = useState(false);
+  const [datosCargadosUnaVez, setDatosCargadosUnaVez] = useState(false);
 
   const alertasFaltantes = useMemo(() => {
     const produccion = datos.produccion || [];
@@ -6563,6 +6581,7 @@ export default function App() {
           // Solo actualizar si producción no estaba ya cargada (evita re-render y parpadeo)
           setDatos(prev => (prev.produccion?.length > 0 ? { ...prev, session } : parsed));
           setCargandoDatos(false);
+          setDatosCargadosUnaVez(true);
           // Restaurar scroll después de pintar
           setTimeout(() => {
             const el = document.getElementById("main-scroll");
@@ -6659,6 +6678,7 @@ export default function App() {
 
     setDatos({ ...nuevoDatos, session });
     setCargandoDatos(false);
+    setDatosCargadosUnaVez(true);
     setRefreshKey(k => k + 1);
 
     // Restaurar scroll
@@ -6850,7 +6870,7 @@ export default function App() {
   };
   const handleOnboardingSkip = () => { localStorage.setItem("fr_onboarding_v1", "1"); setOnboardingStep(null); };
 
-  const _commonViewProps = { datos, mes: mesSel, anio: anioSel, onGuardado: cargarDatos, onPeriodo: (m,a) => { setMesSel(m); setAnioSel(a); localStorage.setItem("rm_mes", m); localStorage.setItem("rm_anio", a); } };
+  const _commonViewProps = { datos, mes: mesSel, anio: anioSel, onGuardado: cargarDatos, onReservaGuardada: (numero) => setReservaGuardadaNotif(numero), onPeriodo: (m,a) => { setMesSel(m); setAnioSel(a); localStorage.setItem("rm_mes", m); localStorage.setItem("rm_anio", a); } };
 
   if (loading) return (
     <div style={{ minHeight: "100vh", background: C.bgDeep, display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -7219,7 +7239,7 @@ export default function App() {
       <main id="main-scroll" onScroll={e => localStorage.setItem("fr_scroll", e.currentTarget.scrollTop)} style={{ padding: "clamp(14px,4vw,28px) clamp(12px,4vw,32px)", width: "100%", boxSizing: "border-box" }}>
 
         {/* Banner datos faltantes */}
-        {!cargandoDatos && !alertasDismissed && alertasFaltantes.length > 0 && (
+        {!(cargandoDatos && !datosCargadosUnaVez) && !alertasDismissed && alertasFaltantes.length > 0 && (
           <div style={{ display:"inline-block", marginBottom:20, fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
             <div style={{ background:"#FFF1F0", border:"1.5px solid #E53935", borderRadius:10 }}>
               {/* Cabecera clicable */}
@@ -7259,7 +7279,7 @@ export default function App() {
         )}
 
         {/* Gestión siempre montada para no perder estado al cambiar de pestaña */}
-        <div style={{ display: !cargandoDatos && !mesDetalle && !desgloseMovimiento && view === "gestion" ? "block" : "none", width:"100%" }}>
+        <div style={{ display: !(cargandoDatos && !datosCargadosUnaVez) && !mesDetalle && !desgloseMovimiento && view === "gestion" ? "block" : "none", width:"100%" }}>
           <ImportarExcel fullPage
             onClose={() => { setView("dashboard"); localStorage.setItem("fr_view","dashboard"); }}
             session={session} hotelNombre={datos.hotel?.nombre||''} produccion={datos.produccion||[]} hotelHab={datos.hotel?.habitaciones||0}
@@ -7277,7 +7297,7 @@ export default function App() {
           />
         </div>
 
-        {cargandoDatos ? <LoadingSpinner /> : mesDetalle ? (
+        {(cargandoDatos && !datosCargadosUnaVez) ? <LoadingSpinner /> : mesDetalle ? (
           <div style={{ width:"100%" }}><MonthDetailView datos={datos} mes={mesDetalle.mes} anio={mesDetalle.anio} onBack={() => setMesDetalle(null)} /></div>
         ) : desgloseMovimiento ? (
           <div style={{ width:"100%" }}><DesgloseMovimientoView datos={datos} tipo={desgloseMovimiento} onBack={() => setDesgloseMovimiento(null)} /></div>
@@ -7385,6 +7405,15 @@ export default function App() {
               Descartar
             </button>
           </div>
+        </div>
+      )}
+
+      {/* Notificación flotante: reserva guardada (persiste hasta que el usuario la cierra) */}
+      {reservaGuardadaNotif != null && (
+        <div style={{ position:"fixed", top:64, right:"clamp(12px,4vw,32px)", zIndex:2000, background:"#fff", border:`1px solid ${C.border}`, borderRadius:14, boxShadow:"0 16px 40px rgba(0,0,0,0.16)", padding:"14px 16px", display:"flex", alignItems:"center", gap:12, maxWidth:320, fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+          <div style={{ width:30, height:30, borderRadius:"50%", background:C.greenLight, color:C.green, display:"flex", alignItems:"center", justifyContent:"center", fontSize:16, flexShrink:0 }}>✓</div>
+          <p style={{ margin:0, fontSize:13, fontWeight:600, color:C.text, flex:1 }}>Reserva número {reservaGuardadaNotif} guardada</p>
+          <button onClick={() => setReservaGuardadaNotif(null)} style={{ background:"none", border:"none", cursor:"pointer", color:C.textLight, fontSize:15, padding:4, lineHeight:1, flexShrink:0 }}>✕</button>
         </div>
       )}
 
