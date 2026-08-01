@@ -5005,7 +5005,7 @@ function GruposView({ datos, onRecargar, onVolverHeatmap, subVistaExt, onCambiar
         return (
           <div style={{ display:"flex", flexDirection:"column", gap:0 }}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
-              <p style={{ fontSize:11, fontWeight:700, color:"#2B7EC1", textTransform:"uppercase", letterSpacing:1.5, margin:0 }}>Grupos {anio}</p>
+              <p style={{ fontSize:11, fontWeight:700, color:C.text, textTransform:"uppercase", letterSpacing:1.5, margin:0 }}>Grupos {anio}</p>
               <div style={{ display:"flex", alignItems:"center", gap:8 }}>
                 <button onClick={()=>abrirNuevo()}
                   style={{ padding:"5px 12px", borderRadius:7, border:"none", background:C.text, color:"#fff", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:5 }}>
@@ -5092,7 +5092,7 @@ function GruposView({ datos, onRecargar, onVolverHeatmap, subVistaExt, onCambiar
         return (
           <div style={{ display:"flex", flexDirection:"column", gap:0 }}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
-              <p style={{ fontSize:11, fontWeight:700, color:"#7C3AED", textTransform:"uppercase", letterSpacing:1.5, margin:0 }}>Eventos {anio}</p>
+              <p style={{ fontSize:11, fontWeight:700, color:C.text, textTransform:"uppercase", letterSpacing:1.5, margin:0 }}>Eventos {anio}</p>
               <div style={{ display:"flex", alignItems:"center", gap:8 }}>
                 <button onClick={()=>abrirNuevo("", "evento")}
                   style={{ padding:"5px 12px", borderRadius:7, border:"none", background:C.text, color:"#fff", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:5 }}>
