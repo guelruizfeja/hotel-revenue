@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { LangContext, useT, TRANSLATIONS } from "./i18n";
-import { C, LOGO_B64, SALAS_FIJAS, dmy, MESES, MESES_CORTO, MESES_FULL, NET_HAB_FNB, NET_SALA, KPI_HELP, NAV, GRUPOS_SUB } from "./constants";
+import { C, LOGO_B64, SALAS_FIJAS, dmy, toNum, MESES, MESES_CORTO, MESES_FULL, NET_HAB_FNB, NET_SALA, KPI_HELP, NAV, GRUPOS_SUB } from "./constants";
 import { buildHabEnCasaMap, buildRevEnCasaMap, calcHabEnCasa, calcForecastRevStandalone } from "./utils";
 import { supabase } from "./supabase";
 import { CustomSelect } from "./components/CustomSelect";
@@ -577,7 +577,7 @@ function ModalEditarReserva({ entry, onClose, onGuardado }) {
         fecha_llegada:  form.fecha_llegada || null,
         fecha_salida:   form.fecha_salida || null,
         noches:         form.noches ? parseInt(form.noches) : null,
-        precio_total:   form.precio_total ? Math.round(parseFloat(form.precio_total) * NET_HAB_FNB * 100) / 100 : null,
+        precio_total:   form.precio_total ? Math.round(toNum(form.precio_total) * NET_HAB_FNB * 100) / 100 : null,
         estado:         form.estado || "confirmada",
         numero_reserva: form.numero_reserva ? parseInt(form.numero_reserva) : null,
       }).eq("id", entry.id);
@@ -621,7 +621,7 @@ function ModalEditarReserva({ entry, onClose, onGuardado }) {
               options={[{value:"confirmada",label:"Confirmada",color:"#1A7A3C",bg:"#E6F7EE"},{value:"cancelada",label:"Cancelada",color:"#999",bg:"#F5F5F5"}]}
             /></div>
           <div><p style={lbl}>Precio total €</p>
-            <input type="number" min="0" step="0.01" value={form.precio_total} onChange={f("precio_total")} style={inp}/></div>
+            <input type="text" inputMode="decimal" value={form.precio_total} onChange={f("precio_total")} style={inp}/></div>
           <div><p style={lbl}>Nº reserva</p>
             <input type="number" min="1" value={form.numero_reserva} onChange={f("numero_reserva")} style={inp}/></div>
         </div>
@@ -2257,7 +2257,7 @@ function PickupView({ datos, onGuardado, onReservaGuardada }) {
         fecha_llegada: editForm.fecha_llegada || null,
         fecha_salida: editForm.fecha_salida || null,
         noches,
-        precio_total: editForm.precio_total ? parseFloat(editForm.precio_total) : null,
+        precio_total: editForm.precio_total ? toNum(editForm.precio_total) : null,
         estado: editForm.estado || "confirmada",
         numero_reserva: editForm.numero_reserva ? parseInt(editForm.numero_reserva) : null,
       }).eq("id", editEntry.id);
@@ -2284,12 +2284,12 @@ function PickupView({ datos, onGuardado, onReservaGuardada }) {
           .select("id").eq("hotel_id", session.user.id).eq("numero_reserva", numero_reserva).limit(1);
         if (dup && dup.length > 0) throw new Error(`La reserva #${numero_reserva} ya existe`);
       }
-      const preciosPNVal = nrPreciosPorNoche.length > 0 && nrPreciosPorNoche.some(v=>parseFloat(v)>0)
-        ? nrPreciosPorNoche.map(v => Math.round((parseFloat(v)||0) * NET_HAB_FNB * 100) / 100)
+      const preciosPNVal = nrPreciosPorNoche.length > 0 && nrPreciosPorNoche.some(v=>toNum(v)>0)
+        ? nrPreciosPorNoche.map(v => Math.round((toNum(v)||0) * NET_HAB_FNB * 100) / 100)
         : null;
       const precioTotalFinal = preciosPNVal
         ? Math.round(preciosPNVal.reduce((a,v)=>a+v,0) * 100) / 100
-        : (nrForm.precio_total ? Math.round(parseFloat(nrForm.precio_total) * NET_HAB_FNB * 100) / 100 : null);
+        : (nrForm.precio_total ? Math.round(toNum(nrForm.precio_total) * NET_HAB_FNB * 100) / 100 : null);
       const row = {
         hotel_id: session.user.id, fecha_pickup: hoyISO, fecha_llegada: fechaLlegada,
         canal: nrForm.canal || null, num_reservas: parseInt(nrForm.num_reservas)||1,
@@ -2747,7 +2747,7 @@ function PickupView({ datos, onGuardado, onReservaGuardada }) {
                               options={[{value:"confirmada",label:"Confirmada",color:"#1A7A3C",bg:"#E6F7EE"},{value:"cancelada",label:"Cancelada",color:"#999",bg:"#F5F5F5"}]}
                             /></div>
                           <div><p style={lbl}>Precio total €</p>
-                            <input type="number" min="0" step="0.01" value={editForm.precio_total} onChange={e=>setEditForm(f=>({...f,precio_total:e.target.value}))} style={inp}/></div>
+                            <input type="text" inputMode="decimal" value={editForm.precio_total} onChange={e=>setEditForm(f=>({...f,precio_total:e.target.value}))} style={inp}/></div>
                           <div><p style={lbl}>Nº reserva</p>
                             <input type="number" min="1" value={editForm.numero_reserva} onChange={e=>setEditForm(f=>({...f,numero_reserva:e.target.value}))} style={inp}/></div>
                         </div>
@@ -2858,15 +2858,15 @@ function PickupView({ datos, onGuardado, onReservaGuardada }) {
                               {nrPreciosPorNoche.map((precio, idx) => (
                                 <div key={idx}>
                                   <label style={{ fontSize:9, color:C.textMid, display:"block", marginBottom:3 }}>Noche {idx+1}</label>
-                                  <input type="number" min="0" step="0.01" value={precio}
+                                  <input type="text" inputMode="decimal" value={precio}
                                     onChange={e=>setNrPreciosPorNoche(prev=>prev.map((v,i)=>i===idx?e.target.value:v))}
                                     style={{ width:"100%", padding:"8px 10px", borderRadius:7, border:`1px solid ${C.border}`, fontSize:13, background:C.bgCard, color:C.text, fontFamily:"inherit", boxSizing:"border-box" }}/>
                                 </div>
                               ))}
-                              {nrPreciosPorNoche.some(v=>parseFloat(v)>0) && (
+                              {nrPreciosPorNoche.some(v=>toNum(v)>0) && (
                                 <div style={{ display:"flex", alignItems:"flex-end", paddingBottom:1 }}>
                                   <div style={{ width:"100%", padding:"8px 10px", borderRadius:7, border:`1px solid ${C.border}`, fontSize:12, fontWeight:600, background:"#F5F7FA", color:C.textMid, boxSizing:"border-box" }}>
-                                    Total: €{nrPreciosPorNoche.reduce((a,v)=>a+(parseFloat(v)||0),0).toLocaleString("es-ES",{minimumFractionDigits:2,maximumFractionDigits:2})}
+                                    Total: €{nrPreciosPorNoche.reduce((a,v)=>a+(toNum(v)||0),0).toLocaleString("es-ES",{minimumFractionDigits:2,maximumFractionDigits:2})}
                                   </div>
                                 </div>
                               )}
@@ -2875,7 +2875,7 @@ function PickupView({ datos, onGuardado, onReservaGuardada }) {
                         ) : (
                           <div>
                             <p style={{ fontSize:10, color:C.textLight, fontWeight:600, textTransform:"uppercase", letterSpacing:"0.8px", marginBottom:4 }}>Precio total €</p>
-                            <input type="number" min="0" step="0.01" value={nrForm.precio_total} onChange={e=>setNrFormPersist(f=>({...f,precio_total:e.target.value}))}
+                            <input type="text" inputMode="decimal" value={nrForm.precio_total} onChange={e=>setNrFormPersist(f=>({...f,precio_total:e.target.value}))}
                               style={{ width:"100%", padding:"8px 10px", borderRadius:7, border:`1px solid ${C.border}`, fontSize:13, background:C.bgCard, color:C.text, fontFamily:"inherit", boxSizing:"border-box" }}/>
                           </div>
                         )}
@@ -4225,12 +4225,12 @@ function ModalFormGrupo({ datos, grupoData = {}, onClose, onGuardado }) {
       adr_grupo: esEvento ? 0 : (() => {
         const habs = parseInt(form.habitaciones)||0;
         const noches = Math.max(1, Math.round((new Date(form.fecha_fin)-new Date(form.fecha_inicio))/86400000));
-        const ing = parseFloat(ingresosHabs)||0;
-        const adr = habs > 0 && noches > 0 && ing > 0 ? ing/(habs*noches) : (parseFloat(form.adr_grupo)||0);
+        const ing = toNum(ingresosHabs)||0;
+        const adr = habs > 0 && noches > 0 && ing > 0 ? ing/(habs*noches) : (toNum(form.adr_grupo)||0);
         return Math.round(adr * NET_HAB_FNB * 100) / 100;
       })(),
-      revenue_fnb: Math.round((parseFloat(form.revenue_fnb)||0) * NET_HAB_FNB * 100) / 100,
-      revenue_sala: Math.round((parseFloat(form.revenue_sala)||0) * NET_SALA * 100) / 100,
+      revenue_fnb: Math.round((toNum(form.revenue_fnb)||0) * NET_HAB_FNB * 100) / 100,
+      revenue_sala: Math.round((toNum(form.revenue_sala)||0) * NET_SALA * 100) / 100,
       fecha_confirmacion: form.fecha_confirmacion||null,
       notas: esEvento ? packNotasEvento(form) : (form.notas||null),
       motivo_perdida: form.motivo_perdida||null,
@@ -4365,14 +4365,14 @@ function ModalFormGrupo({ datos, grupoData = {}, onClose, onGuardado }) {
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
             <div>
               <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>Ingresos habs €</p>
-              <input style={inp} type="number" placeholder="" value={ingresosHabs} onChange={e=>setIngresosHabs(e.target.value)}/>
+              <input style={inp} type="text" inputMode="decimal" placeholder="" value={ingresosHabs} onChange={e=>setIngresosHabs(e.target.value)}/>
             </div>
             <div>
               <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>{t("form_adr")}</p>
               {(() => {
                 const habs = parseInt(form.habitaciones)||0;
                 const noches = form.fecha_inicio && form.fecha_fin ? Math.max(1, Math.round((new Date(form.fecha_fin)-new Date(form.fecha_inicio))/86400000)) : 0;
-                const ing = parseFloat(ingresosHabs)||0;
+                const ing = toNum(ingresosHabs)||0;
                 const adrCalc = habs > 0 && noches > 0 && ing > 0 ? Math.round(ing/(habs*noches)*100)/100 : null;
                 return <input style={{...inp, background:C.bg, color: adrCalc ? C.text : C.textLight }} type="number" readOnly value={adrCalc ?? ""} placeholder="Auto"/>;
               })()}
@@ -4389,11 +4389,11 @@ function ModalFormGrupo({ datos, grupoData = {}, onClose, onGuardado }) {
       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
         <div>
           <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>{t("form_fnb")}</p>
-          <input style={inp} type="number" placeholder="" value={form.revenue_fnb} onChange={e=>setForm(f=>({...f,revenue_fnb:e.target.value}))}/>
+          <input style={inp} type="text" inputMode="decimal" placeholder="" value={form.revenue_fnb} onChange={e=>setForm(f=>({...f,revenue_fnb:e.target.value}))}/>
         </div>
         <div>
           <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>{t("form_sala")}</p>
-          <input style={inp} type="number" placeholder="" value={form.revenue_sala} onChange={e=>setForm(f=>({...f,revenue_sala:e.target.value}))}/>
+          <input style={inp} type="text" inputMode="decimal" placeholder="" value={form.revenue_sala} onChange={e=>setForm(f=>({...f,revenue_sala:e.target.value}))}/>
         </div>
       </div>
       <p style={{ fontSize:10, color:"#004B87", lineHeight:1.5 }}>ⓘ Al guardar se deduce el IVA: ADR/F&B ÷1,10 · sala ÷1,21</p>
@@ -4414,9 +4414,9 @@ function ModalFormGrupo({ datos, grupoData = {}, onClose, onGuardado }) {
         const noches = form.fecha_inicio && form.fecha_fin
           ? Math.max(1, Math.round((new Date(form.fecha_fin) - new Date(form.fecha_inicio)) / 86400000))
           : 1;
-        const revHab = (parseInt(form.habitaciones)||0) * (parseFloat(form.adr_grupo)||0) * noches;
-        const revFnb = parseFloat(form.revenue_fnb)||0;
-        const revSala = parseFloat(form.revenue_sala)||0;
+        const revHab = (parseInt(form.habitaciones)||0) * (toNum(form.adr_grupo)||0) * noches;
+        const revFnb = toNum(form.revenue_fnb)||0;
+        const revSala = toNum(form.revenue_sala)||0;
         const total = revHab + revFnb + revSala;
         return total > 0 ? (
           <div style={{ background:"#E6F7EE", border:"1px solid #1A7A3C33", borderRadius:8, padding:"10px 14px", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
@@ -5006,10 +5006,16 @@ function GruposView({ datos, onRecargar, onVolverHeatmap, subVistaExt, onCambiar
           <div style={{ display:"flex", flexDirection:"column", gap:0 }}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
               <p style={{ fontSize:11, fontWeight:700, color:"#2B7EC1", textTransform:"uppercase", letterSpacing:1.5, margin:0 }}>Grupos {anio}</p>
-              <select value={anio} onChange={e=>setAnio(Number(e.target.value))}
-                style={{ padding:"5px 10px", borderRadius:7, border:`1.5px solid ${C.border}`, fontSize:13, fontWeight:600, color:C.text, background:C.bg, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", outline:"none" }}>
-                {[...new Set([anio-1,anio,anio+1,...grupos.map(g=>parseInt(g.fecha_inicio?.slice(0,4))).filter(Boolean)])].sort().map(a=><option key={a} value={a}>{a}</option>)}
-              </select>
+              <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                <button onClick={()=>abrirNuevo()}
+                  style={{ padding:"5px 12px", borderRadius:7, border:"none", background:C.text, color:"#fff", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:5 }}>
+                  <span style={{ fontSize:14 }}>+</span> Nuevo grupo
+                </button>
+                <select value={anio} onChange={e=>setAnio(Number(e.target.value))}
+                  style={{ padding:"5px 10px", borderRadius:7, border:`1.5px solid ${C.border}`, fontSize:13, fontWeight:600, color:C.text, background:C.bg, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", outline:"none" }}>
+                  {[...new Set([anio-1,anio,anio+1,...grupos.map(g=>parseInt(g.fecha_inicio?.slice(0,4))).filter(Boolean)])].sort().map(a=><option key={a} value={a}>{a}</option>)}
+                </select>
+              </div>
             </div>
             {MESES_FULL.map((nombreMes, mi) => {
               const lista = porMes[mi];
@@ -5087,10 +5093,16 @@ function GruposView({ datos, onRecargar, onVolverHeatmap, subVistaExt, onCambiar
           <div style={{ display:"flex", flexDirection:"column", gap:0 }}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
               <p style={{ fontSize:11, fontWeight:700, color:"#7C3AED", textTransform:"uppercase", letterSpacing:1.5, margin:0 }}>Eventos {anio}</p>
-              <select value={anio} onChange={e=>setAnio(Number(e.target.value))}
-                style={{ padding:"5px 10px", borderRadius:7, border:`1.5px solid ${C.border}`, fontSize:13, fontWeight:600, color:C.text, background:C.bg, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", outline:"none" }}>
-                {[...new Set([anio-1,anio,anio+1,...grupos.map(g=>parseInt(g.fecha_inicio?.slice(0,4))).filter(Boolean)])].sort().map(a=><option key={a} value={a}>{a}</option>)}
-              </select>
+              <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                <button onClick={()=>abrirNuevo("", "evento")}
+                  style={{ padding:"5px 12px", borderRadius:7, border:"none", background:C.text, color:"#fff", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:5 }}>
+                  <span style={{ fontSize:14 }}>+</span> Nuevo evento
+                </button>
+                <select value={anio} onChange={e=>setAnio(Number(e.target.value))}
+                  style={{ padding:"5px 10px", borderRadius:7, border:`1.5px solid ${C.border}`, fontSize:13, fontWeight:600, color:C.text, background:C.bg, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", outline:"none" }}>
+                  {[...new Set([anio-1,anio,anio+1,...grupos.map(g=>parseInt(g.fecha_inicio?.slice(0,4))).filter(Boolean)])].sort().map(a=><option key={a} value={a}>{a}</option>)}
+                </select>
+              </div>
             </div>
             {MESES_FULL.map((nombreMes, mi) => {
               const lista = porMes[mi];
@@ -5592,7 +5604,7 @@ function SalasView({ datos, onRecargar, onVolver, onVerEventos, salaDetalle, set
     const nuevo = { ...salaMeta };
     const nombreFinal = formSala.nombre.trim();
     if (modalSala !== "nueva" && modalSala.nombre !== nombreFinal) delete nuevo[modalSala.nombre];
-    nuevo[nombreFinal] = { capacidad: parseInt(formSala.capacidad)||null, tipo: formSala.tipo||"", precio_hora: parseFloat(formSala.precio_hora)||null, descripcion: formSala.descripcion||"" };
+    nuevo[nombreFinal] = { capacidad: parseInt(formSala.capacidad)||null, tipo: formSala.tipo||"", precio_hora: toNum(formSala.precio_hora)||null, descripcion: formSala.descripcion||"" };
     guardarMeta(nuevo);
     setModalSala(null);
   };
@@ -5907,7 +5919,7 @@ function SalasView({ datos, onRecargar, onVolver, onVerEventos, salaDetalle, set
               </div>
               <div>
                 <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>Precio/hora (€)</p>
-                <input style={inp} type="number" placeholder="300" value={formSala.precio_hora} onChange={e=>setFormSala(f=>({...f,precio_hora:e.target.value}))}/>
+                <input style={inp} type="text" inputMode="decimal" placeholder="300" value={formSala.precio_hora} onChange={e=>setFormSala(f=>({...f,precio_hora:e.target.value}))}/>
               </div>
               <div>
                 <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>Descripción</p>
@@ -6278,9 +6290,9 @@ function ModalConfigUnificado({ datos, session, navHidden, toggleNavHidden, navR
                       <td style={{ padding:"9px 14px", fontSize:13, color:C.text, fontWeight:500 }}>{canal}</td>
                       <td style={{ padding:"7px 14px", textAlign:"right" }}>
                         <div style={{ display:"flex", alignItems:"center", justifyContent:"flex-end", gap:4 }}>
-                          <input type="number" min="0" max="100" step="0.5"
+                          <input type="text" inputMode="decimal"
                             value={pct}
-                            onChange={e => setComisiones(c => ({...c, [canal]: parseFloat(e.target.value)||0}))}
+                            onChange={e => setComisiones(c => ({...c, [canal]: toNum(e.target.value)||0}))}
                             style={{ width:60, padding:"5px 8px", borderRadius:6, border:`1px solid ${C.border}`, background:C.bg, color:C.text, fontSize:13, textAlign:"right", fontFamily:"'Plus Jakarta Sans',sans-serif", outline:"none" }}
                           />
                           <span style={{ fontSize:12, color:C.textMid, width:14 }}>%</span>

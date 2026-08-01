@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useT } from "../i18n";
-import { C, NET_HAB_FNB, NET_SALA, dmy, MESES_FULL } from "../constants";
+import { C, NET_HAB_FNB, NET_SALA, dmy, toNum, MESES_FULL } from "../constants";
 import { supabase } from "../supabase";
 import { CustomSelect } from "./CustomSelect";
 import { PeriodSelectorInline } from "./PeriodSelectorInline";
@@ -431,10 +431,10 @@ export function ImportarExcel({ onClose, session, onImportado, onProduccionDirec
         hotel_id:       session.user.id,
         anio:           pptoEditAnio,
         mes:            pptoEditMes,
-        occ_ppto:       parseFloat(pptoEditValues.occ_ppto)       || null,
-        adr_ppto:       parseFloat(pptoEditValues.adr_ppto)       || null,
-        revpar_ppto:    parseFloat(pptoEditValues.revpar_ppto)    || null,
-        rev_total_ppto: parseFloat(pptoEditValues.rev_total_ppto) || null,
+        occ_ppto:       toNum(pptoEditValues.occ_ppto)       || null,
+        adr_ppto:       toNum(pptoEditValues.adr_ppto)       || null,
+        revpar_ppto:    toNum(pptoEditValues.revpar_ppto)    || null,
+        rev_total_ppto: toNum(pptoEditValues.rev_total_ppto) || null,
       };
       const { data: existing } = await supabase.from("presupuesto")
         .select("id").eq("hotel_id", session.user.id).eq("anio", pptoEditAnio).eq("mes", pptoEditMes).maybeSingle();
@@ -470,10 +470,10 @@ export function ImportarExcel({ onClose, session, onImportado, onProduccionDirec
         .filter(r => r.occ_ppto!=='' || r.adr_ppto!=='' || r.revpar_ppto!=='' || r.rev_total_ppto!=='')
         .map(r => ({
           hotel_id: session.user.id, anio: pptoTablaAnio, mes: r.mes,
-          occ_ppto:       r.occ_ppto!==''       ? parseFloat(r.occ_ppto)       : null,
-          adr_ppto:       r.adr_ppto!==''       ? parseFloat(r.adr_ppto)       : null,
-          revpar_ppto:    r.revpar_ppto!==''    ? parseFloat(r.revpar_ppto)    : null,
-          rev_total_ppto: r.rev_total_ppto!=='' ? parseFloat(r.rev_total_ppto) : null,
+          occ_ppto:       r.occ_ppto!==''       ? toNum(r.occ_ppto)       : null,
+          adr_ppto:       r.adr_ppto!==''       ? toNum(r.adr_ppto)       : null,
+          revpar_ppto:    r.revpar_ppto!==''    ? toNum(r.revpar_ppto)    : null,
+          rev_total_ppto: r.rev_total_ppto!=='' ? toNum(r.rev_total_ppto) : null,
         }));
       if (rows.length > 0) {
         const { error } = await supabase.from("presupuesto").insert(rows);
@@ -576,11 +576,11 @@ export function ImportarExcel({ onClose, session, onImportado, onProduccionDirec
     setGuardandoProd(true); setErrorProd(""); setOkProd(false);
     try {
       if (!prodForm.fecha) throw new Error("La fecha es obligatoria");
-      const hab_ocupadas    = parseFloat(prodForm.hab_ocupadas)    || null;
-      const hab_disponibles = parseFloat(prodForm.hab_disponibles) || null;
-      const _rh_raw     = parseFloat(prodForm.revenue_hab)     || null;
-      const _rf_raw     = parseFloat(prodForm.revenue_fnb)     || null;
-      const _rs_raw     = parseFloat(prodForm.revenue_salas)   || null;
+      const hab_ocupadas    = toNum(prodForm.hab_ocupadas)    || null;
+      const hab_disponibles = toNum(prodForm.hab_disponibles) || null;
+      const _rh_raw     = toNum(prodForm.revenue_hab)     || null;
+      const _rf_raw     = toNum(prodForm.revenue_fnb)     || null;
+      const _rs_raw     = toNum(prodForm.revenue_salas)   || null;
       const revenue_hab   = _rh_raw != null ? Math.round(_rh_raw * NET_HAB_FNB * 100) / 100 : null;
       const revenue_fnb   = _rf_raw != null ? Math.round(_rf_raw * NET_HAB_FNB * 100) / 100 : null;
       const revenue_salas = _rs_raw != null ? Math.round(_rs_raw * NET_SALA    * 100) / 100 : null;
@@ -817,10 +817,10 @@ export function ImportarExcel({ onClose, session, onImportado, onProduccionDirec
 
   const guardarDia = async () => {
     setGuardandoEdit(true); setErrorEdit(""); setOkEdit(false);
-    const hab_ocupadas    = parseFloat(editValues.hab_ocupadas)    || null;
-    const hab_disponibles = parseFloat(editValues.hab_disponibles) || null;
-    const _rh_e = parseFloat(editValues.revenue_hab) || null;
-    const _rf_e = parseFloat(editValues.revenue_fnb) || null;
+    const hab_ocupadas    = toNum(editValues.hab_ocupadas)    || null;
+    const hab_disponibles = toNum(editValues.hab_disponibles) || null;
+    const _rh_e = toNum(editValues.revenue_hab) || null;
+    const _rf_e = toNum(editValues.revenue_fnb) || null;
     const revenue_hab   = _rh_e != null ? Math.round(_rh_e * NET_HAB_FNB * 100) / 100 : null;
     const revenue_fnb   = _rf_e != null ? Math.round(_rf_e * NET_HAB_FNB * 100) / 100 : null;
     const revenue_total = revenue_hab != null || revenue_fnb != null ? Math.round(((revenue_hab||0)+(revenue_fnb||0)) * 100) / 100 : null;
@@ -861,13 +861,13 @@ export function ImportarExcel({ onClose, session, onImportado, onProduccionDirec
         noches:        pickupForm.noches ? parseInt(pickupForm.noches) : null,
         precio_total:  (() => {
           if (preciosDiferentes && preciosPorNoche.length > 0) {
-            const suma = preciosPorNoche.reduce((a, v) => a + (parseFloat(v) || 0), 0);
+            const suma = preciosPorNoche.reduce((a, v) => a + (toNum(v) || 0), 0);
             return suma > 0 ? Math.round(suma * NET_HAB_FNB * 100) / 100 : null;
           }
-          return pickupForm.precio_total ? Math.round(parseFloat(pickupForm.precio_total) * NET_HAB_FNB * 100) / 100 : null;
+          return pickupForm.precio_total ? Math.round(toNum(pickupForm.precio_total) * NET_HAB_FNB * 100) / 100 : null;
         })(),
         precios_por_noche: preciosDiferentes && preciosPorNoche.length > 0
-          ? preciosPorNoche.map(v => Math.round((parseFloat(v) || 0) * NET_HAB_FNB * 100) / 100)
+          ? preciosPorNoche.map(v => Math.round((toNum(v) || 0) * NET_HAB_FNB * 100) / 100)
           : null,
         estado:        pickupForm.estado || "confirmada",
         numero_reserva: nextNumero,
@@ -1044,14 +1044,14 @@ export function ImportarExcel({ onClose, session, onImportado, onProduccionDirec
                 const cellBg = (mesIdx, key) => {
                   const real = realesMes[mesIdx];
                   if (!real || real[key] == null) return "#fff";
-                  const ppto = parseFloat(pptoTablaData[mesIdx][key]);
+                  const ppto = toNum(pptoTablaData[mesIdx][key]);
                   if (!ppto) return "#fff";
                   return real[key] >= ppto ? "#F0FBF4" : "#FEF2F2";
                 };
                 const cellBorder = (mesIdx, key) => {
                   const real = realesMes[mesIdx];
                   if (!real || real[key] == null) return `1px solid ${H.border}`;
-                  const ppto = parseFloat(pptoTablaData[mesIdx][key]);
+                  const ppto = toNum(pptoTablaData[mesIdx][key]);
                   if (!ppto) return `1px solid ${H.border}`;
                   return real[key] >= ppto ? "1px solid #86EFAC" : "1px solid #FCA5A5";
                 };
@@ -1081,7 +1081,7 @@ export function ImportarExcel({ onClose, session, onImportado, onProduccionDirec
                           ].map(({ key, placeholder, step }) => (
                             <td key={key} style={{ padding:"3px 6px" }}>
                               <input
-                                type="number" min="0" step={step}
+                                type="text" inputMode="decimal"
                                 value={pptoTablaData[i][key]}
                                 placeholder={placeholder}
                                 onChange={e => {
@@ -1250,7 +1250,7 @@ export function ImportarExcel({ onClose, session, onImportado, onProduccionDirec
                         ].map(({ label, key }) => (
                           <div key={key}>
                             <label style={labelStyle}>{label}</label>
-                            <input type="number" value={editValues[key]}
+                            <input type="text" inputMode="decimal" value={editValues[key]}
                               onChange={e => setEditValues(v => ({...v, [key]: e.target.value}))}
                               style={inputStyle} />
                           </div>
@@ -1294,35 +1294,35 @@ export function ImportarExcel({ onClose, session, onImportado, onProduccionDirec
                   </div>
                   <div>
                     <label style={labelStyle}>Revenue Habitaciones €</label>
-                    <input type="number" min="0" step="0.01" value={prodForm.revenue_hab} placeholder="0.00"
+                    <input type="text" inputMode="decimal" value={prodForm.revenue_hab} placeholder="0.00"
                       onChange={e => setProdForm(f=>({...f, revenue_hab:e.target.value}))} style={inputStyle} />
                   </div>
                   <div>
                     <label style={labelStyle}>Revenue F&B €</label>
-                    <input type="number" min="0" step="0.01" value={prodForm.revenue_fnb} placeholder="0.00"
+                    <input type="text" inputMode="decimal" value={prodForm.revenue_fnb} placeholder="0.00"
                       onChange={e => setProdForm(f=>({...f, revenue_fnb:e.target.value}))} style={inputStyle} />
                   </div>
                   <div>
                     <label style={labelStyle}>Revenue Salas €</label>
-                    <input type="number" min="0" step="0.01" value={prodForm.revenue_salas} placeholder="0.00"
+                    <input type="text" inputMode="decimal" value={prodForm.revenue_salas} placeholder="0.00"
                       onChange={e => setProdForm(f=>({...f, revenue_salas:e.target.value}))} style={inputStyle} />
                   </div>
                   <div>
                     <label style={labelStyle}>Revenue Total € <span style={{ fontWeight:400, fontSize:9, color:H.textMid, textTransform:"none", letterSpacing:0 }}>(calculado)</span></label>
                     <div style={{ ...inputStyle, background:"#F5F7FA", color:H.textMid, display:"flex", alignItems:"center" }}>
                       {(() => {
-                        const rh = parseFloat(prodForm.revenue_hab) || 0;
-                        const rf = parseFloat(prodForm.revenue_fnb) || 0;
-                        const rs = parseFloat(prodForm.revenue_salas) || 0;
+                        const rh = toNum(prodForm.revenue_hab) || 0;
+                        const rf = toNum(prodForm.revenue_fnb) || 0;
+                        const rs = toNum(prodForm.revenue_salas) || 0;
                         const total = rh + rf + rs;
                         return total > 0 ? `€ ${total.toLocaleString("es-ES", { minimumFractionDigits:2, maximumFractionDigits:2 })}` : "—";
                       })()}
                     </div>
                   </div>
                   {(prodForm.hab_ocupadas || prodForm.revenue_hab) && (() => {
-                    const ho = parseFloat(prodForm.hab_ocupadas) || 0;
-                    const hd = parseFloat(prodForm.hab_disponibles) || 0;
-                    const rh = parseFloat(prodForm.revenue_hab) || 0;
+                    const ho = toNum(prodForm.hab_ocupadas) || 0;
+                    const hd = toNum(prodForm.hab_disponibles) || 0;
+                    const rh = toNum(prodForm.revenue_hab) || 0;
                     const adr    = ho > 0 ? Math.round(rh / ho * 100) / 100 : null;
                     const revpar = hd > 0 ? Math.round(rh / hd * 100) / 100 : null;
                     const occ    = hd > 0 ? Math.round(ho / hd * 1000) / 10 : null;

@@ -9,6 +9,12 @@ export const C = {
   red: "#D32F2F", redLight: "#FDECEA", blue: "#004B87",
 };
 
+// Acepta "," o "." como separador decimal indistintamente (teclado ES vs EN)
+export const toNum = v => {
+  if (v === null || v === undefined || v === "") return NaN;
+  return parseFloat(String(v).trim().replace(",", "."));
+};
+
 export const dmy = iso => {
   if (!iso) return "—";
   const s = String(iso).slice(0, 10);
