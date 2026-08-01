@@ -3522,7 +3522,10 @@ function PickupView({ datos, onGuardado, onReservaGuardada }) {
           .sort((a,b) => b[1]-a[1])
           .map(([canal, revenue]) => {
             const pct = comisionesConfig[canal] ?? DEFAULT_COM[canal] ?? 0;
-            const coste = revenue * pct / 100;
+            // La OTA cobra su comisión sobre el precio bruto que paga el huésped (con IVA),
+            // no sobre el importe ya neto de IVA que guardamos como "revenue".
+            const revenueBrutoIva = revenue / NET_HAB_FNB;
+            const coste = revenueBrutoIva * pct / 100;
             return { canal, revenue, pct, coste, neto: revenue - coste };
           })
           .filter(f => f.pct > 0);
