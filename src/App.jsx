@@ -6414,23 +6414,14 @@ export default function App() {
 
   const hoy = new Date();
   const [mesSel,  setMesSel]  = useState(() => {
-    const v = localStorage.getItem("rm_mes"), a = localStorage.getItem("rm_anio");
-    if (v !== null && a !== null) {
-      const sM = parseInt(v), sA = parseInt(a), cM = hoy.getMonth(), cA = hoy.getFullYear();
-      if (sA < cA || (sA === cA && sM < cM)) return cM; // mes guardado ya pasó → avanzar al mes actual
-      return sM;
-    }
-    return hoy.getMonth();
+    const v = localStorage.getItem("rm_mes");
+    return v !== null ? parseInt(v) : hoy.getMonth();
   });
   const [anioSel, setAnioSel] = useState(() => {
-    const v = localStorage.getItem("rm_mes"), a = localStorage.getItem("rm_anio");
-    if (v !== null && a !== null) {
-      const sM = parseInt(v), sA = parseInt(a), cM = hoy.getMonth(), cA = hoy.getFullYear();
-      if (sA < cA || (sA === cA && sM < cM)) return cA;
-      return sA;
-    }
-    return hoy.getFullYear();
+    const a = localStorage.getItem("rm_anio");
+    return a !== null ? parseInt(a) : hoy.getFullYear();
   });
+  const mesAutoAjustadoRef = useRef(false);
   const [importar, setImportar] = useState(false);
   const [suscripcion, setSuscripcion] = useState(null);
   const [cargandoSub, setCargandoSub] = useState(true);
@@ -6451,6 +6442,31 @@ export default function App() {
   });
   const [cargandoDatos, setCargandoDatos] = useState(false);
   const [datosCargadosUnaVez, setDatosCargadosUnaVez] = useState(false);
+
+  // Avanza al mes/año guardado solo cuando ya hay datos reales de ese periodo;
+  // si el mes guardado quedó atrás pero el mes en curso aún no tiene datos, se
+  // adelanta como mucho hasta el último mes con datos (evita mostrar el dashboard
+  // "en blanco" el día 1 de cada mes, antes de cargar la primera producción).
+  useEffect(() => {
+    if (mesAutoAjustadoRef.current || !datosCargadosUnaVez) return;
+    mesAutoAjustadoRef.current = true;
+    const produccion = datos.produccion || [];
+    if (produccion.length === 0) return;
+    const cA = hoy.getFullYear(), cM = hoy.getMonth();
+    let reciente = null;
+    for (const d of produccion) {
+      const f = new Date(d.fecha + "T00:00:00");
+      const a = f.getFullYear(), m = f.getMonth();
+      if (a > cA || (a === cA && m > cM)) continue; // ignorar fechas futuras
+      if (!reciente || a > reciente.a || (a === reciente.a && m > reciente.m)) reciente = { a, m };
+    }
+    if (!reciente) return;
+    const guardadoEsPasado = anioSel < reciente.a || (anioSel === reciente.a && mesSel < reciente.m);
+    if (guardadoEsPasado) {
+      setMesSel(reciente.m); setAnioSel(reciente.a);
+      localStorage.setItem("rm_mes", reciente.m); localStorage.setItem("rm_anio", reciente.a);
+    }
+  }, [datosCargadosUnaVez, datos.produccion]);
 
   const alertasFaltantes = useMemo(() => {
     const produccion = datos.produccion || [];
