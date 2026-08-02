@@ -664,7 +664,24 @@ function DesgloseMovimientoView({ datos, tipo, onBack }) {
     if (!deduped[key] || fp > deduped[key]._fp) deduped[key] = { ...e, _fp: fp };
   });
   const todasActivas = Object.values(deduped);
-  const reservas = todasActivas.filter(e => {
+
+  // Grupos confirmados: se muestran como filas propias (habitación = num_reservas del grupo)
+  const gruposMov = (datos.grupos||[]).filter(g => g.estado==="confirmado" && g.habitaciones>0 && g.fecha_inicio && g.fecha_fin).map(g => {
+    const fi = String(g.fecha_inicio).slice(0,10), ff = String(g.fecha_fin).slice(0,10);
+    const noches = Math.max(1, Math.round((new Date(ff)-new Date(fi))/86400000));
+    return {
+      numero_reserva: null,
+      canal: `Grupo: ${g.nombre||"—"}`,
+      fecha_llegada: fi,
+      fecha_salida: ff,
+      noches,
+      num_reservas: g.habitaciones,
+      precio_total: Math.round((g.habitaciones||0)*(g.adr_grupo||0)*noches),
+      _esGrupo: true,
+    };
+  });
+
+  const reservas = [...todasActivas, ...gruposMov].filter(e => {
     const fl = String(e.fecha_llegada||"").slice(0,10);
     const fs = getFechaSalida(e);
     if (tipo === "entradas")  return fl === hoyStr;
@@ -700,9 +717,9 @@ function DesgloseMovimientoView({ datos, tipo, onBack }) {
                 <tbody>
                   {reservas.map((e, i) => (
                     <tr key={i}
-                      onClick={() => setEditEntry(e)}
-                      style={{ borderBottom:`1px solid ${C.border}`, background: i%2===0 ? C.bg : C.bgCard, cursor:"pointer", transition:"background 0.1s" }}
-                      onMouseEnter={ev => ev.currentTarget.style.background = C.accentLight}
+                      onClick={() => !e._esGrupo && setEditEntry(e)}
+                      style={{ borderBottom:`1px solid ${C.border}`, background: i%2===0 ? C.bg : C.bgCard, cursor: e._esGrupo ? "default" : "pointer", transition:"background 0.1s" }}
+                      onMouseEnter={ev => !e._esGrupo && (ev.currentTarget.style.background = C.accentLight)}
                       onMouseLeave={ev => ev.currentTarget.style.background = i%2===0 ? C.bg : C.bgCard}>
                       <td style={{ padding:"11px 16px", color:C.textMid, fontVariantNumeric:"tabular-nums" }}>{e.numero_reserva || "—"}</td>
                       <td style={{ padding:"11px 16px", fontWeight:600, color:C.text }}>{e.canal || "—"}</td>
@@ -1889,13 +1906,17 @@ const [metricaSel, setMetricaSel] = useState(() => localStorage.getItem("fr_metr
               });
               const activas = [..._indMov, ...Object.values(_dedupMov)];
 
-              const numEntradas      = activas.filter(e => String(e.fecha_llegada||"").slice(0,10) === hoyStr).reduce((a,e)=>a+(e.num_reservas||1),0);
-              const numSalidas       = activas.filter(e => getFechaSalida(e) === hoyStr).reduce((a,e)=>a+(e.num_reservas||1),0);
-              const numEntradasAyer  = activas.filter(e => String(e.fecha_llegada||"").slice(0,10) === ayerStr).reduce((a,e)=>a+(e.num_reservas||1),0);
-              const numSalidasAyer   = activas.filter(e => getFechaSalida(e) === ayerStr).reduce((a,e)=>a+(e.num_reservas||1),0);
+              // Grupos confirmados: cada habitación del grupo cuenta como entrada el día de inicio y como salida el día de fin
+              const gruposMov = (datos.grupos||[]).filter(g => g.estado==="confirmado" && g.habitaciones>0 && g.fecha_inicio && g.fecha_fin);
+              const habGrupos = (fechaStr, campo) => gruposMov.filter(g => String(g[campo]).slice(0,10) === fechaStr).reduce((a,g)=>a+(g.habitaciones||0),0);
 
-              const proxEntrada = numEntradas===0 ? todasActivas.map(e=>String(e.fecha_llegada||"").slice(0,10)).filter(f=>f>hoyStr).sort()[0]||null : null;
-              const proxSalida  = numSalidas===0  ? todasActivas.map(e=>getFechaSalida(e)).filter(f=>f&&f>hoyStr).sort()[0]||null : null;
+              const numEntradas      = activas.filter(e => String(e.fecha_llegada||"").slice(0,10) === hoyStr).reduce((a,e)=>a+(e.num_reservas||1),0) + habGrupos(hoyStr, "fecha_inicio");
+              const numSalidas       = activas.filter(e => getFechaSalida(e) === hoyStr).reduce((a,e)=>a+(e.num_reservas||1),0) + habGrupos(hoyStr, "fecha_fin");
+              const numEntradasAyer  = activas.filter(e => String(e.fecha_llegada||"").slice(0,10) === ayerStr).reduce((a,e)=>a+(e.num_reservas||1),0) + habGrupos(ayerStr, "fecha_inicio");
+              const numSalidasAyer   = activas.filter(e => getFechaSalida(e) === ayerStr).reduce((a,e)=>a+(e.num_reservas||1),0) + habGrupos(ayerStr, "fecha_fin");
+
+              const proxEntrada = numEntradas===0 ? [...todasActivas.map(e=>String(e.fecha_llegada||"").slice(0,10)), ...gruposMov.map(g=>String(g.fecha_inicio).slice(0,10))].filter(f=>f>hoyStr).sort()[0]||null : null;
+              const proxSalida  = numSalidas===0  ? [...todasActivas.map(e=>getFechaSalida(e)), ...gruposMov.map(g=>String(g.fecha_fin).slice(0,10))].filter(f=>f&&f>hoyStr).sort()[0]||null : null;
 
               const habFromProd2 = produccion.length > 0
                 ? Math.round(produccion.reduce((a,r)=>a+(r.hab_disponibles||0),0)/produccion.length) : 30;
@@ -4171,9 +4192,11 @@ function ModalFormGrupo({ datos, grupoData = {}, onClose, onGuardado }) {
 
   const initForm = () => {
     const g = grupoData;
-    const _anyo = new Date().getFullYear();
-    const _defFecha = `${_anyo}-01-01`;
-    if (!g || !g.nombre) return { ...FORM_VACIO, tipo: g.tipo||"grupo", fecha_inicio: g.fecha_inicio||_defFecha, fecha_fin: g.fecha_fin||_defFecha, sala_nombre: g.sala_nombre||"" };
+    const _hoy = new Date();
+    const _defInicio = _hoy.toISOString().slice(0,10);
+    const _manana = new Date(_hoy); _manana.setDate(_manana.getDate()+1);
+    const _defFin = _manana.toISOString().slice(0,10);
+    if (!g || !g.nombre) return { ...FORM_VACIO, tipo: g.tipo||"grupo", fecha_inicio: g.fecha_inicio||_defInicio, fecha_fin: g.fecha_fin||_defFin, sala_nombre: g.sala_nombre||"" };
     const esEvento = g.categoria === "evento";
     const { hora_inicio, hora_fin, sala_nombre, servicio_incluido, notasUser } = esEvento ? parseNotasEvento(g.notas) : {};
     return {
