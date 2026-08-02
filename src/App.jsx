@@ -557,7 +557,7 @@ function ModalEditarReserva({ entry, onClose, onGuardado }) {
     noches:         String(entry.noches || ""),
     fecha_salida:   String(entry.fecha_salida||"").slice(0,10),
     estado:         entry.estado || "confirmada",
-    precio_total:   entry.precio_total != null ? String(entry.precio_total) : "",
+    precio_total:   entry.precio_total != null ? String(Math.round(entry.precio_total / NET_HAB_FNB * 100) / 100) : "",
     numero_reserva: entry.numero_reserva != null ? String(entry.numero_reserva) : "",
   });
   const [guardando, setGuardando] = useState(false);
@@ -2192,7 +2192,7 @@ const [metricaSel, setMetricaSel] = useState(() => localStorage.getItem("fr_metr
                     <YAxis yAxisId="left"  tick={{ fill: C.textLight, fontSize: 11 }} axisLine={false} tickLine={false} unit="%" domain={[0,100]}/>
                     <YAxis yAxisId="right" orientation="right" tick={{ fill: C.textLight, fontSize: 11 }} axisLine={false} tickLine={false} unit="€"/>
                     <Tooltip content={<CustomTooltip/>} cursor={false}/>
-                    <Legend wrapperStyle={{ fontSize: 11, color: C.textMid, paddingTop: 8 }}/>
+                    <Legend wrapperStyle={{ fontSize: 15, color: C.textMid, paddingTop: 8 }}/>
                     <Bar yAxisId="left" dataKey="occ" name="Ocupación" fill="url(#gradOccDiario)" radius={[4,4,0,0]} activeBar={false}/>
                     <Line yAxisId="right" dataKey="adr"    name="ADR"    type="monotone" stroke="#B8860B" strokeWidth={2} dot={{fill:"#B8860B",r:2,strokeWidth:0}} activeDot={{r:4}}/>
                     <Line yAxisId="right" dataKey="revpar" name="RevPAR" type="monotone" stroke="#E53935" strokeWidth={2} dot={{fill:"#E53935",r:2,strokeWidth:0}} activeDot={{r:4}}/>
@@ -2261,7 +2261,7 @@ function PickupView({ datos, onGuardado, onReservaGuardada }) {
       fecha_llegada: String(e.fecha_llegada || "").slice(0, 10),
       fecha_salida: String(e.fecha_salida || "").slice(0, 10),
       noches: String(e.noches || ""),
-      precio_total: e.precio_total != null ? String(e.precio_total) : "",
+      precio_total: e.precio_total != null ? String(Math.round(e.precio_total / NET_HAB_FNB * 100) / 100) : "",
       estado: e.estado || "confirmada",
       numero_reserva: e.numero_reserva != null ? String(e.numero_reserva) : "",
     });
@@ -2278,7 +2278,7 @@ function PickupView({ datos, onGuardado, onReservaGuardada }) {
         fecha_llegada: editForm.fecha_llegada || null,
         fecha_salida: editForm.fecha_salida || null,
         noches,
-        precio_total: editForm.precio_total ? toNum(editForm.precio_total) : null,
+        precio_total: editForm.precio_total ? Math.round(toNum(editForm.precio_total) * NET_HAB_FNB * 100) / 100 : null,
         estado: editForm.estado || "confirmada",
         numero_reserva: editForm.numero_reserva ? parseInt(editForm.numero_reserva) : null,
       }).eq("id", editEntry.id);
@@ -2295,11 +2295,7 @@ function PickupView({ datos, onGuardado, onReservaGuardada }) {
       const fechaLlegada = nrForm.fecha_llegada || hoyISO;
       let fechaSalida = nrForm.fecha_salida || null;
       if (!fechaSalida) { const d = new Date(fechaLlegada+"T00:00:00"); d.setDate(d.getDate()+noches); fechaSalida = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; }
-      const { data: maxRow2 } = await supabase.from("pickup_entries")
-        .select("numero_reserva").eq("hotel_id", session.user.id)
-        .not("numero_reserva", "is", null).order("numero_reserva", { ascending: false }).limit(1);
-      const nextNumero2 = ((maxRow2?.[0]?.numero_reserva) || 0) + 1;
-      let numero_reserva = nrForm.numero_reserva ? parseInt(nrForm.numero_reserva) : nextNumero2;
+      let numero_reserva = nrForm.numero_reserva ? parseInt(nrForm.numero_reserva) : null;
       if (nrForm.numero_reserva) {
         const { data: dup } = await supabase.from("pickup_entries")
           .select("id").eq("hotel_id", session.user.id).eq("numero_reserva", numero_reserva).limit(1);
@@ -2774,6 +2770,7 @@ function PickupView({ datos, onGuardado, onReservaGuardada }) {
                         </div>
                       );
                     })()}
+                    <p style={{ fontSize:10, color:"#004B87", marginTop:10, lineHeight:1.5 }}>ⓘ Al guardar se deduce el IVA automáticamente: precio ÷1,10 (IVA 10%)</p>
                     {editError && <p style={{ fontSize:12, color:C.red, marginTop:10 }}>{editError}</p>}
                     {editOk && <p style={{ fontSize:12, color:C.green, marginTop:10, fontWeight:600 }}>✓ Reserva actualizada</p>}
                     <button onClick={guardarEdicion} disabled={editGuardando}
@@ -2906,6 +2903,7 @@ function PickupView({ datos, onGuardado, onReservaGuardada }) {
                             style={{ width:"100%", padding:"8px 10px", borderRadius:7, border:`1px solid ${C.border}`, fontSize:13, background:C.bgCard, color:C.text, fontFamily:"inherit", boxSizing:"border-box" }}/>
                         </div>
                       </div>
+                      <p style={{ fontSize:10, color:"#004B87", marginTop:10, lineHeight:1.5 }}>ⓘ Al guardar se deduce el IVA automáticamente: precio ÷1,10 (IVA 10%)</p>
                       {nrError && <p style={{ fontSize:12, color:C.red, marginTop:10 }}>{nrError}</p>}
                       <div style={{ display:"flex", gap:8, marginTop:18 }}>
                         <button onClick={() => guardarNuevaReserva(false)} disabled={nrGuardando}
@@ -3118,8 +3116,8 @@ function PickupView({ datos, onGuardado, onReservaGuardada }) {
 
         {/* Col izquierda: Fechas Calientes + Cancelaciones */}
         <Card>
-          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:8 }}>
-            <p style={{ fontSize:11, fontWeight:700, color:C.textLight, textTransform:"uppercase", letterSpacing:1 }}>🔥 {t("fechas_calientes")}</p>
+          <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:8, marginBottom:8 }}>
+            <p style={{ fontSize:11, fontWeight:700, color:C.text, textTransform:"uppercase", letterSpacing:1, textAlign:"center" }}>{t("fechas_calientes")}</p>
             <div style={{ display:"flex", borderRadius:6, overflow:"hidden", border:`1px solid ${C.border}`, flexShrink:0 }}>
               {[["mes","Mes actual"],["proximas","Próximas"]].map(([key, label]) => (
                 <button key={key} onClick={() => setFechasCalientesVista(key)}
@@ -6468,7 +6466,7 @@ export default function App() {
   const [previsualizandoDiario, setPrevisualizandoDiario] = useState(false);
   const [toast, setToast] = useState(null); // { msg, ok }
   const showToast = (msg, ok=true) => { setToast({ msg, ok }); setTimeout(() => setToast(null), ok ? 3500 : 6000); };
-  const [reservaGuardadaNotif, setReservaGuardadaNotif] = useState(null); // numero_reserva o null
+  const [reservaGuardadaNotif, setReservaGuardadaNotif] = useState(null); // { numero } o null
   const [alertasDismissed, setAlertasDismissed] = useState(() => sessionStorage.getItem("fr_alertas_dismissed") === "1");
   const [alertasExpanded, setAlertasExpanded] = useState(false);
   const [datos, setDatos] = useState(() => {
@@ -6924,7 +6922,7 @@ export default function App() {
   };
   const handleOnboardingSkip = () => { localStorage.setItem("fr_onboarding_v1", "1"); setOnboardingStep(null); };
 
-  const _commonViewProps = { datos, mes: mesSel, anio: anioSel, onGuardado: cargarDatos, onReservaGuardada: (numero) => setReservaGuardadaNotif(numero), onPeriodo: (m,a) => { setMesSel(m); setAnioSel(a); localStorage.setItem("rm_mes", m); localStorage.setItem("rm_anio", a); } };
+  const _commonViewProps = { datos, mes: mesSel, anio: anioSel, onGuardado: cargarDatos, onReservaGuardada: (numero) => setReservaGuardadaNotif({ numero }), onPeriodo: (m,a) => { setMesSel(m); setAnioSel(a); localStorage.setItem("rm_mes", m); localStorage.setItem("rm_anio", a); } };
 
   if (loading) return (
     <div style={{ minHeight: "100vh", background: C.bgDeep, display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -7463,10 +7461,10 @@ export default function App() {
       )}
 
       {/* Notificación flotante: reserva guardada (persiste hasta que el usuario la cierra) */}
-      {reservaGuardadaNotif != null && (
+      {reservaGuardadaNotif && (
         <div style={{ position:"fixed", top:64, right:"clamp(12px,4vw,32px)", zIndex:2000, background:"#fff", border:`1px solid ${C.border}`, borderRadius:14, boxShadow:"0 16px 40px rgba(0,0,0,0.16)", padding:"14px 16px", display:"flex", alignItems:"center", gap:12, maxWidth:320, fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
           <div style={{ width:30, height:30, borderRadius:"50%", background:C.greenLight, color:C.green, display:"flex", alignItems:"center", justifyContent:"center", fontSize:16, flexShrink:0 }}>✓</div>
-          <p style={{ margin:0, fontSize:13, fontWeight:600, color:C.text, flex:1 }}>Reserva número {reservaGuardadaNotif} guardada</p>
+          <p style={{ margin:0, fontSize:13, fontWeight:600, color:C.text, flex:1 }}>{reservaGuardadaNotif.numero != null ? `Reserva número ${reservaGuardadaNotif.numero} guardada` : "Reserva guardada"}</p>
           <button onClick={() => setReservaGuardadaNotif(null)} style={{ background:"none", border:"none", cursor:"pointer", color:C.textLight, fontSize:15, padding:4, lineHeight:1, flexShrink:0 }}>✕</button>
         </div>
       )}
