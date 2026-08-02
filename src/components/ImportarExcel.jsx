@@ -54,12 +54,6 @@ export function ImportarExcel({ onClose, session, onImportado, onProduccionDirec
   const [errorProd, setErrorProd] = useState("");
   const [okProd, setOkProd] = useState(false);
   const [prodRecientes, setProdRecientes] = useState([]);
-  // Vaciar
-  const [vaciando, setVaciando] = useState(false);
-  const [confirmVaciar, setConfirmVaciar] = useState(false);
-  // Limpiar solo pickup
-  const [limpiandoPickup, setLimpiandoPickup] = useState(false);
-  const [confirmLimpiarPickup, setConfirmLimpiarPickup] = useState(false);
   // Estado de importación existente
   const [importStatusHistorico, setImportStatusHistorico] = useState(null); // null=comprobando, false=sin datos, {fecha,count}
   const [importStatusPresupuesto, setImportStatusPresupuesto] = useState(null);
@@ -102,37 +96,6 @@ export function ImportarExcel({ onClose, session, onImportado, onProduccionDirec
   }, []);
 
   useEffect(() => { cargarPptoTabla(pptoTablaAnio); }, [pptoTablaAnio]); // eslint-disable-line
-
-  const vaciarDatos = async () => {
-    setVaciando(true);
-    try {
-      await Promise.all([
-        supabase.from("produccion_diaria").delete().eq("hotel_id", session.user.id),
-        supabase.from("pickup_entries").delete().eq("hotel_id", session.user.id),
-        supabase.from("presupuesto").delete().eq("hotel_id", session.user.id),
-        supabase.from("grupos_eventos").delete().eq("hotel_id", session.user.id),
-      ]);
-      localStorage.setItem('cleanup_grupo_canal_v1', '1');
-      setConfirmVaciar(false);
-      onImportado();
-      onClose();
-    } catch(e) {
-      setErrorMain("Error al vaciar datos: " + e.message);
-    }
-    setVaciando(false);
-  };
-
-  const limpiarPickup = async () => {
-    setLimpiandoPickup(true);
-    try {
-      await supabase.from("pickup_entries").delete().eq("hotel_id", session.user.id);
-      setConfirmLimpiarPickup(false);
-      if (onImportado) onImportado();
-    } catch(e) {
-      setErrorMain("Error al limpiar pickup: " + e.message);
-    }
-    setLimpiandoPickup(false);
-  };
 
   const eliminarHistorico = async () => {
     setEliminandoHistorico(true);
@@ -1376,37 +1339,6 @@ export function ImportarExcel({ onClose, session, onImportado, onProduccionDirec
             </button>
           )}
 
-          {/* Limpiar solo Pickup */}
-          {confirmLimpiarPickup ? (
-            <div style={{ background:"rgba(231,76,60,0.08)", border:"1px solid rgba(231,76,60,0.25)", borderRadius:8, padding:"14px", textAlign:"center", marginTop:8 }}>
-              <p style={{ fontWeight:700, color:H.red, marginBottom:4, fontSize:13 }}>¿Limpiar datos de Pickup?</p>
-              <p style={{ fontSize:11, color:H.textMid, marginBottom:10 }}>Se eliminarán todas las entradas de pickup. Producción y presupuesto no se tocan. Podrás re-importar el Excel para cargar datos correctos.</p>
-              <div style={{ display:"flex", gap:8, justifyContent:"center" }}>
-                <button onClick={()=>setConfirmLimpiarPickup(false)} style={{ padding:"6px 16px", borderRadius:7, border:`1px solid ${H.border}`, background:H.card2, color:H.textMid, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:11 }}>Cancelar</button>
-                <button onClick={limpiarPickup} disabled={limpiandoPickup} style={{ padding:"6px 16px", borderRadius:7, border:"none", background:H.red, color:"#fff", cursor:limpiandoPickup?"not-allowed":"pointer", fontWeight:700, fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:11 }}>{limpiandoPickup?"Limpiando...":"Sí, limpiar pickup"}</button>
-              </div>
-            </div>
-          ) : (
-            <button onClick={()=>setConfirmLimpiarPickup(true)} style={{ width:"100%", padding:"7px", borderRadius:7, border:"1px solid rgba(231,76,60,0.15)", background:"none", color:"rgba(231,76,60,0.5)", cursor:"pointer", fontSize:11, fontFamily:"'Plus Jakarta Sans',sans-serif", marginTop:8 }}>
-              Limpiar solo datos de Pickup
-            </button>
-          )}
-
-          {/* Vaciar datos */}
-          {confirmVaciar ? (
-            <div style={{ background:"rgba(231,76,60,0.1)", border:"1px solid rgba(231,76,60,0.3)", borderRadius:8, padding:"14px", textAlign:"center", marginTop:8 }}>
-              <p style={{ fontWeight:700, color:H.red, marginBottom:4, fontSize:13 }}>{t("vaciar_confirm")}</p>
-              <p style={{ fontSize:11, color:H.textMid, marginBottom:10 }}>{t("vaciar_desc")}</p>
-              <div style={{ display:"flex", gap:8, justifyContent:"center" }}>
-                <button onClick={()=>setConfirmVaciar(false)} style={{ padding:"6px 16px", borderRadius:7, border:`1px solid ${H.border}`, background:H.card2, color:H.textMid, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:11 }}>{t("cancelar")}</button>
-                <button onClick={vaciarDatos} disabled={vaciando} style={{ padding:"6px 16px", borderRadius:7, border:"none", background:H.red, color:"#fff", cursor:vaciando?"not-allowed":"pointer", fontWeight:700, fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:11 }}>{vaciando?t("vaciando"):t("si_vaciar")}</button>
-              </div>
-            </div>
-          ) : (
-            <button onClick={()=>setConfirmVaciar(true)} style={{ width:"100%", padding:"7px", borderRadius:7, border:"1px solid rgba(231,76,60,0.2)", background:"none", color:"rgba(231,76,60,0.6)", cursor:"pointer", fontSize:11, fontFamily:"'Plus Jakarta Sans',sans-serif", marginTop:8 }}>
-              {t("vaciar_datos")}
-            </button>
-          )}
         </div>
       </div>
   );
