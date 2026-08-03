@@ -11,6 +11,7 @@ import { PeriodSelectorInline } from "./components/PeriodSelectorInline";
 import { WeatherBar } from "./components/WeatherBar";
 import { KpiModal } from "./components/KpiModal";
 import { ImportarExcel } from "./components/ImportarExcel";
+import { StaffFlow } from "./components/StaffFlow";
 import {
   AreaChart, Area, BarChart, Bar, LineChart, Line, ComposedChart,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
@@ -5321,7 +5322,25 @@ function AuthScreen() {
   const handleLogin = async () => {
     setLoading(true); setError("");
     const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) setError("Email o contraseña incorrectos");
+    if (!error) { setLoading(false); return; }
+
+    // No es la contraseña de Dirección — probar si es la contraseña de
+    // Usuario (cuenta staff con email sintético distinto, mismo email
+    // real de cara al recepcionista).
+    try {
+      const resp = await fetch("/api/resolve-staff-login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      const json = await resp.json();
+      if (json?.syntheticEmail) {
+        const { error: staffErr } = await supabase.auth.signInWithPassword({ email: json.syntheticEmail, password });
+        if (!staffErr) { setLoading(false); return; }
+      }
+    } catch {}
+
+    setError("Email o contraseña incorrectos");
     setLoading(false);
   };
 
@@ -6083,6 +6102,64 @@ function ModalConfigUnificado({ datos, session, navHidden, toggleNavHidden, navR
     onGuardado(true);
   };
 
+  // ── Usuario (acceso staff/recepción) ──
+  const [staffConfigurado, setStaffConfigurado] = React.useState(null); // null=cargando, true/false
+  const [staffPwd1, setStaffPwd1] = React.useState("");
+  const [staffPwd2, setStaffPwd2] = React.useState("");
+  const [staffGuardando, setStaffGuardando] = React.useState(false);
+  const [staffRevocando, setStaffRevocando] = React.useState(false);
+  const [staffError, setStaffError] = React.useState("");
+  const [staffOk, setStaffOk] = React.useState("");
+
+  React.useEffect(() => {
+    supabase.from("hotel_staff").select("hotel_id").eq("hotel_id", session.user.id).maybeSingle()
+      .then(({ data }) => setStaffConfigurado(!!data));
+  }, []);
+
+  const validarPasswordStaff = (pw) => {
+    if (pw.length < 8) return "La contraseña debe tener al menos 8 caracteres";
+    if (!/[A-Z]/.test(pw)) return "Debe incluir al menos una mayúscula";
+    if (!/[0-9]/.test(pw)) return "Debe incluir al menos un número";
+    return null;
+  };
+
+  const guardarPasswordUsuario = async () => {
+    setStaffError(""); setStaffOk("");
+    const pwErr = validarPasswordStaff(staffPwd1);
+    if (pwErr) { setStaffError(pwErr); return; }
+    if (staffPwd1 !== staffPwd2) { setStaffError("Las contraseñas no coinciden"); return; }
+    setStaffGuardando(true);
+    try {
+      const resp = await fetch("/api/set-staff-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ password: staffPwd1 }),
+      });
+      const json = await resp.json();
+      if (!resp.ok) throw new Error(json.error || "Error al guardar");
+      setStaffConfigurado(true); setStaffPwd1(""); setStaffPwd2("");
+      setStaffOk(staffConfigurado ? "Contraseña actualizada" : "Acceso de Usuario creado");
+      setTimeout(() => setStaffOk(""), 3000);
+    } catch (e) { setStaffError(e.message); }
+    setStaffGuardando(false);
+  };
+
+  const revocarAccesoUsuario = async () => {
+    if (!window.confirm("¿Revocar el acceso de Usuario? El recepcionista no podrá volver a entrar hasta que configures una contraseña nueva.")) return;
+    setStaffRevocando(true); setStaffError("");
+    try {
+      const resp = await fetch("/api/set-staff-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ action: "revoke" }),
+      });
+      const json = await resp.json();
+      if (!resp.ok) throw new Error(json.error || "Error al revocar");
+      setStaffConfigurado(false);
+    } catch (e) { setStaffError(e.message); }
+    setStaffRevocando(false);
+  };
+
   const inp = { width:"100%", padding:"9px 12px", borderRadius:8, border:`1px solid ${C.border}`, background:C.bg, color:C.text, fontSize:13, fontFamily:"'Plus Jakarta Sans',sans-serif", boxSizing:"border-box", outline:"none" };
 
   const verificarPin = async () => {
@@ -6120,6 +6197,7 @@ function ModalConfigUnificado({ datos, session, navHidden, toggleNavHidden, navR
     { key: "personalizacion", label: "Personalización" },
     { key: "canales", label: "Canales" },
     { key: "salas", label: "Salas" },
+    { key: "usuario", label: "Usuario" },
     { key: "restricciones", label: "Restricciones" },
   ];
 
@@ -6397,6 +6475,46 @@ function ModalConfigUnificado({ datos, session, navHidden, toggleNavHidden, navR
           </div>
         )}
 
+        {/* Pestaña: Usuario (acceso de recepción, sin ver revenue) */}
+        {tab === "usuario" && (
+          <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
+            <p style={{ fontSize:12, color:C.textMid }}>
+              Acceso limitado para recepción: mismo email, contraseña distinta. Solo puede dar de alta reservas y subir la producción del día — no ve dashboards ni datos históricos de revenue.
+            </p>
+            {staffConfigurado === null ? (
+              <p style={{ fontSize:12, color:C.textLight }}>Cargando...</p>
+            ) : (
+              <>
+                <div style={{ padding:"8px 12px", borderRadius:8, background: staffConfigurado ? "#EAF7EE" : C.bg, border:`1px solid ${staffConfigurado ? "#1A7A3C" : C.border}`, fontSize:12, color: staffConfigurado ? "#1A7A3C" : C.textMid, fontWeight:600 }}>
+                  {staffConfigurado ? "Acceso de Usuario configurado" : "Acceso de Usuario no configurado"}
+                </div>
+                <div>
+                  <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>
+                    {staffConfigurado ? "Nueva contraseña" : "Contraseña de Usuario"}
+                  </p>
+                  <input style={inp} type="password" value={staffPwd1} onChange={e=>setStaffPwd1(e.target.value)} placeholder="Mín. 8 caracteres, 1 mayúscula, 1 número"/>
+                </div>
+                <div>
+                  <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>Repetir contraseña</p>
+                  <input style={inp} type="password" value={staffPwd2} onChange={e=>setStaffPwd2(e.target.value)} placeholder="Repite la contraseña"/>
+                </div>
+                {staffError && <p style={{ fontSize:12, color:C.red }}>{staffError}</p>}
+                {staffOk && <p style={{ fontSize:12, color:"#1A7A3C", fontWeight:600 }}>{staffOk}</p>}
+                <div style={{ display:"flex", justifyContent:"flex-end", gap:8 }}>
+                  {staffConfigurado && (
+                    <button onClick={revocarAccesoUsuario} disabled={staffRevocando} style={{ background:"none", border:`1px solid ${C.red}`, color:C.red, borderRadius:7, padding:"8px 16px", fontSize:12, cursor:"pointer" }}>
+                      {staffRevocando ? "Revocando..." : "Revocar acceso"}
+                    </button>
+                  )}
+                  <button onClick={guardarPasswordUsuario} disabled={staffGuardando || !staffPwd1 || !staffPwd2} style={{ background:"#0A2540", color:"#fff", border:"none", borderRadius:7, padding:"8px 20px", fontSize:13, fontWeight:600, cursor:"pointer" }}>
+                    {staffGuardando ? "Guardando..." : (staffConfigurado ? "Cambiar contraseña" : "Crear acceso")}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
         {/* Pestaña: Restricciones */}
         {tab === "restricciones" && (
           <div>
@@ -6469,6 +6587,9 @@ function ModalConfigUnificado({ datos, session, navHidden, toggleNavHidden, navR
 
 export default function App() {
   const [session, setSession] = useState(null);
+  const [rol, setRol] = useState(null); // "direccion" | "usuario" | null
+  const [rolHotelId, setRolHotelId] = useState(null);
+  const [rolResuelto, setRolResuelto] = useState(false);
   const [loading, setLoading] = useState(true);
   const [recoveryMode, setRecoveryMode] = useState(false);
   const [view, setView] = useState(() => localStorage.getItem("fr_view") || "dashboard");
@@ -6587,8 +6708,27 @@ export default function App() {
     return () => subscription.unsubscribe();
   }, []);
 
+  // Determina el rol (Dirección/Usuario) de forma autoritativa contra la BD
+  // — nunca desde un flag local manipulable. Dirección = fila propia en
+  // `hoteles`; si no, Usuario = fila propia en `hotel_staff` (cuenta staff).
   useEffect(() => {
-    if (session) {
+    if (!session) { setRol(null); setRolHotelId(null); setRolResuelto(false); return; }
+    let cancelado = false;
+    (async () => {
+      const { data: owner } = await supabase.from("hoteles").select("id").eq("id", session.user.id).maybeSingle();
+      if (cancelado) return;
+      if (owner) { setRol("direccion"); setRolHotelId(owner.id); setRolResuelto(true); return; }
+      const { data: staff } = await supabase.from("hotel_staff").select("hotel_id").eq("staff_user_id", session.user.id).maybeSingle();
+      if (cancelado) return;
+      setRol(staff ? "usuario" : null);
+      setRolHotelId(staff?.hotel_id || null);
+      setRolResuelto(true);
+    })();
+    return () => { cancelado = true; };
+  }, [session]);
+
+  useEffect(() => {
+    if (session && rol === "direccion") {
       cargarDatos(false);
       // Cargar suscripción
       supabase.from("suscripciones").select("*").eq("user_id", session.user.id).maybeSingle()
@@ -6605,7 +6745,7 @@ export default function App() {
         window.history.replaceState({}, "", window.location.pathname);
       }
     }
-  }, [session]);
+  }, [session, rol]);
 
   const [refreshKey, setRefreshKey] = useState(0);
   const [navOrder, setNavOrder] = useState(() => {
@@ -6961,6 +7101,12 @@ export default function App() {
 
   if (recoveryMode) return <ResetPasswordScreen onDone={() => setRecoveryMode(false)} />;
   if (!session) return <AuthScreen />;
+  if (!rolResuelto) return (
+    <div style={{ minHeight: "100vh", background: C.bgDeep, display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div style={{ color: C.accent, fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 20 }}>{t("cargando")}</div>
+    </div>
+  );
+  if (rol === "usuario") return <StaffFlow session={session} hotelId={rolHotelId} />;
   if (!cargandoSub && (!suscripcion || suscripcion.estado === "cancelada")) return <PantallaSubscripcion session={session} />;
 
   return (

@@ -6,10 +6,10 @@ import { CustomSelect } from "./CustomSelect";
 import { PeriodSelectorInline } from "./PeriodSelectorInline";
 import { Card } from "./Card";
 
-export function ImportarExcel({ onClose, session, onImportado, onProduccionDirecta, hotelNombre: hotelNombreProp, fullPage = false, produccion = [], hotelHab = 0 }) {
+export function ImportarExcel({ onClose, session, onImportado, onProduccionDirecta, hotelNombre: hotelNombreProp, fullPage = false, produccion = [], hotelHab = 0, soloProduccion = false, hotelIdOverride, onGuardadoProduccionStaff }) {
   const t = useT();
-  // Pestaña activa (persiste entre navegaciones)
-  const [activeBlock, setActiveBlock] = useState(() => localStorage.getItem("fr_gestion_tab") || "presupuesto");
+  // Pestaña activa (persiste entre navegaciones) — en modo soloProduccion queda fija en "produccion"
+  const [activeBlock, setActiveBlock] = useState(() => soloProduccion ? "produccion" : (localStorage.getItem("fr_gestion_tab") || "presupuesto"));
   const setActiveBlockPersist = (id) => { setActiveBlock(id); localStorage.setItem("fr_gestion_tab", id); };
   // Estado datos principales (Histórico)
   const [loadingMain, setLoadingMain] = useState(false);
@@ -54,6 +54,27 @@ export function ImportarExcel({ onClose, session, onImportado, onProduccionDirec
   const [errorProd, setErrorProd] = useState("");
   const [okProd, setOkProd] = useState(false);
   const [prodRecientes, setProdRecientes] = useState([]);
+
+  // Modo soloProduccion (rol Usuario): precargar la fila de hoy si ya existe,
+  // revirtiendo el neto de IVA para que el formulario muestre el importe bruto
+  // que se tecleó originalmente (evita duplicar el descuento al re-guardar).
+  useEffect(() => {
+    if (!soloProduccion) return;
+    const hid = hotelIdOverride || session.user.id;
+    const hoy = new Date().toISOString().slice(0,10);
+    supabase.from("produccion_diaria").select("*").eq("hotel_id", hid).eq("fecha", hoy).maybeSingle()
+      .then(({ data }) => {
+        if (!data) return;
+        setProdForm(f => ({
+          ...f, fecha: hoy,
+          hab_ocupadas: data.hab_ocupadas ?? "",
+          hab_disponibles: data.hab_disponibles ?? "",
+          revenue_hab: data.revenue_hab != null ? String(Math.round(data.revenue_hab / NET_HAB_FNB * 100) / 100) : "",
+          revenue_fnb: data.revenue_fnb != null ? String(Math.round(data.revenue_fnb / NET_HAB_FNB * 100) / 100) : "",
+          revenue_salas: data.revenue_salas != null ? String(Math.round(data.revenue_salas / NET_SALA * 100) / 100) : "",
+        }));
+      });
+  }, [soloProduccion]);
   // Estado de importación existente
   const [importStatusHistorico, setImportStatusHistorico] = useState(null); // null=comprobando, false=sin datos, {fecha,count}
   const [importStatusPresupuesto, setImportStatusPresupuesto] = useState(null);
@@ -554,24 +575,29 @@ export function ImportarExcel({ onClose, session, onImportado, onProduccionDirec
       const adr    = hab_ocupadas > 0 && revenue_hab ? Math.round(revenue_hab / hab_ocupadas * 100) / 100 : null;
       const revpar = hab_disponibles > 0 && revenue_hab ? Math.round(revenue_hab / hab_disponibles * 100) / 100 : null;
       const trevpar = hab_disponibles > 0 ? Math.round(((revenue_hab||0)+(revenue_fnb||0)+(revenue_salas||0)) / hab_disponibles * 100) / 100 : null;
+      const hid = hotelIdOverride || session.user.id;
       const row = {
-        hotel_id: session.user.id, fecha: prodForm.fecha,
+        hotel_id: hid, fecha: prodForm.fecha,
         hab_ocupadas, hab_disponibles, revenue_hab, revenue_total, revenue_fnb, revenue_salas,
         adr, revpar, trevpar,
       };
       const { data: existing } = await supabase.from("produccion_diaria")
-        .select("id").eq("hotel_id", session.user.id).eq("fecha", prodForm.fecha).maybeSingle();
+        .select("id").eq("hotel_id", hid).eq("fecha", prodForm.fecha).maybeSingle();
       const { error } = existing
-        ? await supabase.from("produccion_diaria").update(row).eq("hotel_id", session.user.id).eq("fecha", prodForm.fecha)
+        ? await supabase.from("produccion_diaria").update(row).eq("hotel_id", hid).eq("fecha", prodForm.fecha)
         : await supabase.from("produccion_diaria").insert(row);
       if (error) throw new Error(error.message);
       setProdRecientes(prev => [row, ...prev.filter(r => r.fecha !== prodForm.fecha)].slice(0, 8));
-      setProdForm(f => ({...f, hab_ocupadas:"", hab_disponibles:"", revenue_hab:"", revenue_fnb:"", revenue_salas:""}));
+      if (!soloProduccion) setProdForm(f => ({...f, hab_ocupadas:"", hab_disponibles:"", revenue_hab:"", revenue_fnb:"", revenue_salas:""}));
       setOkProd(true); setTimeout(() => setOkProd(false), 3000);
       if (onImportado) onImportado();
-      const d = new Date(prodForm.fecha + 'T00:00:00');
-      const nextDay = new Date(d); nextDay.setDate(d.getDate() + 1);
-      if (nextDay.getMonth() !== d.getMonth()) enviarInformeMensual(d.getFullYear(), d.getMonth() + 1);
+      if (soloProduccion) {
+        if (onGuardadoProduccionStaff) onGuardadoProduccionStaff();
+      } else {
+        const d = new Date(prodForm.fecha + 'T00:00:00');
+        const nextDay = new Date(d); nextDay.setDate(d.getDate() + 1);
+        if (nextDay.getMonth() !== d.getMonth()) enviarInformeMensual(d.getFullYear(), d.getMonth() + 1);
+      }
     } catch(e) { setErrorProd(e.message); }
     setGuardandoProd(false);
   };
@@ -942,11 +968,12 @@ export function ImportarExcel({ onClose, session, onImportado, onProduccionDirec
       {/* Header */}
       <div style={{ padding:"22px 26px 18px", borderBottom: fullPage ? `1px solid ${H.border}` : "none" }}>
         <h2 style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:28, fontWeight:700, color:"#0A0A0A", letterSpacing:0.2 }}>
-          Gestión de datos
+          {soloProduccion ? "Producción diaria" : "Gestión de datos"}
         </h2>
       </div>
 
         {/* Tab cards */}
+        {!soloProduccion && (
         <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:8, padding:"0 26px 20px" }}>
           {tabs.map(tab => {
             const active = activeBlock === tab.id;
@@ -962,6 +989,7 @@ export function ImportarExcel({ onClose, session, onImportado, onProduccionDirec
             );
           })}
         </div>
+        )}
 
         {/* Tab content */}
         <div style={{ background:H.card2, borderTop:`1px solid ${H.border}`, padding:"22px 26px 26px" }}>
@@ -1244,8 +1272,8 @@ export function ImportarExcel({ onClose, session, onImportado, onProduccionDirec
                 <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"10px 14px", marginBottom:14 }}>
                   <div style={{ gridColumn:"1 / -1" }}>
                     <label style={labelStyle}>Fecha</label>
-                    <input type="date" value={prodForm.fecha}
-                      onChange={e => setProdForm(f=>({...f, fecha:e.target.value}))} style={inputStyle} />
+                    <input type="date" value={prodForm.fecha} disabled={soloProduccion}
+                      onChange={e => setProdForm(f=>({...f, fecha:e.target.value}))} style={{...inputStyle, ...(soloProduccion ? { background:"#F0F0F0", cursor:"not-allowed" } : {})}} />
                   </div>
                   <div>
                     <label style={labelStyle}>Habitaciones Ocupadas</label>
@@ -1335,7 +1363,7 @@ export function ImportarExcel({ onClose, session, onImportado, onProduccionDirec
           )}
 
           {/* Ver dashboard */}
-          {(resultadoMain || resultadoPpto || prodRecientes.length > 0 || pickupRecientes.length > 0) && (
+          {!soloProduccion && (resultadoMain || resultadoPpto || prodRecientes.length > 0 || pickupRecientes.length > 0) && (
             <button onClick={onClose} style={{ width:"100%", marginTop:20, marginBottom:10, background:H.accent, color:"#fff", border:"none", borderRadius:10, padding:"12px", fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", boxShadow:`0 4px 20px rgba(0,0,0,0.25)` }}>
               {t("ver_dashboard")}
             </button>

@@ -33,3 +33,39 @@ export function verifySupabaseJwt(token) {
     return null;
   }
 }
+
+/**
+ * Igual que verifySupabaseJwt, pero devuelve { sub, email } (sub = auth.uid()
+ * de quien llama). Necesario cuando el endpoint debe saber QUIÉN llama, no
+ * solo que el token es válido.
+ */
+export function verifySupabaseJwtPayload(token) {
+  const secret = process.env.SUPABASE_JWT_SECRET;
+  if (!secret || typeof token !== 'string') return null;
+
+  const parts = token.split('.');
+  if (parts.length !== 3) return null;
+  const [headerB64, payloadB64, sigB64] = parts;
+
+  try {
+    const header = JSON.parse(Buffer.from(headerB64, 'base64url').toString('utf8'));
+    if (header.alg !== 'HS256') return null;
+
+    const expectedSig = crypto
+      .createHmac('sha256', secret)
+      .update(`${headerB64}.${payloadB64}`)
+      .digest();
+    const actualSig = Buffer.from(sigB64, 'base64url');
+    if (expectedSig.length !== actualSig.length || !crypto.timingSafeEqual(expectedSig, actualSig)) {
+      return null;
+    }
+
+    const payload = JSON.parse(Buffer.from(payloadB64, 'base64url').toString('utf8'));
+    if (!payload.exp || Date.now() >= payload.exp * 1000) return null;
+    if (!payload.sub) return null;
+
+    return { sub: payload.sub, email: payload.email ?? null };
+  } catch {
+    return null;
+  }
+}
