@@ -2419,6 +2419,15 @@ function PickupView({ datos, onGuardado, onReservaGuardada }) {
     }
   });
 
+  // ── Producción real por mes (histórico fiable, no depende de que sobrevivan las reservas de pickup) ──
+  const prodPorMes = {};
+  (produccion || []).forEach(d => {
+    const fecha = String(d.fecha || "").slice(0, 10);
+    if (fecha.length < 10) return;
+    const key = fecha.slice(0, 7);
+    prodPorMes[key] = (prodPorMes[key] || 0) + (d.hab_ocupadas || 0);
+  });
+
   // ── Presupuesto por mes del año seleccionado ──
   const pptoPorMes = {};
   (presupuesto || []).forEach(p => {
@@ -2440,15 +2449,15 @@ function PickupView({ datos, onGuardado, onReservaGuardada }) {
       const key   = `${anio}-${String(mi+1).padStart(2,"0")}`;
       const keyLY = `${anio-1}-${String(mi+1).padStart(2,"0")}`;
       otb  += otbPorMes[key]  || 0;
-      ly   += otbPorMes[keyLY] || 0;
+      ly   += prodPorMes[keyLY] != null ? prodPorMes[keyLY] : (otbPorMes[keyLY] || 0);
       if (pptoPorMes[key] != null) { ppto += pptoPorMes[key]; tienePpto = true; }
-      if (otbPorMes[keyLY]) tieneLY = true;
+      if (prodPorMes[keyLY] != null || otbPorMes[keyLY]) tieneLY = true;
     });
     return { mes: trim, otb: otb || null, ppto: tienePpto ? ppto : null, ly: tieneLY ? ly : null };
   });
 
   // ── Años disponibles: unión de pickup + presupuesto (siempre navegable) ──
-  const aniosPickupDisp = Object.keys(otbPorMes).map(k => parseInt(k.slice(0,4)));
+  const aniosPickupDisp = [...new Set([...Object.keys(otbPorMes), ...Object.keys(prodPorMes)])].map(k => parseInt(k.slice(0,4)));
   const aniosPptoDisp   = (presupuesto || []).map(p => p.anio).filter(Boolean);
   const aniosDisp = [...new Set([...aniosPickupDisp, ...aniosPptoDisp, anio])].sort();
 
@@ -2464,7 +2473,7 @@ function PickupView({ datos, onGuardado, onReservaGuardada }) {
     const key   = `${anio}-${String(mi+1).padStart(2,"0")}`;
     const keyLY = `${anio-1}-${String(mi+1).padStart(2,"0")}`;
     const otb  = otbPorMes[key]  || 0;
-    const ly   = otbPorMes[keyLY] || 0;
+    const ly   = prodPorMes[keyLY] != null ? prodPorMes[keyLY] : (otbPorMes[keyLY] || 0);
     const ppto = pptoPorMes[key] ?? null;
     return { mes: MESES_CORTO_PU[mi], otb: otb||null, ppto, ly: ly||null };
   }) : [];

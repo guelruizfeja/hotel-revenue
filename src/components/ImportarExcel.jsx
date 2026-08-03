@@ -855,8 +855,8 @@ export function ImportarExcel({ onClose, session, onImportado, onProduccionDirec
     card:    "#FFFFFF",
     card2:   "#FFFFFF",
     border:  "#E0E5EC",
-    accent:  "#C8933A",
-    accentD: "#A07228",
+    accent:  "#1A1A1A",
+    accentD: "#000000",
     blue:    "#004B87",
     text:    "#1A1A1A",
     textMid: "#666E7A",
@@ -1334,7 +1334,7 @@ export function ImportarExcel({ onClose, session, onImportado, onProduccionDirec
 
           {/* Ver dashboard */}
           {(resultadoMain || resultadoPpto || prodRecientes.length > 0 || pickupRecientes.length > 0) && (
-            <button onClick={onClose} style={{ width:"100%", marginTop:20, marginBottom:10, background:H.accent, color:"#fff", border:"none", borderRadius:10, padding:"12px", fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", boxShadow:`0 4px 20px rgba(200,147,58,0.35)` }}>
+            <button onClick={onClose} style={{ width:"100%", marginTop:20, marginBottom:10, background:H.accent, color:"#fff", border:"none", borderRadius:10, padding:"12px", fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", boxShadow:`0 4px 20px rgba(0,0,0,0.25)` }}>
               {t("ver_dashboard")}
             </button>
           )}
