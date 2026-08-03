@@ -6134,7 +6134,7 @@ function ModalConfigUnificado({ datos, session, navHidden, toggleNavHidden, navR
         <div style={{ display:"inline-flex", alignItems:"center", gap:2, flexWrap:"nowrap", marginBottom:24, background:C.bg, borderRadius:10, padding:5, border:`1px solid ${C.border}`, maxWidth:"100%" }}>
           {TABS_CONFIG.map(tc => (
             <button key={tc.key} onClick={() => { setTab(tc.key); }}
-              style={{ padding:"8px 10px", border:"none", borderRadius:7, background: tab===tc.key ? "#111111" : "transparent", color: tab===tc.key ? "#ffffff" : C.textMid, fontSize:12, fontWeight: tab===tc.key ? 700 : 500, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", transition:"background 0.15s ease", whiteSpace:"nowrap", textAlign:"center" }}>
+              style={{ padding:"8px 10px", border:"none", borderRadius:7, background: tab===tc.key ? "#111111" : "transparent", color: tab===tc.key ? "#ffffff" : C.text, fontSize:13.5, fontWeight: tab===tc.key ? 700 : 600, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", transition:"background 0.15s ease", whiteSpace:"nowrap", textAlign:"center" }}>
               {tc.label}
             </button>
           ))}
