@@ -1,5 +1,4 @@
 export const LOGO_B64 = "/fastrev-logo.png";
-export const SALAS_FIJAS = ["Salón Principal", "Sala de Reuniones", "Terraza"];
 
 export const C = {
   bg: "#FDFDFD", bgCard: "#FFFFFF", bgDeep: "#0A2540",

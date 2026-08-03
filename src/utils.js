@@ -101,6 +101,14 @@ export function buildRevEnCasaMap(pickupEntries, grupos) {
   return map;
 }
 
+export function parseEventoSala(notas) {
+  if (!notas) return "";
+  const m = notas.match(/^\[ev:([^\]]*)\]/);
+  if (!m) return "";
+  const p = Object.fromEntries(m[1].split(",").map(x => x.split("=")));
+  return p.sala || "";
+}
+
 export function calcHabEnCasa(pickupEntries, grupos, diaIso) {
   const pad = n => String(n).padStart(2, "0");
   const isoL = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { LangContext, useT, TRANSLATIONS } from "./i18n";
-import { C, LOGO_B64, SALAS_FIJAS, dmy, toNum, MESES, MESES_CORTO, MESES_FULL, NET_HAB_FNB, NET_SALA, KPI_HELP, NAV, GRUPOS_SUB } from "./constants";
-import { buildHabEnCasaMap, buildRevEnCasaMap, calcHabEnCasa, calcForecastRevStandalone } from "./utils";
+import { C, LOGO_B64, dmy, toNum, MESES, MESES_CORTO, MESES_FULL, NET_HAB_FNB, NET_SALA, KPI_HELP, NAV, GRUPOS_SUB } from "./constants";
+import { buildHabEnCasaMap, buildRevEnCasaMap, calcHabEnCasa, calcForecastRevStandalone, parseEventoSala } from "./utils";
 import { supabase } from "./supabase";
 import { CustomSelect } from "./components/CustomSelect";
 import { AnimatedBar, SimpleBar, TOOLTIP_COLORS, CustomTooltip } from "./components/charts";
@@ -4373,8 +4373,11 @@ function ModalFormGrupo({ datos, grupoData = {}, onClose, onGuardado }) {
             <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>{t("form_sala_nombre")}</p>
             <select style={inp} value={form.sala_nombre} onChange={e=>setForm(f=>({...f,sala_nombre:e.target.value}))}>
               <option value="">— Seleccionar sala —</option>
-              {SALAS_FIJAS.map(s => <option key={s} value={s}>{s}</option>)}
+              {(datos.salas||[]).map(s => <option key={s.id} value={s.nombre}>{s.nombre}</option>)}
             </select>
+            {(datos.salas||[]).length === 0 && (
+              <p style={{ fontSize:10, color:C.textLight, marginTop:4 }}>No hay salas configuradas — añádelas en Configuración del hotel.</p>
+            )}
           </div>
           <label style={{ display:"flex", alignItems:"center", gap:8, cursor:"pointer" }}>
             <input type="checkbox" checked={form.servicio_incluido} onChange={e=>setForm(f=>({...f,servicio_incluido:e.target.checked}))} style={{ width:16, height:16 }}/>
@@ -5577,15 +5580,6 @@ function SalasView({ datos, onRecargar, onVolver, onVerEventos, salaDetalle, set
     return { sala_nombre: p.sala||"", hora_inicio: p.hi||"", hora_fin: p.hf||"", notasUser: m[2] };
   };
 
-  // Salas detectadas de los eventos + las guardadas manualmente
-  const SALA_META_KEY = `fr_salas_meta_${datos.session?.user?.id}`;
-  const [salaMeta, setSalaMeta] = useState(() => {
-    try { return JSON.parse(localStorage.getItem(SALA_META_KEY) || "{}"); } catch { return {}; }
-  });
-  const guardarMeta = (meta) => { setSalaMeta(meta); localStorage.setItem(SALA_META_KEY, JSON.stringify(meta)); };
-
-  const [modalSala, setModalSala] = useState(null); // null | "nueva" | {nombre,...}
-  const [formSala, setFormSala] = useState({ nombre:"", capacidad:"", tipo:"", precio_hora:"", descripcion:"" });
   const [planningAnio, setPlanningAnio] = useState(new Date().getFullYear());
   const [planningMes, setPlanningMes] = useState(new Date().getMonth());
   const [planningDia, setPlanningDia] = useState(() => localStorage.getItem("fr_sala_planning_dia") || null);
@@ -5603,8 +5597,7 @@ function SalasView({ datos, onRecargar, onVolver, onVerEventos, salaDetalle, set
     return () => window.removeEventListener("keydown", handler);
   }, [modalEvento, planningDia, salaDetalle]);
 
-  // Salas: las de los eventos + las guardadas manualmente
-  const todasSalas = SALAS_FIJAS;
+  const todasSalas = (datos.salas || []).map(s => s.nombre);
 
   const hoy = new Date().toISOString().slice(0,10);
   const anioActual = new Date().getFullYear();
@@ -5621,38 +5614,8 @@ function SalasView({ datos, onRecargar, onVolver, onVerEventos, salaDetalle, set
     return { eventosMes, disponibleMes, proximoEv, ocupadaHoy };
   };
 
-  const TIPOS = ["Banquetes","Reuniones","Conferencias","Bodas","Polivalente","Exterior","Otro"];
-
-  const abrirNuevaSala = () => {
-    setFormSala({ nombre:"", capacidad:"", tipo:"", precio_hora:"", descripcion:"" });
-    setModalSala("nueva");
-  };
-  const abrirEditarSala = (nombre) => {
-    const meta = salaMeta[nombre] || {};
-    setFormSala({ nombre, capacidad: meta.capacidad||"", tipo: meta.tipo||"", precio_hora: meta.precio_hora||"", descripcion: meta.descripcion||"" });
-    setModalSala({ nombre });
-  };
-  const guardarSala = () => {
-    if (!formSala.nombre.trim()) return;
-    const nuevo = { ...salaMeta };
-    const nombreFinal = formSala.nombre.trim();
-    if (modalSala !== "nueva" && modalSala.nombre !== nombreFinal) delete nuevo[modalSala.nombre];
-    nuevo[nombreFinal] = { capacidad: parseInt(formSala.capacidad)||null, tipo: formSala.tipo||"", precio_hora: toNum(formSala.precio_hora)||null, descripcion: formSala.descripcion||"" };
-    guardarMeta(nuevo);
-    setModalSala(null);
-  };
-  const eliminarSala = (nombre) => {
-    if (!window.confirm(`¿Eliminar la sala "${nombre}" del registro?`)) return;
-    const nuevo = { ...salaMeta };
-    delete nuevo[nombre];
-    guardarMeta(nuevo);
-    if (salaDetalle === nombre) setSalaDetalle(null);
-  };
-
-  const inp = { width:"100%", padding:"9px 12px", borderRadius:7, border:`1.5px solid ${C.border}`, fontSize:13, fontFamily:"'Plus Jakarta Sans',sans-serif", color:C.text, background:C.bg, outline:"none", boxSizing:"border-box" };
-
   if (salaDetalle) {
-    const meta = salaMeta[salaDetalle] || {};
+    const meta = (datos.salas||[]).find(s => s.nombre === salaDetalle) || {};
     const DIAS_SEMANA = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
     const mesStr = `${planningAnio}-${String(planningMes+1).padStart(2,"0")}`;
     const diasEnMes = new Date(planningAnio, planningMes+1, 0).getDate();
@@ -5872,9 +5835,14 @@ function SalasView({ datos, onRecargar, onVolver, onVerEventos, salaDetalle, set
         </select>
       </div>
 
+      {todasSalas.length === 0 ? (
+        <p style={{ fontSize:13, color:C.textLight, textAlign:"center", padding:"40px 0" }}>
+          No has añadido salas todavía. Ve a Configuración del hotel → Salas para crear la primera.
+        </p>
+      ) : (
       <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))", gap:14 }}>
         {todasSalas.map(nombre => {
-          const meta  = salaMeta[nombre] || {};
+          const meta  = (datos.salas||[]).find(s => s.nombre === nombre) || {};
           const stats = statsSala(nombre);
           return (
             <Card key={nombre} style={{ cursor:"pointer", transition:"box-shadow 0.15s" }}
@@ -5910,61 +5878,10 @@ function SalasView({ datos, onRecargar, onVolver, onVerEventos, salaDetalle, set
                 </div>
               )}
 
-              <div style={{ display:"flex", justifyContent:"flex-end", marginTop:12 }}
-                onClick={e=>e.stopPropagation()}>
-                <button onClick={()=>abrirEditarSala(nombre)}
-                  style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, padding:"4px 10px", fontSize:11, cursor:"pointer", color:C.textMid }}>
-                  Editar
-                </button>
-              </div>
             </Card>
           );
         })}
       </div>
-
-      {/* Modal sala */}
-      {modalSala !== null && (
-        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.55)", zIndex:1000, display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}
-          onClick={()=>setModalSala(null)}>
-          <div style={{ background:C.bgCard, borderRadius:14, width:"100%", maxWidth:460, padding:"28px 32px", boxShadow:"0 24px 80px rgba(0,0,0,0.2)" }}
-            onClick={e=>e.stopPropagation()}>
-            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20 }}>
-              <h3 style={{ fontSize:17, fontWeight:700, color:C.text }}>{modalSala === "nueva" ? "Nueva sala" : "Editar sala"}</h3>
-              <button onClick={()=>setModalSala(null)} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, width:28, height:28, cursor:"pointer", fontSize:16, color:C.textMid, display:"flex", alignItems:"center", justifyContent:"center", padding:0 }}>×</button>
-            </div>
-            <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
-              <div>
-                <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>Nombre *</p>
-                <input style={inp} value={formSala.nombre} onChange={e=>setFormSala(f=>({...f,nombre:e.target.value}))} placeholder="Salón Principal"/>
-              </div>
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
-                <div>
-                  <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>Tipo</p>
-                  <select style={inp} value={formSala.tipo} onChange={e=>setFormSala(f=>({...f,tipo:e.target.value}))}>
-                    <option value="">Sin tipo</option>
-                    {TIPOS.map(tp=><option key={tp} value={tp}>{tp}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>Capacidad (pax)</p>
-                  <input style={inp} type="number" placeholder="150" value={formSala.capacidad} onChange={e=>setFormSala(f=>({...f,capacidad:e.target.value}))}/>
-                </div>
-              </div>
-              <div>
-                <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>Precio/hora (€)</p>
-                <input style={inp} type="text" inputMode="decimal" placeholder="300" value={formSala.precio_hora} onChange={e=>setFormSala(f=>({...f,precio_hora:e.target.value}))}/>
-              </div>
-              <div>
-                <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>Descripción</p>
-                <textarea style={{...inp, resize:"vertical", minHeight:60}} placeholder="Equipamiento, características..." value={formSala.descripcion} onChange={e=>setFormSala(f=>({...f,descripcion:e.target.value}))}/>
-              </div>
-              <div style={{ display:"flex", justifyContent:"flex-end", gap:8, marginTop:4 }}>
-                <button onClick={()=>setModalSala(null)} style={{ background:"none", border:`1px solid ${C.border}`, color:C.textMid, borderRadius:7, padding:"8px 16px", fontSize:12, cursor:"pointer" }}>Cancelar</button>
-                <button onClick={guardarSala} disabled={!formSala.nombre.trim()} style={{ background:"#0A2540", color:"#fff", border:"none", borderRadius:7, padding:"8px 20px", fontSize:13, fontWeight:600, cursor:"pointer" }}>Guardar</button>
-              </div>
-            </div>
-          </div>
-        </div>
       )}
     </div>
   );
@@ -6131,6 +6048,41 @@ function ModalConfigUnificado({ datos, session, navHidden, toggleNavHidden, navR
   const [comisionesOk, setComisionesOk] = React.useState(false);
   const [nuevoCanalNombre, setNuevoCanalNombre] = React.useState("");
 
+  // ── Salas ──
+  const salas = datos.salas || [];
+  const TIPOS_SALA = ["Banquetes","Reuniones","Conferencias","Bodas","Polivalente","Exterior","Otro"];
+  const [modalSala, setModalSala] = React.useState(null); // null | "nueva" | sala existente
+  const [formSala, setFormSala] = React.useState({ nombre:"", capacidad:"", tipo:"", precio_hora:"", descripcion:"" });
+  const [salaGuardando, setSalaGuardando] = React.useState(false);
+  const abrirNuevaSala = () => { setFormSala({ nombre:"", capacidad:"", tipo:"", precio_hora:"", descripcion:"" }); setModalSala("nueva"); };
+  const abrirEditarSala = (sala) => { setFormSala({ nombre:sala.nombre||"", capacidad:sala.capacidad||"", tipo:sala.tipo||"", precio_hora:sala.precio_hora||"", descripcion:sala.descripcion||"" }); setModalSala(sala); };
+  const guardarSala = async () => {
+    if (!formSala.nombre.trim()) return;
+    setSalaGuardando(true);
+    const payload = {
+      hotel_id: session.user.id,
+      nombre: formSala.nombre.trim(),
+      tipo: formSala.tipo || null,
+      capacidad: parseInt(formSala.capacidad) || null,
+      precio_hora: toNum(formSala.precio_hora) || null,
+      descripcion: formSala.descripcion || null,
+    };
+    if (modalSala === "nueva") await supabase.from("salas").insert(payload);
+    else await supabase.from("salas").update(payload).eq("id", modalSala.id);
+    setSalaGuardando(false);
+    setModalSala(null);
+    onGuardado(true);
+  };
+  const eliminarSala = async (sala) => {
+    const enUso = (datos.grupos||[]).filter(g => g.categoria==="evento" && g.estado!=="cancelado" && parseEventoSala(g.notas)===sala.nombre);
+    const msg = enUso.length > 0
+      ? `Hay ${enUso.length} evento(s) usando "${sala.nombre}". Si la eliminas, esos eventos seguirán existiendo pero quedarán sin sala asociada. ¿Eliminar de todas formas?`
+      : `¿Eliminar la sala "${sala.nombre}"?`;
+    if (!window.confirm(msg)) return;
+    await supabase.from("salas").delete().eq("id", sala.id);
+    onGuardado(true);
+  };
+
   const inp = { width:"100%", padding:"9px 12px", borderRadius:8, border:`1px solid ${C.border}`, background:C.bg, color:C.text, fontSize:13, fontFamily:"'Plus Jakarta Sans',sans-serif", boxSizing:"border-box", outline:"none" };
 
   const verificarPin = async () => {
@@ -6167,6 +6119,7 @@ function ModalConfigUnificado({ datos, session, navHidden, toggleNavHidden, navR
     { key: "datos", label: "Datos del hotel" },
     { key: "personalizacion", label: "Personalización" },
     { key: "canales", label: "Canales" },
+    { key: "salas", label: "Salas" },
     { key: "restricciones", label: "Restricciones" },
   ];
 
@@ -6376,6 +6329,71 @@ function ModalConfigUnificado({ datos, session, navHidden, toggleNavHidden, navR
             }} style={{ width:"100%", padding:"11px", borderRadius:9, border:"none", background:comisionesOk?"#059669":C.accent, color:"#fff", fontSize:14, fontWeight:700, cursor:comisionesGuardando||comisionesOk?"not-allowed":"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", transition:"background 0.2s" }}>
               {comisionesGuardando ? "Guardando..." : comisionesOk ? "✓ Guardado" : "Guardar comisiones"}
             </button>
+          </div>
+        )}
+
+        {/* Pestaña: Salas */}
+        {tab === "salas" && (
+          <div style={{ display:"flex", flexDirection:"column", gap:0 }}>
+            {modalSala === null ? (
+              <>
+                <p style={{ fontSize:12, color:C.textMid, marginBottom:16 }}>Salas y espacios para eventos. Se usan al crear un evento y en Gestión de salas.</p>
+                {salas.length === 0 ? (
+                  <p style={{ fontSize:12, color:C.textLight, textAlign:"center", padding:"20px 0" }}>Aún no has añadido ninguna sala.</p>
+                ) : (
+                  <div style={{ border:`1px solid ${C.border}`, borderRadius:10, overflow:"hidden", marginBottom:16 }}>
+                    {salas.map((s, i) => (
+                      <div key={s.id} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"10px 14px", borderBottom: i < salas.length-1 ? `1px solid ${C.border}` : "none" }}>
+                        <div>
+                          <p style={{ fontSize:13, fontWeight:600, color:C.text, margin:0 }}>{s.nombre}</p>
+                          <p style={{ fontSize:11, color:C.textLight, margin:0 }}>{[s.tipo, s.capacidad ? `${s.capacidad} pax` : null, s.precio_hora ? `€${s.precio_hora}/h` : null].filter(Boolean).join(" · ") || "Sin datos adicionales"}</p>
+                        </div>
+                        <div style={{ display:"flex", gap:6, flexShrink:0 }}>
+                          <button onClick={() => abrirEditarSala(s)} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, padding:"5px 10px", fontSize:11, cursor:"pointer", color:C.textMid }}>Editar</button>
+                          <button onClick={() => eliminarSala(s)} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, padding:"5px 10px", fontSize:11, cursor:"pointer", color:C.red }}>Eliminar</button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <button onClick={abrirNuevaSala} style={{ width:"100%", padding:"11px", borderRadius:9, border:`1px dashed ${C.border}`, background:"transparent", color:C.accent, fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+                  + Añadir sala
+                </button>
+              </>
+            ) : (
+              <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+                <p style={{ fontSize:14, fontWeight:700, color:C.text, marginBottom:4 }}>{modalSala === "nueva" ? "Nueva sala" : "Editar sala"}</p>
+                <div>
+                  <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>Nombre *</p>
+                  <input style={inp} value={formSala.nombre} onChange={e=>setFormSala(f=>({...f,nombre:e.target.value}))} placeholder="Salón Principal"/>
+                </div>
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
+                  <div>
+                    <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>Tipo</p>
+                    <select style={inp} value={formSala.tipo} onChange={e=>setFormSala(f=>({...f,tipo:e.target.value}))}>
+                      <option value="">Sin tipo</option>
+                      {TIPOS_SALA.map(tp=><option key={tp} value={tp}>{tp}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>Capacidad (pax)</p>
+                    <input style={inp} type="number" placeholder="150" value={formSala.capacidad} onChange={e=>setFormSala(f=>({...f,capacidad:e.target.value}))}/>
+                  </div>
+                </div>
+                <div>
+                  <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>Precio/hora (€)</p>
+                  <input style={inp} type="text" inputMode="decimal" placeholder="300" value={formSala.precio_hora} onChange={e=>setFormSala(f=>({...f,precio_hora:e.target.value}))}/>
+                </div>
+                <div>
+                  <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>Descripción</p>
+                  <textarea style={{...inp, resize:"vertical", minHeight:60}} placeholder="Equipamiento, características..." value={formSala.descripcion} onChange={e=>setFormSala(f=>({...f,descripcion:e.target.value}))}/>
+                </div>
+                <div style={{ display:"flex", justifyContent:"flex-end", gap:8, marginTop:4 }}>
+                  <button onClick={()=>setModalSala(null)} style={{ background:"none", border:`1px solid ${C.border}`, color:C.textMid, borderRadius:7, padding:"8px 16px", fontSize:12, cursor:"pointer" }}>Cancelar</button>
+                  <button onClick={guardarSala} disabled={!formSala.nombre.trim()||salaGuardando} style={{ background:"#0A2540", color:"#fff", border:"none", borderRadius:7, padding:"8px 20px", fontSize:13, fontWeight:600, cursor:"pointer" }}>{salaGuardando?"Guardando...":"Guardar"}</button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -6665,11 +6683,12 @@ export default function App() {
     }
 
     setCargandoDatos(true);
-    const [{ data: produccion }, { data: presupuesto }, { data: hotelData }, { data: gruposData }] = await Promise.all([
+    const [{ data: produccion }, { data: presupuesto }, { data: hotelData }, { data: gruposData }, { data: salasData }] = await Promise.all([
       supabase.from("produccion_diaria").select("*").eq("hotel_id", session.user.id).order("fecha"),
       supabase.from("presupuesto").select("*").eq("hotel_id", session.user.id).order("mes"),
       supabase.from("hoteles").select("nombre, ciudad, habitaciones, comisiones_canales").eq("id", session.user.id).maybeSingle(),
       supabase.from("grupos_eventos").select("*").eq("hotel_id", session.user.id).order("fecha_inicio"),
+      supabase.from("salas").select("*").eq("hotel_id", session.user.id).order("nombre"),
     ]);
     // Pickup separado — carga en paralelo para máxima velocidad
     let pickupEntries = [];
@@ -6729,6 +6748,7 @@ export default function App() {
       pickupEntries: pickupConGrupos,
       hotel: hotelData,
       grupos: gruposData || [],
+      salas: salasData || [],
     };
 
     // Guardar en caché
