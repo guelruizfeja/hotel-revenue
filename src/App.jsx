@@ -6125,16 +6125,16 @@ function ModalConfigUnificado({ datos, session, navHidden, toggleNavHidden, navR
 
   return (
     <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:1000 }}>
-      <div style={{ background:C.bgCard, borderRadius:16, padding:"32px 36px", width:480, maxHeight:"85vh", overflowY:"auto", boxShadow:"0 24px 60px rgba(0,0,0,0.2)", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+      <div style={{ background:C.bgCard, borderRadius:16, padding:"32px 36px", width:600, maxHeight:"85vh", overflowY:"auto", boxShadow:"0 24px 60px rgba(0,0,0,0.2)", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:24 }}>
           <h2 style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:20, fontWeight:700, color:C.text }}>Configuración del hotel</h2>
           <button onClick={onClose} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, width:28, height:28, cursor:"pointer", fontSize:15, color:C.textLight, display:"flex", alignItems:"center", justifyContent:"center", padding:0 }}>✕</button>
         </div>
-        {/* Pestañas */}
-        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:4, marginBottom:24, background:C.bg, padding:4, borderRadius:12, border:`1px solid ${C.border}` }}>
+        {/* Pestañas — mismo formato que la nav principal: barra negra, píldora activa */}
+        <div style={{ display:"flex", alignItems:"center", gap:2, flexWrap:"nowrap", marginBottom:24, background:"#111111", borderRadius:10, padding:5 }}>
           {TABS_CONFIG.map(tc => (
             <button key={tc.key} onClick={() => { setTab(tc.key); }}
-              style={{ padding:"9px 12px", border:"none", borderRadius:9, background: tab===tc.key ? "#111111" : "transparent", color: tab===tc.key ? "#ffffff" : C.textMid, fontSize:12.5, fontWeight: tab===tc.key ? 700 : 600, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", transition:"all 0.18s ease", boxShadow: tab===tc.key ? "0 2px 6px rgba(0,0,0,0.18)" : "none", textAlign:"center" }}>
+              style={{ padding:"8px 10px", border:"none", borderRadius:7, background: tab===tc.key ? "rgba(255,255,255,0.15)" : "transparent", color:"#ffffff", fontSize:12, fontWeight: tab===tc.key ? 700 : 500, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", transition:"background 0.15s ease", whiteSpace:"nowrap", textAlign:"center" }}>
               {tc.label}
             </button>
           ))}
