@@ -1357,7 +1357,7 @@ const [metricaSel, setMetricaSel] = useState(() => localStorage.getItem("fr_metr
                       const ini = new Date((g.fecha_inicio||mesPrefix+"-01")+"T00:00:00");
                       const fin = new Date((g.fecha_fin||g.fecha_inicio||mesPrefix+"-01")+"T00:00:00");
                       const noches = Math.max(1,(fin-ini)/86400000);
-                      const peso = g.estado==="cancelado"?0:g.estado==="cotizado"||g.estado==="tentativo"?0.5:1.0;
+                      const peso = g.estado==="confirmado" ? 1 : 0;
                       return sum + ((g.habitaciones||0)*(g.adr_grupo||0)*noches+(g.revenue_fnb||0)+(g.revenue_sala||0))*peso;
                     },0);
 
@@ -1366,7 +1366,7 @@ const [metricaSel, setMetricaSel] = useState(() => localStorage.getItem("fr_metr
                       const ini = new Date((g.fecha_inicio||"")+"T00:00:00");
                       const fin = new Date((g.fecha_fin||g.fecha_inicio||"")+"T00:00:00");
                       const noches = Math.max(1,(fin-ini)/86400000);
-                      const peso = g.estado==="cancelado"?0:g.estado==="cotizado"||g.estado==="tentativo"?0.5:1.0;
+                      const peso = g.estado==="confirmado" ? 1 : 0;
                       const rev = ((g.habitaciones||0)*(g.adr_grupo||0)*noches+(g.revenue_fnb||0)+(g.revenue_sala||0))*peso;
                       const estadoBadge = { confirmado:"#059669", cotizado:"#D97706", perdido:C.red, cancelado:C.red }[g.estado]||C.textLight;
                       return (
