@@ -21,7 +21,7 @@ export default async function handler(req, res) {
 
     const token = (req.headers.authorization || '').replace('Bearer ', '').trim();
     if (!token) return res.status(401).json({ error: 'No autorizado' });
-    const tokenEmail = verifySupabaseJwt(token);
+    const tokenEmail = await verifySupabaseJwt(token);
     if (!tokenEmail) return res.status(401).json({ error: 'Token inválido' });
 
     const { email, hotelNombre, kpis, pdfBase64 } = req.body ?? {};

@@ -24,7 +24,7 @@ export default async function handler(req, res) {
 
   const token = (req.headers.authorization || '').replace('Bearer ', '').trim();
   if (!token) return res.status(401).json({ error: 'No autorizado' });
-  const payload = verifySupabaseJwtPayload(token);
+  const payload = await verifySupabaseJwtPayload(token);
   if (!payload) return res.status(401).json({ error: 'Token inválido' });
 
   // Solo Dirección (dueño de una fila en `hoteles`) puede gestionar el acceso Usuario.

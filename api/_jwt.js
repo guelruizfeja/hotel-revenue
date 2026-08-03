@@ -1,33 +1,25 @@
-import crypto from 'crypto';
+import { jwtVerify, createRemoteJWKSet } from 'jose';
+
+// Este proyecto de Supabase firma los JWT con claves asimétricas (ES256),
+// no con el secreto compartido HS256 legacy. La verificación se hace contra
+// el JWKS público del proyecto; `createRemoteJWKSet` cachea las claves en
+// memoria (por instancia de función serverless), así que no supone una
+// llamada de red en cada petición, solo cuando cambia el `kid` o expira caché.
+const jwksUrl = () => new URL(`${process.env.SUPABASE_URL}/auth/v1/.well-known/jwks.json`);
+let jwks = null;
+function getJwks() {
+  if (!jwks) jwks = createRemoteJWKSet(jwksUrl());
+  return jwks;
+}
 
 /**
- * Verifica localmente la firma HS256 y la expiración de un JWT de Supabase,
- * sin llamada de red. Devuelve el email del payload si es válido, o null.
+ * Verifica la firma y expiración de un JWT de Supabase contra su JWKS.
+ * Devuelve el email del payload si es válido, o null.
  */
-export function verifySupabaseJwt(token) {
-  const secret = process.env.SUPABASE_JWT_SECRET;
-  if (!secret || typeof token !== 'string') return null;
-
-  const parts = token.split('.');
-  if (parts.length !== 3) return null;
-  const [headerB64, payloadB64, sigB64] = parts;
-
+export async function verifySupabaseJwt(token) {
+  if (typeof token !== 'string' || !process.env.SUPABASE_URL) return null;
   try {
-    const header = JSON.parse(Buffer.from(headerB64, 'base64url').toString('utf8'));
-    if (header.alg !== 'HS256') return null;
-
-    const expectedSig = crypto
-      .createHmac('sha256', secret)
-      .update(`${headerB64}.${payloadB64}`)
-      .digest();
-    const actualSig = Buffer.from(sigB64, 'base64url');
-    if (expectedSig.length !== actualSig.length || !crypto.timingSafeEqual(expectedSig, actualSig)) {
-      return null;
-    }
-
-    const payload = JSON.parse(Buffer.from(payloadB64, 'base64url').toString('utf8'));
-    if (!payload.exp || Date.now() >= payload.exp * 1000) return null;
-
+    const { payload } = await jwtVerify(token, getJwks());
     return payload.email ?? null;
   } catch {
     return null;
@@ -39,31 +31,11 @@ export function verifySupabaseJwt(token) {
  * de quien llama). Necesario cuando el endpoint debe saber QUIÉN llama, no
  * solo que el token es válido.
  */
-export function verifySupabaseJwtPayload(token) {
-  const secret = process.env.SUPABASE_JWT_SECRET;
-  if (!secret || typeof token !== 'string') return null;
-
-  const parts = token.split('.');
-  if (parts.length !== 3) return null;
-  const [headerB64, payloadB64, sigB64] = parts;
-
+export async function verifySupabaseJwtPayload(token) {
+  if (typeof token !== 'string' || !process.env.SUPABASE_URL) return null;
   try {
-    const header = JSON.parse(Buffer.from(headerB64, 'base64url').toString('utf8'));
-    if (header.alg !== 'HS256') return null;
-
-    const expectedSig = crypto
-      .createHmac('sha256', secret)
-      .update(`${headerB64}.${payloadB64}`)
-      .digest();
-    const actualSig = Buffer.from(sigB64, 'base64url');
-    if (expectedSig.length !== actualSig.length || !crypto.timingSafeEqual(expectedSig, actualSig)) {
-      return null;
-    }
-
-    const payload = JSON.parse(Buffer.from(payloadB64, 'base64url').toString('utf8'));
-    if (!payload.exp || Date.now() >= payload.exp * 1000) return null;
+    const { payload } = await jwtVerify(token, getJwks());
     if (!payload.sub) return null;
-
     return { sub: payload.sub, email: payload.email ?? null };
   } catch {
     return null;
