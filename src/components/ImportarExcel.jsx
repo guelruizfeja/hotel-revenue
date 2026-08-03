@@ -6,7 +6,7 @@ import { CustomSelect } from "./CustomSelect";
 import { PeriodSelectorInline } from "./PeriodSelectorInline";
 import { Card } from "./Card";
 
-export function ImportarExcel({ onClose, session, onImportado, onProduccionDirecta, hotelNombre: hotelNombreProp, fullPage = false, produccion = [], hotelHab = 0, soloProduccion = false, hotelIdOverride, onGuardadoProduccionStaff }) {
+export function ImportarExcel({ onClose, session, onImportado, onProduccionDirecta, hotelNombre: hotelNombreProp, fullPage = false, produccion = [], hotelHab = 0, soloProduccion = false, hotelIdOverride, onGuardadoProduccionStaff, onVolverStaff }) {
   const t = useT();
   // Pestaña activa (persiste entre navegaciones) — en modo soloProduccion queda fija en "produccion"
   const [activeBlock, setActiveBlock] = useState(() => soloProduccion ? "produccion" : (localStorage.getItem("fr_gestion_tab") || "presupuesto"));
@@ -1265,6 +1265,12 @@ export function ImportarExcel({ onClose, session, onImportado, onProduccionDirec
           {/* ── PRODUCCIÓN DIARIA ── */}
           {activeBlock === "produccion" && (
             <div>
+              {soloProduccion && onVolverStaff && (
+                <button onClick={onVolverStaff}
+                  style={{ background:"none", border:"none", color:H.accent, fontSize:12, fontWeight:600, cursor:"pointer", padding:0, marginBottom:14, display:"flex", alignItems:"center", gap:4 }}>
+                  ← Volver a Reservas
+                </button>
+              )}
               <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16, flexWrap:"wrap", gap:8 }}>
                 <p style={{ fontSize:12, color:H.textMid, lineHeight:1.5, margin:0 }}>Introduce la producción del día. Si ya existe registro para esa fecha, se actualizará.</p>
               </div>

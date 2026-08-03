@@ -36,6 +36,7 @@ export function StaffFlow({ session, hotelId }) {
           fullPage
           onImportado={() => {}}
           onGuardadoProduccionStaff={() => setStep("confirmacion")}
+          onVolverStaff={step === "produccion" ? () => setStep("reservas") : undefined}
         />
       )}
 
