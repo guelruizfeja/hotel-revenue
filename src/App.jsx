@@ -6130,11 +6130,11 @@ function ModalConfigUnificado({ datos, session, navHidden, toggleNavHidden, navR
           <h2 style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:20, fontWeight:700, color:C.text }}>Configuración del hotel</h2>
           <button onClick={onClose} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, width:28, height:28, cursor:"pointer", fontSize:15, color:C.textLight, display:"flex", alignItems:"center", justifyContent:"center", padding:0 }}>✕</button>
         </div>
-        {/* Pestañas — mismo formato que la nav principal: barra negra, píldora activa */}
-        <div style={{ display:"flex", alignItems:"center", gap:2, flexWrap:"nowrap", marginBottom:24, background:"#111111", borderRadius:10, padding:5 }}>
+        {/* Pestañas — barra clara, píldora activa negra (colores invertidos respecto a la nav) */}
+        <div style={{ display:"inline-flex", alignItems:"center", gap:2, flexWrap:"nowrap", marginBottom:24, background:C.bg, borderRadius:10, padding:5, border:`1px solid ${C.border}`, maxWidth:"100%" }}>
           {TABS_CONFIG.map(tc => (
             <button key={tc.key} onClick={() => { setTab(tc.key); }}
-              style={{ padding:"8px 10px", border:"none", borderRadius:7, background: tab===tc.key ? "rgba(255,255,255,0.15)" : "transparent", color:"#ffffff", fontSize:12, fontWeight: tab===tc.key ? 700 : 500, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", transition:"background 0.15s ease", whiteSpace:"nowrap", textAlign:"center" }}>
+              style={{ padding:"8px 10px", border:"none", borderRadius:7, background: tab===tc.key ? "#111111" : "transparent", color: tab===tc.key ? "#ffffff" : C.textMid, fontSize:12, fontWeight: tab===tc.key ? 700 : 500, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", transition:"background 0.15s ease", whiteSpace:"nowrap", textAlign:"center" }}>
               {tc.label}
             </button>
           ))}
@@ -6162,7 +6162,7 @@ function ModalConfigUnificado({ datos, session, navHidden, toggleNavHidden, navR
               setHGuardando(false); setHOk(true);
               onGuardado(true);
               setTimeout(()=>{ setHOk(false); }, 1500);
-            }} style={{ marginTop:10, width:"100%", padding:"11px", borderRadius:9, border:"none", background:hOk?"#059669":C.accent, color:"#fff", fontSize:14, fontWeight:700, cursor:hGuardando||hOk?"not-allowed":"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", transition:"background 0.2s" }}>
+            }} style={{ marginTop:10, width:"100%", padding:"11px", borderRadius:9, border:"none", background:hOk?"#059669":"#111111", color:"#fff", fontSize:14, fontWeight:700, cursor:hGuardando||hOk?"not-allowed":"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", transition:"background 0.2s" }}>
               {hGuardando ? "Guardando..." : hOk ? "✓ Guardado" : "Guardar cambios"}
             </button>
 
