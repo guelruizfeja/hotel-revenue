@@ -167,9 +167,11 @@ export function ImportarExcel({ onClose, session, onImportado, onProduccionDirec
         const hab_disponibles = parseFloat(row[2]) || totalHab;
         const _rh_csv = parseFloat(row[3]) || null;
         const _rf_csv = parseFloat(row[5]) || null;
+        const _rs_csv = parseFloat(row[6]) || null;
         const revenue_hab = _rh_csv != null ? Math.round(_rh_csv * NET_HAB_FNB * 100) / 100 : null;
         const revenue_fnb = _rf_csv != null ? Math.round(_rf_csv * NET_HAB_FNB * 100) / 100 : null;
-        const revenue_total = revenue_hab != null || revenue_fnb != null ? Math.round(((revenue_hab||0)+(revenue_fnb||0)) * 100) / 100 : null;
+        const revenue_salas = _rs_csv != null ? Math.round(_rs_csv * NET_SALA * 100) / 100 : null;
+        const revenue_total = revenue_hab != null || revenue_fnb != null || revenue_salas != null ? Math.round(((revenue_hab||0)+(revenue_fnb||0)+(revenue_salas||0)) * 100) / 100 : null;
         if (!hab_ocupadas && !revenue_hab) continue;
 
         let fechaISO;
@@ -184,12 +186,12 @@ export function ImportarExcel({ onClose, session, onImportado, onProduccionDirec
 
         const adr = hab_ocupadas > 0 ? revenue_hab / hab_ocupadas : null;
         const revpar = hab_disponibles > 0 ? revenue_hab / hab_disponibles : null;
-        const trevpar = hab_disponibles > 0 ? ((revenue_hab||0)+(revenue_fnb||0)) / hab_disponibles : null;
+        const trevpar = hab_disponibles > 0 ? ((revenue_hab||0)+(revenue_fnb||0)+(revenue_salas||0)) / hab_disponibles : null;
 
         produccionRows.push({
           hotel_id: session.user.id, fecha: fechaISO,
           hab_ocupadas, hab_disponibles, revenue_hab, revenue_total,
-          revenue_fnb,
+          revenue_fnb, revenue_salas,
           adr: adr ? Math.round(adr*100)/100 : null,
           revpar: revpar ? Math.round(revpar*100)/100 : null,
           trevpar: trevpar ? Math.round(trevpar*100)/100 : null,
@@ -554,7 +556,7 @@ export function ImportarExcel({ onClose, session, onImportado, onProduccionDirec
       const trevpar = hab_disponibles > 0 ? Math.round(((revenue_hab||0)+(revenue_fnb||0)+(revenue_salas||0)) / hab_disponibles * 100) / 100 : null;
       const row = {
         hotel_id: session.user.id, fecha: prodForm.fecha,
-        hab_ocupadas, hab_disponibles, revenue_hab, revenue_total, revenue_fnb,
+        hab_ocupadas, hab_disponibles, revenue_hab, revenue_total, revenue_fnb, revenue_salas,
         adr, revpar, trevpar,
       };
       const { data: existing } = await supabase.from("produccion_diaria")
