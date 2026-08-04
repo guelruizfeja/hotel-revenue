@@ -5308,6 +5308,7 @@ function GruposView({ datos, onRecargar, onVolverHeatmap, subVistaExt, onCambiar
 function AuthScreen() {
   const [showAuth, setShowAuth] = useState(() => window.location.hash === "#login" || window.location.hash === "#register");
   const [mode, setMode] = useState(() => window.location.hash === "#register" ? "register" : "login");
+  const [accessMode, setAccessMode] = useState(() => localStorage.getItem("fr_access_mode") || "usuario");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [hotelNombre, setHotelNombre] = useState("");
@@ -5319,14 +5320,20 @@ function AuthScreen() {
 
   const openAuth = (m = "login") => { setMode(m); setError(""); setMensaje(""); setShowAuth(true); };
 
+  useEffect(() => { localStorage.setItem("fr_access_mode", accessMode); }, [accessMode]);
+
   const handleLogin = async () => {
     setLoading(true); setError("");
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (!error) { setLoading(false); return; }
 
-    // No es la contraseña de Dirección — probar si es la contraseña de
-    // Usuario (cuenta staff con email sintético distinto, mismo email
-    // real de cara al recepcionista).
+    if (accessMode === "direccion") {
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      setLoading(false);
+      if (error) setError("Email o contraseña incorrectos");
+      return;
+    }
+
+    // Acceso como Usuario: la cuenta real es una cuenta staff con email
+    // sintético distinto, mismo email real de cara al recepcionista.
     try {
       const resp = await fetch("/api/resolve-staff-login", {
         method: "POST",
@@ -5424,6 +5431,21 @@ function AuthScreen() {
           )}
           {mode === "forgot" && (
             <p style={{ fontSize: 15, fontWeight: 700, color: "#1A1A1A", marginBottom: 18 }}>Recuperar contraseña</p>
+          )}
+
+          {mode === "login" && (
+            <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
+              {[["usuario","Usuario"],["direccion","Dirección"]].map(([k,l]) => (
+                <button key={k} onClick={() => { setAccessMode(k); setError(""); }}
+                  style={{ flex: 1, padding: "9px", borderRadius: 8, cursor: "pointer",
+                    border: accessMode===k ? "1.5px solid #004B87" : "1.5px solid #E0E0E0",
+                    background: accessMode===k ? "#EFF6FF" : "#fff",
+                    color: accessMode===k ? "#004B87" : "#6B7280",
+                    fontWeight: accessMode===k ? 700 : 500, fontSize: 13,
+                    fontFamily: "'Plus Jakarta Sans', sans-serif",
+                    transition: "all 0.15s" }}>{l}</button>
+              ))}
+            </div>
           )}
 
           {mensaje ? (
