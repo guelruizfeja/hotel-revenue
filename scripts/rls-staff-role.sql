@@ -86,7 +86,7 @@ begin
   end if;
   return exists(
     select 1 from public.pickup_entries
-    where hotel_id = v_hotel_id and numero_reserva = p_numero_reserva
+    where hotel_id = v_hotel_id and numero_reserva = p_numero_reserva::text
   );
 end;
 $$;
