@@ -55,25 +55,27 @@ export function ImportarExcel({ onClose, session, onImportado, onProduccionDirec
   const [okProd, setOkProd] = useState(false);
   const [prodRecientes, setProdRecientes] = useState([]);
 
-  // Modo soloProduccion (rol Usuario): precargar la fila de hoy si ya existe,
+  // Modo soloProduccion (rol Usuario): precargar la fila de la fecha seleccionada si ya existe,
   // revirtiendo el neto de IVA para que el formulario muestre el importe bruto
   // que se tecleó originalmente (evita duplicar el descuento al re-guardar).
-  useEffect(() => {
-    if (!soloProduccion) return;
+  // Se reutiliza al cambiar de fecha, ya que el rol Usuario puede corregir días pasados.
+  const cargarProduccionFecha = (fecha) => {
     const hid = hotelIdOverride || session.user.id;
-    const hoy = new Date().toISOString().slice(0,10);
-    supabase.from("produccion_diaria").select("*").eq("hotel_id", hid).eq("fecha", hoy).maybeSingle()
+    supabase.from("produccion_diaria").select("*").eq("hotel_id", hid).eq("fecha", fecha).maybeSingle()
       .then(({ data }) => {
-        if (!data) return;
         setProdForm(f => ({
-          ...f, fecha: hoy,
-          hab_ocupadas: data.hab_ocupadas ?? "",
-          hab_disponibles: data.hab_disponibles ?? "",
-          revenue_hab: data.revenue_hab != null ? String(Math.round(data.revenue_hab / NET_HAB_FNB * 100) / 100) : "",
-          revenue_fnb: data.revenue_fnb != null ? String(Math.round(data.revenue_fnb / NET_HAB_FNB * 100) / 100) : "",
-          revenue_salas: data.revenue_salas != null ? String(Math.round(data.revenue_salas / NET_SALA * 100) / 100) : "",
+          ...f, fecha,
+          hab_ocupadas: data?.hab_ocupadas ?? "",
+          hab_disponibles: data?.hab_disponibles ?? "",
+          revenue_hab: data?.revenue_hab != null ? String(Math.round(data.revenue_hab / NET_HAB_FNB * 100) / 100) : "",
+          revenue_fnb: data?.revenue_fnb != null ? String(Math.round(data.revenue_fnb / NET_HAB_FNB * 100) / 100) : "",
+          revenue_salas: data?.revenue_salas != null ? String(Math.round(data.revenue_salas / NET_SALA * 100) / 100) : "",
         }));
       });
+  };
+  useEffect(() => {
+    if (!soloProduccion) return;
+    cargarProduccionFecha(new Date().toISOString().slice(0,10));
   }, [soloProduccion]);
   // Estado de importación existente
   const [importStatusHistorico, setImportStatusHistorico] = useState(null); // null=comprobando, false=sin datos, {fecha,count}
@@ -1278,8 +1280,10 @@ export function ImportarExcel({ onClose, session, onImportado, onProduccionDirec
                 <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"10px 14px", marginBottom:14 }}>
                   <div style={{ gridColumn:"1 / -1" }}>
                     <label style={labelStyle}>Fecha</label>
-                    <input type="date" value={prodForm.fecha} disabled={soloProduccion}
-                      onChange={e => setProdForm(f=>({...f, fecha:e.target.value}))} style={{...inputStyle, ...(soloProduccion ? { background:"#F0F0F0", cursor:"not-allowed" } : {})}} />
+                    <input type="date" value={prodForm.fecha}
+                      max={soloProduccion ? new Date().toISOString().slice(0,10) : undefined}
+                      onChange={e => { const v = e.target.value; if (soloProduccion && v) cargarProduccionFecha(v); else setProdForm(f=>({...f, fecha:v})); }}
+                      style={inputStyle} />
                   </div>
                   <div>
                     <label style={labelStyle}>Habitaciones Ocupadas</label>
