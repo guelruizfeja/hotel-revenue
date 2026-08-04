@@ -126,27 +126,33 @@ create policy pickup_entries_staff_update_today on public.pickup_entries
   );
 
 -- produccion_diaria
+-- El rol Usuario puede corregir días pasados (ver ImportarExcel.jsx), por
+-- lo que el límite aquí es "fecha <= hoy" y no "fecha = hoy" como en
+-- pickup_entries.
 drop policy if exists produccion_diaria_staff_select_today on public.produccion_diaria;
-create policy produccion_diaria_staff_select_today on public.produccion_diaria
+drop policy if exists produccion_diaria_staff_select_upto_today on public.produccion_diaria;
+create policy produccion_diaria_staff_select_upto_today on public.produccion_diaria
   for select using (
-    fecha = current_date
+    fecha <= current_date
     and hotel_id = (select hotel_id from public.hotel_staff where staff_user_id = auth.uid())
   );
 
 drop policy if exists produccion_diaria_staff_insert_today on public.produccion_diaria;
-create policy produccion_diaria_staff_insert_today on public.produccion_diaria
+drop policy if exists produccion_diaria_staff_insert_upto_today on public.produccion_diaria;
+create policy produccion_diaria_staff_insert_upto_today on public.produccion_diaria
   for insert with check (
-    fecha = current_date
+    fecha <= current_date
     and hotel_id = (select hotel_id from public.hotel_staff where staff_user_id = auth.uid())
   );
 
 drop policy if exists produccion_diaria_staff_update_today on public.produccion_diaria;
-create policy produccion_diaria_staff_update_today on public.produccion_diaria
+drop policy if exists produccion_diaria_staff_update_upto_today on public.produccion_diaria;
+create policy produccion_diaria_staff_update_upto_today on public.produccion_diaria
   for update using (
-    fecha = current_date
+    fecha <= current_date
     and hotel_id = (select hotel_id from public.hotel_staff where staff_user_id = auth.uid())
   ) with check (
-    fecha = current_date
+    fecha <= current_date
     and hotel_id = (select hotel_id from public.hotel_staff where staff_user_id = auth.uid())
   );
 
