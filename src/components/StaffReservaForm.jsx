@@ -43,7 +43,11 @@ export function StaffReservaForm({ hotelId, onContinuar }) {
       }
       const numero_reserva = form.numero_reserva ? parseInt(form.numero_reserva) : null;
       if (numero_reserva) {
-        const { data: dup } = await supabase.rpc("check_duplicate_reserva", { p_numero_reserva: numero_reserva });
+        if (reservasHoy.some(r => r.numero_reserva === numero_reserva)) {
+          throw new Error(`La reserva #${numero_reserva} ya existe`);
+        }
+        const { data: dup, error: dupErr } = await supabase.rpc("check_duplicate_reserva", { p_numero_reserva: numero_reserva });
+        if (dupErr) throw new Error("No se pudo comprobar el número de reserva. Inténtalo de nuevo.");
         if (dup) throw new Error(`La reserva #${numero_reserva} ya existe`);
       }
       const precioTotalFinal = form.precio_total ? Math.round(toNum(form.precio_total) * NET_HAB_FNB * 100) / 100 : null;
@@ -123,7 +127,7 @@ export function StaffReservaForm({ hotelId, onContinuar }) {
             <div key={r.id} style={{ display:"flex", justifyContent:"space-between", padding:"10px 14px", borderBottom: i<reservasHoy.length-1 ? `1px solid ${C.border}` : "none" }}>
               <div>
                 <p style={{ fontSize:12, fontWeight:600, color:C.text, margin:0 }}>
-                  {r.numero_reserva && <span style={{ fontSize:15, fontWeight:800 }}>#{r.numero_reserva}</span>}
+                  {r.numero_reserva && <span style={{ fontSize:13, fontWeight:800 }}>#{r.numero_reserva}</span>}
                   {r.numero_reserva && r.canal && " · "}
                   {r.canal || (!r.numero_reserva ? "—" : "")}
                 </p>
