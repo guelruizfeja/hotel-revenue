@@ -122,7 +122,11 @@ export function StaffReservaForm({ hotelId, onContinuar }) {
           {reservasHoy.map((r,i) => (
             <div key={r.id} style={{ display:"flex", justifyContent:"space-between", padding:"10px 14px", borderBottom: i<reservasHoy.length-1 ? `1px solid ${C.border}` : "none" }}>
               <div>
-                <p style={{ fontSize:12, fontWeight:600, color:C.text, margin:0 }}>{r.canal || "—"} {r.numero_reserva ? `· #${r.numero_reserva}` : ""}</p>
+                <p style={{ fontSize:12, fontWeight:600, color:C.text, margin:0 }}>
+                  {r.numero_reserva && <span style={{ fontSize:15, fontWeight:800 }}>#{r.numero_reserva}</span>}
+                  {r.numero_reserva && r.canal && " · "}
+                  {r.canal || (!r.numero_reserva ? "—" : "")}
+                </p>
                 <p style={{ fontSize:11, color:C.textMid, margin:0 }}>Llegada {dmy(r.fecha_llegada)} · {r.noches||"—"}n · {r.num_reservas||1} hab.</p>
               </div>
             </div>
