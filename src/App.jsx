@@ -5308,9 +5308,8 @@ function GruposView({ datos, onRecargar, onVolverHeatmap, subVistaExt, onCambiar
 function AuthScreen() {
   const [showAuth, setShowAuth] = useState(() => window.location.hash === "#login" || window.location.hash === "#register");
   const [mode, setMode] = useState(() => window.location.hash === "#register" ? "register" : "login");
-  const [accessMode, setAccessMode] = useState(() => localStorage.getItem("fr_access_mode") || "usuario");
   const [email, setEmail] = useState("");
-  const [username, setUsername] = useState("");
+  const [loginId, setLoginId] = useState("");
   const [password, setPassword] = useState("");
   const [hotelNombre, setHotelNombre] = useState("");
   const [hotelCiudad, setHotelCiudad] = useState("");
@@ -5321,25 +5320,26 @@ function AuthScreen() {
 
   const openAuth = (m = "login") => { setMode(m); setError(""); setMensaje(""); setShowAuth(true); };
 
-  useEffect(() => { localStorage.setItem("fr_access_mode", accessMode); }, [accessMode]);
-
   const handleLogin = async () => {
     setLoading(true); setError("");
+    const id = loginId.trim();
 
-    if (accessMode === "direccion") {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+    // Se diferencia el acceso por el formato del identificador: un email
+    // (contiene "@") entra como Dirección directamente contra Supabase Auth;
+    // cualquier otra cosa se trata como nombre de usuario de Usuario y se
+    // resuelve al email sintético de staff asignado por Dirección.
+    if (id.includes("@")) {
+      const { error } = await supabase.auth.signInWithPassword({ email: id, password });
       setLoading(false);
       if (error) setError("Email o contraseña incorrectos");
       return;
     }
 
-    // Acceso como Usuario: la cuenta real es una cuenta staff con email
-    // sintético, resuelto a partir del nombre de usuario asignado por Dirección.
     try {
       const resp = await fetch("/api/resolve-staff-login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username }),
+        body: JSON.stringify({ username: id }),
       });
       const json = await resp.json();
       if (json?.syntheticEmail) {
@@ -5434,21 +5434,6 @@ function AuthScreen() {
             <p style={{ fontSize: 15, fontWeight: 700, color: "#1A1A1A", marginBottom: 18 }}>Recuperar contraseña</p>
           )}
 
-          {mode === "login" && (
-            <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
-              {[["usuario","Usuario"],["direccion","Dirección"]].map(([k,l]) => (
-                <button key={k} onClick={() => { setAccessMode(k); setError(""); }}
-                  style={{ flex: 1, padding: "9px", borderRadius: 8, cursor: "pointer",
-                    border: accessMode===k ? "1.5px solid #004B87" : "1.5px solid #E0E0E0",
-                    background: accessMode===k ? "#EFF6FF" : "#fff",
-                    color: accessMode===k ? "#004B87" : "#6B7280",
-                    fontWeight: accessMode===k ? 700 : 500, fontSize: 13,
-                    fontFamily: "'Plus Jakarta Sans', sans-serif",
-                    transition: "all 0.15s" }}>{l}</button>
-              ))}
-            </div>
-          )}
-
           {mensaje ? (
             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
               <div style={{ background: "#ECFDF5", color: "#059669", padding: "14px", borderRadius: 8, fontSize: 13, textAlign: "center", fontWeight: 600 }}>{mensaje}</div>
@@ -5501,22 +5486,22 @@ function AuthScreen() {
                   <div style={{ height: 1, background: "#E5E7EB" }} />
                 </>
               )}
-              {mode === "login" && accessMode === "usuario" ? (
-                <div>
-                  <p style={{ fontSize: 11, color: "#9CA3AF", marginBottom: 5, textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600 }}>Usuario *</p>
-                  <input style={inp} type="text" value={username} onChange={e => setUsername(e.target.value)} autoComplete="username" autoCapitalize="none" />
-                </div>
-              ) : (
+              {mode === "register" ? (
                 <div>
                   <p style={{ fontSize: 11, color: "#9CA3AF", marginBottom: 5, textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600 }}>Email *</p>
                   <input style={inp} type="email" value={email} onChange={e => setEmail(e.target.value)} autoComplete="email" />
+                </div>
+              ) : (
+                <div>
+                  <p style={{ fontSize: 11, color: "#9CA3AF", marginBottom: 5, textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600 }}>Usuario o email *</p>
+                  <input style={inp} type="text" value={loginId} onChange={e => setLoginId(e.target.value)} autoComplete="username" autoCapitalize="none" />
                 </div>
               )}
               <div>
                 <p style={{ fontSize: 11, color: "#9CA3AF", marginBottom: 5, textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600 }}>Contraseña *</p>
                 <input style={inp} type="password" value={password} onChange={e => setPassword(e.target.value)} onKeyDown={e => e.key==="Enter" && (mode==="login" ? handleLogin() : handleRegister())} autoComplete="current-password" />
                 {mode === "register" && <p style={{ fontSize: 11, color: "#9CA3AF", marginTop: 4 }}>Mín. 8 caracteres, una mayúscula y un número</p>}
-                {mode === "login" && accessMode === "direccion" && (
+                {mode === "login" && (
                   <p style={{ textAlign: "right", marginTop: 6 }}>
                     <a href="#" onClick={e => { e.preventDefault(); setMode("forgot"); setError(""); setMensaje(""); }}
                       style={{ fontSize: 12, color: "#004B87", fontWeight: 600, textDecoration: "none" }}>
