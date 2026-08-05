@@ -6,6 +6,8 @@ const CANALES = ["Booking.com","Expedia","Hotels.com","Airbnb","Hotelbeds","Agod
 
 const inp = { width:"100%", padding:"8px 10px", borderRadius:7, border:`1px solid ${C.border}`, fontSize:13, background:C.bgCard, color:C.text, fontFamily:"inherit", boxSizing:"border-box" };
 const lbl = { fontSize:10, color:C.textLight, fontWeight:600, textTransform:"uppercase", letterSpacing:"0.8px", marginBottom:4 };
+const thS = { fontSize:10, fontWeight:700, color:C.textLight, textTransform:"uppercase", letterSpacing:0.7, padding:"8px 12px", textAlign:"left", borderBottom:`1px solid ${C.border}`, whiteSpace:"nowrap" };
+const tdS = { fontSize:12, padding:"8px 12px", color:C.text, whiteSpace:"nowrap" };
 
 export function StaffReservaForm({ hotelId, onContinuar }) {
   const _hoy = new Date();
@@ -125,19 +127,33 @@ export function StaffReservaForm({ hotelId, onContinuar }) {
       ) : reservasHoy.length === 0 ? (
         <p style={{ fontSize:12, color:C.textLight, padding:"12px 0" }}>Aún no has dado de alta ninguna reserva hoy.</p>
       ) : (
-        <div style={{ border:`1px solid ${C.border}`, borderRadius:10, overflow:"hidden", marginBottom:20 }}>
-          {reservasHoy.map((r,i) => (
-            <div key={r.id} style={{ display:"flex", justifyContent:"space-between", padding:"10px 14px", borderBottom: i<reservasHoy.length-1 ? `1px solid ${C.border}` : "none" }}>
-              <div>
-                <p style={{ fontSize:12, fontWeight:600, color:C.text, margin:0 }}>
-                  {r.numero_reserva && <span style={{ fontSize:13, fontWeight:800 }}>#{r.numero_reserva}</span>}
-                  {r.numero_reserva && r.canal && " · "}
-                  {r.canal || (!r.numero_reserva ? "—" : "")}
-                </p>
-                <p style={{ fontSize:11, color:C.textMid, margin:0 }}>Llegada {dmy(r.fecha_llegada)} · {r.noches||"—"}n · {r.num_reservas||1} hab.</p>
-              </div>
-            </div>
-          ))}
+        <div style={{ border:`1px solid ${C.border}`, borderRadius:10, overflow:"auto", marginBottom:20 }}>
+          <table style={{ width:"100%", borderCollapse:"collapse" }}>
+            <thead>
+              <tr style={{ background:C.bg }}>
+                <th style={thS}>Nº</th>
+                <th style={thS}>Canal</th>
+                <th style={thS}>Llegada</th>
+                <th style={thS}>Salida</th>
+                <th style={{ ...thS, textAlign:"center" }}>Noches</th>
+                <th style={{ ...thS, textAlign:"center" }}>Hab.</th>
+                <th style={{ ...thS, textAlign:"right" }}>Precio</th>
+              </tr>
+            </thead>
+            <tbody>
+              {reservasHoy.map((r,i) => (
+                <tr key={r.id} style={{ borderBottom: i<reservasHoy.length-1 ? `1px solid ${C.border}` : "none", background: i%2===0 ? "transparent" : C.bg }}>
+                  <td style={{ ...tdS, color:C.textLight, fontWeight:700, fontVariantNumeric:"tabular-nums" }}>{r.numero_reserva ?? "—"}</td>
+                  <td style={{ ...tdS, fontWeight:500 }}>{r.canal || "—"}</td>
+                  <td style={tdS}>{dmy(r.fecha_llegada)}</td>
+                  <td style={{ ...tdS, color:C.textMid }}>{r.fecha_salida ? dmy(r.fecha_salida) : "—"}</td>
+                  <td style={{ ...tdS, textAlign:"center", color:C.textMid }}>{r.noches || "—"}</td>
+                  <td style={{ ...tdS, textAlign:"center", color:C.textMid }}>{r.num_reservas || 1}</td>
+                  <td style={{ ...tdS, textAlign:"right", fontWeight:700 }}>{r.precio_total != null ? `€${Math.round(r.precio_total)}` : "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
 
