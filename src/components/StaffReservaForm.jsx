@@ -20,6 +20,7 @@ export function StaffReservaForm({ hotelId, onContinuar }) {
   const [ok, setOk] = useState(false);
   const [reservasHoy, setReservasHoy] = useState([]);
   const [cargandoLista, setCargandoLista] = useState(true);
+  const [notifReserva, setNotifReserva] = useState(null); // { numero } o null
 
   const cargarReservasHoy = async () => {
     setCargandoLista(true);
@@ -60,6 +61,7 @@ export function StaffReservaForm({ hotelId, onContinuar }) {
       const { error: insErr } = await supabase.from("pickup_entries").insert(row);
       if (insErr) throw new Error(insErr.message);
       setOk(true);
+      setNotifReserva({ numero: numero_reserva });
       await cargarReservasHoy();
       setTimeout(() => { setOk(false); setForm(formVacio); }, 900);
     } catch (e) { setError(e.message); }
@@ -67,6 +69,7 @@ export function StaffReservaForm({ hotelId, onContinuar }) {
   };
 
   return (
+    <>
     <div style={{ maxWidth:640, margin:"0 auto", padding:"24px 16px" }}>
       <h2 style={{ fontSize:18, fontWeight:700, color:C.text, marginBottom:4 }}>Alta de reservas de hoy</h2>
       <p style={{ fontSize:12, color:C.textMid, marginBottom:20 }}>Da de alta todas las reservas del día. Cuando termines, pulsa "Continuar a Producción Diaria".</p>
@@ -143,5 +146,15 @@ export function StaffReservaForm({ hotelId, onContinuar }) {
         Continuar a Producción Diaria →
       </button>
     </div>
+
+    {/* Notificación flotante: reserva guardada (persiste hasta que el usuario la cierra) — mismo diseño que en Dirección */}
+    {notifReserva && (
+      <div style={{ position:"fixed", top:64, right:"clamp(12px,4vw,32px)", zIndex:2000, background:"#fff", border:`1px solid ${C.border}`, borderRadius:14, boxShadow:"0 16px 40px rgba(0,0,0,0.16)", padding:"14px 16px", display:"flex", alignItems:"center", gap:12, maxWidth:320, fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+        <div style={{ width:30, height:30, borderRadius:"50%", background:C.greenLight, color:C.green, display:"flex", alignItems:"center", justifyContent:"center", fontSize:16, flexShrink:0 }}>✓</div>
+        <p style={{ margin:0, fontSize:13, fontWeight:600, color:C.text, flex:1 }}>{notifReserva.numero != null ? `Reserva número ${notifReserva.numero} guardada` : "Reserva guardada"}</p>
+        <button onClick={() => setNotifReserva(null)} style={{ background:"none", border:"none", cursor:"pointer", color:C.textLight, fontSize:15, padding:4, lineHeight:1, flexShrink:0 }}>✕</button>
+      </div>
+    )}
+    </>
   );
 }
