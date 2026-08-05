@@ -5310,6 +5310,7 @@ function AuthScreen() {
   const [mode, setMode] = useState(() => window.location.hash === "#register" ? "register" : "login");
   const [accessMode, setAccessMode] = useState(() => localStorage.getItem("fr_access_mode") || "usuario");
   const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [hotelNombre, setHotelNombre] = useState("");
   const [hotelCiudad, setHotelCiudad] = useState("");
@@ -5333,12 +5334,12 @@ function AuthScreen() {
     }
 
     // Acceso como Usuario: la cuenta real es una cuenta staff con email
-    // sintético distinto, mismo email real de cara al recepcionista.
+    // sintético, resuelto a partir del nombre de usuario asignado por Dirección.
     try {
       const resp = await fetch("/api/resolve-staff-login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ username }),
       });
       const json = await resp.json();
       if (json?.syntheticEmail) {
@@ -5347,7 +5348,7 @@ function AuthScreen() {
       }
     } catch {}
 
-    setError("Email o contraseña incorrectos");
+    setError("Usuario o contraseña incorrectos");
     setLoading(false);
   };
 
@@ -5500,15 +5501,22 @@ function AuthScreen() {
                   <div style={{ height: 1, background: "#E5E7EB" }} />
                 </>
               )}
-              <div>
-                <p style={{ fontSize: 11, color: "#9CA3AF", marginBottom: 5, textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600 }}>Email *</p>
-                <input style={inp} type="email" value={email} onChange={e => setEmail(e.target.value)} autoComplete="email" />
-              </div>
+              {mode === "login" && accessMode === "usuario" ? (
+                <div>
+                  <p style={{ fontSize: 11, color: "#9CA3AF", marginBottom: 5, textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600 }}>Usuario *</p>
+                  <input style={inp} type="text" value={username} onChange={e => setUsername(e.target.value)} autoComplete="username" autoCapitalize="none" />
+                </div>
+              ) : (
+                <div>
+                  <p style={{ fontSize: 11, color: "#9CA3AF", marginBottom: 5, textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600 }}>Email *</p>
+                  <input style={inp} type="email" value={email} onChange={e => setEmail(e.target.value)} autoComplete="email" />
+                </div>
+              )}
               <div>
                 <p style={{ fontSize: 11, color: "#9CA3AF", marginBottom: 5, textTransform: "uppercase", letterSpacing: "1px", fontWeight: 600 }}>Contraseña *</p>
                 <input style={inp} type="password" value={password} onChange={e => setPassword(e.target.value)} onKeyDown={e => e.key==="Enter" && (mode==="login" ? handleLogin() : handleRegister())} autoComplete="current-password" />
                 {mode === "register" && <p style={{ fontSize: 11, color: "#9CA3AF", marginTop: 4 }}>Mín. 8 caracteres, una mayúscula y un número</p>}
-                {mode === "login" && (
+                {mode === "login" && accessMode === "direccion" && (
                   <p style={{ textAlign: "right", marginTop: 6 }}>
                     <a href="#" onClick={e => { e.preventDefault(); setMode("forgot"); setError(""); setMensaje(""); }}
                       style={{ fontSize: 12, color: "#004B87", fontWeight: 600, textDecoration: "none" }}>
@@ -6180,6 +6188,8 @@ function ModalConfigUnificado({ datos, session, navHidden, toggleNavHidden, navR
 
   // ── Usuario (acceso staff/recepción) ──
   const [staffConfigurado, setStaffConfigurado] = React.useState(null); // null=cargando, true/false
+  const [staffUsername, setStaffUsername] = React.useState(""); // username guardado
+  const [staffUsernameInput, setStaffUsernameInput] = React.useState("");
   const [staffPwd1, setStaffPwd1] = React.useState("");
   const [staffPwd2, setStaffPwd2] = React.useState("");
   const [staffGuardando, setStaffGuardando] = React.useState(false);
@@ -6188,8 +6198,12 @@ function ModalConfigUnificado({ datos, session, navHidden, toggleNavHidden, navR
   const [staffOk, setStaffOk] = React.useState("");
 
   React.useEffect(() => {
-    supabase.from("hotel_staff").select("hotel_id").eq("hotel_id", session.user.id).maybeSingle()
-      .then(({ data }) => setStaffConfigurado(!!data));
+    supabase.from("hotel_staff").select("hotel_id, username").eq("hotel_id", session.user.id).maybeSingle()
+      .then(({ data }) => {
+        setStaffConfigurado(!!data);
+        setStaffUsername(data?.username || "");
+        setStaffUsernameInput(data?.username || "");
+      });
   }, []);
 
   const validarPasswordStaff = (pw) => {
@@ -6199,8 +6213,18 @@ function ModalConfigUnificado({ datos, session, navHidden, toggleNavHidden, navR
     return null;
   };
 
+  const USERNAME_RE_UI = /^[a-z0-9._-]{3,32}$/;
+  const validarUsernameStaff = (u) => {
+    if (!USERNAME_RE_UI.test((u || "").trim().toLowerCase())) {
+      return "El usuario debe tener 3-32 caracteres: minúsculas, números, punto, guion o guion bajo";
+    }
+    return null;
+  };
+
   const guardarPasswordUsuario = async () => {
     setStaffError(""); setStaffOk("");
+    const unameErr = validarUsernameStaff(staffUsernameInput);
+    if (unameErr) { setStaffError(unameErr); return; }
     const pwErr = validarPasswordStaff(staffPwd1);
     if (pwErr) { setStaffError(pwErr); return; }
     if (staffPwd1 !== staffPwd2) { setStaffError("Las contraseñas no coinciden"); return; }
@@ -6209,12 +6233,12 @@ function ModalConfigUnificado({ datos, session, navHidden, toggleNavHidden, navR
       const resp = await fetch("/api/set-staff-password", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
-        body: JSON.stringify({ password: staffPwd1 }),
+        body: JSON.stringify({ password: staffPwd1, username: staffUsernameInput.trim().toLowerCase() }),
       });
       const json = await resp.json();
       if (!resp.ok) throw new Error(json.error || "Error al guardar");
-      setStaffConfigurado(true); setStaffPwd1(""); setStaffPwd2("");
-      setStaffOk(staffConfigurado ? "Contraseña actualizada" : "Acceso de Usuario creado");
+      setStaffConfigurado(true); setStaffUsername(staffUsernameInput.trim().toLowerCase()); setStaffPwd1(""); setStaffPwd2("");
+      setStaffOk(staffConfigurado ? "Cambios guardados" : "Acceso de Usuario creado");
       setTimeout(() => setStaffOk(""), 3000);
     } catch (e) { setStaffError(e.message); }
     setStaffGuardando(false);
@@ -6231,7 +6255,7 @@ function ModalConfigUnificado({ datos, session, navHidden, toggleNavHidden, navR
       });
       const json = await resp.json();
       if (!resp.ok) throw new Error(json.error || "Error al revocar");
-      setStaffConfigurado(false);
+      setStaffConfigurado(false); setStaffUsername(""); setStaffUsernameInput("");
     } catch (e) { setStaffError(e.message); }
     setStaffRevocando(false);
   };
@@ -6489,14 +6513,18 @@ function ModalConfigUnificado({ datos, session, navHidden, toggleNavHidden, navR
         {tab === "usuario" && (
           <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
             <p style={{ fontSize:12, color:C.textMid }}>
-              Acceso limitado para recepción: mismo email, contraseña distinta. Solo puede dar de alta reservas y subir la producción del día — no ve dashboards ni datos históricos de revenue.
+              Acceso limitado para recepción: nombre de usuario y contraseña propios, sin necesidad de email. Solo puede dar de alta reservas y subir la producción del día — no ve dashboards ni datos históricos de revenue.
             </p>
             {staffConfigurado === null ? (
               <p style={{ fontSize:12, color:C.textLight }}>Cargando...</p>
             ) : (
               <>
                 <div style={{ padding:"8px 12px", borderRadius:8, background: staffConfigurado ? "#EAF7EE" : C.bg, border:`1px solid ${staffConfigurado ? "#1A7A3C" : C.border}`, fontSize:12, color: staffConfigurado ? "#1A7A3C" : C.textMid, fontWeight:600 }}>
-                  {staffConfigurado ? "Acceso de Usuario configurado" : "Acceso de Usuario no configurado"}
+                  {staffConfigurado ? `Acceso de Usuario configurado (usuario: ${staffUsername})` : "Acceso de Usuario no configurado"}
+                </div>
+                <div>
+                  <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>Nombre de usuario</p>
+                  <input style={inp} type="text" value={staffUsernameInput} onChange={e=>setStaffUsernameInput(e.target.value)} placeholder="minúsculas, números, punto, guion o guion bajo"/>
                 </div>
                 <div>
                   <p style={{ fontSize:11, color:C.textLight, textTransform:"uppercase", letterSpacing:1, marginBottom:5 }}>
@@ -6517,7 +6545,7 @@ function ModalConfigUnificado({ datos, session, navHidden, toggleNavHidden, navR
                     </button>
                   )}
                   <button onClick={guardarPasswordUsuario} disabled={staffGuardando || !staffPwd1 || !staffPwd2} style={{ background:"#0A2540", color:"#fff", border:"none", borderRadius:7, padding:"8px 20px", fontSize:13, fontWeight:600, cursor:"pointer" }}>
-                    {staffGuardando ? "Guardando..." : (staffConfigurado ? "Cambiar contraseña" : "Crear acceso")}
+                    {staffGuardando ? "Guardando..." : (staffConfigurado ? "Guardar cambios" : "Crear acceso")}
                   </button>
                 </div>
               </>

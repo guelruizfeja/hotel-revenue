@@ -3,6 +3,7 @@ export const config = { api: { bodyParser: { sizeLimit: '4kb' } } };
 import { createClient } from '@supabase/supabase-js';
 import { rateLimit, getIP } from './_ratelimit.js';
 import { verifySupabaseJwtPayload } from './_jwt.js';
+import { validateUsername } from './_validate.js';
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 
@@ -34,11 +35,11 @@ export default async function handler(req, res) {
   if (hotelErr || !hotel) return res.status(403).json({ error: 'No autorizado' });
   const hotelId = hotel.id;
 
-  const { action, password } = req.body ?? {};
+  const { action, password, username: rawUsername } = req.body ?? {};
 
   try {
     const { data: existing } = await supabase
-      .from('hotel_staff').select('staff_user_id').eq('hotel_id', hotelId).maybeSingle();
+      .from('hotel_staff').select('staff_user_id, username').eq('hotel_id', hotelId).maybeSingle();
 
     if (action === 'revoke') {
       if (!existing) return res.status(200).json({ ok: true });
@@ -50,9 +51,20 @@ export default async function handler(req, res) {
     const pwError = validarPassword(password);
     if (pwError) return res.status(400).json({ error: pwError });
 
+    const username = validateUsername(rawUsername);
+    if (!username) return res.status(400).json({ error: 'Nombre de usuario inválido (3-32 caracteres: minúsculas, números, punto, guion o guion bajo)' });
+
     if (existing) {
       const { error: updErr } = await supabase.auth.admin.updateUserById(existing.staff_user_id, { password });
       if (updErr) return res.status(500).json({ error: 'No se pudo actualizar la contraseña' });
+
+      if (username !== existing.username) {
+        const { error: unameErr } = await supabase.from('hotel_staff').update({ username }).eq('hotel_id', hotelId);
+        if (unameErr) {
+          if (unameErr.code === '23505') return res.status(400).json({ error: 'Ese nombre de usuario ya está en uso' });
+          return res.status(500).json({ error: 'No se pudo actualizar el nombre de usuario' });
+        }
+      }
       return res.status(200).json({ ok: true });
     }
 
@@ -63,10 +75,11 @@ export default async function handler(req, res) {
     if (createErr || !created?.user) return res.status(500).json({ error: 'No se pudo crear el acceso' });
 
     const { error: insErr } = await supabase.from('hotel_staff').insert({
-      hotel_id: hotelId, staff_user_id: created.user.id, staff_email: staffEmail,
+      hotel_id: hotelId, staff_user_id: created.user.id, staff_email: staffEmail, username,
     });
     if (insErr) {
       await supabase.auth.admin.deleteUser(created.user.id);
+      if (insErr.code === '23505') return res.status(400).json({ error: 'Ese nombre de usuario ya está en uso' });
       return res.status(500).json({ error: 'No se pudo guardar el acceso' });
     }
 

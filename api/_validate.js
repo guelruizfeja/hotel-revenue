@@ -8,6 +8,15 @@ export function validateEmail(val) {
   return EMAIL_RE.test(v) ? v : null;
 }
 
+export const USERNAME_RE = /^[a-z0-9._-]{3,32}$/;
+
+/** Valida y normaliza un nombre de usuario (staff), o null si inválido */
+export function validateUsername(val) {
+  if (typeof val !== 'string') return null;
+  const v = val.trim().toLowerCase();
+  return USERNAME_RE.test(v) ? v : null;
+}
+
 /** Recorta y limita una cadena. Devuelve null si no es string o está vacía */
 export function cleanString(val, maxLen) {
   if (val == null || typeof val !== 'string') return null;
