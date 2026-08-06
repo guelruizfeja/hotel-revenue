@@ -184,10 +184,10 @@ export function StaffReservaForm({ hotelId, onContinuar }) {
           {reservasHoyTotal === 0 ? (
             <p style={{ color:C.textLight, fontSize:13, textAlign:"center", padding:"20px 0" }}>Aún no has dado de alta ninguna reserva hoy.</p>
           ) : (
-            <div style={{ display:"grid", gridTemplateColumns:"2fr 1fr 1fr 1fr", gap:10 }}>
+            <div style={{ display:"grid", gridTemplateColumns:"2fr 1fr 1fr 1fr", gap:8 }}>
 
-              <div style={{ borderRadius:10, padding:"16px", border:`1.5px solid ${C.border}`, background:C.bg }}>
-                <p style={{ fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:1, color:C.textLight, marginBottom:10 }}>Por canal</p>
+              <div style={{ borderRadius:10, padding:"12px", border:`1.5px solid ${C.border}`, background:C.bg }}>
+                <p style={{ fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:1, color:C.textLight, marginBottom:10, whiteSpace:"nowrap" }}>Por canal</p>
                 <div style={{ display:"flex", alignItems:"center", gap:16 }}>
                   <PieChart width={90} height={90}>
                     <Pie data={canalData.map(d => ({ name:d.canal, value:d.count, color:d.color }))} cx={40} cy={40} innerRadius={26} outerRadius={42} dataKey="value" strokeWidth={0} isAnimationActive={false}>
@@ -207,10 +207,10 @@ export function StaffReservaForm({ hotelId, onContinuar }) {
                 </div>
               </div>
 
-              <div style={{ borderRadius:10, padding:"16px", border:`1.5px solid ${C.border}`, background:C.bg }}>
-                <p style={{ fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:1, color:C.textLight, marginBottom:10 }}>Precio medio</p>
-                <p style={{ fontSize:28, fontWeight:800, color:C.text, fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1, marginBottom:6 }}>{globalAdr != null ? `€${globalAdr}` : "—"}</p>
-                <p style={{ fontSize:10, color:C.textMid, marginBottom:10 }}>ADR medio</p>
+              <div style={{ borderRadius:10, padding:"12px", border:`1.5px solid ${C.border}`, background:C.bg }}>
+                <p style={{ fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:1, color:C.textLight, marginBottom:10, whiteSpace:"nowrap" }}>Precio medio</p>
+                <p style={{ fontSize:24, fontWeight:800, color:C.text, fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1, marginBottom:6 }}>{globalAdr != null ? `€${globalAdr}` : "—"}</p>
+                <p style={{ fontSize:10, color:C.textMid, marginBottom:10, whiteSpace:"nowrap" }}>ADR medio</p>
                 <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
                   {canalData.map(d => d.adr != null && (
                     <div key={d.canal} style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
@@ -221,10 +221,10 @@ export function StaffReservaForm({ hotelId, onContinuar }) {
                 </div>
               </div>
 
-              <div style={{ borderRadius:10, padding:"16px", border:`1.5px solid ${C.border}`, background:C.bg }}>
-                <p style={{ fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:1, color:C.textLight, marginBottom:10 }}>Duración media</p>
-                <p style={{ fontSize:28, fontWeight:800, color:C.text, fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1, marginBottom:6 }}>{globalNoches != null ? globalNoches : "—"}</p>
-                <p style={{ fontSize:10, color:C.textMid, marginBottom:10 }}>noches / reserva</p>
+              <div style={{ borderRadius:10, padding:"12px", border:`1.5px solid ${C.border}`, background:C.bg }}>
+                <p style={{ fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:1, color:C.textLight, marginBottom:10, whiteSpace:"nowrap" }}>Duración media</p>
+                <p style={{ fontSize:24, fontWeight:800, color:C.text, fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1, marginBottom:6 }}>{globalNoches != null ? globalNoches : "—"}</p>
+                <p style={{ fontSize:10, color:C.textMid, marginBottom:10, whiteSpace:"nowrap" }}>noches / reserva</p>
                 <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
                   {canalData.map(d => d.noches != null && (
                     <div key={d.canal} style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
@@ -235,10 +235,10 @@ export function StaffReservaForm({ hotelId, onContinuar }) {
                 </div>
               </div>
 
-              <div style={{ borderRadius:10, padding:"16px", border:`1.5px solid ${C.border}`, background:C.bg }}>
-                <p style={{ fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:1, color:C.textLight, marginBottom:10 }}>Antelación</p>
-                <p style={{ fontSize:28, fontWeight:800, color:C.text, fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1, marginBottom:6 }}>{globalAntelacion != null ? globalAntelacion : "—"}</p>
-                <p style={{ fontSize:10, color:C.textMid, marginBottom:10 }}>días de antelación</p>
+              <div style={{ borderRadius:10, padding:"12px", border:`1.5px solid ${C.border}`, background:C.bg }}>
+                <p style={{ fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:1, color:C.textLight, marginBottom:10, whiteSpace:"nowrap" }}>Antelación</p>
+                <p style={{ fontSize:24, fontWeight:800, color:C.text, fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1, marginBottom:6 }}>{globalAntelacion != null ? globalAntelacion : "—"}</p>
+                <p style={{ fontSize:10, color:C.textMid, marginBottom:10, whiteSpace:"nowrap" }}>días de antelación</p>
                 <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
                   {canalData.map(d => d.antelacion != null && (
                     <div key={d.canal} style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
