@@ -1,13 +1,28 @@
 import React, { useState, useEffect } from "react";
-import { C, toNum, dmy, NET_HAB_FNB } from "../constants";
+import { PieChart, Pie, Cell } from "recharts";
+import { C, toNum, NET_HAB_FNB } from "../constants";
 import { supabase } from "../supabase";
 
 const CANALES = ["Booking.com","Expedia","Hotels.com","Airbnb","Hotelbeds","Agoda","Trip.com","Directo","Web propia","Tour operador","Agencia de viajes","GDS","Empresa"];
 
+const CANAL_COLORS = {
+  "Booking.com":      "#0052CC",
+  "Expedia":          "#FFD700",
+  "Hotels.com":       "#FF6B00",
+  "Airbnb":           "#FF5A5F",
+  "Hotelbeds":        "#00897B",
+  "Agoda":            "#7C3AED",
+  "Trip.com":         "#06B6D4",
+  "Directo":          "#111111",
+  "Web propia":       "#BDBDBD",
+  "Tour operador":    "#F59E0B",
+  "Agencia de viajes":"#8B5CF6",
+  "GDS":              "#6B7280",
+  "Empresa":          "#059669",
+};
+
 const inp = { width:"100%", padding:"8px 10px", borderRadius:7, border:`1px solid ${C.border}`, fontSize:13, background:C.bgCard, color:C.text, fontFamily:"inherit", boxSizing:"border-box" };
 const lbl = { fontSize:10, color:C.textLight, fontWeight:600, textTransform:"uppercase", letterSpacing:"0.8px", marginBottom:4 };
-const thS = { fontSize:10, fontWeight:700, color:C.textLight, textTransform:"uppercase", letterSpacing:0.7, padding:"8px 12px", textAlign:"left", borderBottom:`1px solid ${C.border}`, whiteSpace:"nowrap" };
-const tdS = { fontSize:12, padding:"8px 12px", color:C.text, whiteSpace:"nowrap" };
 
 export function StaffReservaForm({ hotelId, onContinuar }) {
   const _hoy = new Date();
@@ -70,6 +85,37 @@ export function StaffReservaForm({ hotelId, onContinuar }) {
     setGuardando(false);
   };
 
+  // ── Estadísticas de las reservas de hoy (por canal) ──
+  const reservasHoyActivas = reservasHoy.filter(r => (r.estado||"confirmada") !== "cancelada");
+  const reservasHoyTotal = reservasHoyActivas.reduce((a,r) => a + (r.num_reservas||1), 0);
+  const canalStatsHoy = {};
+  reservasHoyActivas.forEach(r => {
+    const c = r.canal || "Directo";
+    if (!canalStatsHoy[c]) canalStatsHoy[c] = { count:0, precioTotal:0, nochesTotal:0, antTotal:0, antCount:0 };
+    const nr = r.num_reservas || 1;
+    canalStatsHoy[c].count       += nr;
+    canalStatsHoy[c].precioTotal += (r.precio_total || 0);
+    canalStatsHoy[c].nochesTotal += (r.noches || 0) * nr;
+    if (r.fecha_llegada && r.fecha_pickup) {
+      const dias = Math.round((new Date(r.fecha_llegada) - new Date(r.fecha_pickup)) / 86400000);
+      if (dias >= 0) { canalStatsHoy[c].antTotal += dias * nr; canalStatsHoy[c].antCount += nr; }
+    }
+  });
+  const canalData = Object.entries(canalStatsHoy).map(([canal, d]) => ({
+    canal, color: CANAL_COLORS[canal] || C.accent,
+    count: d.count,
+    adr:   d.nochesTotal > 0 ? Math.round(d.precioTotal / d.nochesTotal) : (d.count > 0 ? Math.round(d.precioTotal / d.count) : null),
+    noches: d.count > 0 ? parseFloat((d.nochesTotal / d.count).toFixed(1)) : null,
+    antelacion: d.antCount > 0 ? Math.round(d.antTotal / d.antCount) : null,
+  })).sort((a,b) => b.count - a.count);
+  const totRawHoy = Object.values(canalStatsHoy).reduce((acc, d) => ({
+    count: acc.count + d.count, precioTotal: acc.precioTotal + d.precioTotal,
+    nochesTotal: acc.nochesTotal + d.nochesTotal, antTotal: acc.antTotal + d.antTotal, antCount: acc.antCount + d.antCount,
+  }), { count:0, precioTotal:0, nochesTotal:0, antTotal:0, antCount:0 });
+  const globalAdr        = totRawHoy.nochesTotal > 0 ? Math.round(totRawHoy.precioTotal / totRawHoy.nochesTotal) : (totRawHoy.count > 0 ? Math.round(totRawHoy.precioTotal / totRawHoy.count) : null);
+  const globalNoches     = totRawHoy.count > 0 ? parseFloat((totRawHoy.nochesTotal / totRawHoy.count).toFixed(1)) : null;
+  const globalAntelacion = totRawHoy.antCount > 0 ? Math.round(totRawHoy.antTotal / totRawHoy.antCount) : null;
+
   return (
     <>
     <div style={{ maxWidth:640, margin:"0 auto", padding:"24px 16px" }}>
@@ -121,39 +167,90 @@ export function StaffReservaForm({ hotelId, onContinuar }) {
         </button>
       </div>
 
-      <p style={{ fontSize:12, fontWeight:700, color:C.text, marginBottom:8 }}>Reservas de hoy ({reservasHoy.length})</p>
       {cargandoLista ? (
-        <p style={{ fontSize:12, color:C.textLight }}>Cargando...</p>
-      ) : reservasHoy.length === 0 ? (
-        <p style={{ fontSize:12, color:C.textLight, padding:"12px 0" }}>Aún no has dado de alta ninguna reserva hoy.</p>
+        <p style={{ fontSize:12, color:C.textLight, marginBottom:20 }}>Cargando...</p>
       ) : (
-        <div style={{ border:`1px solid ${C.border}`, borderRadius:10, overflow:"auto", marginBottom:20 }}>
-          <table style={{ width:"100%", borderCollapse:"collapse" }}>
-            <thead>
-              <tr style={{ background:C.bg }}>
-                <th style={thS}>Nº</th>
-                <th style={thS}>Canal</th>
-                <th style={thS}>Llegada</th>
-                <th style={thS}>Salida</th>
-                <th style={{ ...thS, textAlign:"center" }}>Noches</th>
-                <th style={{ ...thS, textAlign:"center" }}>Hab.</th>
-                <th style={{ ...thS, textAlign:"right" }}>Precio</th>
-              </tr>
-            </thead>
-            <tbody>
-              {reservasHoy.map((r,i) => (
-                <tr key={r.id} style={{ borderBottom: i<reservasHoy.length-1 ? `1px solid ${C.border}` : "none", background: i%2===0 ? "transparent" : C.bg }}>
-                  <td style={{ ...tdS, color:C.textLight, fontWeight:700, fontVariantNumeric:"tabular-nums" }}>{r.numero_reserva ?? "—"}</td>
-                  <td style={{ ...tdS, fontWeight:500 }}>{r.canal || "—"}</td>
-                  <td style={tdS}>{dmy(r.fecha_llegada)}</td>
-                  <td style={{ ...tdS, color:C.textMid }}>{r.fecha_salida ? dmy(r.fecha_salida) : "—"}</td>
-                  <td style={{ ...tdS, textAlign:"center", color:C.textMid }}>{r.noches || "—"}</td>
-                  <td style={{ ...tdS, textAlign:"center", color:C.textMid }}>{r.num_reservas || 1}</td>
-                  <td style={{ ...tdS, textAlign:"right", fontWeight:700 }}>{r.precio_total != null ? `€${Math.round(r.precio_total)}` : "—"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div style={{ background:C.bgCard, border:`1px solid ${C.border}`, borderRadius:12, padding:18, marginBottom:20 }}>
+          <div style={{ display:"flex", alignItems:"flex-start", gap:16, marginBottom:20 }}>
+            <div style={{ background:"#111", borderRadius:10, padding:"10px 18px", textAlign:"center", flexShrink:0 }}>
+              <p style={{ fontSize:30, fontWeight:800, color:"#fff", fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1 }}>{reservasHoyTotal}</p>
+              <p style={{ fontSize:9, color:"#ffffff", fontWeight:700, textTransform:"uppercase", letterSpacing:1, marginTop:4 }}>Nuevas reservas</p>
+            </div>
+            <div>
+              <p style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontWeight:700, fontSize:18, color:C.text }}>Reservas de hoy</p>
+            </div>
+          </div>
+
+          {reservasHoyTotal === 0 ? (
+            <p style={{ color:C.textLight, fontSize:13, textAlign:"center", padding:"20px 0" }}>Aún no has dado de alta ninguna reserva hoy.</p>
+          ) : (
+            <div style={{ display:"grid", gridTemplateColumns:"2fr 1fr 1fr 1fr", gap:10 }}>
+
+              <div style={{ borderRadius:10, padding:"16px", border:`1.5px solid ${C.border}`, background:C.bg }}>
+                <p style={{ fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:1, color:C.textLight, marginBottom:10 }}>Por canal</p>
+                <div style={{ display:"flex", alignItems:"center", gap:16 }}>
+                  <PieChart width={90} height={90}>
+                    <Pie data={canalData.map(d => ({ name:d.canal, value:d.count, color:d.color }))} cx={40} cy={40} innerRadius={26} outerRadius={42} dataKey="value" strokeWidth={0} isAnimationActive={false}>
+                      {canalData.map((d,i) => <Cell key={i} fill={d.color}/>)}
+                    </Pie>
+                  </PieChart>
+                  <div style={{ display:"flex", flexDirection:"column", gap:5, flex:1 }}>
+                    {canalData.map(d => (
+                      <div key={d.canal} style={{ display:"flex", alignItems:"center", gap:6 }}>
+                        <div style={{ width:8, height:8, borderRadius:"50%", background:d.color, flexShrink:0 }}/>
+                        <span style={{ fontSize:11, color:C.textMid, flex:1 }}>{d.canal}</span>
+                        <span style={{ fontSize:11, fontWeight:700, color:C.text }}>{d.count}</span>
+                        <span style={{ fontSize:10, color:C.textLight }}>{Math.round(d.count/reservasHoyTotal*100)}%</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ borderRadius:10, padding:"16px", border:`1.5px solid ${C.border}`, background:C.bg }}>
+                <p style={{ fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:1, color:C.textLight, marginBottom:10 }}>Precio medio</p>
+                <p style={{ fontSize:28, fontWeight:800, color:C.text, fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1, marginBottom:6 }}>{globalAdr != null ? `€${globalAdr}` : "—"}</p>
+                <p style={{ fontSize:10, color:C.textMid, marginBottom:10 }}>ADR medio</p>
+                <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
+                  {canalData.map(d => d.adr != null && (
+                    <div key={d.canal} style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                      <span style={{ fontSize:10, color:C.textMid }}>{d.canal}</span>
+                      <span style={{ fontSize:11, fontWeight:700, color:d.color }}>€{d.adr}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div style={{ borderRadius:10, padding:"16px", border:`1.5px solid ${C.border}`, background:C.bg }}>
+                <p style={{ fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:1, color:C.textLight, marginBottom:10 }}>Duración media</p>
+                <p style={{ fontSize:28, fontWeight:800, color:C.text, fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1, marginBottom:6 }}>{globalNoches != null ? globalNoches : "—"}</p>
+                <p style={{ fontSize:10, color:C.textMid, marginBottom:10 }}>noches / reserva</p>
+                <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
+                  {canalData.map(d => d.noches != null && (
+                    <div key={d.canal} style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                      <span style={{ fontSize:10, color:C.textMid }}>{d.canal}</span>
+                      <span style={{ fontSize:11, fontWeight:700, color:d.color }}>{d.noches}n</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div style={{ borderRadius:10, padding:"16px", border:`1.5px solid ${C.border}`, background:C.bg }}>
+                <p style={{ fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:1, color:C.textLight, marginBottom:10 }}>Antelación</p>
+                <p style={{ fontSize:28, fontWeight:800, color:C.text, fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1, marginBottom:6 }}>{globalAntelacion != null ? globalAntelacion : "—"}</p>
+                <p style={{ fontSize:10, color:C.textMid, marginBottom:10 }}>días de antelación</p>
+                <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
+                  {canalData.map(d => d.antelacion != null && (
+                    <div key={d.canal} style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                      <span style={{ fontSize:10, color:C.textMid }}>{d.canal}</span>
+                      <span style={{ fontSize:11, fontWeight:700, color:d.color }}>{d.antelacion}d</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+            </div>
+          )}
         </div>
       )}
 
