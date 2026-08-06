@@ -113,7 +113,7 @@ export default async function handler(req, res) {
     return res.status(401).json({ error: 'No autorizado' });
   }
 
-  // Compute yesterday in UTC (cron fires at 07:30 UTC = 09:30 CEST, so UTC date = local date - 1)
+  // Compute yesterday in UTC (cron fires at 06:30 UTC = 08:30 CEST, so UTC date = local date - 1)
   const now = new Date();
   const ayer = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - 1));
   const ayerStr = `${ayer.getUTCFullYear()}-${pad2(ayer.getUTCMonth()+1)}-${pad2(ayer.getUTCDate())}`;
