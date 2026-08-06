@@ -171,20 +171,19 @@ export function StaffReservaForm({ hotelId, onContinuar }) {
         <p style={{ fontSize:12, color:C.textLight, marginBottom:20 }}>Cargando...</p>
       ) : (
         <div style={{ background:C.bgCard, border:`1px solid ${C.border}`, borderRadius:12, padding:18, marginBottom:20 }}>
-          <div style={{ display:"flex", alignItems:"center", gap:16, marginBottom:20 }}>
-            <div style={{ background:"#111", borderRadius:8, padding:"7px 12px", textAlign:"center", flexShrink:0 }}>
-              <p style={{ fontSize:20, fontWeight:800, color:"#fff", fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1 }}>{reservasHoyTotal}</p>
-              <p style={{ fontSize:8.5, color:"#ffffff", fontWeight:700, textTransform:"uppercase", letterSpacing:0.5, marginTop:3, whiteSpace:"nowrap" }}>Nuevas reservas</p>
+          <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+            <div style={{ display:"flex", alignItems:"center", gap:10, flexShrink:0 }}>
+              <div style={{ background:"#111", borderRadius:8, padding:"7px 12px", textAlign:"center", flexShrink:0 }}>
+                <p style={{ fontSize:20, fontWeight:800, color:"#fff", fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1 }}>{reservasHoyTotal}</p>
+                <p style={{ fontSize:8.5, color:"#ffffff", fontWeight:700, textTransform:"uppercase", letterSpacing:0.5, marginTop:3, whiteSpace:"nowrap" }}>Nuevas reservas</p>
+              </div>
+              <p style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontWeight:700, fontSize:18, color:C.text, whiteSpace:"nowrap" }}>Reservas de hoy</p>
             </div>
-            <div>
-              <p style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontWeight:700, fontSize:18, color:C.text }}>Reservas de hoy</p>
-            </div>
-          </div>
 
-          {reservasHoyTotal === 0 ? (
-            <p style={{ color:C.textLight, fontSize:13, textAlign:"center", padding:"20px 0" }}>Aún no has dado de alta ninguna reserva hoy.</p>
-          ) : (
-            <div style={{ display:"grid", gridTemplateColumns:"2fr 1fr 1fr 1fr", gap:8 }}>
+            {reservasHoyTotal === 0 ? (
+              <p style={{ color:C.textLight, fontSize:13, flex:1 }}>Aún no has dado de alta ninguna reserva hoy.</p>
+            ) : (
+            <div style={{ display:"grid", gridTemplateColumns:"2fr 1fr 1fr 1fr", gap:8, flex:1, minWidth:0 }}>
 
               <div style={{ borderRadius:10, padding:"12px", border:`1.5px solid ${C.border}`, background:C.bg }}>
                 <p style={{ fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:1, color:C.textLight, marginBottom:10, whiteSpace:"nowrap" }}>Por canal</p>
@@ -250,7 +249,8 @@ export function StaffReservaForm({ hotelId, onContinuar }) {
               </div>
 
             </div>
-          )}
+            )}
+          </div>
         </div>
       )}
 
