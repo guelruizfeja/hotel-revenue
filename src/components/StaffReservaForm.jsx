@@ -171,7 +171,7 @@ export function StaffReservaForm({ hotelId, onContinuar }) {
         <p style={{ fontSize:12, color:C.textLight, marginBottom:20 }}>Cargando...</p>
       ) : (
         <div style={{ background:C.bgCard, border:`1px solid ${C.border}`, borderRadius:12, padding:18, marginBottom:20 }}>
-          <div style={{ display:"flex", alignItems:"flex-start", gap:16, marginBottom:20 }}>
+          <div style={{ display:"flex", alignItems:"center", gap:16, marginBottom:20 }}>
             <div style={{ background:"#111", borderRadius:8, padding:"7px 12px", textAlign:"center", flexShrink:0 }}>
               <p style={{ fontSize:20, fontWeight:800, color:"#fff", fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1 }}>{reservasHoyTotal}</p>
               <p style={{ fontSize:8.5, color:"#ffffff", fontWeight:700, textTransform:"uppercase", letterSpacing:0.5, marginTop:3, whiteSpace:"nowrap" }}>Nuevas reservas</p>
