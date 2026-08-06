@@ -12,7 +12,10 @@ export function StaffFlow({ session, hotelId }) {
 
   const header = (
     <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"14px 20px", borderBottom:`1px solid ${C.border}`, background:"#111111" }}>
-      <span style={{ color:"#fff", fontWeight:700, fontSize:14 }}>Modo Recepción</span>
+      <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+        <img src="/fastrev-icon.png" alt="FastRevenue" style={{ height:26, width:"auto", filter:"invert(1)" }} />
+        <span style={{ color:"#fff", fontWeight:800, fontSize:14, letterSpacing:0.5 }}>FAST<span style={{ fontWeight:400 }}>REVENUE</span></span>
+      </div>
       <button onClick={() => supabase.auth.signOut()}
         style={{ background:"none", border:"1px solid #ffffff55", color:"#fff", borderRadius:7, padding:"6px 14px", fontSize:12, cursor:"pointer" }}>
         Cerrar sesión
