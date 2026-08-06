@@ -172,9 +172,9 @@ export function StaffReservaForm({ hotelId, onContinuar }) {
       ) : (
         <div style={{ background:C.bgCard, border:`1px solid ${C.border}`, borderRadius:12, padding:18, marginBottom:20 }}>
           <div style={{ display:"flex", alignItems:"flex-start", gap:16, marginBottom:20 }}>
-            <div style={{ background:"#111", borderRadius:10, padding:"10px 18px", textAlign:"center", flexShrink:0 }}>
-              <p style={{ fontSize:30, fontWeight:800, color:"#fff", fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1 }}>{reservasHoyTotal}</p>
-              <p style={{ fontSize:9, color:"#ffffff", fontWeight:700, textTransform:"uppercase", letterSpacing:1, marginTop:4 }}>Nuevas reservas</p>
+            <div style={{ background:"#111", borderRadius:8, padding:"7px 12px", textAlign:"center", flexShrink:0 }}>
+              <p style={{ fontSize:20, fontWeight:800, color:"#fff", fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1 }}>{reservasHoyTotal}</p>
+              <p style={{ fontSize:7, color:"#ffffff", fontWeight:700, textTransform:"uppercase", letterSpacing:0.7, marginTop:3 }}>Nuevas reservas</p>
             </div>
             <div>
               <p style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontWeight:700, fontSize:18, color:C.text }}>Reservas de hoy</p>
@@ -215,7 +215,7 @@ export function StaffReservaForm({ hotelId, onContinuar }) {
                   {canalData.map(d => d.adr != null && (
                     <div key={d.canal} style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
                       <span style={{ fontSize:10, color:C.textMid }}>{d.canal}</span>
-                      <span style={{ fontSize:11, fontWeight:700, color:d.color }}>€{d.adr}</span>
+                      <span style={{ fontSize:11, fontWeight:700, color:C.text }}>€{d.adr}</span>
                     </div>
                   ))}
                 </div>
@@ -229,7 +229,7 @@ export function StaffReservaForm({ hotelId, onContinuar }) {
                   {canalData.map(d => d.noches != null && (
                     <div key={d.canal} style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
                       <span style={{ fontSize:10, color:C.textMid }}>{d.canal}</span>
-                      <span style={{ fontSize:11, fontWeight:700, color:d.color }}>{d.noches}n</span>
+                      <span style={{ fontSize:11, fontWeight:700, color:C.text }}>{d.noches}n</span>
                     </div>
                   ))}
                 </div>
@@ -243,7 +243,7 @@ export function StaffReservaForm({ hotelId, onContinuar }) {
                   {canalData.map(d => d.antelacion != null && (
                     <div key={d.canal} style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
                       <span style={{ fontSize:10, color:C.textMid }}>{d.canal}</span>
-                      <span style={{ fontSize:11, fontWeight:700, color:d.color }}>{d.antelacion}d</span>
+                      <span style={{ fontSize:11, fontWeight:700, color:C.text }}>{d.antelacion}d</span>
                     </div>
                   ))}
                 </div>
