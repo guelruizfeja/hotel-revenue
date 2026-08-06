@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { PieChart, Pie, Cell } from "recharts";
-import { C, toNum, NET_HAB_FNB } from "../constants";
+import { C, toNum, dmy, NET_HAB_FNB } from "../constants";
 import { supabase } from "../supabase";
 
 const CANALES = ["Booking.com","Expedia","Hotels.com","Airbnb","Hotelbeds","Agoda","Trip.com","Directo","Web propia","Tour operador","Agencia de viajes","GDS","Empresa"];
@@ -38,6 +38,7 @@ export function StaffReservaForm({ hotelId, onContinuar }) {
   const [reservasHoy, setReservasHoy] = useState([]);
   const [cargandoLista, setCargandoLista] = useState(true);
   const [notifReserva, setNotifReserva] = useState(null); // { numero } o null
+  const [showDetalle, setShowDetalle] = useState(false);
 
   const cargarReservasHoy = async () => {
     setCargandoLista(true);
@@ -172,14 +173,65 @@ export function StaffReservaForm({ hotelId, onContinuar }) {
       ) : (
         <div style={{ background:C.bgCard, border:`1px solid ${C.border}`, borderRadius:12, padding:18, marginBottom:20 }}>
           <div style={{ display:"flex", alignItems:"center", gap:16, marginBottom:20 }}>
-            <div style={{ background:"#111", borderRadius:8, padding:"7px 12px", textAlign:"center", flexShrink:0 }}>
+            <div
+              onClick={() => reservasHoyTotal > 0 && setShowDetalle(v => !v)}
+              style={{ background:"#111", borderRadius:8, padding:"7px 12px", textAlign:"center", flexShrink:0, cursor: reservasHoyTotal > 0 ? "pointer" : "default", position:"relative" }}>
               <p style={{ fontSize:20, fontWeight:800, color:"#fff", fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1 }}>{reservasHoyTotal}</p>
               <p style={{ fontSize:8.5, color:"#ffffff", fontWeight:700, textTransform:"uppercase", letterSpacing:0.5, marginTop:3, whiteSpace:"nowrap" }}>Nuevas reservas</p>
+              {reservasHoyTotal > 0 && <span style={{ fontSize:7, color:"#aaa", display:"block", marginTop:2 }}>{showDetalle ? "▲" : "▼"}</span>}
             </div>
             <div>
               <p style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontWeight:700, fontSize:18, color:C.text }}>Reservas de hoy</p>
             </div>
           </div>
+
+          {showDetalle && reservasHoyActivas.length > 0 && (() => {
+            const detalleEntries = [...reservasHoyActivas].sort((a,b) => (a.fecha_llegada||"").localeCompare(b.fecha_llegada||""));
+            const getSalida = e => {
+              if (e.fecha_salida) return e.fecha_salida;
+              if (e.noches && e.fecha_llegada) {
+                const d = new Date(String(e.fecha_llegada).slice(0,10)+"T00:00:00");
+                d.setDate(d.getDate() + Number(e.noches));
+                return d.toISOString().slice(0,10);
+              }
+              return null;
+            };
+            const thD = { fontSize:10, fontWeight:700, color:C.textLight, textTransform:"uppercase", letterSpacing:0.7, padding:"6px 12px", textAlign:"left", borderBottom:`1px solid ${C.border}`, whiteSpace:"nowrap" };
+            const tdD = { fontSize:12, padding:"5px 12px", color:C.text, whiteSpace:"nowrap" };
+            return (
+              <div style={{ marginBottom:16, borderRadius:8, border:`1px solid ${C.border}`, overflow:"auto" }}>
+                <table style={{ width:"100%", borderCollapse:"collapse" }}>
+                  <thead><tr style={{ background:C.bg }}>
+                    <th style={thD}>Nº</th>
+                    <th style={thD}>Creación</th>
+                    <th style={thD}>Canal</th>
+                    <th style={thD}>Llegada</th>
+                    <th style={thD}>Salida</th>
+                    <th style={{ ...thD, textAlign:"center" }}>Noches</th>
+                    <th style={{ ...thD, textAlign:"right" }}>ADR</th>
+                  </tr></thead>
+                  <tbody>
+                    {detalleEntries.map((e, i) => {
+                      const noches = Number(e.noches) || 0;
+                      const adr = noches > 0 ? Math.round((e.precio_total||0) / noches) : null;
+                      const salida = getSalida(e);
+                      return (
+                        <tr key={e.id ?? i} style={{ borderBottom: i < detalleEntries.length-1 ? `1px solid ${C.border}` : "none", background: i%2===0 ? "transparent" : C.bg }}>
+                          <td style={{ ...tdD, color:C.textLight, fontVariantNumeric:"tabular-nums" }}>{e.numero_reserva ?? "—"}</td>
+                          <td style={{ ...tdD, color:C.textMid }}>{dmy(e.fecha_pickup)}</td>
+                          <td style={{ ...tdD, fontWeight:500 }}>{e.canal || "—"}</td>
+                          <td style={tdD}>{dmy(e.fecha_llegada)}</td>
+                          <td style={{ ...tdD, color:C.textMid }}>{salida ? dmy(salida) : "—"}</td>
+                          <td style={{ ...tdD, textAlign:"center", color:C.textMid }}>{noches || "—"}</td>
+                          <td style={{ ...tdD, textAlign:"right", fontWeight:700 }}>{adr != null ? `€${adr}` : "—"}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            );
+          })()}
 
           {reservasHoyTotal === 0 ? (
             <p style={{ color:C.textLight, fontSize:13, textAlign:"center", padding:"20px 0" }}>Aún no has dado de alta ninguna reserva hoy.</p>
