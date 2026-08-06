@@ -174,7 +174,7 @@ export function StaffReservaForm({ hotelId, onContinuar }) {
           <div style={{ display:"flex", alignItems:"flex-start", gap:16, marginBottom:20 }}>
             <div style={{ background:"#111", borderRadius:8, padding:"7px 12px", textAlign:"center", flexShrink:0 }}>
               <p style={{ fontSize:20, fontWeight:800, color:"#fff", fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1 }}>{reservasHoyTotal}</p>
-              <p style={{ fontSize:7, color:"#ffffff", fontWeight:700, textTransform:"uppercase", letterSpacing:0.7, marginTop:3 }}>Nuevas reservas</p>
+              <p style={{ fontSize:8.5, color:"#ffffff", fontWeight:700, textTransform:"uppercase", letterSpacing:0.5, marginTop:3, whiteSpace:"nowrap" }}>Nuevas reservas</p>
             </div>
             <div>
               <p style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontWeight:700, fontSize:18, color:C.text }}>Reservas de hoy</p>
@@ -255,7 +255,7 @@ export function StaffReservaForm({ hotelId, onContinuar }) {
       )}
 
       <button onClick={onContinuar}
-        style={{ width:"100%", padding:"12px 0", borderRadius:8, background:"#0A2540", color:"#fff", border:"none", cursor:"pointer", fontSize:14, fontWeight:700, fontFamily:"inherit" }}>
+        style={{ width:"100%", padding:"12px 0", borderRadius:8, background:"#111111", color:"#fff", border:"none", cursor:"pointer", fontSize:14, fontWeight:700, fontFamily:"inherit" }}>
         Continuar a Producción Diaria →
       </button>
     </div>
