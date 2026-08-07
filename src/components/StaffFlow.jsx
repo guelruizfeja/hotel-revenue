@@ -52,7 +52,7 @@ export function StaffFlow({ session, hotelId }) {
           </p>
           <button onClick={() => setStep("edicion")}
             style={{ padding:"11px 24px", borderRadius:9, background:"none", border:`1px solid ${C.border}`, color:C.textMid, fontSize:13, fontWeight:600, cursor:"pointer" }}>
-            Editar si me he equivocado
+            Editar datos
           </button>
         </div>
       )}
