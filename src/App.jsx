@@ -6314,14 +6314,12 @@ function ModalConfigUnificado({ datos, session, navHidden, toggleNavHidden, navR
               <input style={inp} value={hForm.ciudad} onChange={e=>setHForm(f=>({...f,ciudad:e.target.value}))} placeholder="Ciudad" />
             </div>
             <div>
-              <p style={{ fontSize:11, color:C.textLight, fontWeight:600, marginBottom:5 }}>NÚMERO DE HABITACIONES</p>
+              <p style={{ fontSize:11, color:C.text, fontWeight:600, marginBottom:5 }}>TOTAL DE HABITACIONES</p>
               <input style={inp} type="number" min="1" value={hForm.habitaciones} onChange={e=>setHForm(f=>({...f,habitaciones:e.target.value}))} placeholder="Ej: 110" />
-              <p style={{ fontSize:10, color:C.textLight, marginTop:4 }}>Usado para calcular la ocupación en el heatmap y previsiones futuras.</p>
             </div>
             <div>
-              <p style={{ fontSize:11, color:C.textLight, fontWeight:600, marginBottom:5 }}>HABITACIONES DISPONIBLES</p>
+              <p style={{ fontSize:11, color:C.text, fontWeight:600, marginBottom:5 }}>HABITACIONES DISPONIBLES</p>
               <input style={inp} type="number" min="0" value={hForm.habitacionesDisponibles} onChange={e=>setHForm(f=>({...f,habitacionesDisponibles:e.target.value}))} placeholder="Ej: 108" />
-              <p style={{ fontSize:10, color:C.textLight, marginTop:4 }}>Se autorrellena en Producción diaria (siempre editable ahí para casos puntuales).</p>
             </div>
             <button disabled={hGuardando||hOk} onClick={async()=>{
               setHGuardando(true);
