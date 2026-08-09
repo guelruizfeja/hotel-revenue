@@ -5305,6 +5305,7 @@ function GruposView({ datos, onRecargar, onVolverHeatmap, subVistaExt, onCambiar
 }
 
 // ─── AUTH SCREEN ──────────────────────────────────────────────────
+const MOSTRAR_TAB_CREAR_CUENTA = false; // altas manuales por Supabase; se oculta la pestaña pero se deja el flujo accesible vía #register
 function AuthScreen() {
   const [showAuth, setShowAuth] = useState(() => window.location.hash === "#login" || window.location.hash === "#register");
   const [mode, setMode] = useState(() => window.location.hash === "#register" ? "register" : "login");
@@ -5416,7 +5417,7 @@ function AuthScreen() {
         {/* Card */}
         <div style={{ background: "#fff", borderRadius: 16, padding: "32px 28px", boxShadow: "0 24px 60px rgba(0,0,0,0.4)" }}>
           {/* Tabs */}
-          {mode !== "forgot" && (
+          {MOSTRAR_TAB_CREAR_CUENTA && mode !== "forgot" && (
             <div style={{ display: "flex", background: "#F3F4F6", borderRadius: 10, padding: 4, marginBottom: 24 }}>
               {[["login","Iniciar sesión"],["register","Crear cuenta"]].map(([k,l]) => (
                 <button key={k} onClick={() => { setMode(k); setError(""); setMensaje(""); }}
