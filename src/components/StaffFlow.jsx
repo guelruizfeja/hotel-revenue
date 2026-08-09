@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { C } from "../constants";
 import { supabase } from "../supabase";
 import { StaffReservaForm } from "./StaffReservaForm";
@@ -9,6 +9,12 @@ import { ImportarExcel } from "./ImportarExcel";
 // Sin NAV: esta pantalla es todo lo que ve este rol.
 export function StaffFlow({ session, hotelId }) {
   const [step, setStep] = useState("reservas"); // reservas | produccion | confirmacion | edicion
+  const [hotelHabDisponibles, setHotelHabDisponibles] = useState(0);
+
+  useEffect(() => {
+    supabase.from("hoteles").select("habitaciones_disponibles").eq("id", hotelId).maybeSingle()
+      .then(({ data }) => setHotelHabDisponibles(data?.habitaciones_disponibles || 0));
+  }, [hotelId]);
 
   const header = (
     <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"14px 20px", borderBottom:`1px solid ${C.border}`, background:"#111111" }}>
@@ -36,6 +42,7 @@ export function StaffFlow({ session, hotelId }) {
           session={session}
           soloProduccion
           hotelIdOverride={hotelId}
+          hotelHabDisponibles={hotelHabDisponibles}
           fullPage
           onImportado={() => {}}
           onGuardadoProduccionStaff={() => setStep("confirmacion")}

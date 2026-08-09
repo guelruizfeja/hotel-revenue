@@ -6142,7 +6142,7 @@ function ModalConfigUnificado({ datos, session, navHidden, toggleNavHidden, navR
   const t = useT();
   const [tab, setTab] = React.useState(initialTab || "datos");
   const [unlocked, setUnlocked] = React.useState(() => sessionStorage.getItem("fr_settings_unlocked") === "1");
-  const [hForm, setHForm] = React.useState({ nombre: datos.hotel?.nombre||"", ciudad: datos.hotel?.ciudad||"", habitaciones: datos.hotel?.habitaciones||"" });
+  const [hForm, setHForm] = React.useState({ nombre: datos.hotel?.nombre||"", ciudad: datos.hotel?.ciudad||"", habitaciones: datos.hotel?.habitaciones||"", habitacionesDisponibles: datos.hotel?.habitaciones_disponibles||"" });
   const [hGuardando, setHGuardando] = React.useState(false);
   const [hOk, setHOk] = React.useState(false);
   const [enviandoEmail, setEnviandoEmail] = React.useState(false);
@@ -6318,9 +6318,14 @@ function ModalConfigUnificado({ datos, session, navHidden, toggleNavHidden, navR
               <input style={inp} type="number" min="1" value={hForm.habitaciones} onChange={e=>setHForm(f=>({...f,habitaciones:e.target.value}))} placeholder="Ej: 110" />
               <p style={{ fontSize:10, color:C.textLight, marginTop:4 }}>Usado para calcular la ocupación en el heatmap y previsiones futuras.</p>
             </div>
+            <div>
+              <p style={{ fontSize:11, color:C.textLight, fontWeight:600, marginBottom:5 }}>HABITACIONES DISPONIBLES</p>
+              <input style={inp} type="number" min="0" value={hForm.habitacionesDisponibles} onChange={e=>setHForm(f=>({...f,habitacionesDisponibles:e.target.value}))} placeholder="Ej: 108" />
+              <p style={{ fontSize:10, color:C.textLight, marginTop:4 }}>Se autorrellena en Producción diaria (siempre editable ahí para casos puntuales).</p>
+            </div>
             <button disabled={hGuardando||hOk} onClick={async()=>{
               setHGuardando(true);
-              await supabase.from("hoteles").update({ nombre:hForm.nombre||null, ciudad:hForm.ciudad||null, habitaciones:parseInt(hForm.habitaciones)||null }).eq("id",session.user.id);
+              await supabase.from("hoteles").update({ nombre:hForm.nombre||null, ciudad:hForm.ciudad||null, habitaciones:parseInt(hForm.habitaciones)||null, habitaciones_disponibles:parseInt(hForm.habitacionesDisponibles)||null }).eq("id",session.user.id);
               setHGuardando(false); setHOk(true);
               onGuardado(true);
               setTimeout(()=>{ setHOk(false); }, 1500);
@@ -6849,7 +6854,7 @@ export default function App() {
     const [{ data: produccion }, { data: presupuesto }, { data: hotelData }, { data: gruposData }, { data: salasData }] = await Promise.all([
       supabase.from("produccion_diaria").select("*").eq("hotel_id", session.user.id).order("fecha"),
       supabase.from("presupuesto").select("*").eq("hotel_id", session.user.id).order("mes"),
-      supabase.from("hoteles").select("nombre, ciudad, habitaciones, comisiones_canales").eq("id", session.user.id).maybeSingle(),
+      supabase.from("hoteles").select("nombre, ciudad, habitaciones, habitaciones_disponibles, comisiones_canales").eq("id", session.user.id).maybeSingle(),
       supabase.from("grupos_eventos").select("*").eq("hotel_id", session.user.id).order("fecha_inicio"),
       supabase.from("salas").select("*").eq("hotel_id", session.user.id).order("nombre"),
     ]);
@@ -7532,7 +7537,7 @@ export default function App() {
         <div style={{ display: !(cargandoDatos && !datosCargadosUnaVez) && !mesDetalle && !desgloseMovimiento && view === "gestion" ? "block" : "none", width:"100%" }}>
           <ImportarExcel fullPage
             onClose={() => { setView("dashboard"); localStorage.setItem("fr_view","dashboard"); }}
-            session={session} hotelNombre={datos.hotel?.nombre||''} produccion={datos.produccion||[]} hotelHab={datos.hotel?.habitaciones||0}
+            session={session} hotelNombre={datos.hotel?.nombre||''} produccion={datos.produccion||[]} hotelHab={datos.hotel?.habitaciones||0} hotelHabDisponibles={datos.hotel?.habitaciones_disponibles||0}
             onImportado={() => {
               sessionStorage.removeItem("fr_datos_cache_v4");
               sessionStorage.removeItem("fr_datos_ts_v4");

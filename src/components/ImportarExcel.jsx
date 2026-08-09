@@ -6,7 +6,7 @@ import { CustomSelect } from "./CustomSelect";
 import { PeriodSelectorInline } from "./PeriodSelectorInline";
 import { Card } from "./Card";
 
-export function ImportarExcel({ onClose, session, onImportado, onProduccionDirecta, hotelNombre: hotelNombreProp, fullPage = false, produccion = [], hotelHab = 0, soloProduccion = false, hotelIdOverride, onGuardadoProduccionStaff, onVolverStaff }) {
+export function ImportarExcel({ onClose, session, onImportado, onProduccionDirecta, hotelNombre: hotelNombreProp, fullPage = false, produccion = [], hotelHab = 0, hotelHabDisponibles = 0, soloProduccion = false, hotelIdOverride, onGuardadoProduccionStaff, onVolverStaff }) {
   const t = useT();
   // Pestaña activa (persiste entre navegaciones) — en modo soloProduccion queda fija en "produccion"
   const [activeBlock, setActiveBlock] = useState(() => soloProduccion ? "produccion" : (localStorage.getItem("fr_gestion_tab") || "presupuesto"));
@@ -66,7 +66,7 @@ export function ImportarExcel({ onClose, session, onImportado, onProduccionDirec
         setProdForm(f => ({
           ...f, fecha,
           hab_ocupadas: data?.hab_ocupadas ?? "",
-          hab_disponibles: data?.hab_disponibles ?? "",
+          hab_disponibles: data?.hab_disponibles ?? (hotelHabDisponibles ? String(hotelHabDisponibles) : ""),
           revenue_hab: data?.revenue_hab != null ? String(Math.round(data.revenue_hab / NET_HAB_FNB * 100) / 100) : "",
           revenue_fnb: data?.revenue_fnb != null ? String(Math.round(data.revenue_fnb / NET_HAB_FNB * 100) / 100) : "",
           revenue_salas: data?.revenue_salas != null ? String(Math.round(data.revenue_salas / NET_SALA * 100) / 100) : "",
@@ -77,6 +77,14 @@ export function ImportarExcel({ onClose, session, onImportado, onProduccionDirec
     if (!soloProduccion) return;
     cargarProduccionFecha(new Date().toISOString().slice(0,10));
   }, [soloProduccion]);
+
+  // Autorrellenar Hab. Disponibles con el valor configurado del hotel en cuanto esté
+  // disponible (puede llegar tras el montaje), solo si el campo sigue vacío para no pisar
+  // lo ya tecleado ni un valor ya guardado para la fecha (Producción diaria sigue editable).
+  useEffect(() => {
+    if (!hotelHabDisponibles) return;
+    setProdForm(f => f.hab_disponibles === "" ? { ...f, hab_disponibles: String(hotelHabDisponibles) } : f);
+  }, [hotelHabDisponibles]);
   // Estado de importación existente
   const [importStatusHistorico, setImportStatusHistorico] = useState(null); // null=comprobando, false=sin datos, {fecha,count}
   const [importStatusPresupuesto, setImportStatusPresupuesto] = useState(null);
@@ -590,7 +598,7 @@ export function ImportarExcel({ onClose, session, onImportado, onProduccionDirec
         : await supabase.from("produccion_diaria").insert(row);
       if (error) throw new Error(error.message);
       setProdRecientes(prev => [row, ...prev.filter(r => r.fecha !== prodForm.fecha)].slice(0, 8));
-      if (!soloProduccion) setProdForm(f => ({...f, hab_ocupadas:"", hab_disponibles:"", revenue_hab:"", revenue_fnb:"", revenue_salas:""}));
+      if (!soloProduccion) setProdForm(f => ({...f, hab_ocupadas:"", hab_disponibles: hotelHabDisponibles ? String(hotelHabDisponibles) : "", revenue_hab:"", revenue_fnb:"", revenue_salas:""}));
       setOkProd(true); setTimeout(() => setOkProd(false), 3000);
       if (onImportado) onImportado();
       if (soloProduccion) {
