@@ -56,8 +56,9 @@ export const CustomTooltip = ({ active, payload, label, unit }) => {
       <p style={{ color:"#111111", fontSize:10, fontWeight:700, marginBottom:8, textTransform:"uppercase", letterSpacing:"1.5px" }}>{displayLabel}</p>
       {payload.map((p, i) => {
         const isOcc = unit === "%" || OCC_NAMES.includes(p.name);
+        const isNum = unit === "num";
         const val = typeof p.value === 'number'
-          ? isOcc ? `${Math.round(p.value)}%` : `${Math.round(p.value).toLocaleString("es-ES")}€`
+          ? isOcc ? `${Math.round(p.value)}%` : isNum ? Math.round(p.value).toLocaleString("es-ES") : `${Math.round(p.value).toLocaleString("es-ES")}€`
           : p.value;
         const color = (typeof p.color === "string" && !p.color.startsWith("url(")) ? p.color : (TOOLTIP_COLORS[p.name] || TOOLTIP_COLORS[p.dataKey] || "#7A9CC8");
         return (

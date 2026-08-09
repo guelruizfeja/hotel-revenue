@@ -10,6 +10,7 @@ import { KpiCard } from "./components/KpiCard";
 import { PeriodSelectorInline } from "./components/PeriodSelectorInline";
 import { WeatherBar } from "./components/WeatherBar";
 import { KpiModal } from "./components/KpiModal";
+import { ModalHistoricoMovimiento } from "./components/ModalHistoricoMovimiento";
 import { ImportarExcel } from "./components/ImportarExcel";
 import { StaffFlow } from "./components/StaffFlow";
 import {
@@ -750,6 +751,7 @@ function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMo
   const [hmMesSel, setHmMesSel] = useState(() => { try { const v=localStorage.getItem("fr_hmMesSel"); return v!==null?JSON.parse(v):null; } catch { return null; } });
   const [hmVista, setHmVista] = useState(() => { try { return localStorage.getItem("fr_hmVista") || "mensual"; } catch { return "mensual"; } });
   const [modalDiario, setModalDiario] = useState(null); // {mesIdx, anioIdx}
+  const [showMovHistorico, setShowMovHistorico] = useState(false);
 
   // Mapa precalculado fecha→habitaciones (un solo paso, O(1) lookups en render)
   const habEnCasaMap = useMemo(
@@ -1975,7 +1977,13 @@ const [metricaSel, setMetricaSel] = useState(() => localStorage.getItem("fr_metr
 
               return (
                 <div style={{ flex:"0 0 420px", padding:"28px 32px", display:"flex", flexDirection:"column", justifyContent:"center", gap:14 }}>
-                  <div style={{ textAlign:"center" }}>
+                  <div style={{ textAlign:"center", position:"relative", paddingTop:22 }}>
+                    <button onClick={() => setShowMovHistorico(true)}
+                      style={{ position:"absolute", top:0, right:0, padding:"5px 12px", borderRadius:7, border:`1px solid ${C.border}`, background:"transparent", color:C.textMid, fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", transition:"all 0.15s" }}
+                      onMouseEnter={e=>{ e.currentTarget.style.background=C.accentLight; e.currentTarget.style.borderColor=C.accent; e.currentTarget.style.color=C.accent; }}
+                      onMouseLeave={e=>{ e.currentTarget.style.background="transparent"; e.currentTarget.style.borderColor=C.border; e.currentTarget.style.color=C.textMid; }}>
+                      Histórico
+                    </button>
                     <p style={{ fontSize:13, fontWeight:800, color:C.text, textTransform:"uppercase", letterSpacing:"1.5px" }}>Movimiento Operativo Diario</p>
                     <p style={{ fontSize:11, color:C.textMid, marginTop:2 }}>{hoyStr}</p>
                   </div>
@@ -2135,6 +2143,7 @@ const [metricaSel, setMetricaSel] = useState(() => localStorage.getItem("fr_metr
         </div>
       </div>
       {kpiModal && <KpiModal kpi={kpiModal} datos={datos} mes={mes} anio={anio} onClose={()=>setKpiModal(null)} />}
+      {showMovHistorico && <ModalHistoricoMovimiento datos={datos} mesInicial={new Date().getMonth()} anioInicial={new Date().getFullYear()} onClose={()=>setShowMovHistorico(false)} />}
 
       {/* ── MODAL DIARIO ADR & OCUPACIÓN ── */}
       {modalDiario && (() => {
