@@ -5410,8 +5410,8 @@ function AuthScreen() {
       <div style={{ width: "100%", maxWidth: 400, animation: "fadeUp 0.4s ease both" }}>
         {/* Logo */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginBottom: 36 }}>
-          <img src="/fastrev-icon.png" alt="FastRevenue" style={{ height: 38, width: "auto", filter: "brightness(0) invert(1)" }} />
-          <span style={{ fontSize: 19, fontWeight: 800, color: "#fff", letterSpacing: 0.3 }}>FAST<span style={{ fontWeight: 400 }}>REVENUE</span></span>
+          <img src="/fastrev-icon.png" alt="FastRevenue" style={{ height: 48, width: "auto", filter: "brightness(0) invert(1)" }} />
+          <span style={{ fontSize: 23, fontWeight: 800, color: "#fff", letterSpacing: 0.3 }}>FAST<span style={{ fontWeight: 400 }}>REVENUE</span></span>
         </div>
 
         {/* Card */}
@@ -5524,8 +5524,8 @@ function AuthScreen() {
           )}
         </div>
 
-        <p style={{ textAlign: "center", marginTop: 20, fontSize: 12, color: "rgba(255,255,255,0.35)" }}>
-          <a href="/" style={{ color: "rgba(255,255,255,0.35)", textDecoration: "none" }}>← Volver a fastrevenue.app</a>
+        <p style={{ textAlign: "center", marginTop: 20, fontSize: 12, color: "rgba(255,255,255,0.85)" }}>
+          <a href="/" style={{ color: "rgba(255,255,255,0.85)", textDecoration: "none" }}>← Volver a fastrevenue.app</a>
         </p>
       </div>
     </div>
