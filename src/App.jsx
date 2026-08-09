@@ -1747,7 +1747,13 @@ const [metricaSel, setMetricaSel] = useState(() => localStorage.getItem("fr_metr
               </div>
             )}
 
-          <Card style={{ display:"flex", padding:0, overflow:"hidden", marginBottom:16 }}>
+          <Card style={{ display:"flex", padding:0, overflow:"hidden", marginBottom:16, position:"relative" }}>
+            <button onClick={() => setShowMovHistorico(true)}
+              style={{ position:"absolute", top:14, right:16, zIndex:1, padding:"5px 12px", borderRadius:7, border:`1px solid ${C.border}`, background:C.bgCard, color:C.textMid, fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", transition:"all 0.15s" }}
+              onMouseEnter={e=>{ e.currentTarget.style.background=C.accentLight; e.currentTarget.style.borderColor=C.accent; e.currentTarget.style.color=C.accent; }}
+              onMouseLeave={e=>{ e.currentTarget.style.background=C.bgCard; e.currentTarget.style.borderColor=C.border; e.currentTarget.style.color=C.textMid; }}>
+              Histórico
+            </button>
 
             {/* ── HEATMAP (izquierda) ── */}
             <div style={{ flex: hmVista === "diario" ? 3 : 2, padding:"20px 22px", display:"flex", flexDirection:"column" }}>
@@ -1977,13 +1983,7 @@ const [metricaSel, setMetricaSel] = useState(() => localStorage.getItem("fr_metr
 
               return (
                 <div style={{ flex:"0 0 420px", padding:"28px 32px", display:"flex", flexDirection:"column", justifyContent:"center", gap:14 }}>
-                  <div style={{ textAlign:"center", position:"relative", paddingTop:22 }}>
-                    <button onClick={() => setShowMovHistorico(true)}
-                      style={{ position:"absolute", top:0, right:0, padding:"5px 12px", borderRadius:7, border:`1px solid ${C.border}`, background:"transparent", color:C.textMid, fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", transition:"all 0.15s" }}
-                      onMouseEnter={e=>{ e.currentTarget.style.background=C.accentLight; e.currentTarget.style.borderColor=C.accent; e.currentTarget.style.color=C.accent; }}
-                      onMouseLeave={e=>{ e.currentTarget.style.background="transparent"; e.currentTarget.style.borderColor=C.border; e.currentTarget.style.color=C.textMid; }}>
-                      Histórico
-                    </button>
+                  <div style={{ textAlign:"center" }}>
                     <p style={{ fontSize:13, fontWeight:800, color:C.text, textTransform:"uppercase", letterSpacing:"1.5px" }}>Movimiento Operativo Diario</p>
                     <p style={{ fontSize:11, color:C.textMid, marginTop:2 }}>{hoyStr}</p>
                   </div>
