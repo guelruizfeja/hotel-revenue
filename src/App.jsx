@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { LangContext, useT, TRANSLATIONS } from "./i18n";
 import { C, LOGO_B64, dmy, toNum, MESES, MESES_CORTO, MESES_FULL, NET_HAB_FNB, NET_SALA, KPI_HELP, NAV, GRUPOS_SUB } from "./constants";
-import { buildHabEnCasaMap, buildRevEnCasaMap, calcHabEnCasa, calcForecastRevStandalone } from "./utils";
+import { buildHabEnCasaMap, buildRevEnCasaMap, calcHabEnCasa, calcForecastRevStandalone, mergeProduccionConGrupos, buildRevFnbSalasGrupoMap } from "./utils";
 import { supabase } from "./supabase";
 import { CustomSelect } from "./components/CustomSelect";
 import { AnimatedBar, SimpleBar, TOOLTIP_COLORS, CustomTooltip } from "./components/charts";
@@ -4627,10 +4627,14 @@ function GruposView({ datos, onRecargar, onVolverHeatmap, subVistaExt, onCambiar
   const produccion = datos.produccion || [];
   const pad2 = n => String(n).padStart(2,"0");
   const diasEnMes = new Date(anio, mes + 1, 0).getDate();
+  // Salas de grupos/eventos ya viene sumada dentro de datos.produccion (mergeProduccionConGrupos);
+  // aquí se resta para no contarla dos veces, ya que este gráfico la muestra por separado dentro
+  // de las barras Grupos/Eventos.
+  const rsMapGrupos = buildRevFnbSalasGrupoMap(grupos);
   const chartRevMensual = Array.from({ length: diasEnMes }, (_, di) => {
     const dayStr = `${anio}-${pad2(mes+1)}-${pad2(di+1)}`;
     const prod = produccion.find(d => d.fecha === dayStr);
-    const revSalas = prod?.revenue_salas || 0;
+    const revSalas = Math.max(0, (prod?.revenue_salas || 0) - (rsMapGrupos[dayStr]?.salas || 0));
     const gruposActivos = grupos.filter(g =>
       g.estado === "confirmado" && g.fecha_inicio && g.fecha_fin &&
       g.fecha_inicio <= dayStr && g.fecha_fin >= dayStr
@@ -6917,8 +6921,12 @@ export default function App() {
     }
     const pickupConGrupos = [...pickupEntries, ...pickupGrupos];
 
+    // El F&B y las Salas de grupos/eventos confirmados se suman automáticamente
+    // al F&B/Salas ya introducidos manualmente ese día en producción diaria.
+    const produccionConGrupos = mergeProduccionConGrupos(produccion, gruposData);
+
     const nuevoDatos = {
-      produccion: produccion || [],
+      produccion: produccionConGrupos,
       presupuesto: presupuesto || [],
       pickupEntries: pickupConGrupos,
       hotel: hotelData,

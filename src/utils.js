@@ -101,6 +101,46 @@ export function buildRevEnCasaMap(pickupEntries, grupos) {
   return map;
 }
 
+// Revenue de F&B y Salas de grupos/eventos confirmados, prorrateado por noche de estancia.
+export function buildRevFnbSalasGrupoMap(grupos) {
+  const map = {};
+  const pad = n => String(n).padStart(2, "0");
+  const isoL = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+  (grupos||[])
+    .filter(g => g.estado==="confirmado" && g.fecha_inicio && g.fecha_fin && ((g.revenue_fnb||0)>0 || (g.revenue_sala||0)>0))
+    .forEach(g => {
+      const ini = new Date(g.fecha_inicio+"T00:00:00");
+      const fin = new Date(g.fecha_fin+"T00:00:00");
+      const noches = Math.max(1, (fin-ini)/86400000);
+      const fnbPorNoche   = (g.revenue_fnb||0) / noches;
+      const salasPorNoche = (g.revenue_sala||0) / noches;
+      let d = new Date(ini);
+      while (d < fin) {
+        const iso = isoL(d);
+        if (!map[iso]) map[iso] = { fnb: 0, salas: 0 };
+        map[iso].fnb   += fnbPorNoche;
+        map[iso].salas += salasPorNoche;
+        d.setDate(d.getDate()+1);
+      }
+    });
+  return map;
+}
+
+// Suma automáticamente el F&B y las Salas de grupos/eventos confirmados (buildRevFnbSalasGrupoMap)
+// a las filas ya existentes de producción diaria, recalculando revenue_total y trevpar.
+export function mergeProduccionConGrupos(produccion, grupos) {
+  const rsMap = buildRevFnbSalasGrupoMap(grupos);
+  return (produccion||[]).map(d => {
+    const extra = rsMap[d.fecha];
+    if (!extra) return d;
+    const revenue_fnb   = Math.round(((d.revenue_fnb||0)   + extra.fnb)   * 100) / 100;
+    const revenue_salas = Math.round(((d.revenue_salas||0) + extra.salas) * 100) / 100;
+    const revenue_total = Math.round(((d.revenue_hab||0) + revenue_fnb + revenue_salas) * 100) / 100;
+    const trevpar = d.hab_disponibles > 0 ? Math.round(revenue_total / d.hab_disponibles * 100) / 100 : d.trevpar;
+    return { ...d, revenue_fnb, revenue_salas, revenue_total, trevpar };
+  });
+}
+
 export function parseEventoSala(notas) {
   if (!notas) return "";
   const m = notas.match(/^\[ev:([^\]]*)\]/);
