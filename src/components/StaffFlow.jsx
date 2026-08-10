@@ -10,10 +10,13 @@ import { ImportarExcel } from "./ImportarExcel";
 export function StaffFlow({ session, hotelId }) {
   const [step, setStep] = useState("reservas"); // reservas | produccion | confirmacion | edicion
   const [hotelHabDisponibles, setHotelHabDisponibles] = useState(0);
+  const [grupos, setGrupos] = useState([]);
 
   useEffect(() => {
     supabase.from("hoteles").select("habitaciones_disponibles").eq("id", hotelId).maybeSingle()
       .then(({ data }) => setHotelHabDisponibles(data?.habitaciones_disponibles || 0));
+    supabase.from("grupos_eventos").select("estado,fecha_inicio,fecha_fin,revenue_fnb,revenue_sala").eq("hotel_id", hotelId)
+      .then(({ data }) => setGrupos(data || []));
   }, [hotelId]);
 
   const header = (
@@ -43,6 +46,7 @@ export function StaffFlow({ session, hotelId }) {
           soloProduccion
           hotelIdOverride={hotelId}
           hotelHabDisponibles={hotelHabDisponibles}
+          grupos={grupos}
           fullPage
           onImportado={() => {}}
           onGuardadoProduccionStaff={() => setStep("confirmacion")}

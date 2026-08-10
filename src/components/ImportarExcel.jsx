@@ -1,13 +1,16 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useT } from "../i18n";
 import { C, NET_HAB_FNB, NET_SALA, dmy, toNum, MESES_FULL } from "../constants";
 import { supabase } from "../supabase";
 import { CustomSelect } from "./CustomSelect";
 import { PeriodSelectorInline } from "./PeriodSelectorInline";
 import { Card } from "./Card";
+import { buildRevFnbSalasGrupoMap } from "../utils";
 
-export function ImportarExcel({ onClose, session, onImportado, onProduccionDirecta, hotelNombre: hotelNombreProp, fullPage = false, produccion = [], hotelHab = 0, hotelHabDisponibles = 0, soloProduccion = false, hotelIdOverride, onGuardadoProduccionStaff, onVolverStaff }) {
+export function ImportarExcel({ onClose, session, onImportado, onProduccionDirecta, hotelNombre: hotelNombreProp, fullPage = false, produccion = [], hotelHab = 0, hotelHabDisponibles = 0, soloProduccion = false, hotelIdOverride, onGuardadoProduccionStaff, onVolverStaff, grupos = [] }) {
   const t = useT();
+  // F&B/Salas de grupos confirmados por día (mismo cálculo que se suma automáticamente en el dashboard)
+  const grupoExtraMap = useMemo(() => buildRevFnbSalasGrupoMap(grupos), [grupos]);
   // Pestaña activa (persiste entre navegaciones) — en modo soloProduccion queda fija en "produccion"
   const [activeBlock, setActiveBlock] = useState(() => soloProduccion ? "produccion" : (localStorage.getItem("fr_gestion_tab") || "presupuesto"));
   const setActiveBlockPersist = (id) => { setActiveBlock(id); localStorage.setItem("fr_gestion_tab", id); };
@@ -1330,6 +1333,21 @@ export function ImportarExcel({ onClose, session, onImportado, onProduccionDirec
                       })()}
                     </div>
                   </div>
+                  {(() => {
+                    const extra = grupoExtraMap[prodForm.fecha];
+                    if (!extra || (extra.fnb <= 0 && extra.salas <= 0)) return null;
+                    const fnbBruto   = extra.fnb   / NET_HAB_FNB;
+                    const salasBruto = extra.salas / NET_SALA;
+                    const fmt = n => `€${n.toLocaleString("es-ES", { maximumFractionDigits:0 })}`;
+                    const partes = [];
+                    if (fnbBruto > 0)   partes.push(`${fmt(fnbBruto)} de F&B`);
+                    if (salasBruto > 0) partes.push(`${fmt(salasBruto)} de Salas`);
+                    return (
+                      <div style={{ gridColumn:"1 / -1", background:"#EFF6FF", border:"1px solid #BFDBFE", borderRadius:8, padding:"9px 12px", fontSize:11.5, color:"#1E40AF", lineHeight:1.5 }}>
+                        ℹ️ Este día ya se sumará automáticamente {partes.join(" y ")} de grupos/eventos confirmados. No hace falta que lo incluyas en los campos de arriba.
+                      </div>
+                    );
+                  })()}
                   {(prodForm.hab_ocupadas || prodForm.revenue_hab) && (() => {
                     const ho = toNum(prodForm.hab_ocupadas) || 0;
                     const hd = toNum(prodForm.hab_disponibles) || 0;
