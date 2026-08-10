@@ -11,12 +11,31 @@ export function StaffFlow({ session, hotelId }) {
   const [step, setStep] = useState("reservas"); // reservas | produccion | confirmacion | edicion
   const [hotelHabDisponibles, setHotelHabDisponibles] = useState(0);
   const [grupos, setGrupos] = useState([]);
+  const [pickupEntries, setPickupEntries] = useState([]);
 
   useEffect(() => {
     supabase.from("hoteles").select("habitaciones_disponibles").eq("id", hotelId).maybeSingle()
       .then(({ data }) => setHotelHabDisponibles(data?.habitaciones_disponibles || 0));
     supabase.from("grupos_eventos").select("estado,fecha_inicio,fecha_fin,revenue_fnb,revenue_sala").eq("hotel_id", hotelId)
       .then(({ data }) => setGrupos(data || []));
+    (async () => {
+      const PICKUP_FIELDS = "id, fecha_llegada, fecha_pickup, canal, num_reservas, fecha_salida, noches, precio_total, estado, es_individual, numero_reserva";
+      const { data: pe0, count } = await supabase.from("pickup_entries")
+        .select(PICKUP_FIELDS, { count: "exact" }).eq("hotel_id", hotelId).range(0, 999);
+      if (!pe0 || pe0.length === 0) { setPickupEntries([]); return; }
+      const total = count || pe0.length;
+      const PAGINA = 1000;
+      const paginas = Math.ceil(total / PAGINA);
+      const resto = paginas > 1
+        ? await Promise.all(
+            Array.from({ length: paginas - 1 }, (_, i) =>
+              supabase.from("pickup_entries").select(PICKUP_FIELDS).eq("hotel_id", hotelId)
+                .range((i + 1) * PAGINA, (i + 2) * PAGINA - 1).then(r => r.data || [])
+            )
+          )
+        : [];
+      setPickupEntries([...pe0, ...resto.flat()]);
+    })();
   }, [hotelId]);
 
   const header = (
@@ -47,6 +66,7 @@ export function StaffFlow({ session, hotelId }) {
           hotelIdOverride={hotelId}
           hotelHabDisponibles={hotelHabDisponibles}
           grupos={grupos}
+          pickupEntries={pickupEntries}
           fullPage
           onImportado={() => {}}
           onGuardadoProduccionStaff={() => setStep("confirmacion")}
