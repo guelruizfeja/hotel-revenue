@@ -57,9 +57,9 @@ export function ImportarExcel({ onClose, session, onImportado, onProduccionDirec
   const [errorProd, setErrorProd] = useState("");
   const [okProd, setOkProd] = useState(false);
   const [prodRecientes, setProdRecientes] = useState([]);
-  // Fecha cuya producción ya se guardó en esta sesión: oculta el aviso de F&B/Salas
-  // de grupos para ese día hasta que se vuelva a editar o se cambie de fecha.
-  const [fechaProdGuardada, setFechaProdGuardada] = useState("");
+  // Si la fecha seleccionada ya tiene producción guardada (en BD o recién guardada en esta
+  // sesión): oculta el aviso de F&B/Salas de grupos, ya que ese día ya está resuelto.
+  const [fechaTieneProduccion, setFechaTieneProduccion] = useState(false);
 
   // Modo soloProduccion (rol Usuario): precargar la fila de la fecha seleccionada si ya existe,
   // revirtiendo el neto de IVA para que el formulario muestre el importe bruto
@@ -69,6 +69,7 @@ export function ImportarExcel({ onClose, session, onImportado, onProduccionDirec
     const hid = hotelIdOverride || session.user.id;
     supabase.from("produccion_diaria").select("*").eq("hotel_id", hid).eq("fecha", fecha).maybeSingle()
       .then(({ data }) => {
+        setFechaTieneProduccion(!!data);
         setProdForm(f => ({
           ...f, fecha,
           hab_ocupadas: data?.hab_ocupadas ?? "",
@@ -79,6 +80,18 @@ export function ImportarExcel({ onClose, session, onImportado, onProduccionDirec
         }));
       });
   };
+
+  // Modo Gestión (Dirección): el formulario no precarga datos existentes al cambiar de
+  // fecha, pero igualmente comprobamos si ya hay producción guardada para esa fecha, solo
+  // para poder ocultar el aviso de F&B/Salas de grupos en días que ya están resueltos.
+  useEffect(() => {
+    if (soloProduccion || !prodForm.fecha) return;
+    const hid = hotelIdOverride || session.user.id;
+    let cancelado = false;
+    supabase.from("produccion_diaria").select("id").eq("hotel_id", hid).eq("fecha", prodForm.fecha).maybeSingle()
+      .then(({ data }) => { if (!cancelado) setFechaTieneProduccion(!!data); });
+    return () => { cancelado = true; };
+  }, [prodForm.fecha, soloProduccion, hotelIdOverride, session?.user?.id]);
   useEffect(() => {
     if (!soloProduccion) return;
     cargarProduccionFecha(new Date().toISOString().slice(0,10));
@@ -604,7 +617,7 @@ export function ImportarExcel({ onClose, session, onImportado, onProduccionDirec
         : await supabase.from("produccion_diaria").insert(row);
       if (error) throw new Error(error.message);
       setProdRecientes(prev => [row, ...prev.filter(r => r.fecha !== prodForm.fecha)].slice(0, 8));
-      setFechaProdGuardada(prodForm.fecha);
+      setFechaTieneProduccion(true);
       if (!soloProduccion) setProdForm(f => ({...f, hab_ocupadas:"", hab_disponibles: hotelHabDisponibles ? String(hotelHabDisponibles) : "", revenue_hab:"", revenue_fnb:"", revenue_salas:""}));
       setOkProd(true); setTimeout(() => setOkProd(false), 3000);
       if (onImportado) onImportado();
@@ -1340,7 +1353,7 @@ export function ImportarExcel({ onClose, session, onImportado, onProduccionDirec
                   {(() => {
                     const extra = grupoExtraMap[prodForm.fecha];
                     if (!extra || (extra.fnb <= 0 && extra.salas <= 0)) return null;
-                    if (fechaProdGuardada === prodForm.fecha) return null;
+                    if (fechaTieneProduccion) return null;
                     const fnbBruto   = extra.fnb   / NET_HAB_FNB;
                     const salasBruto = extra.salas / NET_SALA;
                     const fmt = n => `€${n.toLocaleString("es-ES", { maximumFractionDigits:0 })}`;
