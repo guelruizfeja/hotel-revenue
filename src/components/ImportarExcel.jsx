@@ -57,6 +57,9 @@ export function ImportarExcel({ onClose, session, onImportado, onProduccionDirec
   const [errorProd, setErrorProd] = useState("");
   const [okProd, setOkProd] = useState(false);
   const [prodRecientes, setProdRecientes] = useState([]);
+  // Fecha cuya producción ya se guardó en esta sesión: oculta el aviso de F&B/Salas
+  // de grupos para ese día hasta que se vuelva a editar o se cambie de fecha.
+  const [fechaProdGuardada, setFechaProdGuardada] = useState("");
 
   // Modo soloProduccion (rol Usuario): precargar la fila de la fecha seleccionada si ya existe,
   // revirtiendo el neto de IVA para que el formulario muestre el importe bruto
@@ -601,6 +604,7 @@ export function ImportarExcel({ onClose, session, onImportado, onProduccionDirec
         : await supabase.from("produccion_diaria").insert(row);
       if (error) throw new Error(error.message);
       setProdRecientes(prev => [row, ...prev.filter(r => r.fecha !== prodForm.fecha)].slice(0, 8));
+      setFechaProdGuardada(prodForm.fecha);
       if (!soloProduccion) setProdForm(f => ({...f, hab_ocupadas:"", hab_disponibles: hotelHabDisponibles ? String(hotelHabDisponibles) : "", revenue_hab:"", revenue_fnb:"", revenue_salas:""}));
       setOkProd(true); setTimeout(() => setOkProd(false), 3000);
       if (onImportado) onImportado();
@@ -1336,6 +1340,7 @@ export function ImportarExcel({ onClose, session, onImportado, onProduccionDirec
                   {(() => {
                     const extra = grupoExtraMap[prodForm.fecha];
                     if (!extra || (extra.fnb <= 0 && extra.salas <= 0)) return null;
+                    if (fechaProdGuardada === prodForm.fecha) return null;
                     const fnbBruto   = extra.fnb   / NET_HAB_FNB;
                     const salasBruto = extra.salas / NET_SALA;
                     const fmt = n => `€${n.toLocaleString("es-ES", { maximumFractionDigits:0 })}`;
