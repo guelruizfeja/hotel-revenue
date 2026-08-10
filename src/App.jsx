@@ -6689,13 +6689,13 @@ export default function App() {
   }, [datosCargadosUnaVez, datos.produccion]);
 
   const alertasFaltantes = useMemo(() => {
+    // Solo la producción diaria se considera "dato faltante" (import real pendiente).
+    // La ausencia de pick up un día concreto es normal (no tiene por qué haber
+    // reservas nuevas ese día) y no debe tratarse como un error.
     const produccion = datos.produccion || [];
-    const pickup = (datos.pickupEntries || []).filter(e => !e._grupo);
     const pad2 = n => String(n).padStart(2, "0");
     const fechasProd = new Set(produccion.map(d => d.fecha));
-    const fechasPickup = new Set(pickup.map(e => e.fecha_pickup).filter(Boolean));
-    const todas = [...fechasProd, ...fechasPickup].sort();
-    const fechaRef = todas[0];
+    const fechaRef = [...fechasProd].sort()[0];
     if (!fechaRef) return [];
     const hoyD = new Date();
     const result = [];
@@ -6705,12 +6705,11 @@ export default function App() {
       const f = `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
       if (f < fechaRef) break;
       const sinProd = !fechasProd.has(f);
-      const sinPick = !fechasPickup.has(f);
-      if (!sinProd && !sinPick) break;
-      result.unshift({ fecha: f, sinProd, sinPick });
+      if (!sinProd) break;
+      result.unshift({ fecha: f, sinProd });
     }
     return result;
-  }, [datos.produccion, datos.pickupEntries]);
+  }, [datos.produccion]);
 
   // Restaurar scroll al montar
   useEffect(() => {
@@ -7523,7 +7522,7 @@ export default function App() {
               </button>
               {/* Detalle — siempre renderizado para fijar el ancho, oculto cuando colapsado */}
               <div style={{ borderTop: alertasExpanded ? "1px solid #FFCDD2" : "none", padding: alertasExpanded ? "8px 14px 12px" : 0, maxHeight: alertasExpanded ? 500 : 0, overflow:"hidden", transition:"max-height 0.2s ease" }}>
-                {alertasFaltantes.map(({ fecha, sinProd, sinPick }) => {
+                {alertasFaltantes.map(({ fecha, sinProd }) => {
                   const d = new Date(fecha + "T00:00:00");
                   const label = d.toLocaleDateString("es-ES", { weekday:"long", day:"2-digit", month:"long" });
                   return (
@@ -7531,7 +7530,6 @@ export default function App() {
                       <span style={{ fontSize:12, color:"#B71C1C", fontWeight:600, minWidth:160, textTransform:"capitalize" }}>{label}</span>
                       <div style={{ display:"flex", gap:6 }}>
                         {sinProd && <span style={{ fontSize:11, fontWeight:600, background:"#FFEBEE", color:"#C62828", border:"1px solid #EF9A9A", borderRadius:5, padding:"2px 8px" }}>Sin producción</span>}
-                        {sinPick && <span style={{ fontSize:11, fontWeight:600, background:"#FFEBEE", color:"#C62828", border:"1px solid #EF9A9A", borderRadius:5, padding:"2px 8px" }}>Sin pick up</span>}
                       </div>
                     </div>
                   );
