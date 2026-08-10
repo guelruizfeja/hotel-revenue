@@ -43,6 +43,8 @@ export const TOOLTIP_COLORS = {
   "Año anterior":"#D32F2F","ly":"#D32F2F",
   "Ocup. LY":"#F87171","occLY":"#F87171",
   "ADR LY":"#8B5CF6","adrLY":"#8B5CF6",
+  "Entradas":"#10B981","entradas":"#10B981",
+  "Salidas":"#EF4444","salidas":"#EF4444",
 };
 
 export const CustomTooltip = ({ active, payload, label, unit }) => {
