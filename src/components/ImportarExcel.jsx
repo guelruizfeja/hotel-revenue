@@ -5,12 +5,16 @@ import { supabase } from "../supabase";
 import { CustomSelect } from "./CustomSelect";
 import { PeriodSelectorInline } from "./PeriodSelectorInline";
 import { Card } from "./Card";
-import { buildRevFnbSalasGrupoMap } from "../utils";
+import { buildRevFnbSalasGrupoMap, buildHabEnCasaMap, buildRevEnCasaMap } from "../utils";
 
-export function ImportarExcel({ onClose, session, onImportado, onProduccionDirecta, hotelNombre: hotelNombreProp, fullPage = false, produccion = [], hotelHab = 0, hotelHabDisponibles = 0, soloProduccion = false, hotelIdOverride, onGuardadoProduccionStaff, onVolverStaff, grupos = [] }) {
+export function ImportarExcel({ onClose, session, onImportado, onProduccionDirecta, hotelNombre: hotelNombreProp, fullPage = false, produccion = [], hotelHab = 0, hotelHabDisponibles = 0, soloProduccion = false, hotelIdOverride, onGuardadoProduccionStaff, onVolverStaff, grupos = [], pickupEntries = [] }) {
   const t = useT();
   // F&B/Salas de grupos confirmados por día (mismo cálculo que se suma automáticamente en el dashboard)
   const grupoExtraMap = useMemo(() => buildRevFnbSalasGrupoMap(grupos), [grupos]);
+  // Habitaciones/revenue estimados por día según Pick Up + Grupos, para avisar de diferencias
+  // grandes con lo que se introduce a mano en Producción Diaria.
+  const habEnCasaMap = useMemo(() => buildHabEnCasaMap(pickupEntries, grupos), [pickupEntries, grupos]);
+  const revEnCasaMap = useMemo(() => buildRevEnCasaMap(pickupEntries, grupos), [pickupEntries, grupos]);
   // Pestaña activa (persiste entre navegaciones) — en modo soloProduccion queda fija en "produccion"
   const [activeBlock, setActiveBlock] = useState(() => soloProduccion ? "produccion" : (localStorage.getItem("fr_gestion_tab") || "presupuesto"));
   const setActiveBlockPersist = (id) => { setActiveBlock(id); localStorage.setItem("fr_gestion_tab", id); };
@@ -1363,6 +1367,23 @@ export function ImportarExcel({ onClose, session, onImportado, onProduccionDirec
                     return (
                       <div style={{ gridColumn:"1 / -1", background:"#EFF6FF", border:"1px solid #BFDBFE", borderRadius:8, padding:"9px 12px", fontSize:11.5, color:"#1E40AF", lineHeight:1.5 }}>
                         ℹ️ Este día ya se sumará automáticamente {partes.join(" y ")} de grupos/eventos confirmados. No hace falta que lo incluyas en los campos de arriba.
+                      </div>
+                    );
+                  })()}
+                  {(() => {
+                    if (prodForm.hab_ocupadas === "") return null;
+                    const habEstimadas = habEnCasaMap[prodForm.fecha] || 0;
+                    const revEstimadoBruto = (revEnCasaMap[prodForm.fecha] || 0) / NET_HAB_FNB;
+                    if (habEstimadas <= 0) return null;
+                    const habTyped = toNum(prodForm.hab_ocupadas) || 0;
+                    const revTyped = toNum(prodForm.revenue_hab) || 0;
+                    const habDiff = Math.abs(habTyped - habEstimadas);
+                    const revDiffPct = revEstimadoBruto > 0 ? Math.abs(revTyped - revEstimadoBruto) / revEstimadoBruto * 100 : 0;
+                    if (habDiff < 3 && revDiffPct < 15) return null;
+                    const fmt = n => `€${Math.round(n).toLocaleString("es-ES")}`;
+                    return (
+                      <div style={{ gridColumn:"1 / -1", background:"#FFF7ED", border:"1px solid #FED7AA", borderRadius:8, padding:"9px 12px", fontSize:11.5, color:"#9A3412", lineHeight:1.5 }}>
+                        ⚠️ Según Pick Up + Grupos, este día deberían constar ~{Math.round(habEstimadas)} habitaciones (~{fmt(revEstimadoBruto)}) y difiere bastante de lo introducido. Revisa por si falta algo.
                       </div>
                     );
                   })()}
