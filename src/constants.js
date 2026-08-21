@@ -41,7 +41,7 @@ export const KPI_HELP = {
 export const NAV = [
   { key: "dashboard", icon: "◈",  labelKey: "nav_dashboard" },
   { key: "pickup",                 labelKey: "nav_pickup" },
-  { key: "budget",    icon: "💰", labelKey: "nav_budget" },
+  { key: "budget",    icon: "💰", labelKey: "nav_forecast" },
   { key: "grupos",                 labelKey: "nav_grupos" },
   { key: "gestion",                labelKey: "nav_gestion" },
 ];

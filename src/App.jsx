@@ -4181,6 +4181,65 @@ function BudgetView({ datos, anio: anioProp }) {
         </div>
       </Card>
 
+      {/* Forecast 30 días (OTB) */}
+      {(() => {
+        const habDisponibles = datos.hotel?.habitaciones_disponibles || datos.hotel?.habitaciones || 0;
+        const habEnCasaMap   = buildHabEnCasaMap(pickupEntries, datos.grupos);
+        const revEnCasaMap   = buildRevEnCasaMap(pickupEntries, datos.grupos);
+        const revFnbSalasMap = buildRevFnbSalasGrupoMap(datos.grupos);
+        const DIAS_SEM = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
+        const filas30 = Array.from({ length: 30 }, (_, i) => {
+          const d = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate() + 1 + i);
+          const fecha = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+          const habOtb     = habEnCasaMap[fecha] || 0;
+          const revHabOtb  = revEnCasaMap[fecha] || 0;
+          const extra      = revFnbSalasMap[fecha] || { fnb: 0, salas: 0 };
+          const revTotalOtb = revHabOtb + extra.fnb + extra.salas;
+          return {
+            fecha, d,
+            diaSem: DIAS_SEM[d.getDay()],
+            esFinde: d.getDay() === 0 || d.getDay() === 6,
+            habOtb: Math.round(habOtb),
+            occ:     habDisponibles > 0 ? (habOtb / habDisponibles * 100) : null,
+            adr:     habOtb > 0 ? (revHabOtb / habOtb) : null,
+            revpar:  habDisponibles > 0 ? (revHabOtb / habDisponibles) : null,
+            revTotalOtb,
+          };
+        });
+
+        return (
+          <Card>
+            <p style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontWeight:700, fontSize:16, color:C.text, marginBottom:4 }}>Forecast 30 días (OTB)</p>
+            <p style={{ fontSize:11, color:C.textLight, marginBottom:16 }}>KPIs proyectados a partir de las reservas ya confirmadas (on the books) para cada día</p>
+            <div style={{ overflowX:"auto" }}>
+              <table style={{ width:"100%", borderCollapse:"collapse", fontSize:12 }}>
+                <thead>
+                  <tr>
+                    {["Fecha","Hab. OTB","Ocupación","ADR","RevPAR","Revenue Total"].map((h,hi) => (
+                      <th key={hi} style={{ padding:"10px 14px", textAlign: hi===0?"left":"right", fontSize:10, color:C.textLight, textTransform:"uppercase", letterSpacing:"1px", fontWeight:600, borderBottom:`2px solid ${C.border}`, whiteSpace:"nowrap" }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {filas30.map((f, i) => (
+                    <tr key={f.fecha} style={{ borderBottom:`1px solid ${C.border}`, background: f.esFinde ? C.bg : (i%2===0?C.bg:C.bgCard) }}>
+                      <td style={{ padding:"9px 14px", fontWeight:600, color:C.text, whiteSpace:"nowrap" }}>
+                        {f.d.getDate()}/{pad(f.d.getMonth()+1)} <span style={{ color:C.textLight, fontWeight:400 }}>{f.diaSem}</span>
+                      </td>
+                      <td style={{ padding:"9px 14px", textAlign:"right", color:C.text }}>{f.habOtb > 0 ? f.habOtb : "—"}</td>
+                      <td style={{ padding:"9px 14px", textAlign:"right", color:C.text }}>{f.occ != null ? `${f.occ.toFixed(0)}%` : "—"}</td>
+                      <td style={{ padding:"9px 14px", textAlign:"right", color:C.text }}>{f.adr != null ? `€${Math.round(f.adr)}` : "—"}</td>
+                      <td style={{ padding:"9px 14px", textAlign:"right", color:C.text }}>{f.revpar != null ? `€${Math.round(f.revpar)}` : "—"}</td>
+                      <td style={{ padding:"9px 14px", textAlign:"right", color:C.text }}>{f.revTotalOtb > 0 ? `€${Math.round(f.revTotalOtb).toLocaleString("es-ES")}` : "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        );
+      })()}
+
     </div>
   );
 }
