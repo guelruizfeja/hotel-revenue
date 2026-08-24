@@ -142,9 +142,16 @@
     background-size: cover;
     background-position: center center;
     position: relative;
+    overflow: hidden;
     min-height: 100vh;
     display: flex;
     align-items: center;
+  }
+  .mockup-video {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    object-fit: cover; object-position: center;
+    pointer-events: none;
   }
   .mockup-section::before {
     content: '';
@@ -891,6 +898,9 @@
 
 <!-- MOCKUP -->
 <section class="mockup-section" id="producto">
+  <video class="mockup-video" autoplay muted loop playsinline preload="auto" poster="/hero-video-poster.jpg">
+    <source src="/hero-video.mp4" type="video/mp4">
+  </video>
   <div class="mockup-inner">
 
     <!-- Texto izquierda — entra por la derecha -->
