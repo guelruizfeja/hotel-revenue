@@ -66,12 +66,9 @@
     position: relative; overflow: hidden;
     color: white;
     z-index: 2;
-  }
-  .hero-video {
-    position: absolute; inset: 0;
-    width: 100%; height: 100%;
-    object-fit: cover; object-position: center;
-    pointer-events: none;
+    background-image: url('/hero-bg.jpg');
+    background-size: cover;
+    background-position: center center;
   }
   .hero::before {
     content: '';
@@ -99,50 +96,6 @@
     font-weight: 400;
   }
   .hero-actions { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
-  .hero-features {
-    display: flex; flex-direction: row; align-items: center; flex-wrap: nowrap; gap: 14px;
-    width: 100%; max-width: 520px; margin: 0 auto;
-  }
-  .hero-feat-track {
-    list-style: none; padding-left: 0; margin: 0;
-    position: relative;
-    flex: 1 1 auto; min-width: 0;
-    height: 64px;
-  }
-  /* Feature cards — solo la activa es visible */
-  .hero-feature-item {
-    display: none;
-    position: absolute; inset: 0;
-    align-items: center; justify-content: center;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 13px; color: #ffffff;
-    font-weight: 400; line-height: 1.45; text-align: center;
-    background: rgba(5,12,30,0.82);
-    border: 1px solid rgba(255,255,255,0.18);
-    border-radius: 10px; padding: 14px 16px;
-    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-  }
-  .hero-feature-item.active {
-    display: flex;
-    animation: featureSlideIn 0.42s cubic-bezier(0.4,0,0.2,1) forwards;
-  }
-  .hero-feat-arrow {
-    flex: 0 0 auto;
-    display: flex; align-items: center; justify-content: center;
-    width: 40px; height: 40px;
-    font-size: 20px; line-height: 1; color: #ffffff;
-    background: rgba(5,12,30,0.82);
-    border: 1px solid rgba(255,255,255,0.32);
-    border-radius: 50%;
-    cursor: pointer;
-    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-    transition: border-color 0.2s ease;
-  }
-  .hero-feat-arrow:hover { border-color: rgba(255,255,255,0.6); }
-  @keyframes featureSlideIn {
-    from { opacity: 0; transform: translateX(40px); }
-    to   { opacity: 1; transform: translateX(0); }
-  }
   .btn-gold {
     background: white; color: var(--navy);
     padding: 14px 32px; border-radius: 50px; border: none;
@@ -622,8 +575,6 @@
     /* Hero */
     .hero { padding: 110px 6vw 60px; align-items: flex-start; }
     .hero-inner { gap: 28px; }
-    .hero-features { max-width: 100%; }
-    .hero-feat-track { height: 80px; }
 
     /* Stats */
     .stats-inner { grid-template-columns: 1fr; gap: 0; }
@@ -865,26 +816,12 @@
 
 <!-- HERO -->
 <section class="hero">
-  <video class="hero-video" autoplay muted loop playsinline preload="auto" poster="/hero-video-poster.jpg">
-    <source src="/hero-video.mp4" type="video/mp4">
-  </video>
   <div class="hero-inner">
     <div class="hero-copy">
       <h1 data-i18n-html="hero.title">FastRevenue,<br>tu hotel bajo control.</h1>
       <div class="hero-actions">
         <a href="#consulta" class="btn-gold" data-i18n="hero.cta" onclick="event.preventDefault(); window.scrollToSection('consulta');">Solicitar primera consulta →</a>
       </div>
-    </div>
-    <div class="hero-features" id="heroFeatures">
-      <button type="button" class="hero-feat-arrow hero-feat-prev" id="heroFeatPrev" data-i18n-aria="hero.prev" aria-label="Anterior">‹</button>
-      <ul class="hero-feat-track">
-        <li class="hero-feature-item" data-i18n="hero.feat1">Control de todos los datos y KPIs de tu hotel en un único espacio</li>
-        <li class="hero-feature-item" data-i18n="hero.feat2">Gestión del rendimiento de tu hotel</li>
-        <li class="hero-feature-item" data-i18n="hero.feat3">Observa la demanda de tu hotel y anticípate</li>
-        <li class="hero-feature-item" data-i18n="hero.feat4">Todos los datos que necesitas para la toma de decisiones</li>
-        <li class="hero-feature-item" data-i18n="hero.feat5">Instalación y gestión sencilla</li>
-      </ul>
-      <button type="button" class="hero-feat-arrow hero-feat-next" id="heroFeatNext" data-i18n-aria="hero.next" aria-label="Siguiente">›</button>
     </div>
   </div>
 </section>
@@ -1336,41 +1273,6 @@ window.scrollToSection = function(id) {
   const el = document.getElementById(id) || document.querySelector('.' + id);
   if (el) el.scrollIntoView({ behavior: 'smooth' });
 };
-
-/* ── Carrusel de features del hero: 1 cartel visible + flechas + autoplay ── */
-(function () {
-  const features = Array.from(document.querySelectorAll('.hero-feature-item'));
-  const prevBtn = document.getElementById('heroFeatPrev');
-  const nextBtn = document.getElementById('heroFeatNext');
-  if (!features.length || !prevBtn || !nextBtn) return;
-
-  const N = features.length;
-  let current = Math.floor(N / 2); // el del medio
-  let timer = null;
-
-  function show(index) {
-    features[current].classList.remove('active');
-    current = (index + N) % N;
-    features[current].classList.add('active');
-  }
-
-  function restartAutoplay() {
-    if (timer) clearInterval(timer);
-    timer = setInterval(function () { show(current + 1); }, 10000);
-  }
-
-  features[current].classList.add('active');
-  restartAutoplay();
-
-  prevBtn.addEventListener('click', function () {
-    show(current - 1);
-    restartAutoplay();
-  });
-  nextBtn.addEventListener('click', function () {
-    show(current + 1);
-    restartAutoplay();
-  });
-})();
 
 /* ── Launch offer popup ── */
 (function () {
