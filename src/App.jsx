@@ -2691,7 +2691,7 @@ function PickupView({ datos, onGuardado, onReservaGuardada }) {
       if (desde && f < desde) return false;
       return true;
     });
-    const DIAS = ["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"];
+    const DIAS = ["Lunes","Martes","Miércoles","Jueves","Viernes","Sábado","Domingo"];
     return DIAS.map((label, idx) => {
       const wd = (idx+1) % 7; // 0=Dom..6=Sáb, igual que Date.getDay()
       const rows = dias.filter(r => new Date(r.fecha+"T00:00:00").getDay() === wd);
@@ -3429,7 +3429,7 @@ function PickupView({ datos, onGuardado, onReservaGuardada }) {
                     <div style={{ width:"100%", height:barH, background:occColor, opacity:sinDatos?0.3:0.9, borderRadius:"4px 4px 0 0", border:"1px solid #000" }} />
                   </div>
                   <span style={{ fontSize:11, fontWeight:700, color:C.text, marginTop:8 }}>{d.label}</span>
-                  <span style={{ fontSize:10, color:C.textLight, marginTop:2 }}>{sinDatos ? "—" : `€${Math.round(d.adr)}`}</span>
+                  <span style={{ fontSize:12, fontWeight:600, color:C.textMid, marginTop:3 }}>{sinDatos ? "—" : `€${Math.round(d.adr)}`}</span>
                 </div>
               );
             })}
@@ -4187,7 +4187,7 @@ function BudgetView({ datos, anio: anioProp }) {
         const habEnCasaMap   = buildHabEnCasaMap(pickupEntries, datos.grupos);
         const revEnCasaMap   = buildRevEnCasaMap(pickupEntries, datos.grupos);
         const revFnbSalasMap = buildRevFnbSalasGrupoMap(datos.grupos);
-        const DIAS_SEM = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
+        const DIAS_SEM = ["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
         const filas30 = Array.from({ length: 30 }, (_, i) => {
           const d = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate() + 1 + i);
           const fecha = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
