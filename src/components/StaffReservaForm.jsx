@@ -236,7 +236,7 @@ export function StaffReservaForm({ hotelId, onContinuar }) {
           {reservasHoyTotal === 0 ? (
             <p style={{ color:C.textLight, fontSize:13, textAlign:"center", padding:"20px 0" }}>Aún no has dado de alta ninguna reserva hoy.</p>
           ) : (
-            <div style={{ display:"grid", gridTemplateColumns:"2fr 1fr 1fr 1fr", gap:8 }}>
+            <div className="m-2col m-first-full" style={{ display:"grid", gridTemplateColumns:"2fr 1fr 1fr 1fr", gap:8 }}>
 
               <div style={{ borderRadius:10, padding:"12px", border:`1.5px solid ${C.border}`, background:C.bg }}>
                 <p style={{ fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:1, color:C.textLight, marginBottom:10, whiteSpace:"nowrap" }}>Por canal</p>

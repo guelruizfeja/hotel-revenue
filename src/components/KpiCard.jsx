@@ -48,7 +48,7 @@ export const KpiCard = React.memo(function KpiCard({ label, subtitle, value, cha
         <div style={{ position:"relative", margin:"5px 0 4px" }}>
           <p style={{ textAlign:"center", fontSize:"clamp(18px,4vw,24px)", fontWeight:700, fontFamily:"'Plus Jakarta Sans', sans-serif", color:C.text, margin:0, letterSpacing:"-1px", lineHeight:1 }}>{value}</p>
           {indicatorColor && (
-            <div style={{ position:"absolute", top:0, bottom:0, left:"calc(50% + 46px)", display:"flex", flexDirection:"column", justifyContent:"center", alignItems:"flex-start", gap:2 }}>
+            <div className="kpi-delta" style={{ position:"absolute", top:0, bottom:0, left:"calc(50% + 46px)", display:"flex", flexDirection:"column", justifyContent:"center", alignItems:"flex-start", gap:2 }}>
               <span style={{ fontSize:13, fontWeight:800, color:indicatorColor, lineHeight:1, whiteSpace:"nowrap" }}>{indicatorIcon} <span style={{ fontSize:11, fontWeight:600 }}>{changeLm}</span></span>
               <span style={{ fontSize:9, color:C.textLight, lineHeight:1 }}>vs mes anterior</span>
             </div>

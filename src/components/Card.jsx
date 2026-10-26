@@ -1,9 +1,9 @@
 import { C } from "../constants";
 import { useT } from "../i18n";
 
-export function Card({ children, style = {}, onClick }) {
+export function Card({ children, style = {}, onClick, className }) {
   return (
-    <div onClick={onClick} style={{ background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: 10, padding: "22px 24px", width: "100%", ...style }}>
+    <div className={[style.padding === undefined && "fr-card-pad", className].filter(Boolean).join(" ") || undefined} onClick={onClick} style={{ background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: 10, padding: "22px 24px", width: "100%", ...style }}>
       {children}
     </div>
   );

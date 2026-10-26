@@ -134,7 +134,7 @@ export function WeatherBar({ ciudad, datos, lang, occDeTicker, stickyTop = 52, b
   if (!ciudad) return null;
 
   return (
-    <div style={{ background:barColor, borderBottom:`1px solid rgba(255,255,255,0.08)`, position:"sticky", top:stickyTop, zIndex:99, height:40, display:"flex", alignItems:"center", overflow:"hidden", transition:"background 0.2s" }}>
+    <div className="sticky-under-header" style={{ background:barColor, borderBottom:`1px solid rgba(255,255,255,0.08)`, position:"sticky", top:stickyTop, zIndex:99, height:40, display:"flex", alignItems:"center", overflow:"hidden", transition:"background 0.2s" }}>
       <div style={{ flex:1, overflow:"hidden", padding:"0 16px 0 clamp(12px,4vw,32px)" }}>
         {tickerText ? (
           <div style={{ display:"inline-block", whiteSpace:"nowrap", fontSize:11, color:"#fff", fontFamily:"'Plus Jakarta Sans',sans-serif", fontWeight:500, animationName:"ticker", animationTimingFunction:"linear", animationIterationCount:"infinite", animationDuration:`${duration}s` }}>

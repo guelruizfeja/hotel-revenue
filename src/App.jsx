@@ -13,6 +13,7 @@ import { KpiModal } from "./components/KpiModal";
 import { ModalHistoricoMovimiento } from "./components/ModalHistoricoMovimiento";
 import { ImportarExcel } from "./components/ImportarExcel";
 import { StaffFlow } from "./components/StaffFlow";
+import { useIsMobile } from "./useIsMobile";
 import {
   AreaChart, Area, BarChart, Bar, LineChart, Line, ComposedChart,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
@@ -745,6 +746,7 @@ function DesgloseMovimientoView({ datos, tipo, onBack }) {
 
 function DashboardView({ datos, mes, anio, onPeriodo, onMesDetalle, onDesgloseMovimiento, kpiModal, setKpiModal, kpiModalExterno, onKpiModalExternoHandled, onNavigarGrupos }) {
   const t = useT();
+  const isMobile = useIsMobile();
   const { produccion } = datos;
   const pickupEntries = datos.pickupEntries || [];
   const presupuesto   = datos.presupuesto   || [];
@@ -1023,7 +1025,7 @@ const [metricaSel, setMetricaSel] = useState(() => localStorage.getItem("fr_metr
         <PeriodSelectorInline mes={mes} anio={anio} onChange={onPeriodo} aniosDisponibles={[...new Set((datos.produccion||[]).map(d=>new Date(d.fecha+"T00:00:00").getFullYear()))].sort()} />
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(clamp(140px,40vw,200px), 1fr))", gap: 10, marginBottom: 4 }}>
+      <div className="kpi-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(clamp(140px,40vw,200px), 1fr))", gap: 10, marginBottom: 4 }}>
         {(kpiPreview || kpiOrder).map(key => kpis.find(k=>k.kpiKey===key)).filter(Boolean).map((k, i) => (
           <div key={k.kpiKey} draggable
             onDragStart={e => { kpiDragKey.current = k.kpiKey; e.dataTransfer.effectAllowed = "move"; setTimeout(() => setDraggingKpiKey(k.kpiKey), 0); }}
@@ -1199,7 +1201,7 @@ const [metricaSel, setMetricaSel] = useState(() => localStorage.getItem("fr_metr
               <div style={{ position:"fixed", inset:0, background:C.bg, zIndex:1000, display:"flex", flexDirection:"column", overflow:"hidden" }}>
 
                 {/* Top bar */}
-                <div style={{ padding:"10px 20px", borderBottom:`1px solid ${C.border}`, display:"flex", alignItems:"center", gap:10, flexShrink:0, background:C.bgCard }}>
+                <div className="hm-full-top" style={{ padding:"10px 20px", borderBottom:`1px solid ${C.border}`, display:"flex", alignItems:"center", gap:10, flexShrink:0, background:C.bgCard }}>
                   <button onClick={()=>setHmMesSel(null)}
                     style={{ padding:"5px 12px", borderRadius:7, border:`1px solid ${C.border}`, background:C.bg, color:C.textMid, fontSize:12, fontWeight:600, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:5 }}>
                     ← Volver
@@ -1216,10 +1218,10 @@ const [metricaSel, setMetricaSel] = useState(() => localStorage.getItem("fr_metr
                 </div>
 
                 {/* Content row */}
-                <div style={{ flex:1, display:"flex", overflow:"hidden" }}>
+                <div className="hm-full-row" style={{ flex:1, display:"flex", overflow:"hidden" }}>
 
                   {/* Left: day grid */}
-                  <div style={{ flex:1, padding:"16px 24px", overflowY:"auto", minWidth:0, display:"flex", flexDirection:"column", alignItems:"center" }}>
+                  <div className="hm-full-left" style={{ flex:1, padding:"16px 24px", overflowY:"auto", minWidth:0, display:"flex", flexDirection:"column", alignItems:"center" }}>
                   <div style={{ width:"100%", maxWidth:480 }}>
 
                     {/* Días semana */}
@@ -1341,7 +1343,7 @@ const [metricaSel, setMetricaSel] = useState(() => localStorage.getItem("fr_metr
                   </div>
 
                   {/* Separator */}
-                  <div style={{ width:1, background:C.border, flexShrink:0 }} />
+                  <div className="hm-full-sep" style={{ width:1, background:C.border, flexShrink:0 }} />
 
                   {/* Right: grupos y eventos del mes */}
                   {(() => {
@@ -1399,7 +1401,7 @@ const [metricaSel, setMetricaSel] = useState(() => localStorage.getItem("fr_metr
                     };
 
                     return (
-                      <div style={{ width:340, padding:"20px 20px", overflowY:"auto", flexShrink:0 }}>
+                      <div className="hm-full-side" style={{ width:340, padding:"20px 20px", overflowY:"auto", flexShrink:0 }}>
                         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
                           <p style={{ fontSize:13, fontWeight:700, color:C.text }}>Grupos y eventos</p>
                           {totalRev>0 && <span style={{ fontSize:11, fontWeight:700, color:C.accent }}>€{Math.round(totalRev).toLocaleString("es-ES")}</span>}
@@ -1747,7 +1749,7 @@ const [metricaSel, setMetricaSel] = useState(() => localStorage.getItem("fr_metr
               </div>
             )}
 
-          <Card style={{ display:"flex", padding:0, overflow:"hidden", marginBottom:16, position:"relative" }}>
+          <Card className="dash-hm-card" style={{ display:"flex", padding:0, overflow:"hidden", marginBottom:16, position:"relative" }}>
             <button onClick={() => setShowMovHistorico(true)}
               style={{ position:"absolute", top:14, right:16, zIndex:1, padding:"5px 12px", borderRadius:7, border:`1px solid ${C.border}`, background:C.bgCard, color:C.textMid, fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", transition:"all 0.15s" }}
               onMouseEnter={e=>{ e.currentTarget.style.background=C.accentLight; e.currentTarget.style.borderColor=C.accent; e.currentTarget.style.color=C.accent; }}
@@ -1756,9 +1758,9 @@ const [metricaSel, setMetricaSel] = useState(() => localStorage.getItem("fr_metr
             </button>
 
             {/* ── HEATMAP (izquierda) ── */}
-            <div style={{ flex: hmVista === "diario" ? 3 : 2, padding:"20px 22px", display:"flex", flexDirection:"column" }}>
+            <div className="dash-hm-left" style={{ flex: hmVista === "diario" ? 3 : 2, padding:"20px 22px", display:"flex", flexDirection:"column" }}>
               {/* Header con toggle */}
-              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
+              <div className="dash-hm-header" style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
                 <p style={{ fontSize:11, fontWeight:700, color:C.textMid, textTransform:"uppercase", letterSpacing:"1.5px" }}>
                   {hmVista === "diario"
                     ? <>{t("meses_full")[mes].toUpperCase()} {anio} <span style={{ color:C.accent }}>| DIARIO</span></>
@@ -1883,7 +1885,7 @@ const [metricaSel, setMetricaSel] = useState(() => localStorage.getItem("fr_metr
             </div>
 
             {/* ── SEPARADOR VERTICAL ── */}
-            <div style={{ width:1, background:C.border, flexShrink:0, margin:"16px 0" }}/>
+            <div className="dash-hm-sep" style={{ width:1, background:C.border, flexShrink:0, margin:"16px 0" }}/>
 
             {/* ── MOVIMIENTO OPERATIVO DIARIO (derecha) ── */}
             {(() => {
@@ -1982,7 +1984,7 @@ const [metricaSel, setMetricaSel] = useState(() => localStorage.getItem("fr_metr
               const Rc=20, SWc=3.5, circC=2*Math.PI*Rc, sizeC=Rc*2+SWc*2;
 
               return (
-                <div style={{ flex:"0 0 420px", padding:"28px 32px", display:"flex", flexDirection:"column", justifyContent:"center", gap:14 }}>
+                <div className="dash-mov-panel" style={{ flex:"0 0 420px", padding:"28px 32px", display:"flex", flexDirection:"column", justifyContent:"center", gap:14 }}>
                   <div style={{ textAlign:"center" }}>
                     <p style={{ fontSize:13, fontWeight:800, color:C.text, textTransform:"uppercase", letterSpacing:"1.5px" }}>Movimiento Operativo Diario</p>
                     <p style={{ fontSize:11, color:C.textMid, marginTop:2 }}>{hoyStr}</p>
@@ -2036,7 +2038,7 @@ const [metricaSel, setMetricaSel] = useState(() => localStorage.getItem("fr_metr
             ];
             return (
               <Card style={{ display:"flex", flexDirection:"column", minHeight:360, marginTop:16 }}>
-                <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16 }}>
+                <div className="chart-head" style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16 }}>
                   <p style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontWeight:700, fontSize:18, color:C.text }}>
                     {metricas.find(m=>m.key===metricaSel)?.label}
                   </p>
@@ -2066,9 +2068,9 @@ const [metricaSel, setMetricaSel] = useState(() => localStorage.getItem("fr_metr
                           </linearGradient>
                         </defs>
                         <CartesianGrid strokeDasharray="3 3" stroke={C.border} vertical={false}/>
-                        <XAxis dataKey="mes" axisLine={false} tickLine={false} height={18} interval={0} tick={{ fill: C.textLight, fontSize: 11 }}/>
-                        <YAxis yAxisId="left"  tick={{ fill: C.textLight, fontSize: 11 }} axisLine={false} tickLine={false} unit="%" domain={[0,100]}/>
-                        <YAxis yAxisId="right" orientation="right" tick={{ fill: C.textLight, fontSize: 11 }} axisLine={false} tickLine={false} unit="€"/>
+                        <XAxis dataKey="mes" axisLine={false} tickLine={false} height={18} interval={isMobile ? 1 : 0} tick={{ fill: C.textLight, fontSize: isMobile ? 10 : 11 }}/>
+                        <YAxis yAxisId="left"  tick={{ fill: C.textLight, fontSize: isMobile ? 10 : 11 }} width={isMobile ? 36 : 60} axisLine={false} tickLine={false} unit="%" domain={[0,100]}/>
+                        <YAxis yAxisId="right" orientation="right" tick={{ fill: C.textLight, fontSize: isMobile ? 10 : 11 }} width={isMobile ? 40 : 60} axisLine={false} tickLine={false} unit="€"/>
                         <Tooltip content={<CustomTooltip/>} cursor={false}/>
                         <Bar yAxisId="left" dataKey="occ" name="Ocupación" fill="url(#gradOcc)" radius={[4,4,0,0]}
                           cursor="pointer" activeBar={false} isAnimationActive={false}
@@ -3056,7 +3058,7 @@ function PickupView({ datos, onGuardado, onReservaGuardada }) {
           const pieData = canalData.map(d => ({ name: d.canal, value: d.count, color: d.color }));
 
           return (
-            <div style={{ display:"grid", gridTemplateColumns:"2fr 1fr 1fr 1fr", gap:10 }}>
+            <div className="m-2col m-first-full" style={{ display:"grid", gridTemplateColumns:"2fr 1fr 1fr 1fr", gap:10 }}>
 
               {/* Tarjeta canal — queso */}
               <div style={{ borderRadius:10, padding:"16px", border:`1.5px solid ${C.border}`, background:C.bg }}>
@@ -3131,7 +3133,7 @@ function PickupView({ datos, onGuardado, onReservaGuardada }) {
       </Card>
 
       {/* ── FECHAS CALIENTES + CANCELACIONES | PRECIO MEDIO CANAL ── */}
-      <div style={{ display:"grid", gridTemplateColumns:"280px 1fr", gap:16, alignItems:"start" }}>
+      <div className="m-stack" style={{ display:"grid", gridTemplateColumns:"280px 1fr", gap:16, alignItems:"start" }}>
 
         {/* Col izquierda: Fechas Calientes + Cancelaciones */}
         <Card>
@@ -4555,6 +4557,7 @@ function ModalFormGrupo({ datos, grupoData = {}, onClose, onGuardado }) {
 
 function GruposView({ datos, onRecargar, onVolverHeatmap, subVistaExt, onCambiarSubVista }) {
   const t = useT();
+  const isMobile = useIsMobile();
   const grupos = datos.grupos || [];
   const session = datos.session;
 
@@ -4778,7 +4781,7 @@ function GruposView({ datos, onRecargar, onVolverHeatmap, subVistaExt, onCambiar
         return (
           <Card style={{ overflow:"hidden" }}>
             {/* Header */}
-            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16 }}>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", flexWrap:"wrap", gap:10, marginBottom:16 }}>
               <div style={{ display:"flex", alignItems:"center", gap:8 }}>
                 <button onClick={prevMes} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, width:28, height:28, cursor:"pointer", fontSize:15, color:C.textMid, display:"flex", alignItems:"center", justifyContent:"center" }}>‹</button>
                 <span style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontWeight:700, fontSize:15, color:C.text, minWidth:120, textAlign:"center" }}>
@@ -4797,10 +4800,10 @@ function GruposView({ datos, onRecargar, onVolverHeatmap, subVistaExt, onCambiar
             </div>
 
             {/* Cabecera días */}
-            <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", borderTop:`1px solid ${C.border}`, borderLeft:`1px solid ${C.border}` }}>
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(7,minmax(0,1fr))", borderTop:`1px solid ${C.border}`, borderLeft:`1px solid ${C.border}` }}>
               {DIAS_ES.map(d => (
                 <div key={d} style={{ borderRight:`1px solid ${C.border}`, borderBottom:`1px solid ${C.border}`, padding:"7px 4px", textAlign:"center", background:"#fff" }}>
-                  <span style={{ fontSize:11, color:"#111", fontWeight:600, textTransform:"uppercase", letterSpacing:"0.5px" }}>{d}</span>
+                  <span style={{ fontSize:11, color:"#111", fontWeight:600, textTransform:"uppercase", letterSpacing:"0.5px" }}>{isMobile ? d.slice(0,3) : d}</span>
                 </div>
               ))}
             </div>
@@ -4809,7 +4812,7 @@ function GruposView({ datos, onRecargar, onVolverHeatmap, subVistaExt, onCambiar
             {semanas.map((semDias, si) => {
               const { gs, filaDeGrupo, numFilas } = getLanesForWeek(semDias);
               return (
-                <div key={si} style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gridTemplateRows:`28px repeat(${numFilas},26px)`, borderLeft:`1px solid ${C.border}` }}>
+                <div key={si} style={{ display:"grid", gridTemplateColumns:"repeat(7,minmax(0,1fr))", gridTemplateRows:`28px repeat(${numFilas},26px)`, borderLeft:`1px solid ${C.border}` }}>
                   {/* Números de día */}
                   {semDias.map(d => {
                     const esMes = d.slice(0,7)===mesStr;
@@ -6107,7 +6110,7 @@ function PantallaSubscripcion({ session, onPagar }) {
 
   return (
     <div style={{ minHeight:"100vh", background:C.bg, display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
-      <div style={{ width:460, background:C.bgCard, borderRadius:20, padding:"48px 40px", boxShadow:"0 32px 80px rgba(0,0,0,0.1)", textAlign:"center" }}>
+      <div className="m-modal" style={{ width:460, maxWidth:"calc(100vw - 32px)", background:C.bgCard, borderRadius:20, padding:"48px 40px", boxShadow:"0 32px 80px rgba(0,0,0,0.1)", textAlign:"center" }}>
         <img src={LOGO_B64} alt="FastRevenue" style={{ height:52, marginBottom:24 }} />
         <h1 style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:26, fontWeight:800, color:C.text, marginBottom:10 }}>{t("empieza_gratis")}</h1>
         <p style={{ fontSize:14, color:C.textMid, lineHeight:1.7, marginBottom:32 }}>
@@ -6360,7 +6363,7 @@ function ModalConfigUnificado({ datos, session, navHidden, toggleNavHidden, navR
 
   return (
     <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:1000 }}>
-      <div style={{ background:C.bgCard, borderRadius:16, padding:"32px 36px", width:600, maxHeight:"85vh", overflowY:"auto", boxShadow:"0 24px 60px rgba(0,0,0,0.2)", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+      <div className="m-modal" style={{ background:C.bgCard, borderRadius:16, padding:"32px 36px", width:600, maxWidth:"calc(100vw - 32px)", maxHeight:"85vh", overflowY:"auto", boxShadow:"0 24px 60px rgba(0,0,0,0.2)", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:24 }}>
           <h2 style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:20, fontWeight:700, color:C.text }}>Configuración del hotel</h2>
           <button onClick={onClose} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, width:28, height:28, cursor:"pointer", fontSize:15, color:C.textLight, display:"flex", alignItems:"center", justifyContent:"center", padding:0 }}>✕</button>
@@ -7228,13 +7231,12 @@ export default function App() {
         @keyframes ticker { 0% { transform: translateX(-50%); } 100% { transform: translateX(0); } }
         @media (max-width: 640px) {
           /* Contenedor raíz — evita desbordamiento lateral */
-          html, body, #root { overflow-x: hidden !important; max-width: 100vw !important; }
-          main, #main-scroll { padding: 12px !important; width: 100% !important; overflow-x: hidden !important; box-sizing: border-box !important; }
+          html, body, #root { overflow-x: clip !important; max-width: 100vw !important; }
+          main, #main-scroll { padding: 12px !important; width: 100% !important; overflow-x: clip !important; box-sizing: border-box !important; }
 
           /* Topbar */
           .topbar-fecha { display: none !important; }
           .topbar-center { left: 50% !important; }
-          nav button { padding: 4px 8px !important; font-size: 11px !important; }
           header > div { padding: 0 12px !important; }
 
           /* KPIs 2x2, el último ocupa todo el ancho */
@@ -7253,14 +7255,45 @@ export default function App() {
 
           /* Todos los grids multi-columna → 1 columna */
           div[style*="grid-template-columns: 1fr 1fr"] { grid-template-columns: 1fr !important; }
-          div[style*="gridTemplateColumns: "1fr 1fr""] { grid-template-columns: 1fr !important; }
+
+          /* Utilidades: m-stack → 1 columna, m-2col → 2 columnas, m-first-full → el primero ocupa toda la fila */
+          .m-stack { grid-template-columns: 1fr !important; flex-direction: column !important; }
+          .m-stack > * { min-width: 0; }
+          .m-2col { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+          .m-first-full > :first-child { grid-column: 1 / -1; }
+          .m-modal { padding: 24px 18px !important; }
+          .fr-card-pad { padding: 16px 14px !important; }
+
+          /* Vista completa de un mes (heatmap): todo en una columna con scroll */
+          .hm-full-top { flex-wrap: wrap !important; padding: 10px 12px !important; gap: 8px !important; }
+          .hm-full-top h3 { min-width: 0 !important; white-space: nowrap; font-size: 15px !important; }
+          .hm-full-row { flex-direction: column !important; overflow-y: auto !important; }
+          .hm-full-left { flex: none !important; overflow: visible !important; padding: 12px !important; }
+          .hm-full-sep { width: auto !important; height: 1px !important; }
+          .hm-full-side { width: 100% !important; overflow: visible !important; padding: 16px 12px !important; }
+
+          /* KPI cards: variación debajo del valor en vez de a la derecha */
+          .kpi-delta { position: static !important; flex-direction: row !important; align-items: baseline !important; justify-content: center !important; gap: 4px !important; margin-top: 6px !important; }
+          .kpi-grid > div > div > div { padding: 12px 8px !important; }
+
+          /* Dashboard: heatmap + movimiento diario apilados */
+          .dash-hm-card { flex-direction: column !important; }
+          .dash-hm-left { padding: 16px 14px !important; }
+          .dash-hm-header { flex-wrap: wrap !important; gap: 8px !important; padding-right: 84px !important; }
+          .dash-hm-left > div[style*="repeat(4"] { grid-template-columns: repeat(3, 1fr) !important; gap: 6px !important; }
+          .dash-hm-sep { width: auto !important; height: 1px !important; margin: 0 14px !important; }
+          .dash-mov-panel { flex: 1 1 auto !important; padding: 18px 14px !important; }
+
+          /* Cabecera de gráficas: leyenda debajo del título */
+          .chart-head { flex-wrap: wrap !important; gap: 8px !important; }
+          .chart-head > div { gap: 12px !important; flex-wrap: wrap !important; }
+          .chart-head span { font-size: 12px !important; }
 
           /* Cards y contenedores al 100% */
           div[style*="max-width"] { max-width: 100% !important; }
 
-          /* Recharts — altura fija en móvil para evitar colapso */
-          .recharts-wrapper { width: 100% !important; }
-          .recharts-wrapper svg { width: 100% !important; outline: none; }
+          /* Recharts — ojo: no forzar width en .recharts-wrapper (en v3 su padre mide 0 y la gráfica desaparece) */
+          .recharts-wrapper svg { outline: none; }
           .recharts-wrapper svg:focus, .recharts-wrapper svg:focus-visible { outline: none; }
           .recharts-surface:focus, .recharts-surface:focus-visible { outline: none; }
           .recharts-wrapper *:focus, .recharts-wrapper *:focus-visible { outline: none; }
@@ -7274,32 +7307,41 @@ export default function App() {
 
           /* Tablas con scroll horizontal */
           table { font-size: 11px !important; }
+          td[style*="text-align: right"], th[style*="text-align: right"] { white-space: nowrap; }
           div[style*="overflowX"] { overflow-x: auto !important; -webkit-overflow-scrolling: touch !important; }
         }
         @media (max-width: 768px) {
           .topbar-date { display: none !important; }
-          .topbar-nav-label { display: none !important; }
-          .topbar-nav-icon { display: inline !important; }
+          /* Cabecera en 2 filas: logo + perfil arriba, nav con scroll horizontal debajo */
+          .topbar-row { flex-wrap: wrap !important; row-gap: 0 !important; padding: 0 12px !important; }
+          .topbar-beta { display: none !important; }
+          .topbar-nav { order: 3; width: 100%; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; padding-bottom: 8px; gap: 4px !important; }
+          .topbar-nav::-webkit-scrollbar { display: none; }
+          .topbar-nav button { flex-shrink: 0; padding: 6px 12px !important; font-size: 13px !important; }
+          /* La cabecera cambia de alto: lo que iba fijo debajo pasa a scroll normal */
+          .sticky-under-header { position: static !important; }
+          .grupos-subnav { overflow-x: auto; scrollbar-width: none; padding: 0 12px !important; }
+          .grupos-subnav::-webkit-scrollbar { display: none; }
+          .grupos-subnav button { flex-shrink: 0; }
           .topbar-importar-label { display: none !important; }
           .topbar-importar-icon { display: inline !important; }
-          .topbar-perfil-label { display: none !important; }
         }
       `}</style>
 
       {/* Barra principal negra: logo + nav + botones */}
       <header style={{ background: colorPickerActive ? tempBarColor : barColor, position: "sticky", top: 0, zIndex: 101, minHeight: 52, overflow: "visible", transition:"background 0.2s" }}>
-        <div style={{ width: "100%", minHeight: 52, display: "flex", alignItems: "center", padding: "0 clamp(12px,4vw,32px)", gap: 6, flexWrap: "nowrap", overflow: "visible" }}>
+        <div className="topbar-row" style={{ width: "100%", minHeight: 52, display: "flex", alignItems: "center", padding: "0 clamp(12px,4vw,32px)", gap: 6, flexWrap: "nowrap", overflow: "visible" }}>
           {/* Logo */}
           <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0, marginRight: 8 }}>
             <img src="/fastrev-icon.png" alt="FastRevenue" style={{ height: 36, width: "auto", filter: "invert(1)" }} />
             <span style={{ fontSize: 16, fontWeight: 800, color: "#ffffff", letterSpacing: 0.5, fontFamily: "'Plus Jakarta Sans', sans-serif", whiteSpace: "nowrap" }}>
               FAST<span style={{ fontWeight: 400 }}>REVENUE</span>
             </span>
-            <span style={{ fontSize: 9, fontWeight: 700, color: "rgba(255,255,255,0.55)", letterSpacing: "1.5px", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 4, padding: "2px 5px", lineHeight: 1, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>BETA</span>
+            <span className="topbar-beta" style={{ fontSize: 9, fontWeight: 700, color: "rgba(255,255,255,0.55)", letterSpacing: "1.5px", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 4, padding: "2px 5px", lineHeight: 1, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>BETA</span>
           </div>
 
           {/* Nav links — arrastrables para reordenar */}
-          <nav style={{ display: "flex", alignItems: "center", gap: 2 }}>
+          <nav className="topbar-nav" style={{ display: "flex", alignItems: "center", gap: 2 }}>
             {navDisplay.map(n => {
               const isActive = view===n.key;
               return (
@@ -7517,11 +7559,11 @@ export default function App() {
         </div>
       </header>
 
-      <div style={{ height: "0.5px", background: "#fff", width: "100%", position:"sticky", top:52, zIndex:100 }} />
+      <div className="sticky-under-header" style={{ height: "0.5px", background: "#fff", width: "100%", position:"sticky", top:52, zIndex:100 }} />
 
       {/* Barra de sub-navegación de Grupos — visible solo en vista grupos */}
       {view === "grupos" && (
-        <div style={{ position:"sticky", top:52.5, zIndex:99, background:colorPickerActive ? tempBarColor : barColor, display:"flex", alignItems:"center", gap:2, padding:"0 clamp(12px,4vw,32px)", height:40, overflow:"hidden", transition:"background 0.2s" }}>
+        <div className="sticky-under-header grupos-subnav" style={{ position:"sticky", top:52.5, zIndex:99, background:colorPickerActive ? tempBarColor : barColor, display:"flex", alignItems:"center", gap:2, padding:"0 clamp(12px,4vw,32px)", height:40, overflow:"hidden", transition:"background 0.2s" }}>
           {gruposSubDisplay.map(({ key, label }) => {
             const activo = gruposSubVista === key;
             return (
@@ -7559,7 +7601,7 @@ export default function App() {
           })}
         </div>
       )}
-      {view === "grupos" && <div style={{ height: "0.5px", background: "#fff", width: "100%", position:"sticky", top:92.5, zIndex:100 }} />}
+      {view === "grupos" && <div className="sticky-under-header" style={{ height: "0.5px", background: "#fff", width: "100%", position:"sticky", top:92.5, zIndex:100 }} />}
 
       <WeatherBar ciudad={datos.hotel?.ciudad} datos={datos} lang={lang} occDeTicker={_occDeTicker} stickyTop={view === "grupos" ? 93 : 52} barColor={colorPickerActive ? tempBarColor : barColor} />
       <div style={{ height: 8, background: "#fff", width: "100%" }} />
@@ -7668,7 +7710,7 @@ export default function App() {
       {/* Modal bloqueo de pestaña restringida */}
       {restriccionModal && (
         <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:1000 }}>
-          <div style={{ background:C.bgCard, borderRadius:16, padding:"36px 40px", width:360, boxShadow:"0 24px 60px rgba(0,0,0,0.2)", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+          <div className="m-modal" style={{ background:C.bgCard, borderRadius:16, padding:"36px 40px", width:360, maxWidth:"calc(100vw - 32px)", boxShadow:"0 24px 60px rgba(0,0,0,0.2)", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
               <h2 style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:20, fontWeight:700, color:C.text }}>Sección restringida</h2>
               <button onClick={() => { setRestriccionModal(null); setRestriccionInput(""); setShowRestriccionInput(false); setRestriccionError(""); }} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, width:28, height:28, cursor:"pointer", fontSize:15, color:C.textLight, display:"flex", alignItems:"center", justifyContent:"center", padding:0 }}>✕</button>
@@ -7710,7 +7752,7 @@ export default function App() {
 
       {/* Paleta color barra superior */}
       {colorPickerActive && (
-        <div style={{ position:"fixed", bottom:28, left:"50%", transform:"translateX(-50%)", zIndex:10000, background:"#f5f5f5", border:"1.5px solid #111111", borderRadius:12, padding:"18px 22px", boxShadow:"0 4px 20px rgba(0,0,0,0.18)", fontFamily:"'Plus Jakarta Sans',sans-serif", minWidth:340, maxWidth:"92vw" }}>
+        <div style={{ position:"fixed", bottom:28, left:"50%", transform:"translateX(-50%)", zIndex:10000, background:"#f5f5f5", border:"1.5px solid #111111", borderRadius:12, padding:"18px 22px", boxShadow:"0 4px 20px rgba(0,0,0,0.18)", fontFamily:"'Plus Jakarta Sans',sans-serif", minWidth:"min(340px, calc(100vw - 32px))", maxWidth:"92vw" }}>
           <p style={{ fontSize:11, fontWeight:700, color:"#111111", textTransform:"uppercase", letterSpacing:"1.2px", marginBottom:14 }}>Color de barra superior</p>
           <div style={{ display:"flex", gap:8, flexWrap:"wrap", marginBottom:14 }}>
             {["#111111","#0A2540","#004B87","#1A7A3C","#374151","#7C3AED","#B8860B","#9F1239","#0F766E","#1E293B"].map(col => (
@@ -7754,7 +7796,7 @@ export default function App() {
 
       {perfilSeccion === "suscripcion" && (
         <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:1000 }}>
-          <div style={{ background:C.bgCard, borderRadius:16, padding:"36px 40px", width:440, boxShadow:"0 24px 60px rgba(0,0,0,0.2)", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+          <div className="m-modal" style={{ background:C.bgCard, borderRadius:16, padding:"36px 40px", width:440, maxWidth:"calc(100vw - 32px)", boxShadow:"0 24px 60px rgba(0,0,0,0.2)", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:24 }}>
               <h2 style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:20, fontWeight:700, color:C.text }}>Gestión de suscripción</h2>
               <button onClick={()=>{ setPerfilSeccion(null); setConfirmCancelar(false); }} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, width:28, height:28, cursor:"pointer", fontSize:15, color:C.textLight, display:"flex", alignItems:"center", justifyContent:"center", padding:0 }}>✕</button>
@@ -7856,7 +7898,7 @@ export default function App() {
       {/* Modal Extranets */}
       {perfilSeccion === "extranets" && (
         <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:1000 }}>
-          <div style={{ background:C.bgCard, borderRadius:16, padding:"32px 36px", width:500, maxHeight:"85vh", overflowY:"auto", boxShadow:"0 24px 60px rgba(0,0,0,0.2)", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+          <div className="m-modal" style={{ background:C.bgCard, borderRadius:16, padding:"32px 36px", width:500, maxWidth:"calc(100vw - 32px)", maxHeight:"85vh", overflowY:"auto", boxShadow:"0 24px 60px rgba(0,0,0,0.2)", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
               <h2 style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontSize:20, fontWeight:700, color:C.text }}>Extranets</h2>
               <button onClick={()=>{ setPerfilSeccion(null); setEditingExtranetIdx(null); setAddingExtranet(false); }} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, width:28, height:28, cursor:"pointer", fontSize:15, color:C.textLight, display:"flex", alignItems:"center", justifyContent:"center", padding:0 }}>✕</button>

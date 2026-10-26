@@ -196,7 +196,7 @@ export function KpiModal({ kpi, datos, mes, anio, onClose }) {
             { label:`Vs LY (${anio-1})`, value: varLY!==null ? `${parseFloat(varLY)>=0?"+":""}${varLY}%` : "Sin datos", up: varLY!==null?parseFloat(varLY)>=0:true },
           ];
           return (
-            <div style={{ display:"grid", gridTemplateColumns:`repeat(${cards.length},1fr)`, gap:12, marginBottom:20 }}>
+            <div className="m-2col" style={{ display:"grid", gridTemplateColumns:`repeat(${cards.length},1fr)`, gap:12, marginBottom:20 }}>
               {cards.map((k,i)=>(
                 <div key={i} style={{ background:"#f5f5f5", border:"1.5px solid #111111", borderRadius:8, padding:"14px 18px", boxShadow:"0 1px 4px rgba(0,0,0,0.06)", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", textAlign:"center", transition:"box-shadow 0.2s, transform 0.2s" }}
                   onMouseEnter={e=>{e.currentTarget.style.boxShadow="0 6px 24px rgba(0,0,0,0.18)";e.currentTarget.style.transform="translateY(-2px)";}}
