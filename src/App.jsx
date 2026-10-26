@@ -6985,7 +6985,13 @@ export default function App() {
 
     // El F&B y las Salas de grupos/eventos confirmados se suman automáticamente
     // al F&B/Salas ya introducidos manualmente ese día en producción diaria.
-    const produccionConGrupos = mergeProduccionConGrupos(produccion, gruposData);
+    // Días sin habitaciones disponibles (celda vacía en el Excel) → usar las del hotel,
+    // si no la ocupación/RevPAR del mes salen inflados (ocupadas sin denominador)
+    const habHotelDef = hotelData?.habitaciones_disponibles || hotelData?.habitaciones || null;
+    const produccionNorm = habHotelDef
+      ? (produccion || []).map(d => d.hab_disponibles > 0 ? d : { ...d, hab_disponibles: habHotelDef })
+      : produccion;
+    const produccionConGrupos = mergeProduccionConGrupos(produccionNorm, gruposData);
 
     const nuevoDatos = {
       produccion: produccionConGrupos,

@@ -213,12 +213,14 @@ export function ImportarExcel({ onClose, session, onImportado, onProduccionDirec
       const wsHotel = wb.Sheets["🏨 Mi Hotel"];
       const hotelRows = wsHotel ? XLSX.utils.sheet_to_json(wsHotel, { header: 1 }) : [];
       const totalHab = parseFloat(hotelRows?.[8]?.[4]) || null;
+      // Si la celda de disponibles está vacía: hoja "Mi Hotel" → habitaciones guardadas del hotel
+      const habDefecto = totalHab || hotelHabDisponibles || hotelHab || null;
 
       for (const row of rows) {
         if (!row[0]) continue;
         const fecha = row[0];
         const hab_ocupadas = parseFloat(row[1]) || null;
-        const hab_disponibles = parseFloat(row[2]) || totalHab;
+        const hab_disponibles = parseFloat(row[2]) || habDefecto;
         const _rh_csv = parseFloat(row[3]) || null;
         const _rf_csv = parseFloat(row[5]) || null;
         const _rs_csv = parseFloat(row[6]) || null;
