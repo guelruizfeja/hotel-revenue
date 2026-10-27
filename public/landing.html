@@ -180,13 +180,6 @@
   }
   .module-panel.active { opacity: 1; pointer-events: auto; }
   .module-panel img { width: 100%; height: 100%; object-fit: cover; object-position: top; display: block; }
-  .mockup-cta-wrap { margin-top: 40px; }
-  .mockup-section .btn-gold {
-    background: #071A2E; color: #fff;
-    border-radius: 2px; padding: 13px 22px;
-    font-weight: 500; box-shadow: none;
-  }
-  .mockup-section .btn-gold:hover { background: var(--navy); transform: none; box-shadow: none; }
 
   .section-eyebrow {
     text-align: center; font-size: 10px;
@@ -654,8 +647,6 @@
     .module-tabs { overflow-x: auto; scrollbar-width: none; }
     .module-tabs::-webkit-scrollbar { display: none; }
     .module-tab { flex: 0 0 auto; padding: 12px 16px; white-space: nowrap; }
-    .mockup-cta-wrap { margin-top: 28px; }
-    .mockup-section .btn-gold { display: block; white-space: normal; }
 
     /* Dashboard mock KPIs */
     .mock-kpis { grid-template-columns: repeat(2,1fr); }
@@ -919,10 +910,6 @@
         <div class="module-panel" id="tab-budget"><img src="/budget-preview.png" alt="Presupuesto" data-i18n-alt="features.budget.title" loading="lazy"></div>
         <div class="module-panel" id="tab-groups"><img src="/grupos-preview.png" alt="Grupos" data-i18n-alt="features.groups.title" loading="lazy"></div>
       </div>
-    </div>
-
-    <div class="mockup-cta-wrap">
-      <a href="#consulta" class="btn-gold" data-i18n="mockup.cta" onclick="event.preventDefault(); window.scrollToSection('consulta');">Solicitar consulta para ver demo →</a>
     </div>
   </div>
 </section>
@@ -1318,7 +1305,6 @@ window.I18N_DATA = {
     'features.groups.li3': 'Evalúa el resumen del revenue de grupos por segmentos',
     'features.flipHint': 'Ver funciones +',
     'mockup.title': 'Con FastRevenue controlas los datos históricos y el forecast del ejercicio, comprobando en todo momento si se cumplen los objetivos.',
-    'mockup.cta': 'Solicitar consulta para ver demo →',
     'contact.title': 'Hablamos de <em style="color:#ffffff; font-style:italic;">tu hotel</em>',
     'contact.sub': 'Cuéntanos cómo gestionas tus datos hoy y te mostramos cómo FastRevenue puede centralizarlo todo. Sin compromiso.',
     'contact.nombre': 'Tu nombre *',
@@ -1374,7 +1360,6 @@ window.I18N_DATA = {
     'features.groups.li3': 'Review the group revenue summary by segment',
     'features.flipHint': 'See features +',
     'mockup.title': 'With FastRevenue you control historical data and the forecast for the year, checking at all times whether targets are being met.',
-    'mockup.cta': 'Request a consultation to see a demo →',
     'contact.title': 'Let\'s talk about <em style="color:#ffffff; font-style:italic;">your hotel</em>',
     'contact.sub': 'Tell us how you manage your data today and we\'ll show you how FastRevenue can centralize it all. No commitment.',
     'contact.nombre': 'Your name *',
@@ -1430,7 +1415,6 @@ window.I18N_DATA = {
     'features.groups.li3': 'Consultez le résumé du revenue des groupes par segment',
     'features.flipHint': 'Voir les fonctions +',
     'mockup.title': 'Avec FastRevenue, vous contrôlez les données historiques et le forecast de l\'exercice, en vérifiant à tout moment si les objectifs sont atteints.',
-    'mockup.cta': 'Demander une consultation pour voir la démo →',
     'contact.title': 'Parlons de <em style="color:#ffffff; font-style:italic;">votre hôtel</em>',
     'contact.sub': 'Dites-nous comment vous gérez vos données aujourd\'hui et nous vous montrerons comment FastRevenue peut tout centraliser. Sans engagement.',
     'contact.nombre': 'Votre nom *',
