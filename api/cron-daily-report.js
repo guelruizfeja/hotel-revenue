@@ -2,6 +2,12 @@ import { Resend } from 'resend';
 import { createClient } from '@supabase/supabase-js';
 import { buildHabEnCasaMap, buildRevEnCasaMap, calcForecastRevStandalone } from '../src/utils.js';
 import { generarInformeDiarioPDF } from './_pdfInformeDiario.js';
+import { generarDatosDemo } from './_demoData.js';
+
+// Cuentas que reciben producción ficticia diaria durante la fase de desarrollo (separadas por comas).
+// Para desactivarlo: definir DEMO_DATA_EMAILS vacía en Vercel.
+const DEMO_EMAILS = (process.env.DEMO_DATA_EMAILS ?? 'guelruizfeja@gmail.com')
+  .split(',').map(e => e.trim().toLowerCase()).filter(Boolean);
 
 const resend  = new Resend(process.env.RESEND_API_KEY);
 const supabase = createClient(
@@ -162,6 +168,12 @@ export default async function handler(req, res) {
       const { data: { user: authUser } } = await supabase.auth.admin.getUserById(userId);
       if (!authUser?.email) { results.skipped++; continue; }
       const email = authUser.email;
+
+      // Fase de desarrollo: generar la producción ficticia de ayer antes de construir el informe
+      if (DEMO_EMAILS.includes(email.toLowerCase())) {
+        try { results.demo = { userId, ...(await generarDatosDemo(supabase, userId, ayerStr)) }; }
+        catch (demoErr) { results.errors.push({ userId, error: 'Demo: ' + demoErr.message }); }
+      }
 
       const { data: hotelRow } = await supabase.from('hoteles').select('nombre,habitaciones').eq('id', userId).maybeSingle();
       const hotelNombre = hotelRow?.nombre || 'Tu Hotel';

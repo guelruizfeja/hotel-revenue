@@ -16,7 +16,14 @@ export function StaffFlow({ session, hotelId }) {
   useEffect(() => {
     supabase.from("hoteles").select("habitaciones_disponibles").eq("id", hotelId).maybeSingle()
       .then(({ data }) => setHotelHabDisponibles(data?.habitaciones_disponibles || 0));
-    supabase.from("grupos_eventos").select("estado,fecha_inicio,fecha_fin,revenue_fnb,revenue_sala").eq("hotel_id", hotelId)
+  }, [hotelId]);
+
+  // Grupos y Pick Up se (re)cargan al entrar en Producción/Edición: así incluyen las
+  // reservas que recepción acaba de dar de alta en el paso anterior, y la producción se
+  // precarga con las habitaciones/revenue OTB reales del día.
+  useEffect(() => {
+    if (step !== "produccion" && step !== "edicion") return;
+    supabase.from("grupos_eventos").select("estado,fecha_inicio,fecha_fin,habitaciones,adr_grupo,revenue_fnb,revenue_sala").eq("hotel_id", hotelId)
       .then(({ data }) => setGrupos(data || []));
     (async () => {
       const PICKUP_FIELDS = "id, fecha_llegada, fecha_pickup, canal, num_reservas, fecha_salida, noches, precio_total, estado, es_individual, numero_reserva";
@@ -36,7 +43,7 @@ export function StaffFlow({ session, hotelId }) {
         : [];
       setPickupEntries([...pe0, ...resto.flat()]);
     })();
-  }, [hotelId]);
+  }, [hotelId, step]);
 
   const header = (
     <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"14px 20px", borderBottom:`1px solid ${C.border}`, background:"#111111" }}>

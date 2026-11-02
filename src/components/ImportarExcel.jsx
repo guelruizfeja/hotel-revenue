@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useT } from "../i18n";
 import { C, NET_HAB_FNB, NET_SALA, dmy, toNum, MESES_FULL } from "../constants";
 import { supabase } from "../supabase";
@@ -64,6 +64,20 @@ export function ImportarExcel({ onClose, session, onImportado, onProduccionDirec
   // Si la fecha seleccionada ya tiene producción guardada (en BD o recién guardada en esta
   // sesión): oculta el aviso de F&B/Salas de grupos, ya que ese día ya está resuelto.
   const [fechaTieneProduccion, setFechaTieneProduccion] = useState(false);
+  // Fecha para la que ya terminó la comprobación en BD (evita precargar OTB antes de saber
+  // si el día ya tiene producción guardada).
+  const [prodCheckFecha, setProdCheckFecha] = useState(null);
+  // Últimos valores precargados desde OTB: solo se sobrescriben/limpian si el campo sigue
+  // teniendo exactamente ese valor (nunca se pisa lo tecleado a mano).
+  const otbAutofillRef = useRef({ hab: "", rev: "" });
+  // Habitaciones ocupadas y revenue de habitaciones (bruto, con IVA) que dan las reservas
+  // OTB (Pick Up + Grupos confirmados) para una fecha.
+  const otbValoresFecha = (fecha) => {
+    const hab = habEnCasaMap[fecha] || 0;
+    if (hab <= 0) return { hab: "", rev: "" };
+    const revBruto = (revEnCasaMap[fecha] || 0) / NET_HAB_FNB;
+    return { hab: String(Math.round(hab)), rev: revBruto > 0 ? String(Math.round(revBruto * 100) / 100) : "" };
+  };
 
   // Modo soloProduccion (rol Usuario): precargar la fila de la fecha seleccionada si ya existe,
   // revirtiendo el neto de IVA para que el formulario muestre el importe bruto
@@ -74,6 +88,7 @@ export function ImportarExcel({ onClose, session, onImportado, onProduccionDirec
     supabase.from("produccion_diaria").select("*").eq("hotel_id", hid).eq("fecha", fecha).maybeSingle()
       .then(({ data }) => {
         setFechaTieneProduccion(!!data);
+        setProdCheckFecha(fecha);
         setProdForm(f => ({
           ...f, fecha,
           hab_ocupadas: data?.hab_ocupadas ?? "",
@@ -93,9 +108,27 @@ export function ImportarExcel({ onClose, session, onImportado, onProduccionDirec
     const hid = hotelIdOverride || session.user.id;
     let cancelado = false;
     supabase.from("produccion_diaria").select("id").eq("hotel_id", hid).eq("fecha", prodForm.fecha).maybeSingle()
-      .then(({ data }) => { if (!cancelado) setFechaTieneProduccion(!!data); });
+      .then(({ data }) => { if (!cancelado) { setFechaTieneProduccion(!!data); setProdCheckFecha(prodForm.fecha); } });
     return () => { cancelado = true; };
   }, [prodForm.fecha, soloProduccion, hotelIdOverride, session?.user?.id]);
+
+  // Precarga Habitaciones Ocupadas y Revenue Habitaciones con lo que dan las reservas OTB
+  // para días sin producción guardada. F&B y Salas se siguen introduciendo a mano.
+  useEffect(() => {
+    const fecha = prodForm.fecha;
+    if (!fecha || prodCheckFecha !== fecha || fechaTieneProduccion) return;
+    const otb = otbValoresFecha(fecha);
+    const prev = otbAutofillRef.current;
+    setProdForm(f => {
+      if (f.fecha !== fecha) return f;
+      const sustituible = (actual, anterior) => actual === "" || String(actual) === anterior;
+      const hab_ocupadas = sustituible(f.hab_ocupadas, prev.hab) ? otb.hab : f.hab_ocupadas;
+      const revenue_hab  = sustituible(f.revenue_hab, prev.rev) ? otb.rev : f.revenue_hab;
+      if (hab_ocupadas === f.hab_ocupadas && revenue_hab === f.revenue_hab) return f;
+      return { ...f, hab_ocupadas, revenue_hab };
+    });
+    otbAutofillRef.current = otb;
+  }, [prodForm.fecha, prodCheckFecha, fechaTieneProduccion, habEnCasaMap, revEnCasaMap]);
   useEffect(() => {
     if (!soloProduccion) return;
     cargarProduccionFecha(new Date().toISOString().slice(0,10));
@@ -1356,6 +1389,16 @@ export function ImportarExcel({ onClose, session, onImportado, onProduccionDirec
                       })()}
                     </div>
                   </div>
+                  {(() => {
+                    if (fechaTieneProduccion) return null;
+                    const otb = otbValoresFecha(prodForm.fecha);
+                    if (!otb.hab || String(prodForm.hab_ocupadas) !== otb.hab) return null;
+                    return (
+                      <div style={{ gridColumn:"1 / -1", background:"#F0FDF4", border:"1px solid #BBF7D0", borderRadius:8, padding:"9px 12px", fontSize:11.5, color:"#166534", lineHeight:1.5 }}>
+                        ✓ Habitaciones y Revenue Habitaciones precargados desde las reservas (Pick Up + Grupos). Revísalos y añade F&B y Salas.
+                      </div>
+                    );
+                  })()}
                   {(() => {
                     const extra = grupoExtraMap[prodForm.fecha];
                     if (!extra || (extra.fnb <= 0 && extra.salas <= 0)) return null;
