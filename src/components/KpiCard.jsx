@@ -1,7 +1,9 @@
 import React from "react";
 import { C, KPI_HELP } from "../constants";
+import { useT } from "../i18n";
 
 export const KpiCard = React.memo(function KpiCard({ label, subtitle, value, changeLm, upLm, changeLy, upLy, i, onClick, accentColor }) {
+  const t = useT();
   const kpiAccent = accentColor || C.accent;
   const pct = changeLm && changeLm !== "—" ? parseFloat(changeLm) : null;
   const isFlat = pct !== null && Math.abs(pct) < 1;
@@ -50,7 +52,7 @@ export const KpiCard = React.memo(function KpiCard({ label, subtitle, value, cha
           {indicatorColor && (
             <div className="kpi-delta" style={{ position:"absolute", top:0, bottom:0, left:"calc(50% + 46px)", display:"flex", flexDirection:"column", justifyContent:"center", alignItems:"flex-start", gap:2 }}>
               <span style={{ fontSize:13, fontWeight:800, color:indicatorColor, lineHeight:1, whiteSpace:"nowrap" }}>{indicatorIcon} <span style={{ fontSize:11, fontWeight:600 }}>{changeLm}</span></span>
-              <span style={{ fontSize:9, color:C.textLight, lineHeight:1 }}>vs mes anterior</span>
+              <span style={{ fontSize:9, color:C.textLight, lineHeight:1 }}>{t("vs_mes_anterior")}</span>
             </div>
           )}
         </div>

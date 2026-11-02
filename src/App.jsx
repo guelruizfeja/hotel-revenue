@@ -1002,9 +1002,9 @@ const [metricaSel, setMetricaSel] = useState(() => localStorage.getItem("fr_metr
 
   const kpis = [
     { label: t("kpi_ocupacion"), kpiKey:"Ocupación", value: `${occ}%`,     ...diff(parseFloat(occ), prevOcc, lyOccD) },
-    { label: t("kpi_adr"),       kpiKey:"ADR",        value: `€${adr}`,    subtitle:"Precio medio",                    ...diff(parseFloat(adr), prevAdr, lyAdrD) },
-    { label: t("kpi_revpar"),    kpiKey:"RevPAR",     value: `€${revpar}`, subtitle:"Revenue por hab. disponible",     ...diff(parseFloat(revpar), prevRevpar, lyRevparD) },
-    { label: t("kpi_trevpar"),   kpiKey:"TRevPAR",    value: `€${trevpar}`,subtitle:"Revenue total por hab.",          ...diff(parseFloat(trevpar), prevTrevpar, lyTrevparD) },
+    { label: t("kpi_adr"),       kpiKey:"ADR",        value: `€${adr}`,    subtitle:t("sub_adr"),                    ...diff(parseFloat(adr), prevAdr, lyAdrD) },
+    { label: t("kpi_revpar"),    kpiKey:"RevPAR",     value: `€${revpar}`, subtitle:t("sub_revpar"),     ...diff(parseFloat(revpar), prevRevpar, lyRevparD) },
+    { label: t("kpi_trevpar"),   kpiKey:"TRevPAR",    value: `€${trevpar}`,subtitle:t("sub_trevpar"),          ...diff(parseFloat(trevpar), prevTrevpar, lyTrevparD) },
   ];
 
   return (
@@ -1039,7 +1039,7 @@ const [metricaSel, setMetricaSel] = useState(() => localStorage.getItem("fr_metr
       </div>
 
       <p style={{ fontSize: 11, color: C.textLight, marginBottom: 10, marginTop: 0 }}>
-        * Media mensual
+        * {t("media_mensual")}
       </p>
 
       {/* ── HEATMAP + GRÁFICAS ── */}
@@ -1408,7 +1408,7 @@ const [metricaSel, setMetricaSel] = useState(() => localStorage.getItem("fr_metr
                         </div>
 
                         {todasEntradas.length===0 && evMes.length===0 && (
-                          <p style={{ fontSize:12, color:C.textLight, textAlign:"center", marginTop:40 }}>Sin grupos ni eventos este mes</p>
+                          <p style={{ fontSize:12, color:C.textLight, textAlign:"center", marginTop:40 }}>{t("sin_grupos_mes")}</p>
                         )}
 
                         {soloGrupos.length>0 && (
@@ -1754,7 +1754,7 @@ const [metricaSel, setMetricaSel] = useState(() => localStorage.getItem("fr_metr
               style={{ position:"absolute", top:14, right:16, zIndex:1, padding:"5px 12px", borderRadius:7, border:`1px solid ${C.border}`, background:C.bgCard, color:C.textMid, fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif", transition:"all 0.15s" }}
               onMouseEnter={e=>{ e.currentTarget.style.background=C.accentLight; e.currentTarget.style.borderColor=C.accent; e.currentTarget.style.color=C.accent; }}
               onMouseLeave={e=>{ e.currentTarget.style.background=C.bgCard; e.currentTarget.style.borderColor=C.border; e.currentTarget.style.color=C.textMid; }}>
-              Histórico
+              {t("historico")}
             </button>
 
             {/* ── HEATMAP (izquierda) ── */}
@@ -1768,7 +1768,7 @@ const [metricaSel, setMetricaSel] = useState(() => localStorage.getItem("fr_metr
                   }
                 </p>
                 <div style={{ display:"flex", borderRadius:6, overflow:"hidden", border:`1px solid ${C.border}`, flexShrink:0 }}>
-                  {[["mensual","Mensual"],["diario","Diario"]].map(([key, label]) => (
+                  {[["mensual",t("mensual")],["diario",t("diario")]].map(([key, label]) => (
                     <button key={key} onClick={() => setHmVista(key)}
                       style={{ padding:"4px 11px", fontSize:11, fontWeight:600, border:"none", cursor:"pointer", fontFamily:"inherit",
                         background: hmVista === key ? C.text : "transparent",
@@ -1817,7 +1817,7 @@ const [metricaSel, setMetricaSel] = useState(() => localStorage.getItem("fr_metr
                   })}
                 </div>
                 <p style={{ fontSize:10, color:C.textMid, marginTop:8, display:"flex", alignItems:"center", gap:4 }}>
-                  <span style={{ fontSize:12 }}>⚡</span> Meses con mayor captación en el último día &nbsp;·&nbsp; <span style={{ fontSize:10, color:C.accent, fontWeight:700 }}>OTB</span> Dato estimado por reservas en cartera
+                  <span style={{ fontSize:12 }}>⚡</span> {t("leyenda_captacion")} &nbsp;·&nbsp; <span style={{ fontSize:10, color:C.accent, fontWeight:700 }}>OTB</span> {t("leyenda_otb")}
                 </p>
               </>)}
 
@@ -1953,7 +1953,7 @@ const [metricaSel, setMetricaSel] = useState(() => localStorage.getItem("fr_metr
                   : <svg width="10" height="10" viewBox="0 0 10 10" fill={col}><polygon points="5,9 9,1 1,1"/></svg>;
                 return (
                   <div style={{ display:"inline-flex", flexDirection:"column", alignItems:"flex-end", gap:2 }}>
-                    <span style={{ fontSize:8, color:C.textLight, fontWeight:500, letterSpacing:"0.5px", textTransform:"uppercase" }}>vs ayer</span>
+                    <span style={{ fontSize:8, color:C.textLight, fontWeight:500, letterSpacing:"0.5px", textTransform:"uppercase" }}>{t("vs_ayer")}</span>
                     <span style={{ display:"inline-flex", alignItems:"center", gap:4, padding:"3px 7px", borderRadius:20, background:bg }}>
                       {arrow}
                       <span style={{ fontSize:12, fontWeight:700, color:col, lineHeight:1 }}>{d>0?"+":""}{d}{unit}</span>
@@ -1986,7 +1986,7 @@ const [metricaSel, setMetricaSel] = useState(() => localStorage.getItem("fr_metr
               return (
                 <div className="dash-mov-panel" style={{ flex:"0 0 420px", padding:"28px 32px", display:"flex", flexDirection:"column", justifyContent:"center", gap:14 }}>
                   <div style={{ textAlign:"center" }}>
-                    <p style={{ fontSize:13, fontWeight:800, color:C.text, textTransform:"uppercase", letterSpacing:"1.5px" }}>Movimiento Operativo Diario</p>
+                    <p style={{ fontSize:13, fontWeight:800, color:C.text, textTransform:"uppercase", letterSpacing:"1.5px" }}>{t("mov_operativo")}</p>
                     <p style={{ fontSize:11, color:C.textMid, marginTop:2 }}>{hoyStr}</p>
                   </div>
                   <div style={{ display:"grid", gridTemplateColumns:"22px 1fr auto auto", alignItems:"center", rowGap:14, columnGap:8 }}>
@@ -1994,7 +1994,7 @@ const [metricaSel, setMetricaSel] = useState(() => localStorage.getItem("fr_metr
                     {/* Entradas */}
                     <FilaMovimiento tipo="entradas"
                       icon={<svg width="22" height="22" viewBox="0 0 32 32" fill="none"><rect x="8" y="4" width="16" height="24" rx="1.5" stroke={C.text} strokeWidth="2"/><line x1="8" y1="28" x2="24" y2="28" stroke={C.text} strokeWidth="2" strokeLinecap="round"/><circle cx="20" cy="16" r="1.5" fill={C.text}/><line x1="0" y1="16" x2="13" y2="16" stroke={C.text} strokeWidth="2" strokeLinecap="round"/><polyline points="9,12 13,16 9,20" stroke={C.text} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>}
-                      label="Entradas"
+                      label={t("entradas")}
                       extra={proxEntrada&&<span style={{ color:C.textLight, fontWeight:400 }}> · próx. {proxEntrada}</span>}
                       count={numEntradas} countAyer={numEntradasAyer}/>
 
@@ -2002,7 +2002,7 @@ const [metricaSel, setMetricaSel] = useState(() => localStorage.getItem("fr_metr
                     {/* Salidas */}
                     <FilaMovimiento tipo="salidas"
                       icon={<svg width="22" height="22" viewBox="0 0 32 32" fill="none"><rect x="8" y="4" width="16" height="24" rx="1.5" stroke={C.text} strokeWidth="2"/><line x1="8" y1="28" x2="24" y2="28" stroke={C.text} strokeWidth="2" strokeLinecap="round"/><circle cx="12" cy="16" r="1.5" fill={C.text}/><line x1="8" y1="16" x2="21" y2="16" stroke={C.text} strokeWidth="2" strokeLinecap="round"/><polyline points="17,12 21,16 17,20" stroke={C.text} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><line x1="21" y1="16" x2="32" y2="16" stroke={C.text} strokeWidth="2" strokeLinecap="round"/></svg>}
-                      label="Salidas"
+                      label={t("salidas")}
                       extra={proxSalida&&<span style={{ color:C.textLight, fontWeight:400 }}> · próx. {proxSalida}</span>}
                       count={numSalidas} countAyer={numSalidasAyer}/>
 
@@ -2017,7 +2017,7 @@ const [metricaSel, setMetricaSel] = useState(() => localStorage.getItem("fr_metr
                           <rect x="11" y="18" width="10" height="10" rx="1" stroke={C.text} strokeWidth="1.8"/>
                           <circle cx="16" cy="13" r="2" stroke={C.text} strokeWidth="1.5"/>
                         </svg>
-                        <span style={lbl()}>Ocupación hoy</span>
+                        <span style={lbl()}>{t("ocup_hoy")}</span>
                         <span style={num()}>{occHoy}%</span>
                         {occAyer !== null ? <Delta hoy={occHoy} ayer={occAyer} unit="%"/> : <span/>}
                       </div>
@@ -2044,7 +2044,7 @@ const [metricaSel, setMetricaSel] = useState(() => localStorage.getItem("fr_metr
                   </p>
                   <div style={{ display:"flex", gap:18 }}>
                     {[
-                      { color:"#004B87", opacity:0.75, label:"Ocupación", type:"bar" },
+                      { color:"#004B87", opacity:0.75, label:t("kpi_ocupacion"), type:"bar" },
                       { color:"#B8860B", opacity:1,    label:"ADR",       type:"line" },
                       { color:"#E53935", opacity:1,    label:"RevPAR",    type:"line" },
                     ].map((item,i) => (
@@ -2072,7 +2072,7 @@ const [metricaSel, setMetricaSel] = useState(() => localStorage.getItem("fr_metr
                         <YAxis yAxisId="left"  tick={{ fill: C.textLight, fontSize: isMobile ? 10 : 11 }} width={isMobile ? 36 : 60} axisLine={false} tickLine={false} unit="%" domain={[0,100]}/>
                         <YAxis yAxisId="right" orientation="right" tick={{ fill: C.textLight, fontSize: isMobile ? 10 : 11 }} width={isMobile ? 40 : 60} axisLine={false} tickLine={false} unit="€"/>
                         <Tooltip content={<CustomTooltip/>} cursor={false}/>
-                        <Bar yAxisId="left" dataKey="occ" name="Ocupación" fill="url(#gradOcc)" radius={[4,4,0,0]}
+                        <Bar yAxisId="left" dataKey="occ" name={t("kpi_ocupacion")} fill="url(#gradOcc)" radius={[4,4,0,0]}
                           cursor="pointer" activeBar={false} isAnimationActive={false}
                           onMouseEnter={() => setActiveSeriesKey("occ")}
                           onClick={(data) => { if(data?.mesIdx!=null) setModalDiario({mesIdx:data.mesIdx, anioIdx:data.anioIdx}); }}
@@ -2205,7 +2205,7 @@ const [metricaSel, setMetricaSel] = useState(() => localStorage.getItem("fr_metr
                     <YAxis yAxisId="right" orientation="right" tick={{ fill: C.textLight, fontSize: 11 }} axisLine={false} tickLine={false} unit="€"/>
                     <Tooltip content={<CustomTooltip/>} cursor={false}/>
                     <Legend wrapperStyle={{ fontSize: 15, color: C.textMid, paddingTop: 8 }}/>
-                    <Bar yAxisId="left" dataKey="occ" name="Ocupación" fill="url(#gradOccDiario)" radius={[4,4,0,0]} activeBar={false}/>
+                    <Bar yAxisId="left" dataKey="occ" name={t("kpi_ocupacion")} fill="url(#gradOccDiario)" radius={[4,4,0,0]} activeBar={false}/>
                     <Line yAxisId="right" dataKey="adr"    name="ADR"    type="monotone" stroke="#B8860B" strokeWidth={2} dot={{fill:"#B8860B",r:2,strokeWidth:0}} activeDot={{r:4}}/>
                     <Line yAxisId="right" dataKey="revpar" name="RevPAR" type="monotone" stroke="#E53935" strokeWidth={2} dot={{fill:"#E53935",r:2,strokeWidth:0}} activeDot={{r:4}}/>
                   </ComposedChart>
@@ -2511,7 +2511,7 @@ function PickupView({ datos, onGuardado, onReservaGuardada }) {
   const refDia = hayHoy ? hoyISO : (ultDia >= ayerStr ? ultDia : "");
   const reservasUltDia = refDia ? pickupEntries.filter(e => !esGrupoEvento(e) && String(e.fecha_pickup||"").slice(0,10) === refDia && (e.estado||"confirmada") !== "cancelada").sort((a,b)=>(a.fecha_llegada||"").localeCompare(b.fecha_llegada||"")) : [];
   const ultDiaTotal = reservasUltDia.reduce((a,e) => a + (e.num_reservas||1), 0);
-  const tituloBloque = refDia === hoyISO ? "Reservas de hoy" : "Reservas de ayer";
+  const tituloBloque = refDia === hoyISO ? t("reservas_hoy") : t("reservas_ayer");
   const fmtDatePU = d => { if (!d) return "—"; const p=d.split("-"); return p.length===3?`${p[2]}/${p[1]}/${p[0]}`:d; };
 
   const reservasAyer = pickupEntries.filter(e => String(e.fecha_pickup||"").slice(0,10) === ayerStr);
@@ -2717,7 +2717,7 @@ function PickupView({ datos, onGuardado, onReservaGuardada }) {
         <button onClick={abrirNuevaReserva}
           style={{ display:"inline-flex", alignItems:"center", gap:7, background:C.text, color:"#fff", border:"none", borderRadius:8, padding:"9px 18px", cursor:"pointer", fontSize:12, fontWeight:700, fontFamily:"'Plus Jakarta Sans',sans-serif", letterSpacing:"0.3px" }}>
           <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><rect x="1" y="1" width="11" height="11" rx="2" stroke="#fff" strokeWidth="1.8"/><line x1="4" y1="4.5" x2="9" y2="4.5" stroke="#fff" strokeWidth="1.5" strokeLinecap="round"/><line x1="4" y1="7" x2="7" y2="7" stroke="#fff" strokeWidth="1.5" strokeLinecap="round"/></svg>
-          Gestión de reservas
+          {t("gestion_reservas")}
         </button>
       </div>
 
@@ -2961,7 +2961,7 @@ function PickupView({ datos, onGuardado, onReservaGuardada }) {
             onClick={() => ultDiaTotal > 0 && setShowPickupDetalle(v => !v)}
             style={{ background:"#111", borderRadius:10, padding:"10px 18px", textAlign:"center", flexShrink:0, cursor: ultDiaTotal > 0 ? "pointer" : "default", position:"relative" }}>
             <p style={{ fontSize:30, fontWeight:800, color:"#fff", fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1 }}>{ultDiaTotal}</p>
-            <p style={{ fontSize:9, color:"#ffffff", fontWeight:700, textTransform:"uppercase", letterSpacing:1, marginTop:4 }}>Nuevas reservas</p>
+            <p style={{ fontSize:9, color:"#ffffff", fontWeight:700, textTransform:"uppercase", letterSpacing:1, marginTop:4 }}>{t("nuevas_reservas")}</p>
             {ultDiaTotal > 0 && <span style={{ fontSize:8, color:"#aaa", display:"block", marginTop:2 }}>{showPickupDetalle ? "▲" : "▼"}</span>}
           </div>
           <div>
@@ -3140,7 +3140,7 @@ function PickupView({ datos, onGuardado, onReservaGuardada }) {
           <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:8, marginBottom:8 }}>
             <p style={{ fontSize:11, fontWeight:700, color:C.text, textTransform:"uppercase", letterSpacing:1, textAlign:"center" }}>{t("fechas_calientes")}</p>
             <div style={{ display:"flex", borderRadius:6, overflow:"hidden", border:`1px solid ${C.border}`, flexShrink:0 }}>
-              {[["mes","Mes actual"],["proximas","Próximas"]].map(([key, label]) => (
+              {[["mes",t("mes_actual")],["proximas",t("proximas")]].map(([key, label]) => (
                 <button key={key} onClick={() => setFechasCalientesVista(key)}
                   style={{ padding:"3px 9px", fontSize:10, fontWeight:600, border:"none", cursor:"pointer", fontFamily:"inherit",
                     background: fechasCalientesVista === key ? C.text : "transparent",
@@ -3175,7 +3175,7 @@ function PickupView({ datos, onGuardado, onReservaGuardada }) {
                     <span style={{ fontSize:12, fontWeight:700, color:C.text }}>{fmt(fecha)}</span>
                     <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end" }}>
                       <span style={{ fontSize:11, fontWeight:700, color:occColor }}>{occ}%</span>
-                      <span style={{ fontSize:8, color:C.textLight, lineHeight:1, marginTop:1 }}>ocup.</span>
+                      <span style={{ fontSize:8, color:C.textLight, lineHeight:1, marginTop:1 }}>{t("ocup_abrev")}</span>
                     </div>
                   </div>
                   <div style={{ width:"100%", height:8, background:C.border, borderRadius:4 }}>
@@ -3187,7 +3187,7 @@ function PickupView({ datos, onGuardado, onReservaGuardada }) {
           })()}
           </div>
           <p style={{ fontSize:11, color:C.text, marginTop:8, fontStyle:"italic", opacity:0.75 }}>
-            💡 Se recomienda comprobar el precio de estas fechas.
+            💡 {t("aviso_precio")}
           </p>
 
           <div style={{ borderTop:`1px solid ${C.border}`, margin:"16px 0" }}/>
@@ -3195,7 +3195,7 @@ function PickupView({ datos, onGuardado, onReservaGuardada }) {
           {/* CANCELACIONES DE AYER */}
           <p style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontWeight:700, fontSize:14, color:C.text, marginBottom:2 }}>{t("cancelaciones_ayer")}</p>
           <p style={{ fontSize:10, color:C.textLight, marginBottom:10 }}>
-            {ayerD.toLocaleDateString("es-ES",{weekday:"long",day:"numeric",month:"long"}).replace(/^\w/,c=>c.toUpperCase())}
+            {ayerD.toLocaleDateString(t("locale"),{weekday:"long",day:"numeric",month:"long"}).replace(/^\w/,c=>c.toUpperCase())}
           </p>
           {cancelTotal > 0 && (
             <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:12 }}>
@@ -3247,14 +3247,14 @@ function PickupView({ datos, onGuardado, onReservaGuardada }) {
           <div style={{ display:"flex", alignItems:"flex-start", gap:16, marginBottom:20 }}>
             <div style={{ background:"#111", borderRadius:10, padding:"10px 18px", textAlign:"center", flexShrink:0 }}>
               <p style={{ fontSize:30, fontWeight:800, color:"#fff", fontFamily:"'Plus Jakarta Sans',sans-serif", lineHeight:1 }}>{ventanaTotal}</p>
-              <p style={{ fontSize:9, color:"#ffffff", fontWeight:700, textTransform:"uppercase", letterSpacing:1, marginTop:4 }}>reservas</p>
+              <p style={{ fontSize:9, color:"#ffffff", fontWeight:700, textTransform:"uppercase", letterSpacing:1, marginTop:4 }}>{t("reservas_lbl")}</p>
             </div>
             <div style={{ flex:1 }}>
-              <p style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontWeight:700, fontSize:18, color:C.text, marginBottom:8 }}>Resumen de reservas</p>
+              <p style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontWeight:700, fontSize:18, color:C.text, marginBottom:8 }}>{t("resumen_reservas")}</p>
               {/* Toggle ventana */}
               <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>
                 <div style={{ display:"flex", borderRadius:8, overflow:"hidden", border:`1px solid ${C.border}`, width:"fit-content" }}>
-                  {[["ayer","Ayer"], ["7d","7 días"], ["30d","30 días"], ["year","1 año"]].map(([key, label]) => (
+                  {[["ayer",t("ayer")], ["7d",t("dias_7")], ["30d",t("dias_30")], ["year",t("anio_1")]].map(([key, label]) => (
                     <button key={key} onClick={()=>{ setReservasVentana(key); localStorage.setItem('reservasVentana',key); setReservasMesFiltro(null); localStorage.removeItem('reservasMesFiltro'); setShowMesPicker(false); setOtaDetalle(false); localStorage.setItem('otaDetalle','false'); }}
                       style={{ padding:"5px 14px", fontSize:11, fontWeight:700, cursor:"pointer", border:"none", background: !reservasMesFiltro && reservasVentana===key ? "#111" : "transparent", color: !reservasMesFiltro && reservasVentana===key ? "#fff" : C.textMid, transition:"background 0.2s", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
                       {label}
@@ -3265,7 +3265,7 @@ function PickupView({ datos, onGuardado, onReservaGuardada }) {
                 <div style={{ position:"relative" }} ref={mesPickerRef}>
                   <button onClick={()=>setShowMesPicker(v=>!v)}
                     style={{ padding:"5px 12px", fontSize:11, fontWeight:700, cursor:"pointer", borderRadius:8, border:`1px solid ${reservasMesFiltro ? "#111" : C.border}`, background: reservasMesFiltro ? "#111" : "transparent", color: reservasMesFiltro ? "#fff" : C.textMid, fontFamily:"'Plus Jakarta Sans',sans-serif", transition:"all 0.2s" }}>
-                    {reservasMesFiltro ? `${MESES_CORTO[reservasMesFiltro.mes]} ${reservasMesFiltro.anio}` : "Seleccionar mes"}
+                    {reservasMesFiltro ? `${MESES_CORTO[reservasMesFiltro.mes]} ${reservasMesFiltro.anio}` : t("sel_mes")}
                   </button>
                   {showMesPicker && (
                     <div style={{ position:"absolute", top:"calc(100% + 6px)", left:0, zIndex:300, background:C.bgCard, border:`1px solid #111`, borderRadius:10, padding:"12px", boxShadow:"0 8px 24px rgba(0,0,0,0.12)", minWidth:220 }}>
@@ -3292,10 +3292,10 @@ function PickupView({ datos, onGuardado, onReservaGuardada }) {
             <p style={{ color:C.textLight, fontSize:13, textAlign:"center", padding:"20px 0" }}>{t("sin_datos")}</p>
           ) : (() => {
             const VISTAS = [
-              { key:"count",      label:"Por canal",    valFn: d=>d.count,      fmt: v=>`${v} res.` },
-              { key:"adr",        label:"Precio medio", valFn: d=>d.adr,        fmt: v=>`€${v}` },
-              { key:"noches",     label:"Duración",     valFn: d=>d.noches,     fmt: v=>`${v} noches` },
-              { key:"antelacion", label:"Antelación",   valFn: d=>d.antelacion, fmt: v=>`${v} días` },
+              { key:"count",      label:t("por_canal"),    valFn: d=>d.count,      fmt: v=>`${v} res.` },
+              { key:"adr",        label:t("sub_adr"), valFn: d=>d.adr,        fmt: v=>`€${v}` },
+              { key:"noches",     label:t("duracion"),     valFn: d=>d.noches,     fmt: v=>`${v} ${t("noches")}` },
+              { key:"antelacion", label:t("antelacion"),   valFn: d=>d.antelacion, fmt: v=>`${v} ${t("dias")}` },
             ];
             const vista = VISTAS.find(v=>v.key===reservasVista) || VISTAS[0];
             const sourceData = otaDetalle ? ventanaCanalData.filter(d => isOTA(d.canal)) : ventanaCanalDataAgrupado;
@@ -3340,7 +3340,7 @@ function PickupView({ datos, onGuardado, onReservaGuardada }) {
                     ))}
                   </defs>
                   <CartesianGrid vertical={false} stroke={C.border} strokeDasharray="4 4"/>
-                  <XAxis dataKey="canal" tick={{ fill:C.textMid, fontSize:11, fontWeight:600 }} axisLine={false} tickLine={false}/>
+                  <XAxis dataKey="canal" tickFormatter={c => t("canales")[c] || c} tick={{ fill:C.textMid, fontSize:11, fontWeight:600 }} axisLine={false} tickLine={false}/>
                   <YAxis domain={[0, yMax]} tickFormatter={vista.fmt} tick={{ fill:C.textLight, fontSize:10 }} axisLine={false} tickLine={false} width={52}/>
                   <Tooltip
                     cursor={false}
@@ -3379,10 +3379,10 @@ function PickupView({ datos, onGuardado, onReservaGuardada }) {
       {/* OCUPACIÓN Y ADR MEDIO POR DÍA DE SEMANA */}
       <Card>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20, flexWrap:"wrap", gap:8 }}>
-          <p style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontWeight:700, fontSize:18, color:C.text }}>Ocupación y ADR medio por día de semana</p>
+          <p style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontWeight:700, fontSize:18, color:C.text }}>{t("ocup_adr_dia_sem")}</p>
           <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>
             <div style={{ display:"flex", borderRadius:8, overflow:"hidden", border:`1px solid ${C.border}`, width:"fit-content" }}>
-              {[["historico","Histórico"],["actual","Mes actual"]].map(([key, label]) => (
+              {[["historico",t("historico")],["actual",t("mes_actual")]].map(([key, label]) => (
                 <button key={key} onClick={() => { setDiaSemVistaPersist(key); setDiaSemMesFiltroPersist(null); setShowDiaSemMesPicker(false); }}
                   style={{ padding:"5px 14px", fontSize:11, fontWeight:700, cursor:"pointer", border:"none", background: !diaSemMesFiltro && diaSemVista===key ? "#111" : "transparent", color: !diaSemMesFiltro && diaSemVista===key ? "#fff" : C.textMid, transition:"background 0.2s", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
                   {label}
@@ -3392,7 +3392,7 @@ function PickupView({ datos, onGuardado, onReservaGuardada }) {
             <div style={{ position:"relative" }} ref={diaSemMesPickerRef}>
               <button onClick={()=>setShowDiaSemMesPicker(v=>!v)}
                 style={{ padding:"5px 12px", fontSize:11, fontWeight:700, cursor:"pointer", borderRadius:8, border:`1px solid ${diaSemMesFiltro ? "#111" : C.border}`, background: diaSemMesFiltro ? "#111" : "transparent", color: diaSemMesFiltro ? "#fff" : C.textMid, fontFamily:"'Plus Jakarta Sans',sans-serif", transition:"all 0.2s" }}>
-                {diaSemMesFiltro ? `${MESES_CORTO[diaSemMesFiltro.mes]} ${diaSemMesFiltro.anio}` : "Seleccionar mes"}
+                {diaSemMesFiltro ? `${MESES_CORTO[diaSemMesFiltro.mes]} ${diaSemMesFiltro.anio}` : t("sel_mes")}
               </button>
               {showDiaSemMesPicker && (
                 <div style={{ position:"absolute", top:"calc(100% + 6px)", right:0, zIndex:300, background:C.bgCard, border:`1px solid #111`, borderRadius:10, padding:"12px", boxShadow:"0 8px 24px rgba(0,0,0,0.12)", minWidth:220 }}>
@@ -4045,7 +4045,7 @@ function BudgetView({ datos, anio: anioProp }) {
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:20 }}>
           <div>
             <p style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontWeight:700, fontSize:18, color:C.text }}>{chartTitle}</p>
-            <p style={{ fontSize:11, color:C.textLight, marginTop:3, letterSpacing:"0.3px" }}>Presupuesto · Real · Forecast &mdash; {anio}</p>
+            <p style={{ fontSize:11, color:C.textLight, marginTop:3, letterSpacing:"0.3px" }}>{t("subt_forecast")} &mdash; {anio}</p>
           </div>
           <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:10 }}>
             <div style={{ display:"flex", gap:6 }}>
@@ -4734,8 +4734,6 @@ function GruposView({ datos, onRecargar, onVolverHeatmap, subVistaExt, onCambiar
 
       {/* ── Vista mensual (Calendario) ── */}
       {subVista === "semana" && (() => {
-        const DIAS_ES = ["Lunes","Martes","Miércoles","Jueves","Viernes","Sábado","Domingo"];
-        const MESES_ES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
         const hoyStr = new Date().toISOString().slice(0,10);
         const pad = n => String(n).padStart(2,"0");
         const toISO = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
@@ -4785,7 +4783,7 @@ function GruposView({ datos, onRecargar, onVolverHeatmap, subVistaExt, onCambiar
               <div style={{ display:"flex", alignItems:"center", gap:8 }}>
                 <button onClick={prevMes} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, width:28, height:28, cursor:"pointer", fontSize:15, color:C.textMid, display:"flex", alignItems:"center", justifyContent:"center" }}>‹</button>
                 <span style={{ fontFamily:"'Plus Jakarta Sans',sans-serif", fontWeight:700, fontSize:15, color:C.text, minWidth:120, textAlign:"center" }}>
-                  {MESES_ES[mesCal]} {anioCal}
+                  {t("meses_full")[mesCal]} {anioCal}
                 </span>
                 <button onClick={nextMes} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, width:28, height:28, cursor:"pointer", fontSize:15, color:C.textMid, display:"flex", alignItems:"center", justifyContent:"center" }}>›</button>
               </div>
@@ -4801,7 +4799,7 @@ function GruposView({ datos, onRecargar, onVolverHeatmap, subVistaExt, onCambiar
 
             {/* Cabecera días */}
             <div style={{ display:"grid", gridTemplateColumns:"repeat(7,minmax(0,1fr))", borderTop:`1px solid ${C.border}`, borderLeft:`1px solid ${C.border}` }}>
-              {DIAS_ES.map(d => (
+              {t("dias_full").map(d => (
                 <div key={d} style={{ borderRight:`1px solid ${C.border}`, borderBottom:`1px solid ${C.border}`, padding:"7px 4px", textAlign:"center", background:"#fff" }}>
                   <span style={{ fontSize:11, color:"#111", fontWeight:600, textTransform:"uppercase", letterSpacing:"0.5px" }}>{isMobile ? d.slice(0,3) : d}</span>
                 </div>
@@ -4872,7 +4870,7 @@ function GruposView({ datos, onRecargar, onVolverHeatmap, subVistaExt, onCambiar
             })}
 
             {gruposMes.length === 0 && (
-              <p style={{ textAlign:"center", color:C.textLight, fontSize:13, padding:"16px 0 8px" }}>Sin grupos ni eventos este mes</p>
+              <p style={{ textAlign:"center", color:C.textLight, fontSize:13, padding:"16px 0 8px" }}>{t("sin_grupos_mes")}</p>
             )}
           </Card>
         );
@@ -7191,7 +7189,8 @@ export default function App() {
     return () => window.removeEventListener("keydown", handler);
   }, [kpiModal, importar, restriccionModal, perfilSeccion, mesDetalle, desgloseMovimiento]);
   const [lang, setLang] = useState(() => localStorage.getItem("fr_lang") || "es");
-  const t = useT();
+  // Este componente está por encima de LangContext.Provider: useT() devolvería siempre "es"
+  const t = (k) => (TRANSLATIONS[lang] || TRANSLATIONS.es)[k] ?? k;
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [onboardingStep, setOnboardingStep] = useState(() =>
     localStorage.getItem("fr_onboarding_v1") ? null : 0
@@ -7601,7 +7600,7 @@ export default function App() {
                 }}
                 onClick={() => cambiarGruposSubVista(key)}
                 style={{ padding:"6px clamp(6px,2vw,16px)", borderRadius:7, border:"none", cursor:"pointer", background: activo ? "rgba(255,255,255,0.12)" : "transparent", color:"#fff", fontSize:"clamp(11px,2.5vw,13px)", fontWeight: activo ? 700 : 400, fontFamily:"'Plus Jakarta Sans',sans-serif", transition:"all 0.15s", whiteSpace:"nowrap", outline: activo ? "1.5px solid rgba(255,255,255,0.3)" : "1.5px solid transparent", visibility: draggingGruposSubKey === key ? "hidden" : "visible" }}>
-                {label}
+                {t("gsub_" + key)}
               </button>
             );
           })}

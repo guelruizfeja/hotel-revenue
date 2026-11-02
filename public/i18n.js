@@ -75,6 +75,12 @@
       var key = el.getAttribute('data-i18n-alt');
       if (dict[key] != null) el.setAttribute('alt', dict[key]);
     });
+    // Imágenes localizadas: data-i18n-src="/foo.png" → /foo.png (es), /foo-en.png, /foo-fr.png
+    document.querySelectorAll('[data-i18n-src]').forEach(function (el) {
+      var base = el.getAttribute('data-i18n-src');
+      el.onerror = function () { el.onerror = null; el.setAttribute('src', base); };
+      el.setAttribute('src', lang === 'es' ? base : base.replace(/(\.\w+)$/, '-' + lang + '$1'));
+    });
 
     document.querySelectorAll('.i18n-switch').forEach(function (container) {
       container.querySelectorAll('button').forEach(function (btn) {
