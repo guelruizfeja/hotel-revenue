@@ -23,6 +23,14 @@ html, body {
   overflow-x: clip;
 }
 
+/* App instalada (PWA): sin pellizco de zoom, como una app nativa. iOS ignora
+   minimum-scale, así que se bloquea por touch-action (+ gesturestart en index.html). */
+@media (display-mode: standalone) {
+  html, body {
+    touch-action: pan-x pan-y;
+  }
+}
+
 body {
   margin: 0;
   min-width: 320px;
