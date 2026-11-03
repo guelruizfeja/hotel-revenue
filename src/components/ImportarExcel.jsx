@@ -166,6 +166,17 @@ export function ImportarExcel({ onClose, session, onImportado, onProduccionDirec
   const [pptoTablaOk, setPptoTablaOk] = useState(false);
   const [pptoTablaError, setPptoTablaError] = useState("");
   const [pptoTablaLoadingData, setPptoTablaLoadingData] = useState(false);
+  // ¿El año cargado tiene presupuesto guardado en BD? Si no, se muestra solo el aviso.
+  const [pptoTablaTieneDatos, setPptoTablaTieneDatos] = useState(true);
+  // Año para el que el usuario abrió la tabla manualmente estando sin presupuesto
+  const [pptoManualAnio, setPptoManualAnio] = useState(() => {
+    try { return parseInt(localStorage.getItem("fr_ppto_manual_anio")) || null; } catch { return null; }
+  });
+  const abrirPptoManual = (anio) => {
+    setPptoManualAnio(anio);
+    try { localStorage.setItem("fr_ppto_manual_anio", String(anio)); } catch { /* sin storage */ }
+  };
+  const mostrarTablaPpto = pptoTablaTieneDatos || pptoManualAnio === pptoTablaAnio;
 
   // Comprobar si ya hay datos importados al montar
   useEffect(() => {
@@ -508,6 +519,7 @@ export function ImportarExcel({ onClose, session, onImportado, onProduccionDirec
     const { data } = await supabase.from("presupuesto")
       .select("mes,occ_ppto,adr_ppto,revpar_ppto,rev_total_ppto")
       .eq("hotel_id", session.user.id).eq("anio", anio).order("mes");
+    setPptoTablaTieneDatos(!!data?.length);
     setPptoTablaData(Array.from({length:12}, (_,i) => {
       const r = data?.find(r => r.mes === i+1);
       return { mes:i+1, occ_ppto:r?.occ_ppto??'', adr_ppto:r?.adr_ppto??'', revpar_ppto:r?.revpar_ppto??'', rev_total_ppto:r?.rev_total_ppto??'' };
@@ -1117,9 +1129,18 @@ export function ImportarExcel({ onClose, session, onImportado, onProduccionDirec
                   if (!ppto) return `1px solid ${H.border}`;
                   return real[key] >= ppto ? "1px solid #86EFAC" : "1px solid #FCA5A5";
                 };
-                return pptoTablaLoadingData ? (
-                  <p style={{ fontSize:12, color:H.textMid, padding:"20px 0" }}>Cargando…</p>
-                ) : (
+                if (pptoTablaLoadingData) return <p style={{ fontSize:12, color:H.textMid, padding:"20px 0" }}>Cargando…</p>;
+                if (!mostrarTablaPpto) return (
+                  <div style={{ background:"#F5F7FA", border:`1px solid ${H.border}`, borderRadius:10, padding:"28px 20px", textAlign:"center" }}>
+                    <p style={{ margin:"0 0 4px", fontSize:14, fontWeight:700, color:H.text }}>Presupuesto no disponible</p>
+                    <p style={{ margin:"0 0 14px", fontSize:12, color:H.textMid }}>No hay presupuesto para {pptoTablaAnio}. Impórtalo desde Excel o introdúcelo a mano.</p>
+                    <button onClick={() => abrirPptoManual(pptoTablaAnio)}
+                      style={{ padding:"8px 16px", background:"#fff", color:H.text, border:`1px solid ${H.border}`, borderRadius:8, fontSize:12, fontWeight:600, cursor:"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
+                      Introducir manualmente
+                    </button>
+                  </div>
+                );
+                return (
                 <div style={{ overflowX:"auto", borderRadius:10, border:`1px solid ${H.border}` }}>
                   <table style={{ width:"100%", borderCollapse:"collapse", fontSize:12 }}>
                     <thead>
@@ -1136,10 +1157,10 @@ export function ImportarExcel({ onClose, session, onImportado, onProduccionDirec
                         <tr key={i} style={{ borderBottom: i < 11 ? `1px solid ${H.border}` : "none", background: i % 2 === 0 ? H.card : "#FAFBFC" }}>
                           <td style={{ padding:"5px 12px", fontWeight:600, color:H.text, fontSize:12, whiteSpace:"nowrap", textAlign:"center" }}>{mes}</td>
                           {[
-                            { key:"occ_ppto",       placeholder:"72.5",  step:"0.1" },
-                            { key:"adr_ppto",       placeholder:"120.00", step:"0.01" },
-                            { key:"revpar_ppto",    placeholder:"86.40",  step:"0.01" },
-                            { key:"rev_total_ppto", placeholder:"250000", step:"1" },
+                            { key:"occ_ppto",       placeholder:"—", step:"0.1" },
+                            { key:"adr_ppto",       placeholder:"—", step:"0.01" },
+                            { key:"revpar_ppto",    placeholder:"—", step:"0.01" },
+                            { key:"rev_total_ppto", placeholder:"—", step:"1" },
                           ].map(({ key, placeholder, step }) => (
                             <td key={key} style={{ padding:"3px 6px" }}>
                               <input
@@ -1163,13 +1184,13 @@ export function ImportarExcel({ onClose, session, onImportado, onProduccionDirec
               })()}
 
               {/* Guardar */}
-              <div style={{ display:"flex", alignItems:"center", gap:10, marginTop:14 }}>
+              {mostrarTablaPpto && !pptoTablaLoadingData && <div style={{ display:"flex", alignItems:"center", gap:10, marginTop:14 }}>
                 {pptoTablaError && <span style={{ fontSize:11, color:H.red }}>{pptoTablaError}</span>}
                 <button onClick={guardarPptoTabla} disabled={pptoTablaLoading || pptoTablaLoadingData}
                   style={{ marginLeft:"auto", padding:"10px 22px", background:H.blue, color:"#fff", border:"none", borderRadius:8, fontSize:13, fontWeight:700, cursor:(pptoTablaLoading||pptoTablaLoadingData)?"not-allowed":"pointer", fontFamily:"'Plus Jakarta Sans',sans-serif" }}>
                   {pptoTablaLoading ? "Guardando…" : `Guardar presupuesto ${pptoTablaAnio}`}
                 </button>
-              </div>
+              </div>}
 
               {/* Importar desde Excel (opción secundaria) */}
               <div style={{ marginTop:24, paddingTop:16, borderTop:`1px solid ${H.border}` }}>
