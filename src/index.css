@@ -21,6 +21,8 @@ a {
    y ver la app "flotando" en blanco. clip (no hidden) para no romper position:sticky. */
 html, body {
   overflow-x: clip;
+  /* Sin pellizco de zoom en móvil (iOS ignora user-scalable=no; ver public/no-zoom.js) */
+  touch-action: pan-x pan-y;
 }
 
 body {
