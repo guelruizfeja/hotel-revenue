@@ -5383,7 +5383,9 @@ function AuthScreen() {
   const [showAuth, setShowAuth] = useState(() => window.location.hash === "#login" || window.location.hash === "#register");
   const [mode, setMode] = useState(() => window.location.hash === "#register" ? "register" : "login");
   const [email, setEmail] = useState("");
-  const [loginId, setLoginId] = useState("");
+  // Último usuario/email con el que se entró correctamente (nunca la contraseña)
+  const [loginId, setLoginId] = useState(() => { try { return localStorage.getItem("fr_last_login_id") || ""; } catch { return ""; } });
+  const recordarLoginId = (id) => { try { localStorage.setItem("fr_last_login_id", id); } catch { /* sin storage */ } };
   const [password, setPassword] = useState("");
   const [hotelNombre, setHotelNombre] = useState("");
   const [hotelCiudad, setHotelCiudad] = useState("");
@@ -5406,6 +5408,7 @@ function AuthScreen() {
       const { error } = await supabase.auth.signInWithPassword({ email: id, password });
       setLoading(false);
       if (error) setError("Email o contraseña incorrectos");
+      else recordarLoginId(id);
       return;
     }
 
@@ -5418,7 +5421,7 @@ function AuthScreen() {
       const json = await resp.json();
       if (json?.syntheticEmail) {
         const { error: staffErr } = await supabase.auth.signInWithPassword({ email: json.syntheticEmail, password });
-        if (!staffErr) { setLoading(false); return; }
+        if (!staffErr) { recordarLoginId(id); setLoading(false); return; }
       }
     } catch {}
 
