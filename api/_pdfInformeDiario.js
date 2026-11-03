@@ -38,6 +38,16 @@ export function generarInformeDiarioPDF(kpis, hotelNombre) {
   const fmtD  = iso => { if (!iso) return "—"; const [yr,mo,dy] = iso.split("-"); return `${parseInt(dy)} de ${MESES[parseInt(mo)-1]} de ${yr}`; };
   const fmtSD = iso => { if (!iso) return "—"; const [,mo,dy] = iso.split("-"); return `${parseInt(dy)} ${MESES_S[parseInt(mo)-1]}`; };
 
+  // Colores de canal — mismos que la web (src/App.jsx CANAL_COLORS)
+  const CANAL_COLORS = {
+    "booking.com":"#0052CC", "booking":"#0052CC", "expedia":"#FFD700", "hotels.com":"#FF6B00",
+    "airbnb":"#FF5A5F", "hotelbeds":"#00897B", "agoda":"#7C3AED", "trip.com":"#06B6D4",
+    "directo":"#111111", "web propia":"#BDBDBD", "web":"#BDBDBD",
+    "tour operador":"#F59E0B", "agencia de viajes":"#8B5CF6", "gds":"#6B7280",
+    "empresa":"#059669", "grupos":"#EC4899", "eventos / mice":"#F43F5E", "eventos/mice":"#F43F5E",
+  };
+  const canalColor = c => CANAL_COLORS[(c||"").toLowerCase().trim()] || "#94A3B8";
+
   // Colored legend square
   function legendSq(x, y2, hex) {
     const [r,g,b] = hex.match(/\w\w/g).map(h => parseInt(h,16));
@@ -88,12 +98,20 @@ export function generarInformeDiarioPDF(kpis, hotelNombre) {
       if (i>0) { doc.setDrawColor(...C_BORDE); doc.line(M+i*kmCW, y+2, M+i*kmCW, y+kmH-2); }
       doc.setFontSize(6.5); doc.setFont("helvetica","bold"); doc.setTextColor(...C_GRIS);
       doc.text(k.lbl, kx, y+5, { align:"center" });
-      const valCol = k.pct==null ? C_NEGRO : k.pct>=100 ? C_VERDE : k.pct>=75 ? [196,154,10] : C_ROJO;
-      doc.setFontSize(12); doc.setFont("helvetica","bold"); doc.setTextColor(...valCol);
+      const pctCol = k.pct==null ? C_NEGRO : k.pct>=100 ? C_VERDE : k.pct>=75 ? [196,154,10] : C_ROJO;
+      doc.setFontSize(12); doc.setFont("helvetica","bold"); doc.setTextColor(...C_NEGRO);
       doc.text(k.val, kx, y+14, { align:"center" });
-      const statusTxt = `ppto: ${k.ppto}`;
-      doc.setFontSize(6); doc.setFont("helvetica","normal"); doc.setTextColor(...valCol);
-      doc.text(statusTxt, kx, y+20, { align:"center", maxWidth: kmCW-4 });
+      // "ppto: X" en gris + "· NN%" de cumplimiento en color
+      const pptoTxt = `ppto: ${k.ppto}`;
+      const pctTxt  = k.pct!=null ? `  ·  ${k.pct}%` : "";
+      doc.setFontSize(6); doc.setFont("helvetica","normal");
+      const wPpto = doc.getTextWidth(pptoTxt);
+      doc.setFont("helvetica","bold");
+      const wPct  = doc.getTextWidth(pctTxt);
+      const sx = kx - (wPpto + wPct)/2;
+      doc.setFont("helvetica","normal"); doc.setTextColor(...C_GRISM);
+      doc.text(pptoTxt, sx, y+20);
+      if (pctTxt) { doc.setFont("helvetica","bold"); doc.setTextColor(...pctCol); doc.text(pctTxt, sx + wPpto, y+20); }
     });
     y += kmH + 5;
   }
@@ -153,7 +171,7 @@ export function generarInformeDiarioPDF(kpis, hotelNombre) {
   const pColW = (W-M*2)/3;
   const pLabels = ["NUEVAS RESERVAS","CANCELACIONES","NETO"];
   const pVals   = [`+${nuevas} hab.`, `-${cancels} hab.`, (neto>=0?"+":"")+neto+" hab."];
-  const pColors = [[2,110,75], cancels>0?[180,20,20]:C_GRIS, neto>0?[2,110,75]:neto<0?[180,20,20]:C_NEGRO];
+  const pColors = [C_NEGRO, C_NEGRO, C_NEGRO];
   pLabels.forEach((lbl, i) => {
     const px = M + i*pColW + pColW/2;
     if (i>0) { doc.setDrawColor(...C_BORDE); doc.line(M+i*pColW, y+10, M+i*pColW, y+30); }
@@ -167,12 +185,11 @@ export function generarInformeDiarioPDF(kpis, hotelNombre) {
     }
   });
   if (canalesPick.length > 0) {
-    const dotColors2 = ["#0A2540","#D4A017","#059669","#7C3AED","#94A3B8"];
     let cx2 = M + 4; const py2 = y + 33;
     doc.setFontSize(6); doc.setFont("helvetica","bold"); doc.setTextColor(...C_GRISM);
     doc.text("Procedencia:", cx2, py2); cx2 += 24;
     canalesPick.forEach((c, i) => {
-      const [r2,g2,b2] = dotColors2[i].match(/\w\w/g).map(h=>parseInt(h,16));
+      const [r2,g2,b2] = canalColor(c.canal).match(/\w\w/g).map(h=>parseInt(h,16));
       doc.setFillColor(r2,g2,b2); doc.circle(cx2+1, py2-1.3, 1.2, "F");
       doc.setFontSize(6); doc.setFont("helvetica","normal"); doc.setTextColor(...C_NEGRO);
       const lbl2 = `${c.canal} (${c.reservas})`;
@@ -220,8 +237,8 @@ export function generarInformeDiarioPDF(kpis, hotelNombre) {
   const pctFnb   = totHF > 0 ? Math.round((revFnbAyer || 0) / totHF * 100) : 0;
   const pctSalas = totHF > 0 ? Math.round((revSalasAyer || 0) / totHF * 100) : 0;
   addBar(lx, ly, W - M * 2 - 6, "Habitaciones", revHabAyer   || 0, totHF || 1, "#0A2540", pctHab);   ly += barRowH;
-  addBar(lx, ly, W - M * 2 - 6, "F&B",          revFnbAyer   || 0, totHF || 1, "#D4A017", pctFnb);   ly += barRowH;
-  addBar(lx, ly, W - M * 2 - 6, "Salas",        revSalasAyer || 0, totHF || 1, "#7C3AED", pctSalas);
+  addBar(lx, ly, W - M * 2 - 6, "F&B",          revFnbAyer   || 0, totHF || 1, "#0A2540", pctFnb);   ly += barRowH;
+  addBar(lx, ly, W - M * 2 - 6, "Salas",        revSalasAyer || 0, totHF || 1, "#0A2540", pctSalas);
 
   y += mixH + 5;
 
@@ -323,11 +340,9 @@ export function generarInformeDiarioPDF(kpis, hotelNombre) {
       const pct2 = d.occ_pct!=null ? Math.min(d.occ_pct/100, 1) : 0;
       doc.setFillColor(220,228,238); doc.rect(bX2, y+11, bW2, bH, "F");
       if (pct2>0) {
-        const col = d.occ_pct>=80 ? C_VERDE : d.occ_pct>=60 ? [196,154,10] : C_AZUL;
-        doc.setFillColor(...col); doc.rect(bX2, y+11+(bH*(1-pct2)), bW2, bH*pct2, "F");
+        doc.setFillColor(...C_AZUL); doc.rect(bX2, y+11+(bH*(1-pct2)), bW2, bH*pct2, "F");
       }
-      const occ_col = d.occ_pct!=null && d.occ_pct>=80 ? C_VERDE : d.occ_pct!=null && d.occ_pct>=60 ? [196,154,10] : C_AZUL;
-      doc.setFontSize(7); doc.setFont("helvetica","bold"); doc.setTextColor(...occ_col);
+      doc.setFontSize(7); doc.setFont("helvetica","bold"); doc.setTextColor(...C_NEGRO);
       doc.text(d.occ_pct!=null?d.occ_pct+"%":"—", cx, y+22, { align:"center" });
       doc.setFontSize(6); doc.setFont("helvetica","normal"); doc.setTextColor(...C_GRISM);
       doc.text(d.adr!=null?`ADR €${d.adr}`:"—", cx, y+27, { align:"center" });
