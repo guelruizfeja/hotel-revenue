@@ -4,6 +4,10 @@
   var standalone = window.navigator.standalone === true ||
     (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
   if (!standalone) return;
+  // iOS amplía la página al enfocar inputs con letra < 16px; como en la app no se puede
+  // pellizcar para volver, se fija la escala a 1 (iOS sí respeta maximum-scale para esto).
+  var vp = document.querySelector('meta[name="viewport"]');
+  if (vp) vp.setAttribute('content', 'width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no');
   var block = function (e) { e.preventDefault(); };
   document.addEventListener('gesturestart', block, { passive: false });
   document.addEventListener('gesturechange', block, { passive: false });
